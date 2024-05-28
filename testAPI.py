@@ -152,6 +152,10 @@ api_manager = HomeAssistantAPI(
 	30
 )
 # api_manager.getServices()
+<<<<<<< HEAD
 # api_manager.getStates()
 >>>>>>> 3a63a7f (Run OK)
 
+=======
+# api_manager.getStates()
+>>>>>>> b903d94 (Update testAPI.py)
