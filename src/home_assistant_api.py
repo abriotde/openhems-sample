@@ -5,23 +5,21 @@ import time
 import pandas as pd
 from requests import get, post
 import yaml
+from openhems_node import OpenHEMSNode
 
 todays_Date = datetime.date.fromtimestamp(time.time())
 date_in_ISOFormat = todays_Date.isoformat()
 
 
 class HomeAssistantAPI:
-
-	def __init__(self, api_url: str,
-			  long_lived_token: str,
-			  yaml_conf: str,
-			  freq: pd.Timedelta) -> None:
-		self.api_url = api_url
-		self.token = long_lived_token
+	def __init__(self, yaml_conf: str, freq: pd.Timedelta) -> None:
 		self.freq = freq
 		with open(yaml_conf, 'r') as file:
 			print("Load YAML configuration from '"+yaml_conf+"'")
 			self.conf = yaml.load(file, Loader=yaml.FullLoader)
+			apiConf = self.conf['api']
+			self.api_url = apiConf["url"]
+			self.token = apiConf["long_lived_token"]
 			self.elems = {}
 			for id,elem in self.conf['elems'].items():
 				elem['id'] = id
@@ -51,7 +49,8 @@ class HomeAssistantAPI:
 		return e
 
 	def createNodeElement(self, elem):
-		
+		print("createNodeElement(",elem,")")
+		return elem
 
 	def getElemById(self, id:str):
 		if id in self.elems:
@@ -67,7 +66,7 @@ class HomeAssistantAPI:
 
 	def initStates(self):
 		response = self.callAPI("/states")
-		elements = []
+		# elements = dict()
 		for e in response:
 			# print(e)
 			entity_id = e['entity_id']
@@ -75,14 +74,17 @@ class HomeAssistantAPI:
 			attributes = e['attributes']
 			# print(entity_id, state, attributes)
 			domain, elem_id = entity_id.split('.')
+			if elem_id.startswith("sm_a047f"):
+				print(e)
+			# elements[elem_id] = True
 			if domain == "sensor":
 				if "device_class" in attributes:
 					device_class = attributes["device_class"]
-					if device_class not in ["timestamp","enum"]: # Timestamp (solar wakeup), Enum (Tempo day color)
+					if device_class not in ["timestamp","enum"] and "state_class" in attributes: # Timestamp (solar wakeup), Enum (Tempo day color)
 						state_class = attributes["state_class"]
 						unit_of_measurement = attributes["unit_of_measurement"]
 						elem = self.getElemById(elem_id)
-						print(" - ",state_class+"/"+device_class+" : ",state,unit_of_measurement, elem)
+						print(" - ",entity_id,": ",state_class+"/"+device_class+" : ",state,unit_of_measurement, elem)
 					# else: print(attributes)
 				# else: print(attributes) # how many red day last for Tempo
 			elif domain == "update":
@@ -93,7 +95,7 @@ class HomeAssistantAPI:
 					if device_class=="outlet":
 						print(domain, elem_id, state)
 						self.getElemById(elem_id)
-
+		# print(elements)
 	# TODO
 	def updateStates(self):
 		response = self.callAPI("/states")
@@ -141,13 +143,3 @@ class HomeAssistantAPI:
 			return response.json()
 		except IndexError:
 			print("The retrieved JSON is empty for day:"+ str(day) +", days_to_retrieve may be larger than the recorded history of sensor:" + var + " (check your recorder settings)")
-
-
-api_manager = HomeAssistantAPI(
-    "http://127.0.0.1:8123/api", 
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI1MjM2ZjBlMjU3Njk0MDk0YjQ4M2Y5MjU2YzVkZjEzNyIsImlhdCI6MTcxNjg4OTc4MSwiZXhwIjoyMDMyMjQ5NzgxfQ.3DQ52pE1Mw6c9GHFum0BU5d8MLE64rVHhuWMP7TC0ls",
-	"../openhems.yaml",
-	30
-)
-# api_manager.getServices()
-# api_manager.getStates()

@@ -1,0 +1,11 @@
+api0:
+  url: http://127.0.0.1:8123/api
+  long_lived_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI1MjM2ZjBlMjU3Njk0MDk0YjQ4M2Y5MjU2YzVkZjEzNyIsImlhdCI6MTcxNjg4OTc4MSwiZXhwIjoyMDMyMjQ5NzgxfQ.3DQ52pE1Mw6c9GHFum0BU5d8MLE64rVHhuWMP7TC0ls"
+api:
+  url: http://192.168.1.202:8123/api
+  long_lived_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiIxOWUyNmRmY2I4NjI0ZThmODQ0NTY3NzFmNWM5NTlmZCIsImlhdCI6MTcxOTQwNTQ0OCwiZXhwIjoyMDM0NzY1NDQ4fQ.oDchaXBLptGM5sXRC4FE76tw3T5URHgGh8VwVh2Y5t0"
+elems:
+  tz3000_2putqrmw_ts011f: {use: carCharger, type: Switch}
+  rte_tempo: {use: input, type: RTETempoContract}
+  prise_1: {use: HS}
+  lixee_zlinky_tic: {use: linky}
