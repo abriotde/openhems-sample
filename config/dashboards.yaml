@@ -1,0 +1,26 @@
+title: Home Assistant OpenHEMS
+type: sections
+views:
+  - title: OpenHEMS
+    path: openhems
+    cards:
+        # The markdown card will render markdown text.
+        # - type: markdown
+        #   title: Dashboard
+        #   content: >
+        #     Bienvenue sur **OpenHEMS**.
+      - graph: line
+        name: Consommation
+        entity: sensor.lixee_zlinky_tic_apparent_power
+        type: sensor
+      - type: tile
+        name: Meteo
+        entity: weather.forecast_home
+      - type: tile
+        name: Tarif EDF
+        entity: sensor.rte_tempo_couleur_actuelle_visuel
+      - type: tile
+        name: Voiture
+        entity: switch.tz3000_2putqrmw_ts011f_switch
+        features:
+          - type: light-brightness
