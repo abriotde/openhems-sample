@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source config.sh
+
 docker stop homeassistant_surget
 docker start homeassistant_surget
 
@@ -10,7 +12,7 @@ sudo docker run -d \
   --privileged \
   --restart=unless-stopped \
   -e TZ=MY_TIME_ZONE \
-  -v $HOME/bin/home-assistant/config:/config \
+  -v $HOMEASSISTANT_DIR/config:/config \
   -v /run/dbus:/run/dbus:ro \
   --network=host \
   ghcr.io/home-assistant/home-assistant:stable

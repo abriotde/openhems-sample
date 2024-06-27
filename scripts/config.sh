@@ -1,3 +1,10 @@
 
 RSYNC_CMD="rsync -avpzh"
-HOMEASSISTANT_CONFIG_PATH=/home/alberic/bin/home-assistant/config
+
+HOMEASSISTANT_DIR=/home/alberic/bin/home-assistant
+HOMEASSISTANT_CONFIG_PATH=$HOMEASSISTANT_DIR/config
+DOCKER_NAME=homeassistant
+
+HOMEASSISTANT_EMHASS_DIR=$HOMEASSISTANT_DIR/emhass
+DOCKER_EMHASS_NAME=homeassistant_emhass
+
