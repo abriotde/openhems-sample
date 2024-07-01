@@ -116,14 +116,15 @@ class HomeAssistantAPI:
 			"content-type": "application/json",
 		}
 		try:
-			response = get(self.api_url+url, headers=headers)
-		except Exception:
-			print(
-				"Unable to access Home Assistance instance, check URL"
+			response = get(self.api_url+url, 
+				headers=headers,
+				# verify='/etc/letsencrypt/live/openproduct.freeboxos.fr/cert.pem'
 			)
+		except Exception as error:
 			print(
-				"If using addon, try setting url and token to 'empty'"
+				"Unable to access Home Assistance instance, check URL : ", error
 			)
+			exit(1)
 		else:
 			if response.status_code == 401:
 				print(

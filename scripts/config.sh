@@ -1,7 +1,10 @@
 
+
 RSYNC_CMD="rsync -avpzh"
 
-HOMEASSISTANT_DIR=/home/alberic/bin/home-assistant
+DOMAINNAME=openproduct.freeboxos.fr # Change to your domainname
+HOMEASSISTANT_IP=192.168.1.202 # Set a static IP not in your DHCP
+HOMEASSISTANT_DIR=$HOME/bin/home-assistant
 HOMEASSISTANT_CONFIG_PATH=$HOMEASSISTANT_DIR/config
 DOCKER_NAME=homeassistant
 
