@@ -5,8 +5,13 @@ api:
   url: http://192.168.1.202:8123/api
   long_lived_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI5ZmRmMDUwY2JjMmY0MmUyOGNkMzQ2ZDNlYTAzMDZmYyIsImlhdCI6MTcxOTg2NjkzMiwiZXhwIjoyMDM1MjI2OTMyfQ.fNI7cZZ7ucn2bcI78YdjPOR7xKBASQtyWwA826DSSog"
   ssl_certificate: /etc/letsencrypt/live/openproduct.freeboxos.fr/cert.pem
+vars:
+  power_in: 
+    - {type: sensor, elem: lixee_zlinky_tic, value: puissance_apparente, class: RTETempoContract, contract: {type: sensor, elem: rte_tempo, value: couleur_actuelle_visuel, class: RTETempoContract, params: {maxPower: 1000, minPower: 0}} }
+  out:
+    - {type: switch, elem: tz3000_2putqrmw_ts011f, value: switch, class: CarCharger}
 elems:
-  tz3000_2putqrmw_ts011f: {use: carCharger, type: Switch}
-  rte_tempo: {use: input, type: RTETempoContract}
-  prise_1: {use: HS}
-  lixee_zlinky_tic: {use: linky}
+  tz3000_2putqrmw_ts011f: {use: carCharger, class: CarCharger}
+  rte_tempo: {use: input, class: RTETempoContract}
+  prise_1: {use: HS, class: Switch}
+  lixee_zlinky_tic: {use: input, class: RTETempoContract}

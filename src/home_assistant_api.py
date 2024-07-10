@@ -6,12 +6,13 @@ import pandas as pd
 from requests import get, post
 import yaml
 from openhems_node import OpenHEMSNode
+from server import HomeStateUpdater
 
 todays_Date = datetime.date.fromtimestamp(time.time())
 date_in_ISOFormat = todays_Date.isoformat()
 
 
-class HomeAssistantAPI:
+class HomeAssistantAPI(HomeStateUpdater):
 	def __init__(self, yaml_conf: str, freq: pd.Timedelta) -> None:
 		self.freq = freq
 		with open(yaml_conf, 'r') as file:
