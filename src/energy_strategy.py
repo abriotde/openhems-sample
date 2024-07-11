@@ -1,5 +1,6 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import time
+import re
 from openhems_node import OpenHEMSNetwork
 
 class EnergyStrategy:
@@ -15,15 +16,16 @@ class OffPeakStrategy(EnergyStrategy):
 	inOffpeakRange = False
 	rangeEnd = datetime.now()
 	network = None
-	
+
 	def __init__(self, network: OpenHEMSNetwork, offpeakHoursRanges=[["22:00:00","06:00:00"]]):
 		print("OffPeakStrategy(",offpeakHoursRanges,")")
 		self.network = network
 		self.setOffPeakHoursRanges(offpeakHoursRanges)
 		self.checkRange()
-		
+
 	@staticmethod
 	def getTime(strTime:str):
+		strTime = strTime.strip()
 		if not re.match("^[0-9]+:[0-9]+:[0-9]+$", strTime) is None:
 			pattern = '%H:%M:%S'
 		elif not re.match("^[0-9]+:[0-9]+$", strTime) is None:
@@ -35,7 +37,7 @@ class OffPeakStrategy(EnergyStrategy):
 		else:
 			raise Exception("Fail convert '%s' to Time." % strTime)
 		return int(datetime.strptime(strTime, pattern).strftime("%H%M%S"))
-	
+
 	def setOffPeakHoursRanges(self, offPeakHoursRanges):
 		self.offpeakHoursRanges = []
 		for offpeakHoursRange in offPeakHoursRanges:
@@ -44,29 +46,44 @@ class OffPeakStrategy(EnergyStrategy):
 			self.offpeakHoursRanges.append([begin, end])
 
 	@staticmethod
-	def datetime2Mytime(time):
-		return int(datetime.now().strftime("%H%M%S"))
+	def datetime2Mytime(time: datetime):
+		return int(time.strftime("%H%M%S"))
 	@staticmethod
-	def mytime2Seconds(time):
+	def mytime2hourMinSec(time):
 		secs = time%100
 		min = int(time/100)%100
 		hours = int(time/10000)
-		ret = hours*3600+min*60+secs
-		# print("mytime2Seconds(",time,") = ", ret)
-		return ret
+		return  [hours, min, secs]
+	@staticmethod
+	def mytime2datetime(now: datetime, time):
+		nowtime = OffPeakStrategy.datetime2Mytime(now)
+		h0, m0, s0 = OffPeakStrategy.mytime2hourMinSec(nowtime)
+		nowSecs = h0*3600+m0*60+s0
+		h, m, s = OffPeakStrategy.mytime2hourMinSec(time)
+		timeSecs = h*3600+m*60+s
+		nbSecondsToNextRange = -nowSecs + timeSecs
+		if nowtime>time: # It's next day
+			nbSecondsToNextRange += 86400
+		nextTime = now + timedelta(seconds=nbSecondsToNextRange)
+		return nextTime
 	@staticmethod
 	def getTimeToWait(now, nextTime):
 		if now>nextTime:
-			return OffPeakStrategy.MIDNIGHT-now+nextTime
-		return nextTime-now
+			wait = OffPeakStrategy.MIDNIGHT-now+nextTime
+		else:
+			wait = nextTime-now
+		print("getTimeToWait(",now,", ",nextTime,") = ",wait)
+		return wait
+		
 	
-	def checkRange(self, now=None):
-		if now is None:
-			now = self.datetime2Mytime(datetime.now())
+	def checkRange(self, nowDatetime: datetime=None) -> int:
+		if nowDatetime is None:
+			nowDatetime = datetime.now()
+		now = self.datetime2Mytime(nowDatetime)
 		# print("OffPeakStrategy.checkRange(",now,")")
 		self.inOffpeakRange = False
 		nextTime = now+OffPeakStrategy.MIDNIGHT
-		time2NextTime = OffPeakStrategy.MIDNIGHT
+		time2NextTime = OffPeakStrategy.MIDNIGHT # This has no real signification but it's usefull and the most simple way
 		for offpeakHoursRange in self.offpeakHoursRanges:
 			begin, end = offpeakHoursRange
 			wait = self.getTimeToWait(now, begin)
@@ -80,25 +97,59 @@ class OffPeakStrategy(EnergyStrategy):
 				time2NextTime = wait
 				self.inOffpeakRange = True
 		assert nextTime<=240000
-		self.rangeEnd = nextTime
+		self.rangeEnd = self.mytime2datetime(nowDatetime, nextTime)
+		nbSecondsToNextRange = (self.rangeEnd - nowDatetime).total_seconds()
+		print("OffPeakStrategy.checkRange(",now,") => ", self.rangeEnd, ", ", nbSecondsToNextRange)
+		return nbSecondsToNextRange
 
-	def sleepUntillNextRange():
+	def sleepUntillNextRange(self):
 		MARGIN = 1 # margin to wait more to be sure to change range... useless, not scientist?
-		now = self.datetime2Mytime(datetime.now())
-		time2wait = self.getTimeToWait(now, self.rangeEnd)
-		print("OffPeakStrategy.sleepUntillNextRange() : sleep(",(time2wait+MARGIN)/60," min)")
-		time.sleep(self.mytime2Seconds(time2wait+MARGIN))
+		time2wait = (self.rangeEnd - datetime.now()).total_seconds()
+		print("OffPeakStrategy.sleepUntillNextRange() : sleep(",round((time2wait+MARGIN)/60)," min, until ",self.rangeEnd,")")
+		time.sleep(time2wait+MARGIN)
+
+	def switchOffAll(self):
+		print("OffPeakStrategy.switchOffAll()")
+		ok = True
+		for elem in self.network.out:
+			if not elem.switchOn(False):
+				print("Warning : Fail to switch of ",elem.id)
+				ok = False
+		return ok
+
+	def switchOnMax(self):
+		print("OffPeakStrategy.switchOnMax()")
+		ok = True
+		done = 0
+		todo = 0
+		powerMargin = self.network.getMarginPowerOn()
+		if powerMargin<0:
+			return
+		for elem in self.network.out:
+			if not elem.isOn():
+				if done==0: # Do just one at each loop to check Network constraint
+					if elem.switchOn(True):
+						print("Info : Switch on ",elem.id," successfully")
+						done += 1
+					else:
+						print("Warning : Fail switch on ",elem.id,".")
+						ok = False
+				else:
+					todo+=1
+		return todo == 0
 
 	def updateNetwork(self):
-		self.homeStateUpdater.updateStates()
+		if datetime.now()>self.rangeEnd:
+			self.checkRange()
 		if self.inOffpeakRange:
 			# We are in off-peak range hours : switch on all
-			# TODO self.switchOnMax()
-			pass
-		else: # Sleep untill end.
-			# TODO self.switchOffAll()
-			self.sleepUntillNextRange()
-			self.checkRange() # To update self.rangeEnd (and should change self.inOffpeakRange)
+			self.switchOnMax()
+		else: # Sleep untill end. 
+			if self.switchOffAll():
+				self.sleepUntillNextRange()
+				self.checkRange() # To update self.rangeEnd (and should change self.inOffpeakRange)
+			else:
+				print("Warning : Fail to swnitch off all. We will try again on next loop.")
 
 # Linky case: switch-on on solar production.
 class SolarOnlyProductionStrategy(EnergyStrategy):

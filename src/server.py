@@ -5,29 +5,38 @@ from datetime import datetime
 import yaml
 from energy_strategy import EnergyStrategy
 from home_assistant_api import HomeAssistantAPI
+from energy_strategy import OffPeakStrategy
 
 class OpenHEMSServer:
 
 	def __init__(self, yaml_conf: str) -> None:
+		
 		with open(yaml_conf, 'r') as file:
 			print("Load YAML configuration from '"+yaml_conf+"'")
 			self.conf = yaml.load(file, Loader=yaml.FullLoader)
 			serverConf = self.conf['server']
+			networkUpdater = None
+			networkSource = serverConf["network"].lower()
+			if networkSource=="homeassistant":
+				networkUpdater = HomeAssistantAPI(self.conf)
+			else:
+				print("ERROR : OpenHEMSServer() : Unknown strategy '",strategy,"'")
+				exit(1)
+			self.network = networkUpdater.getNetwork()
 			self.loop_delay = serverConf["loop_delay"]
-			api_manager = HomeAssistantAPI(self.conf)
-			self.network = api_manager.getNetwork()
-
-	# Update the home energy state : all changed elements.
-	def updateState(self):
-		self.network.updateStates()
-		# find E demand
-		# predict E cost/production
-		# 
+			strategy = serverConf["strategy"].lower()
+			strategy_params = serverConf["strategy_params"]
+			if strategy=="offpeak":
+				params = [p.split("-") for p in strategy_params]
+				self.strategy = OffPeakStrategy(self.network, params)
+			else:
+				print("ERROR : OpenHEMSServer() : Unknown strategy '",strategy,"'")
+				exit(1)
 
 	def loop(self):
 		print("OpenHEMSServer.loop()")
-		self.updateState()
-		# self
+		self.network.updateStates()
+		self.strategy.updateNetwork()
 
 	# Run an infinite loop where each loop shouldn't last more than loop_delay and will never last less than loop_delay
 	def run(self, loop_delay=0):

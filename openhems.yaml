@@ -4,9 +4,13 @@ api:
   ssl_certificate: /etc/letsencrypt/live/openproduct.freeboxos.fr/cert.pem
 server:
   loop_delay: 30
+  network: homeassistant
+  strategy: offpeak
+  strategy_params:
+    - 22h - 6h
 vars:
   power_in: 
-    - {type: sensor, elem: lixee_zlinky_tic, value: puissance_apparente, class: RTETempoContract, contract: {type: sensor, elem: rte_tempo, value: couleur_actuelle_visuel, class: RTETempoContract, params: {maxPower: 1000, minPower: 0}} }
+    - {currentPower: sensor.lixee_zlinky_tic_puissance_apparente, powerMargin: 1000, maxPower: 10000, minPower: 0, class: RTETempoContract, contract: {type: sensor, elem: rte_tempo, value: couleur_actuelle_visuel, class: RTETempoContract, params: {}} }
   out:
     - {type: switch, elem: tz3000_2putqrmw_ts011f, value: switch, class: CarCharger}
 elems:
