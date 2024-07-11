@@ -5,47 +5,81 @@ from typing import Final
 CYCLE_HISTORY: Final[int] = 10 # Number of cycle we keep history
 POWER_MARGIN: Final[int] = 10 # Number of cycle we keep history
 
-class OpenHEMSNetwork:
-	elems = dict()
-	in = array()
-	out = array()
-	def __init__():
-		pass
-
 class OpenHEMSNode:
-	@staticmethod
-	def create(elem: dict):
-		id = elem['id']
-		use = elem['use']
-		type = elem['type']
-		o = OpenHEMSNode(id, use, type)
+	id = ""
+	params = ""
+	network = None
+
+	def setConnect(self, connect: bool) -> bool:
+		"""
+		May not work if it is impossible (No relay) or if it failed.
+		"""
+		return self.network.network_updater.setConnect(connect, self.params)
+
+class HomeStateUpdater:
+
+	def getNetwork(self):
+		print("HomeStateUpdater.getNetwork() : To implement in sub-class")
+
+	def updateNetwork(self):
+		print("HomeStateUpdater.updateNetwork() : To implement in sub-class")
+
+class OpenHEMSNetwork:
+
+	inout = dict()
+	out = dict()
+	network_updater: HomeStateUpdater = None
+
+	def __init__(self, network_updater: HomeStateUpdater):
+		self.network_updater = network_updater
+
+	def createNode(params: dict) -> OpenHEMSNode:
+		elem = None
+		type = params['type']
+		if type=="InOutNode":
+			elem = InOutNode(params['maxPower'], params['minPower'], params['powerMargin'])
+			self.inout[elem.id] = elem
+		else:
+			print("Error : OpenHEMSNode.create(",params,") : Unknwon type.")
+			exit(1);
+		elem.id = elem['id']
+		elem.params = params
+		elem.network = self
+		self.elems[elem.id] = elem
+		return elem
+
+	def updateStates(self):
+		self.network_updater.updateNetwork()
 
 class InOutNode(OpenHEMSNode):
-	def __init__(self, id, maxPower, minPower, 
-			  isAutoAdatative: bool, isControlable: bool, isModulable: bool, isCyclic: bool) -> None:
-		self.id = id
+	"""
+	It is electricity source, it may consume electricity over-production if possible (Battery with MPPT or Sell on public-grid)
+	param maxPower: positive value, max power we can consume at a time.
+	param minPower: negative value if we can sell or ther is battery, 0 overwise.
+	"""
+	def __init__(self, maxPower, minPower=0, powerMargin=POWER_MARGIN) -> None:
+		# isAutoAdatative: bool, isControlable: bool, isModulable: bool, isCyclic: bool
 		self.previousPower = deque()
 		self.currentPower = 0
 		self.powerMargin = POWER_MARGIN
 		self.maxPower = maxPower
 		self.minPower = minPower
-		self.isAutoAdatative = isAutoAdatative
-		self.isControlable = isControlable
-		self.isModulable = isModulable
-		self.isCyclic = isCyclic
-	
-	def update(self, currentPower):
-		if (len(self.previousPower)>=CYCLE_HISTORY):
+
+	def setCurrentPower(self, currentPower):
+		if len(self.previousPower)>=CYCLE_HISTORY:
 			self.previousPower.popleft()
 		self.previousPower.append(self.currentPower)
 		self.currentPower = currentPower
 
+	def getCurrentPower(self):
+		return self.currentPower
+
 	def estimateNextPower(self):
-    	"""Estimate what could be the next value
-    	
-    	This function would like to know if there is a constant growing/decreasing value or a random one or oscilating one...
-    	:return list[int]: [minValue, bestBet, maxValue]
-    	"""
+		"""Estimate what could be the next value
+
+		This function would like to know if there is a constant growing/decreasing value or a random one or oscilating one...
+		:return list[int]: [minValue, bestBet, maxValue]
+		"""
 		avgDeltaPower = 0
 		p0 = self.currentPower
 		maxi = len(self.previousPower)
@@ -62,18 +96,20 @@ class InOutNode(OpenHEMSNode):
 			sum += diff
 			p0 = p1
 		avgDiff = sum/maxi
-		if (avgDiff>0 and lastDiff>2*avgDiff)
-			or (avgDiff<0 and lastDiff<2*avgDiff):
+		if (avgDiff>0 and lastDiff>2*avgDiff) \
+				or (avgDiff<0 and lastDiff<2*avgDiff):
 			curDiff = lastDiff
 		else:
 			currDiff = avgDiff
 		return [self.currentPower-abs(maxDiff), self.currentPower+curDiff, self.currentPower+abs(maxDiff)]
 
-	def respectConstraints(self, power=self.currentPower):
+	def respectConstraints(self, power=None):
 		"""Check min/max constraints for power
 		
 		return bool: true if 'power' respects constraints
 		"""
+		if power is None:
+			power = self.currentPower
 		if power+self.powerMargin>self.maxPower:
 			return false
 		if power-self.powerMargin<self.minPower:
@@ -89,23 +125,16 @@ class InOutNode(OpenHEMSNode):
 			- 2: respect constraints but could be out of constraints next loop
 			- 3: Safe values
 		"""
-		if ! self.respectConstraints():
+		if not self.respectConstraints():
 			return 0
-		min, avg, max = estimateNextPower(self);
-		if ! self.respectConstraints(avg):
+		min, avg, max = self.estimateNextPower(self);
+		if not self.respectConstraints(avg):
 			return 1
-		if ! (self.respectConstraints(min)
-				 || self.respectConstraints(max)
-			):
+		if not (self.respectConstraints(min) or self.respectConstraints(max)):
 			return 2
 		return 3
 
-class PublicPowerGrid(InOutNode):
-	def __init__(self, maxPower, minPower) -> None:
-		self.isAutoAdatative = True
-		self.isControlable = True
-		self.isModulable = False
-
+"""
 class RTETempoContract(PublicPowerGrid):
 	def __init__(self, maxPower, minPower) -> None:
 		self.isAutoAdatative = True
@@ -144,3 +173,5 @@ class SolarPanel(InOutNode):
 
 	def __init__(self, id, use, type) -> None:
 		pass
+"""
+

@@ -1,10 +1,9 @@
-api0:
-  url: http://127.0.0.1:8123/api
-  long_lived_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI1MjM2ZjBlMjU3Njk0MDk0YjQ4M2Y5MjU2YzVkZjEzNyIsImlhdCI6MTcxNjg4OTc4MSwiZXhwIjoyMDMyMjQ5NzgxfQ.3DQ52pE1Mw6c9GHFum0BU5d8MLE64rVHhuWMP7TC0ls"
 api:
   url: http://192.168.1.202:8123/api
   long_lived_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI5ZmRmMDUwY2JjMmY0MmUyOGNkMzQ2ZDNlYTAzMDZmYyIsImlhdCI6MTcxOTg2NjkzMiwiZXhwIjoyMDM1MjI2OTMyfQ.fNI7cZZ7ucn2bcI78YdjPOR7xKBASQtyWwA826DSSog"
   ssl_certificate: /etc/letsencrypt/live/openproduct.freeboxos.fr/cert.pem
+server:
+  loop_delay: 30
 vars:
   power_in: 
     - {type: sensor, elem: lixee_zlinky_tic, value: puissance_apparente, class: RTETempoContract, contract: {type: sensor, elem: rte_tempo, value: couleur_actuelle_visuel, class: RTETempoContract, params: {maxPower: 1000, minPower: 0}} }

@@ -5,31 +5,42 @@ import time
 import pandas as pd
 from requests import get, post
 import yaml
-from openhems_node import OpenHEMSNode
-from server import HomeStateUpdater
+from openhems_node import OpenHEMSNode, HomeStateUpdater, OpenHEMSNetwork
+
 
 todays_Date = datetime.date.fromtimestamp(time.time())
 date_in_ISOFormat = todays_Date.isoformat()
 
 
 class HomeAssistantAPI(HomeStateUpdater):
-	def __init__(self, yaml_conf: str, freq: pd.Timedelta) -> None:
-		self.freq = freq
-		with open(yaml_conf, 'r') as file:
-			print("Load YAML configuration from '"+yaml_conf+"'")
-			self.conf = yaml.load(file, Loader=yaml.FullLoader)
-			apiConf = self.conf['api']
-			self.api_url = apiConf["url"]
-			self.token = apiConf["long_lived_token"]
-			self.elems = {}
-			for id,elem in self.conf['elems'].items():
-				elem['id'] = id
-				self.elems[id] = elem
-		self._elemsKeysCache = None
-		self.initStates()
 
- 	# If elem is None; get mode; else: insert mode;
+	def __init__(self, conf) -> None:
+		if isinstance(conf, str):
+			with open(conf, 'r') as file:
+				print("Load YAML configuration from '"+conf+"'")
+				conf = yaml.load(file, Loader=yaml.FullLoader)
+		apiConf = conf['api']
+		self.api_url = apiConf["url"]
+		self.token = apiConf["long_lived_token"]
+		self.elems = {}
+		for id,elem in conf['elems'].items():
+			elem['id'] = id
+			self.elems[id] = elem
+		self._elemsKeysCache = None
+
+	def getNetwork(self) -> OpenHEMSNetwork:
+		self.network = OpenHEMSNetwork(self)
+		self.initStates()
+		print("HomeAssistantAPI.getNetwork() : To implement in sub-class")
+		return self.network
+
+	def updateNetwork(self):
+		print("HomeAssistantAPI.updateNetwork() : To implement in sub-class")
+
 	def _getElemsKeysCache(self, id, elem=None):
+		"""
+		@param: If elem is None; get mode; else: insert mode;
+		"""
 		e = self._elemsKeysCache
 		sids = id.split('_')
 		length = len(sids)
@@ -145,3 +156,4 @@ class HomeAssistantAPI(HomeStateUpdater):
 			return response.json()
 		except IndexError:
 			print("The retrieved JSON is empty for day:"+ str(day) +", days_to_retrieve may be larger than the recorded history of sensor:" + var + " (check your recorder settings)")
+
