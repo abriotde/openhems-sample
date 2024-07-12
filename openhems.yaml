@@ -8,13 +8,14 @@ server:
   strategy: offpeak
   strategy_params:
     - 22h - 6h
-vars:
-  power_in: 
-    - {currentPower: sensor.lixee_zlinky_tic_puissance_apparente, powerMargin: 1000, maxPower: 10000, minPower: 0, class: RTETempoContract, contract: {type: sensor, elem: rte_tempo, value: couleur_actuelle_visuel, class: RTETempoContract, params: {}} }
+network:
+  in:
+    - {id: ContratTempo, currentPower: sensor.lixee_zlinky_tic_puissance_apparente, powerMargin: 1000, maxPower: 10000, minPower: 0, class: PublicPowerGrid, contract: {type: sensor, elem: rte_tempo, value: couleur_actuelle_visuel, class: RTETempoContract, params: {}} }
   out:
-    - {type: switch, elem: tz3000_2putqrmw_ts011f, value: switch, class: CarCharger}
+    - {id: voiture, class: switch, isOn: switch.tz3000_2putqrmw_ts011f_switch, currentPower: sensor.tz3000_2putqrmw_ts011f_puissance, maxPower:2000}
 elems:
   tz3000_2putqrmw_ts011f: {use: carCharger, class: CarCharger}
   rte_tempo: {use: input, class: RTETempoContract}
   prise_1: {use: HS, class: Switch}
   lixee_zlinky_tic: {use: input, class: RTETempoContract}
+

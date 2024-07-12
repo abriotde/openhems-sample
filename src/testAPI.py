@@ -11,5 +11,6 @@ from server import OpenHEMSServer
 
 # api_manager = HomeAssistantAPI("../openhems.yaml")
 
+
 server = OpenHEMSServer("../openhems.yaml")
 server.run()

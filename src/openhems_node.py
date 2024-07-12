@@ -3,16 +3,47 @@ from enum import Enum
 from collections import deque
 from typing import Final
 CYCLE_HISTORY: Final[int] = 10 # Number of cycle we keep history
-POWER_MARGIN: Final[int] = 10 # Number of cycle we keep history
+
+class Feeder:
+	value = None
+	def getValue(self):
+		return self.value
+	pass
+
+class SourceFeeder(Feeder):
+	def __init__(self, nameid, source, valueParams):
+		self.nameid = nameid
+		self.source = source
+		if not nameid in self.source.cached_ids.keys():
+			self.source.cached_ids[nameid] = [None, valueParams]
+		self.source_id = 0 # For cache
+	def getValue(self):
+		if self.source_id<self.source.refresh_id:
+			self.source_id = self.source.refresh_id # Better to update source_id before in case value is updated between this line and next one
+			self.value = self.source.cached_ids[self.nameid][0]
+		return self.value
+
+class ConstFeeder(Feeder):
+	def __init__(self, value):
+		self.value = value
 
 class OpenHEMSNode:
 	id = ""
 	params = ""
 	network = None
-	isSwitchable = True
-	isOn = True
-	currentPower = 0
-	maxPower = 2000
+	_isSwitchable = False
+	_isOn: Feeder = None
+	currentPower: Feeder = 0
+	maxPower: Feeder = 2000
+
+	def __init__(self, currentPower, maxPower, isOnFeeder=None):
+		self.currentPower = currentPower
+		self.maxPower = maxPower
+		if isOnFeeder is not None:
+			self._isOn = isOnFeeder
+			self._isSwitchable = True
+		else:
+			self._isSwitchable = False
 
 	def setCurrentPower(self, currentPower):
 		if len(self.previousPower)>=CYCLE_HISTORY:
@@ -21,12 +52,14 @@ class OpenHEMSNode:
 		self.currentPower = currentPower
 
 	def getCurrentPower(self):
-		if not self.isOn() and self.currentPower==0:
-			print("Warning : ",self.id," is Off but current power=",self.currentPower)
-		return self.currentPower
+		currentPower = self.currentPower.getValue()
+		if self._isSwitchable and not self.isOn() and currentPower!=0:
+			print("Warning : ",self.id," is Off but current power=",currentPower)
+		print("OpenHEMSNode.getCurrentPower() = ", currentPower)
+		return currentPower
 
 	def getMaxPower(self):
-		return self.maxPower
+		return self.maxPower.getValue()
 
 	def estimateNextPower(self):
 		"""Estimate what could be the next value of currentPower if there is no change
@@ -60,23 +93,29 @@ class OpenHEMSNode:
 	def isSwitchable(self):
 		"""
 		"""
-		return True
+		return self._isSwitchable
 	def isOn(self):
 		"""
 		"""
-		return True
+		print("OpenHEMSNode.isOn(",self.id,")")
+		if self._isSwitchable:
+			return self._isOn.getValue()
+		else:
+			return True
 	def switchOn(self, connect: bool) -> bool:
 		"""
 		May not work if it is impossible (No relay) or if it failed.
 		
 		return bool: False if fail to switchOn/switchOff
 		"""
-		if isSwitchable:
+		if self._isSwitchable:
 			return self.network.network_updater.switchOn(connect, self.params)
 		else:
 			return connect # Consider node is always on network
 
 class HomeStateUpdater:
+	cached_ids = dict()
+	refresh_id = 0
 
 	def getNetwork(self):
 		print("HomeStateUpdater.getNetwork() : To implement in sub-class")
@@ -86,32 +125,40 @@ class HomeStateUpdater:
 
 class OpenHEMSNetwork:
 
-	inout = dict()
-	out = dict()
+	inout = []
+	out = []
 	network_updater: HomeStateUpdater = None
 
+	def print(self):
+		print("OpenHEMSNetwork(")
+		print(" IN : ")
+		for elem in self.inout:
+			print("  - ", elem.id)
+		print(" OUT : ")
+		for elem in self.out:
+			print("  - ", elem.id)
+		print(")")
+	
 	def __init__(self, network_updater: HomeStateUpdater):
 		self.network_updater = network_updater
 
-	def createNode(params: dict) -> OpenHEMSNode:
-		elem = None
-		type = params['type']
-		if type=="InOutNode":
-			elem = InOutNode(params['maxPower'], params['minPower'], params['powerMargin'])
-			self.inout[elem.id] = elem
-		else:
-			print("Error : OpenHEMSNode.create(",params,") : Unknwon type.")
-			exit(1);
-		elem.id = elem['id']
-		elem.params = params
+	def addNode(self, elem: OpenHEMSNode, inNode: bool) -> OpenHEMSNode:
+
 		elem.network = self
-		self.elems[elem.id] = elem
+		if inNode:
+			self.inout.append(elem)
+		else:
+			self.out.append(elem)
 		return elem
 
 	def getCurrentPower(self):
 		pow = 0
 		for elem in self.inout:
-			pow += elem.getCurrentPower()
+			p = elem.getCurrentPower()
+			if isinstance(p, str):
+				print("Error: power as string : ", p)
+				exit(1)
+			pow += p
 		return pow
 	def getCurrentMaxPower(self):
 		pow = 0
@@ -127,7 +174,7 @@ class OpenHEMSNetwork:
 		pow = 0
 		for elem in self.inout:
 			if elem.isOn():
-				pow += elem.marginPower
+				pow += elem.getMarginPower()
 		return pow
 	def getMarginPowerOn(self):
 		"""
@@ -174,11 +221,11 @@ class InOutNode(OpenHEMSNode):
 	param maxPower: positive value, max power we can consume at a time.
 	param minPower: negative value if we can sell or ther is battery, 0 overwise.
 	"""
-	def __init__(self, maxPower, minPower=0, powerMargin=POWER_MARGIN) -> None:
+	def __init__(self, currentPower, maxPower, minPower, marginPower) -> None:
 		# isAutoAdatative: bool, isControlable: bool, isModulable: bool, isCyclic: bool
 		self.previousPower = deque()
-		self.currentPower = 0
-		self.powerMargin = POWER_MARGIN
+		self.currentPower = currentPower
+		self.marginPower = marginPower
 		self.maxPower = maxPower
 		self.minPower = minPower
 
@@ -188,17 +235,20 @@ class InOutNode(OpenHEMSNode):
 		return bool: true if 'power' respects constraints
 		"""
 		if power is None:
-			power = self.currentPower
-		if power+self.powerMargin>self.maxPower:
-			return false
-		if power-self.powerMargin<self.minPower:
-			return false
-		return true
+			power = self.currentPower.getValue()
+
+		if power+self.marginPower.getValue()>self.maxPower.getValue():
+			return False
+		if power-self.marginPower.getValue()<self.minPower.getValue():
+			return False
+		return True
 
 	def getCurrentMaxPower(self):
-		return self.maxPower
+		return self.maxPower.getValue()
 	def getCurrentMinPower(self):
-		return self.minPower
+		return self.minPower.getValue()
+	def getMarginPower(self):
+		return self.marginPower.getValue()
 
 	def getSafetyLevel(self):
 		"""Get a int value representing how safe is the current power value
@@ -219,14 +269,14 @@ class InOutNode(OpenHEMSNode):
 		return 3
 
 class PublicPowerGrid(InOutNode):
-	def __init__(self, maxPower, minPower=0, powerMargin=POWER_MARGIN) -> None:
-		super()
+	def __init__(self, currentPower, maxPower, minPower, marginPower) -> None:
+		super().__init__(currentPower, maxPower, minPower, marginPower)
 
 class SolarPanel(InOutNode):
-	def __init__(self, maxPower, minPower=0, powerMargin=POWER_MARGIN) -> None:
-		super()
+	def __init__(self, currentPower, maxPower, minPower, marginPower) -> None:
+		super().__init__(currentPower, maxPower, minPower, marginPower)
 	def getCurrentMaxPower(self):
-		return self.currentPower
+		return self.currentPower.getValue()
 
 		
 """

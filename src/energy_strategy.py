@@ -72,7 +72,7 @@ class OffPeakStrategy(EnergyStrategy):
 			wait = OffPeakStrategy.MIDNIGHT-now+nextTime
 		else:
 			wait = nextTime-now
-		print("getTimeToWait(",now,", ",nextTime,") = ",wait)
+		# print("getTimeToWait(",now,", ",nextTime,") = ",wait)
 		return wait
 		
 	
@@ -110,10 +110,13 @@ class OffPeakStrategy(EnergyStrategy):
 
 	def switchOffAll(self):
 		print("OffPeakStrategy.switchOffAll()")
+		self.network.print()
+		powerMargin = self.network.getCurrentPower()
+		self.network.print()
 		ok = True
 		for elem in self.network.out:
-			if not elem.switchOn(False):
-				print("Warning : Fail to switch of ",elem.id)
+			if elem.isSwitchable and not elem.switchOn(False):
+				print("Warning : Fail to switch off ",elem.id)
 				ok = False
 		return ok
 
@@ -126,7 +129,7 @@ class OffPeakStrategy(EnergyStrategy):
 		if powerMargin<0:
 			return
 		for elem in self.network.out:
-			if not elem.isOn():
+			if elem.isSwitchable and not elem.isOn():
 				if done==0: # Do just one at each loop to check Network constraint
 					if elem.switchOn(True):
 						print("Info : Switch on ",elem.id," successfully")

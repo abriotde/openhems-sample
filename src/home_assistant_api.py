@@ -1,16 +1,22 @@
 #!/usr/bin/env python3
-
+import inspect
 import datetime
 import time
 import pandas as pd
 from requests import get, post
 import yaml
-from openhems_node import OpenHEMSNode, HomeStateUpdater, OpenHEMSNetwork
+from openhems_node import *
+from typing import Final
 
+POWER_MARGIN: Final[int] = 10 # Number of cycle we keep history
 
 todays_Date = datetime.date.fromtimestamp(time.time())
 date_in_ISOFormat = todays_Date.isoformat()
 
+class HATypeExcetion(Exception):
+    def __init__(self, message, defaultValue):
+        self.message = message
+        self.defaultValue = defaultValue
 
 class HomeAssistantAPI(HomeStateUpdater):
 
@@ -19,6 +25,7 @@ class HomeAssistantAPI(HomeStateUpdater):
 			with open(conf, 'r') as file:
 				print("Load YAML configuration from '"+conf+"'")
 				conf = yaml.load(file, Loader=yaml.FullLoader)
+		self.conf = conf
 		apiConf = conf['api']
 		self.api_url = apiConf["url"]
 		self.token = apiConf["long_lived_token"]
@@ -27,15 +34,130 @@ class HomeAssistantAPI(HomeStateUpdater):
 			elem['id'] = id
 			self.elems[id] = elem
 		self._elemsKeysCache = None
+		self.cached_ids = dict()
+		self.refresh_id = 0
+
+	def getHANodes(self):
+		"""
+		Get all nodes according to Home-Assistants
+		"""
+		response = self.callAPI("/states")
+		ha_elements = dict()
+		for e in response:
+			# print(e)
+			entity_id = e['entity_id']
+			ha_elements[entity_id] = e
+			state = e['state']
+			attributes = e['attributes']
+			# print(entity_id, state, attributes)
+		# print("getHANodes() = ", ha_elements)
+		return ha_elements
+
+	def getFeeder(self, conf, kkey, ha_elements, params, default_value=None) -> Feeder:
+		feeder = None
+		if kkey in conf.keys():
+			key = conf[kkey]
+			if isinstance(key, str) and key in ha_elements.keys():
+				print("SourceFeeder(",key,")")
+				feeder = SourceFeeder(key, self, params)
+			else:
+				print("ConstFeeder(",key,")")
+				feeder = ConstFeeder(key)
+		elif default_value is None:
+			print("ERROR : HomeAssistantAPI.getFeeder missing configuration key '",kkey,"'  for network in YAML file ")
+			exit(1)
+		else:
+			feeder = ConstFeeder(default_value)
+		return feeder
 
 	def getNetwork(self) -> OpenHEMSNetwork:
+		# self.explore()
 		self.network = OpenHEMSNetwork(self)
-		self.initStates()
-		print("HomeAssistantAPI.getNetwork() : To implement in sub-class")
+		ha_elements = self.getHANodes()
+		network_conf = self.conf["network"]
+		# init Feeders
+		for e in network_conf["in"]:
+			classname = e["class"].lower()
+			currentPower = self.getFeeder(e, "currentPower", ha_elements, "int")
+			powerMargin = self.getFeeder(e, "powerMargin", ha_elements, "int", POWER_MARGIN)
+			maxPower = self.getFeeder(e, "maxPower", ha_elements, "int")
+			minPower = self.getFeeder(e, "minPower", ha_elements, "int", 0)
+			node = None
+			if classname == "publicpowergrid":
+				node = PublicPowerGrid(currentPower, maxPower, minPower, powerMargin)
+			elif classname == "solarpanel":
+				node = SolarPanel(currentPower, maxPower, minPower, powerMargin)
+			else:
+				print("ERROR : HomeAssistantAPI.getNetwork : Unknown classname '",classname,"'")
+				exit(1)
+			if "id" in e.keys():
+				node.id = e["id"]
+			# print(node)
+			self.network.addNode(node, True)
+		for e in network_conf["out"]:
+			classname = e["class"].lower()
+			node = None
+			if classname == "switch":
+				currentPower = self.getFeeder(e, "currentPower", ha_elements, "int")
+				isOn = self.getFeeder(e, "isOn", ha_elements, "bool", True)
+				maxPower = self.getFeeder(e, "maxPower", ha_elements, "int", 2000)
+				node = OpenHEMSNode(currentPower, maxPower, isOn)
+			else:
+				print("ERROR : HomeAssistantAPI.getNetwork : Unknown classname '",classname,"'")
+				exit(1)
+			if "id" in e.keys():
+				node.id = e["id"]
+			# print(node)
+			self.network.addNode(node, False)
+		self.network.print()
 		return self.network
 
+
+	@staticmethod
+	def toType(type, value):
+		if type=="int":
+			if isinstance(value, int):
+				return value
+			elif isinstance(value, str):
+				if value=="unavailable":
+					raise HATypeExcetion("WARNING : Unknown value for '"+value+"'", 0)
+				else:
+					return int(value)
+		elif type=="bool":
+			if isinstance(value, int):
+				return value>0
+			elif isinstance(value, str):
+				return value.lower() in ["on", "true", "1", "vrai"]
+			elif isinstance(value, bool):
+				return value
+		elif type=="str":
+			if isinstance(value, int):
+				return str(value)
+			elif isinstance(value, str):
+				return value
+		else:
+			print(".toType(",type,",",value,") : Unknwon type")
+			exit(1)
+		return value
 	def updateNetwork(self):
-		print("HomeAssistantAPI.updateNetwork() : To implement in sub-class")
+		response = self.callAPI("/states")
+		if len(self.cached_ids) == 0:
+			print("Warning : HomeAssistantAPI.updateNetwork() : No entities to update.")
+			return True
+		ha_elements = dict()
+		for e in response:
+			# print(e)
+			entity_id = e['entity_id']
+			if entity_id in self.cached_ids:
+				val = e["state"]
+				try:
+					value = self.toType(self.cached_ids[entity_id][1], val)
+				except HATypeExcetion as e:
+					print("ERROR: For '",entity_id," : '",e.message)
+					value = e.defaultValue
+				self.cached_ids[entity_id][0] = value
+				print("HomeAssistantAPI.updateNetwork(",entity_id,") = ", value)
+		self.refresh_id += 1
 
 	def _getElemsKeysCache(self, id, elem=None):
 		"""
@@ -76,7 +198,7 @@ class HomeAssistantAPI(HomeStateUpdater):
 				# print("getElemById(",id,") => ",self._elemsKeysCache)
 		return self._getElemsKeysCache(id)
 
-	def initStates(self):
+	def explore(self):
 		response = self.callAPI("/states")
 		# elements = dict()
 		for e in response:
@@ -108,11 +230,11 @@ class HomeAssistantAPI(HomeStateUpdater):
 						print(domain, elem_id, state)
 						self.getElemById(elem_id)
 		# print(elements)
-	# TODO
-	def updateStates(self):
+
+	def switchOn(self, isOn, params):
+		# TODO
 		response = self.callAPI("/states")
-		print("TODO...")
-		exit(0)
+		print("HomeAssistantAPI.switchOn() : TODO...")
 
 	def getServices(self):
 		response = self.callAPI("/services")
