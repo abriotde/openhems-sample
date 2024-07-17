@@ -1,6 +1,6 @@
 api:
   url: http://192.168.1.202:8123/api
-  long_lived_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI5ZmRmMDUwY2JjMmY0MmUyOGNkMzQ2ZDNlYTAzMDZmYyIsImlhdCI6MTcxOTg2NjkzMiwiZXhwIjoyMDM1MjI2OTMyfQ.fNI7cZZ7ucn2bcI78YdjPOR7xKBASQtyWwA826DSSog"
+  long_lived_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJiNDQ1OGY2M2JkZmI0MWNhYWZjNDdmODNhNzAzNmRhYSIsImlhdCI6MTcyMTIzNzg2MCwiZXhwIjoyMDM2NTk3ODYwfQ.oNWKj6JypNa8CBFqyIs5sHyeLybbSfZxJ6y85PQrPu4"
   ssl_certificate: /etc/letsencrypt/live/openproduct.freeboxos.fr/cert.pem
 server:
   loop_delay: 30
@@ -10,9 +10,9 @@ server:
     - 22h - 6h
 network:
   in:
-    - {id: ContratTempo, currentPower: sensor.lixee_zlinky_tic_puissance_apparente, powerMargin: 1000, maxPower: 10000, minPower: 0, class: PublicPowerGrid, contract: {type: sensor, elem: rte_tempo, value: couleur_actuelle_visuel, class: RTETempoContract, params: {}} }
+    - {id: linky, currentPower: sensor.lixee_zlinky_tic_puissance_apparente, powerMargin: 1000, maxPower: 10000, minPower: 0, class: PublicPowerGrid, contract: {type: sensor, elem: rte_tempo, value: couleur_actuelle_visuel, class: RTETempoContract, params: {}} }
   out:
-    - {id: voiture, class: switch, isOn: switch.tz3000_2putqrmw_ts011f_switch, currentPower: sensor.tz3000_2putqrmw_ts011f_puissance, maxPower:2000}
+    - {id: voiture, class: switch, isOn: switch.tz3000_2putqrmw_ts011f_carcharger, currentPower: sensor.tz3000_2putqrmw_ts011f_puissance_2, maxPower:2000}
 elems:
   tz3000_2putqrmw_ts011f: {use: carCharger, class: CarCharger}
   rte_tempo: {use: input, class: RTETempoContract}
