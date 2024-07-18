@@ -127,7 +127,7 @@ sudo nginx -t
 sudo service nginx reload
 
 echo "Install OpenHEMS server"
-sudo apt install -y python3-pandas python3-yaml
+sudo apt install -y python3-pandas python3-yaml python3-pyramid python3-pyramid-jinja2
 
 exit
 

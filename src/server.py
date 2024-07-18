@@ -1,37 +1,23 @@
 #!/usr/bin/env python3
+
 import time
 import re
 from datetime import datetime
-import yaml
-from energy_strategy import EnergyStrategy
-from home_assistant_api import HomeAssistantAPI
-from energy_strategy import OffPeakStrategy
+from energy_strategy import EnergyStrategy,OffPeakStrategy
 
 class OpenHEMSServer:
 
-	def __init__(self, yaml_conf: str) -> None:
-		
-		with open(yaml_conf, 'r') as file:
-			print("Load YAML configuration from '"+yaml_conf+"'")
-			self.conf = yaml.load(file, Loader=yaml.FullLoader)
-			serverConf = self.conf['server']
-			networkUpdater = None
-			networkSource = serverConf["network"].lower()
-			if networkSource=="homeassistant":
-				networkUpdater = HomeAssistantAPI(self.conf)
-			else:
-				print("ERROR : OpenHEMSServer() : Unknown strategy '",strategy,"'")
-				exit(1)
-			self.network = networkUpdater.getNetwork()
-			self.loop_delay = serverConf["loop_delay"]
-			strategy = serverConf["strategy"].lower()
-			strategy_params = serverConf["strategy_params"]
-			if strategy=="offpeak":
-				params = [p.split("-") for p in strategy_params]
-				self.strategy = OffPeakStrategy(self.network, params)
-			else:
-				print("ERROR : OpenHEMSServer() : Unknown strategy '",strategy,"'")
-				exit(1)
+	def __init__(self, network, serverConf) -> None:
+		self.network = network
+		self.loop_delay = serverConf["loop_delay"]
+		strategy = serverConf["strategy"].lower()
+		strategy_params = serverConf["strategy_params"]
+		if strategy=="offpeak":
+			params = [p.split("-") for p in strategy_params]
+			self.strategy = OffPeakStrategy(self.network, params)
+		else:
+			print("ERROR : OpenHEMSServer() : Unknown strategy '",strategy,"'")
+			exit(1)
 
 	def loop(self):
 		print("OpenHEMSServer.loop()")
