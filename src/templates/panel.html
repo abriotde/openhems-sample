@@ -68,10 +68,14 @@
 </head>
 <body>
 <h1>Devices program</h1>
-<div id="network"></div>
+<div id="network">
+</div>
 <input id="valid" type="image" src="../../img/correct_32.ico" onclick="onSave()" ></input>
 <script>
-var nodes = {{ nodes }};
+var nodes = {
+	car: {name:"Voiture", duration:145, timeout:"12:00"},
+	washing_machine: {name:"Lave-vaiselle", duration:0, timeout:"0"}
+};
 var network = document.getElementById("network");
 function setDevicesProgramm(nodes) {
 	network.innerHTML="";
