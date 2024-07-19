@@ -76,9 +76,9 @@ var network = document.getElementById("network");
 function setDevicesProgramm(nodes) {
 	network.innerHTML="";
 	var i = 0;
-	console.log("nodes : ",nodes);
+	// console.log("nodes : ",nodes);
 	for (const [nodeid, node] of Object.entries(nodes)) {
-		console.log("node : ",nodeid," => ",node);
+		// console.log("node : ",nodeid," => ",node);
 		let nodeDiv = document.createElement("div");
 		var id ="node"+nodeid;
 		nodeDiv.id = "div"+id;
@@ -138,7 +138,21 @@ function onSave() {
 		nodes[id] = {name: label, duration: duration, timeout: timeout}
 	}
 	console.log("onSave() : nodes=",nodes);
-	document.getElementById("valid").src="../../img/correct_32.ico";
+	var xhr = new XMLHttpRequest();
+	var url = "/states";
+	xhr.open("POST", url, true);
+	// xhr.setRequestHeader("Content-Type", "application/json");
+	// xhr.setRequestHeader("Content-Type", "multipart/form-data");
+	xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+	xhr.onreadystatechange = function () {
+    	if (xhr.readyState === 4 && xhr.status === 200) {
+        	var json = JSON.parse(xhr.responseText);
+        	console.log("Response : ",json);
+        	setDevicesProgramm(json);
+        	document.getElementById("valid").src="../../img/correct_32.ico";
+    	}
+	};
+	xhr.send(JSON.stringify(nodes));
 }
 function showMe (it, box) {
 	var vis = (box.checked) ? "inline" : "none";

@@ -1,22 +1,18 @@
 #!/usr/bin/env python3
-
-import json
 from wsgiref.simple_server import make_server
 from pyramid.config import Configurator
 from pyramid.response import Response
 from pyramid.view import view_config
+import json
 from json import JSONEncoder
 def wrapped_default(self, obj):
     return getattr(obj.__class__, "__json__", wrapped_default.default)(obj)
 wrapped_default.default = JSONEncoder().default
-   
 # apply the patch
 JSONEncoder.original_default = JSONEncoder.default
 JSONEncoder.default = wrapped_default
 
-class OpenHEMSJSONEncoder(JSONEncoder):
-	def default(self, o):
-		return o.__dict__
+from schedule import OpenHEMSSchedule
 
 openHEMSContext = None
 
@@ -32,10 +28,18 @@ def panel(request):
     renderer='json'
 )
 def states(request):
-	# states = {}
+	print("GET:", vars(request.POST))
+	# datas = json.loads(request.POST["_items"][0]);
+	for id, node in request.POST.items():
+		datas = json.loads(id)
+	for id, node in datas.items():
+		if id in openHEMSContext.schedule:
+			openHEMSContext.schedule[id] = OpenHEMSSchedule(id, node["name"], node["duration"], node["timeout"])
+		print("node:", id, node)
+	# print("nodes:", datas)
 	# for id, node in openHEMSContext.schedule.items():
 	# 	states[id] = json.dumps(node)
-	return json.dumps(openHEMSContext.schedule)
+	return openHEMSContext.schedule
 
 @view_config(
     route_name='schedule',

@@ -8,23 +8,10 @@ from queue import Queue
 import json
 import yaml
 from home_assistant_api import HomeAssistantAPI
+from schedule import OpenHEMSSchedule
 
 yaml_conf = "../openhems.yaml"
 
-class OpenHEMSSchedule:
-	def __init__(self, name:str, id: str):
-		duration = 0
-		timeout = 0
-		self.name = name
-		self.timeout = timeout
-		self.duration = duration
-
-	def schedule(self, timeout, duration):
-		self.timeout = timeout
-		self.duration = duration
-
-	def __json__(self):
-		return {"name":self.name, "duration":self.duration, "timeout":self.timeout}
 
 
 class OpenHEMSApplication:
