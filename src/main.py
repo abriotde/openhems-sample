@@ -12,18 +12,19 @@ from home_assistant_api import HomeAssistantAPI
 yaml_conf = "../openhems.yaml"
 
 class OpenHEMSSchedule:
-	def __init__(self, id: str):
+	def __init__(self, name:str, id: str):
 		duration = 0
-		deadline = 0
-		self.deadline = deadline
+		timeout = 0
+		self.name = name
+		self.timeout = timeout
 		self.duration = duration
 
-	def schedule(self, deadline, duration):
-		self.deadline = deadline
+	def schedule(self, timeout, duration):
+		self.timeout = timeout
 		self.duration = duration
 
-	def toJson(self):
-		return json.dumps(self, default=lambda o: o.__dict__)
+	def __json__(self):
+		return {"name":self.name, "duration":self.duration, "timeout":self.timeout}
 
 
 class OpenHEMSApplication:
@@ -46,7 +47,7 @@ class OpenHEMSApplication:
 			network = networkUpdater.getNetwork()
 		for elem in conf["network"]["out"]:
 			id = elem["id"]
-			node = OpenHEMSSchedule(id)
+			node = OpenHEMSSchedule(id, id)
 			schedule[id] = node
 
 		self.server = OpenHEMSServer(network, serverConf)

@@ -6,6 +6,13 @@ from pyramid.config import Configurator
 from pyramid.response import Response
 from pyramid.view import view_config
 from json import JSONEncoder
+def wrapped_default(self, obj):
+    return getattr(obj.__class__, "__json__", wrapped_default.default)(obj)
+wrapped_default.default = JSONEncoder().default
+   
+# apply the patch
+JSONEncoder.original_default = JSONEncoder.default
+JSONEncoder.default = wrapped_default
 
 class OpenHEMSJSONEncoder(JSONEncoder):
 	def default(self, o):
@@ -18,17 +25,17 @@ openHEMSContext = None
     renderer='templates/panel.jinja2'
 )
 def panel(request):
-    return { "nodes": json.dumps(OpenHEMSJSONEncoder().encode(openHEMSContext.schedule)) }
+    return { "nodes": openHEMSContext.schedule }
 
 @view_config(
     route_name='states',
     renderer='json'
 )
 def states(request):
-	states = {}
-	for id, node in openHEMSContext.schedule.items():
-		states[id] = node.toJson()
-	return states
+	# states = {}
+	# for id, node in openHEMSContext.schedule.items():
+	# 	states[id] = json.dumps(node)
+	return json.dumps(openHEMSContext.schedule)
 
 @view_config(
     route_name='schedule',
@@ -36,6 +43,10 @@ def states(request):
 )
 def schedule(request):
     return {"schedule": True}
+
+# @view_config(name='favicon.ico', route_name='../img/favicon.ico')
+# def favicon_view(request):
+#     return _fi_response
 
 class OpenhemsHTTPServer():
 	def print_context(self):
@@ -52,6 +63,8 @@ class OpenhemsHTTPServer():
 		    config.add_route('panel', '/')
 		    config.add_route('states', '/states')
 		    config.add_route('schedule', '/schedule')
+		    # config.add_route('favicon.ico', '/favicon.ico')
+		    config.add_static_view(name='img', path='web:../img')
 		    config.scan()
 		    app = config.make_wsgi_app()
 		server = make_server('0.0.0.0', 8000, app)
