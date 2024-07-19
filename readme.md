@@ -1,6 +1,24 @@
+# Presentation
+
+This software is an Open-Source Home Energy Management System based on [Home-Assistant](https://www.home-assistant.io/) installation. It all run locally witch is good for privacy and is customizable.
+
+This software is usefull to get an as smart as possible management of power consumption and production. This should lead to cost reduction. 
+
+- If you have a solar panel with battery, it will allow you to have smaller battery (witch is the most expensive part).
+
+- If you have a public power grid source with variable cost, it will allow you to consume when it's lower cost.
+
+Warning : This software is under activ developpment but not functionally.
+All contribution to the software are welcome. Please contact alberic.delacrochais@protonmail.com for all questions.
+
 # Prerequisites
 
-* A server we named "homeassistant" installed with debian based Linux OS connected to lan.
+* Controlable power consuption: 
+ - devices witch start on plug like electrique car
+ - connected devices like washing-machine.
+
+* A server we named "homeassistant" installed with debian based Linux OS connected to local lan. The script scripts/home-assistant.sh let you to install Home-Assistant. But if you have already a Home-Assistant install use it.
+
 * In your internet box
  - Create a domain name that we named $DOMAINNAME.
  - Redirect ports 80 and 443 to your homeassistant server.
