@@ -97,7 +97,7 @@ echo "Install HTTPS : reverse-proxy NginX"
 sudo apt install -y nginx software-properties-common python3-certbot-nginx
 sudo certbot --nginx
 cat >reverse-proxy-ssl.conf <<EOF
-map $http_upgrade $connection_upgrade {  
+map $http_upgrade $connection_upgrade {
     default upgrade;
     ''      close;
 }

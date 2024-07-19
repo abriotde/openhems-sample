@@ -89,16 +89,16 @@ function setDevicesProgramm(nodes) {
 			min = node.duration%60;
 			hour = (node.duration-min)/60;
 			node.duration=(""+hour).padStart(2,'0')+":"+(""+min).padStart(2,'0');
-			console.log("Duration:", node.duration)
+			// console.log("Duration:", node.duration)
 		}
-		nodeDiv.innerHTML='<label for="'+id+'"> '+node.name+':</label>'
+		nodeDiv.innerHTML='<label for="'+id+'"> '+node.name+'</label>:'
 			+'<label class="switch">'
 			+  '<input type="checkbox" name="'+id+'" id="'+id+'" " onclick="showMe(\''+id+'_conf\', this)"'+ checked+'>'
 			+  '<span class="slider round"></span>'
 			+'</label>'
 			+'<span id="'+id+'_conf" '+display+'>'
-			+	' Duration: <input type="time" id="'+id+'_duration" name="'+id+'_duration" value="'+node.duration+'" onchange="changeSthg()">'
-			+	' Timeout: <input type="time" id="'+id+'_timeout" name="'+id+'_timeout" value="'+node.timeout+'" onchange="changeSthg()">'
+			+	' Duration (hr:min): <input type="time" id="'+id+'_duration" name="'+id+'_duration" value="'+node.duration+'" onchange="changeSthg()">'
+			+	' Timeout (Next hr:min): <input type="time" id="'+id+'_timeout" name="'+id+'_timeout" value="'+node.timeout+'" onchange="changeSthg()">'
 			+'</span>';
 		network.appendChild(nodeDiv);
 		i++;
@@ -106,16 +106,41 @@ function setDevicesProgramm(nodes) {
 }
 setDevicesProgramm(nodes);
 function changeSthg() {
-	console.log("changeSthg()");
+	// console.log("changeSthg()");
 	document.getElementById("valid").src="../../img/save_32.ico";
 }
 function onSave() {
-	console.log("onSave()");
+	// console.log("onSave()");
+	nodes = {};
+	for (const divnode of network.children) {
+		// console.log(divnode);
+		const id = divnode.id.substring(7);
+		// console.log("id:",id);
+		const label = divnode.children[0].innerHTML;
+		// console.log("label:",label);
+		const checkbox = divnode.children[1].children[0];
+		// console.log("checkbox:",checkbox);
+		if (checkbox.checked) {
+			durationVal = divnode.children[2].children[0].value;
+			if (durationVal=="") duration = 0;
+			else {
+				const vals = durationVal.split(":");
+				duration = parseInt(vals[0])*60 + parseInt(vals[1]);
+			}
+			timeout = divnode.children[2].children[1].value;
+			if (timeout=="") timeout = 0;
+		} else {
+			duration = 0;
+			timeout = 0;
+		}
+		nodes[id] = {name: label, duration: duration, timeout: timeout}
+	}
+	console.log("onSave() : nodes=",nodes);
 	document.getElementById("valid").src="../../img/correct_32.ico";
 }
 function showMe (it, box) {
 	var vis = (box.checked) ? "inline" : "none";
-	console.log("ShowMMe(",vis,")");
+	// console.log("ShowMMe(",vis,")");
 	document.getElementById(it).style.display = vis;
 	changeSthg();
 }

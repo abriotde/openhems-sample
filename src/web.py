@@ -1,34 +1,51 @@
 #!/usr/bin/env python3
 
+import json
 from wsgiref.simple_server import make_server
 from pyramid.config import Configurator
 from pyramid.response import Response
 from pyramid.view import view_config
+from json import JSONEncoder
+
+class OpenHEMSJSONEncoder(JSONEncoder):
+	def default(self, o):
+		return o.__dict__
+
+openHEMSContext = None
 
 @view_config(
     route_name='panel',
     renderer='templates/panel.jinja2'
 )
 def panel(request):
-    return {"greet": 'Welcome', "name": 'Akhenaten'}
+    return { "nodes": json.dumps(OpenHEMSJSONEncoder().encode(openHEMSContext.schedule)) }
 
 @view_config(
     route_name='states',
     renderer='json'
 )
 def states(request):
-    return {"states": 1, "b": 2}
+	states = {}
+	for id, node in openHEMSContext.schedule.items():
+		states[id] = node.toJson()
+	return states
 
 @view_config(
     route_name='schedule',
     renderer='json'
 )
 def schedule(request):
-    return {"schedule": 1, "b": 2}
+    return {"schedule": True}
 
 class OpenhemsHTTPServer():
-	def __init__(self):
-		pass
+	def print_context(self):
+		print("context", openHEMSContext)
+
+	def __init__(self, schedule):
+		global openHEMSContext
+		self.schedule = schedule
+		openHEMSContext = self
+
 	def run(self):
 		with Configurator() as config:
 		    config.include('pyramid_jinja2')
