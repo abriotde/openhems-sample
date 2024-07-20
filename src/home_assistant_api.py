@@ -94,19 +94,23 @@ class HomeAssistantAPI(HomeStateUpdater):
 				node.id = e["id"]
 			# print(node)
 			self.network.addNode(node, True)
+		i = 0
 		for e in network_conf["out"]:
 			classname = e["class"].lower()
 			node = None
+			if "id" in e.keys():
+				id = e["id"]
+			else:
+				id = "node_"+str(i)
+				i += 1
 			if classname == "switch":
 				currentPower = self.getFeeder(e, "currentPower", ha_elements, "int")
 				isOn = self.getFeeder(e, "isOn", ha_elements, "bool", True)
 				maxPower = self.getFeeder(e, "maxPower", ha_elements, "int", 2000)
-				node = OpenHEMSNode(currentPower, maxPower, isOn)
+				node = OutNode(id, currentPower, maxPower, isOn)
 			else:
 				print("ERROR : HomeAssistantAPI.getNetwork : Unknown classname '",classname,"'")
 				exit(1)
-			if "id" in e.keys():
-				node.id = e["id"]
 			# print(node)
 			self.network.addNode(node, False)
 		self.network.print()
@@ -232,16 +236,24 @@ class HomeAssistantAPI(HomeStateUpdater):
 		# print(elements)
 
 	def switchOn(self, isOn, node):
-		if isOn: expectStr = "on"
-		else: expectStr = "off"
-		entity_id = node._isOn.nameid
-		data = {"entity_id": entity_id}
-		response = self.callAPI("/services/switch/turn_"+expectStr, data)
-		if len(response)==0: # Case there is no change in switch position
-			return True
-		ok = response[0]["state"]==expectStr
-		print("HomeAssistantAPI.switch"+expectStr+"(",entity_id,") = ", ok)
-		return ok
+		"""
+		return: True if the switch is after on, False else
+		"""
+		if isOn!=node.isOn():
+			if isOn: expectStr = "on"
+			else: expectStr = "off"
+			entity_id = node._isOn.nameid
+			data = {"entity_id": entity_id}
+			response = self.callAPI("/services/switch/turn_"+expectStr, data)
+			if len(response)==0: # Case there is no change in switch position
+				# print("HomeAssistantAPI.switch"+expectStr+"(",entity_id,") : Nothing to do.")
+				return isOn
+			ok = response[0]["state"]==expectStr
+			# print("HomeAssistantAPI.switch"+expectStr+"(",entity_id,") = " ,ok, "(", response[0]["state"], ")")
+			return isOn if ok else (not isOn)
+		else:
+			# print("HomeAssistantAPI.switchOn(",isOn,", ",entity_id,") : Nothing to do.")
+			return isOn
 
 	def getServices(self):
 		response = self.callAPI("/services")

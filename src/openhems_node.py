@@ -2,6 +2,7 @@
 from enum import Enum
 from collections import deque
 from typing import Final
+from schedule import OpenHEMSSchedule
 CYCLE_HISTORY: Final[int] = 10 # Number of cycle we keep history
 
 class Feeder:
@@ -35,6 +36,9 @@ class OpenHEMSNode:
 	_isOn: Feeder = None
 	currentPower: Feeder = 0
 	maxPower: Feeder = 2000
+
+	def setId(self, id):
+		self.id = id.strip().replace(" ", "_")
 
 	def __init__(self, currentPower, maxPower, isOnFeeder=None):
 		self.currentPower = currentPower
@@ -97,7 +101,7 @@ class OpenHEMSNode:
 	def isOn(self):
 		"""
 		"""
-		print("OpenHEMSNode.isOn(",self.id,")")
+		# print("OpenHEMSNode.isOn(",self.id,")")
 		if self._isSwitchable:
 			return self._isOn.getValue()
 		else:
@@ -111,6 +115,7 @@ class OpenHEMSNode:
 		if self._isSwitchable:
 			return self.network.network_updater.switchOn(connect, self)
 		else:
+			print("Warning : try to switchOn/Off a not switchable device : ",self.id)
 			return connect # Consider node is always on network
 
 class HomeStateUpdater:
@@ -138,9 +143,17 @@ class OpenHEMSNetwork:
 		for elem in self.out:
 			print("  - ", elem.id)
 		print(")")
-	
+
 	def __init__(self, network_updater: HomeStateUpdater):
 		self.network_updater = network_updater
+
+	def getSchedule(self):
+		schedule = dict()
+		for node in self.out:
+			id = node.id
+			sc = node.getSchedule()
+			schedule[id] = sc
+		return schedule
 
 	def addNode(self, elem: OpenHEMSNode, inNode: bool) -> OpenHEMSNode:
 
@@ -214,6 +227,17 @@ class OpenHEMSNetwork:
 
 	def updateStates(self):
 		self.network_updater.updateNetwork()
+
+class OutNode(OpenHEMSNode):
+
+	def __init__(self, id, currentPower, maxPower, isOnFeeder=None):
+		OpenHEMSNode.__init__(self, currentPower, maxPower, isOnFeeder)
+		self.setId(id)
+		self.name = id
+		self.schedule = OpenHEMSSchedule(self.id, id)
+
+	def getSchedule(self):
+		return self.schedule
 
 class InOutNode(OpenHEMSNode):
 	"""

@@ -115,38 +115,48 @@ class OffPeakStrategy(EnergyStrategy):
 		self.network.print()
 		ok = True
 		for elem in self.network.out:
-			if elem.isSwitchable and not elem.switchOn(False):
+			if elem.isSwitchable and elem.switchOn(False):
 				print("Warning : Fail to switch off ",elem.id)
 				ok = False
 		return ok
 
-	def switchOnMax(self):
+	def switchOn(self, node, cycleDuration, doSwitchOn=True):
+		if node.isSwitchable:
+			if node.isOn():
+				lastDuration = node.getSchedule().decreaseTime(cycleDuration)
+				print("Node ",node.id," isOn for ", lastDuration, " more seconds")
+				if lastDuration==0:
+					print("Info : Switch off ",node.id," due to elapsed time.")
+					if node.switchOn(False):
+						print("Warning : Fail switch off ",node.id,".")
+			elif doSwitchOn and node.getSchedule().isScheduled():
+				if node.switchOn(True):
+					print("Info : Switch on ",node.id," successfully.")
+					return True
+				else:
+					print("Warning : Fail switch on ",node.id,".")
+		return False
+
+	def switchOnMax(self, cycleDuration):
 		print("OffPeakStrategy.switchOnMax()")
 		ok = True
 		done = 0
 		todo = 0
 		powerMargin = self.network.getMarginPowerOn()
+		doSwitchOn = True
 		if powerMargin<0:
 			return
 		for elem in self.network.out:
-			if elem.isSwitchable and not elem.isOn():
-				if done==0: # Do just one at each loop to check Network constraint
-					if elem.switchOn(True):
-						print("Info : Switch on ",elem.id," successfully")
-						done += 1
-					else:
-						print("Warning : Fail switch on ",elem.id,".")
-						ok = False
-				else:
-					todo+=1
+			if self.switchOn(elem, cycleDuration, doSwitchOn):
+				doSwitchOn = False # Do just one at each loop to check Network constraint
 		return todo == 0
 
-	def updateNetwork(self):
+	def updateNetwork(self, cycleDuration):
 		if datetime.now()>self.rangeEnd:
 			self.checkRange()
 		if self.inOffpeakRange:
 			# We are in off-peak range hours : switch on all
-			self.switchOnMax()
+			self.switchOnMax(cycleDuration)
 		else: # Sleep untill end. 
 			if self.switchOffAll():
 				self.sleepUntillNextRange()
@@ -162,7 +172,8 @@ class SolarOnlyProductionStrategy(EnergyStrategy):
 	def __init__(self, network: OpenHEMSNetwork):
 		print("SolarOnlyProductionStrategy()")
 		# TODO
-	def updateNetwork(self):
+	def updateNetwork(self, cycleDuration):
+		print("SolarOnlyProductionStrategy.updateNetwork() : TODO")
 		pass
 		# TODO
 
@@ -174,7 +185,9 @@ class SolarNoSellProduction(EnergyStrategy):
 	def __init__(self, network: OpenHEMSNetwork):
 		print("SolarNoSellProduction()")
 		# TODO
-	def updateNetwork(self):
+
+	def updateNetwork(self, cycleDuration):
+		print("SolarNoSellProduction.updateNetwork() : TODO")
 		pass
 		# TODO
 

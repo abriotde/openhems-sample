@@ -19,10 +19,10 @@ class OpenHEMSServer:
 			print("ERROR : OpenHEMSServer() : Unknown strategy '",strategy,"'")
 			exit(1)
 
-	def loop(self):
+	def loop(self, loop_delay):
 		print("OpenHEMSServer.loop()")
 		self.network.updateStates()
-		self.strategy.updateNetwork()
+		self.strategy.updateNetwork(loop_delay)
 
 	# Run an infinite loop where each loop shouldn't last more than loop_delay and will never last less than loop_delay
 	def run(self, loop_delay=0):
@@ -30,7 +30,7 @@ class OpenHEMSServer:
 			loop_delay = self.loop_delay
 		nextloop = time.time() + loop_delay
 		while True:
-			self.loop()
+			self.loop(loop_delay)
 			t = time.time()
 			if t<nextloop:
 				print("OpenHEMSServer.run() : sleep(",(nextloop-t)/60," min)")

@@ -5,6 +5,7 @@ from pyramid.response import Response
 from pyramid.view import view_config
 import json
 from json import JSONEncoder
+# Patch for jsonEncoder
 def wrapped_default(self, obj):
     return getattr(obj.__class__, "__json__", wrapped_default.default)(obj)
 wrapped_default.default = JSONEncoder().default
@@ -28,29 +29,15 @@ def panel(request):
     renderer='json'
 )
 def states(request):
-	print("GET:", vars(request.POST))
-	# datas = json.loads(request.POST["_items"][0]);
 	for id, node in request.POST.items():
 		datas = json.loads(id)
+	# print("datas:", datas)
 	for id, node in datas.items():
 		if id in openHEMSContext.schedule:
-			openHEMSContext.schedule[id] = OpenHEMSSchedule(id, node["name"], node["duration"], node["timeout"])
-		print("node:", id, node)
-	# print("nodes:", datas)
-	# for id, node in openHEMSContext.schedule.items():
-	# 	states[id] = json.dumps(node)
+			openHEMSContext.schedule[id].setSchedule(node["duration"], node["timeout"])
+		else:
+			print("ERROR : node id=", id, " not found.")
 	return openHEMSContext.schedule
-
-@view_config(
-    route_name='schedule',
-    renderer='json'
-)
-def schedule(request):
-    return {"schedule": True}
-
-# @view_config(name='favicon.ico', route_name='../img/favicon.ico')
-# def favicon_view(request):
-#     return _fi_response
 
 class OpenhemsHTTPServer():
 	def print_context(self):
@@ -66,7 +53,6 @@ class OpenhemsHTTPServer():
 		    config.include('pyramid_jinja2')
 		    config.add_route('panel', '/')
 		    config.add_route('states', '/states')
-		    config.add_route('schedule', '/schedule')
 		    # config.add_route('favicon.ico', '/favicon.ico')
 		    config.add_static_view(name='img', path='web:../img')
 		    config.scan()

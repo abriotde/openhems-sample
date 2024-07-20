@@ -8,7 +8,6 @@ from queue import Queue
 import json
 import yaml
 from home_assistant_api import HomeAssistantAPI
-from schedule import OpenHEMSSchedule
 
 yaml_conf = "../openhems.yaml"
 
@@ -32,13 +31,8 @@ class OpenHEMSApplication:
 				print("ERROR : OpenHEMSServer() : Unknown network source type '",networkSource,"'")
 				exit(1)
 			network = networkUpdater.getNetwork()
-		for elem in conf["network"]["out"]:
-			id = elem["id"]
-			node = OpenHEMSSchedule(id, id)
-			schedule[id] = node
-
 		self.server = OpenHEMSServer(network, serverConf)
-		self.webserver = OpenhemsHTTPServer(schedule)
+		self.webserver = OpenhemsHTTPServer(network.getSchedule())
 
 	def run_management_server(self):
 		self.server.run()
@@ -55,5 +49,5 @@ class OpenHEMSApplication:
 		# t.run()
 
 app = OpenHEMSApplication(yaml_conf)
-app.run_web_server()
+app.run()
 

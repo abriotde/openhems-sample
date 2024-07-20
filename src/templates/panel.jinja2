@@ -82,16 +82,17 @@ function setDevicesProgramm(nodes) {
 		let nodeDiv = document.createElement("div");
 		var id ="node"+nodeid;
 		nodeDiv.id = "div"+id;
-		if (node.duration=="0") {
+		duration = Math.floor(node.duration/60); // Keep only minutes, forget seconds.
+		if (duration=="0") {
 			checked	= "";
 			display = " style=\"display:none\"";
 		} else {
 			checked	= " checked ";
 			display = ""
-			min = node.duration%60;
-			hour = (node.duration-min)/60;
-			node.duration=(""+hour).padStart(2,'0')+":"+(""+min).padStart(2,'0');
-			// console.log("Duration:", node.duration)
+			min = duration%60;
+			hour = (duration-min)/60;
+			duration=(""+hour).padStart(2,'0')+":"+(""+min).padStart(2,'0');
+			// console.log("Duration:", duration)
 		}
 		nodeDiv.innerHTML='<label for="'+id+'"> '+node.name+'</label>:'
 			+'<label class="switch">'
@@ -99,7 +100,7 @@ function setDevicesProgramm(nodes) {
 			+  '<span class="slider round"></span>'
 			+'</label>'
 			+'<span id="'+id+'_conf" '+display+'>'
-			+	' Duration (hr:min): <input type="time" id="'+id+'_duration" name="'+id+'_duration" value="'+node.duration+'" onchange="changeSthg()">'
+			+	' Duration (hr:min): <input type="time" id="'+id+'_duration" name="'+id+'_duration" value="'+duration+'" onchange="changeSthg()">'
 			+	' Timeout (Next hr:min): <input type="time" id="'+id+'_timeout" name="'+id+'_timeout" value="'+node.timeout+'" onchange="changeSthg()">'
 			+'</span>';
 		network.appendChild(nodeDiv);
@@ -135,7 +136,7 @@ function onSave() {
 			duration = 0;
 			timeout = 0;
 		}
-		nodes[id] = {name: label, duration: duration, timeout: timeout}
+		nodes[id] = {name: label, duration: duration*60, timeout: timeout} // Convert minutes to seconds
 	}
 	console.log("onSave() : nodes=",nodes);
 	var xhr = new XMLHttpRequest();
