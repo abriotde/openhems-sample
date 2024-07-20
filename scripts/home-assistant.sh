@@ -128,6 +128,21 @@ sudo service nginx reload
 
 echo "Install OpenHEMS server"
 sudo apt install -y python3-pandas python3-yaml python3-pyramid python3-pyramid-jinja2
+cat >openhems.service <<EOF
+[Unit]
+Description = OpenHEMS server (core and web).
+After = docker.target
+
+[Service]
+ExecStart = $OPENHEMS_PATH/src/main.py
+
+[Install]
+WantedBy = multi-user.target
+EOF
+sudo cp openhems.service /lib/systemd/system/
+ln -s /lib/systemd/system/openhems.service /etc/systemd/system/multi-user.target.wants
+systemctl enable openhems.service
+systemctl start openhems.service
 
 exit
 

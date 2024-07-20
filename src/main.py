@@ -2,15 +2,13 @@
 
 from web import OpenhemsHTTPServer
 from server import OpenHEMSServer
-from threading import Thread, Lock
-from queue import Queue 
+from threading import Thread
 
 import json
 import yaml
 from home_assistant_api import HomeAssistantAPI
 
-yaml_conf = "../openhems.yaml"
-
+yaml_conf = os.path.dirname(__file__)+"/../openhems.yaml"
 
 
 class OpenHEMSApplication:

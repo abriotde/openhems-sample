@@ -11,3 +11,5 @@ DOCKER_NAME=homeassistant
 HOMEASSISTANT_EMHASS_DIR=$HOMEASSISTANT_DIR/emhass
 DOCKER_EMHASS_NAME=homeassistant_emhass
 
+OPENHEMS_PATH=$(dirname $PWD)
+
