@@ -77,8 +77,7 @@ sudo docker run -d \
 
 wait_homeassistant_container_up
 
-# cp ../config/dashboards.yaml ../config/configuration.yaml $HOMEASSISTANT_CONFIG_PATH
-
+cp $OPENHEMS_PATH/config/dashboards.yaml $OPENHEMS_PATH/config/configuration.yaml $HOMEASSISTANT_CONFIG_PATH
 
 echo "Install HACS"
 # https://hacs.xyz/docs/setup/download/
@@ -134,7 +133,12 @@ Description = OpenHEMS server (core and web).
 After = docker.target
 
 [Service]
+# User=openhems
 ExecStart = $OPENHEMS_PATH/src/main.py
+StandardOutput=append:/var/log/openhems.log
+StandardError=append:/var/log/openhems.error.log
+SyslogIdentifier=OpenHEMS
+Restart=always
 
 [Install]
 WantedBy = multi-user.target

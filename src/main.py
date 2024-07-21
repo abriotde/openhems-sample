@@ -4,6 +4,7 @@ from web import OpenhemsHTTPServer
 from server import OpenHEMSServer
 from threading import Thread
 
+import os
 import json
 import yaml
 from home_assistant_api import HomeAssistantAPI

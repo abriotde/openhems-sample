@@ -268,41 +268,42 @@ class HomeAssistantAPI(HomeStateUpdater):
 			"Authorization": "Bearer " + self.token,
 			"content-type": "application/json",
 		}
-		if data is None:
-			try:
+		try:
+			if data is None:
 				response = get(self.api_url+url, 
 					headers=headers,
 					# verify='/etc/letsencrypt/live/openproduct.freeboxos.fr/cert.pem'
 				)
-			except Exception as error:
-				print(
-					"Unable to access Home Assistance instance, check URL : ", error
-				)
-				exit(1)
 			else:
-				if response.status_code == 401:
-					print(
-						"Unable to access Home Assistance instance, TOKEN/KEY"
-					)
-					print(
-						"If using addon, try setting url and token to 'empty'"
-					)
-				if response.status_code > 299:
-					print("Request Get Error: {response.status_code}")
-			"""import bz2 # Uncomment to save a serialized data for tests
-			import _pickle as cPickle
-			with bz2.BZ2File("data/test_response_get_data_get_method.pbz2", "w") as f: 
-				cPickle.dump(response, f)"""
-			try:  # Sometimes when there are connection problems we need to catch empty retrieved json
-				# print("Response: ",response.json())
-				return response.json()
-			except IndexError:
-				print("The retrieved JSON is empty for day:"+ str(day) +", days_to_retrieve may be larger than the recorded history of sensor:" + var + " (check your recorder settings)")
-		else:
-			response = post(self.api_url+url, 
-				headers=headers, json=data
-				# verify='/etc/letsencrypt/live/openproduct.freeboxos.fr/cert.pem'
+				response = post(self.api_url+url, 
+					headers=headers, json=data
+					# verify='/etc/letsencrypt/live/openproduct.freeboxos.fr/cert.pem'
+				)
+		except Exception as error:
+			print(
+				"Unable to access Home Assistance instance, check URL : ", error
 			)
-			# print("HomeAssistantAPI.callAPI(post data=",data,") = ", response)
+			print(
+				"HomeAssistantAPI.callAPI(",url,", ",data,")"
+			)
+			exit(1)
+		else:
+			if response.status_code == 500:
+				print("Unable to access Home Assistance due to error, check devices are up (",url,", ",data,")")
+			if response.status_code == 401:
+				print("Unable to access Home Assistance instance, TOKEN/KEY")
+				print("If using addon, try setting url and token to 'empty'")
+			if response.status_code > 299:
+				print("Request Get Error: {response.status_code}")
+		"""import bz2 # Uncomment to save a serialized data for tests
+		import _pickle as cPickle
+		with bz2.BZ2File("data/test_response_get_data_get_method.pbz2", "w") as f: 
+			cPickle.dump(response, f)"""
+			return dict()
+		try:  # Sometimes when there are connection problems we need to catch empty retrieved json
+			# print("Response: ",response.json())
 			return response.json()
+		except IndexError:
+			print("The retrieved JSON is empty for day:"+ str(day) +", days_to_retrieve may be larger than the recorded history of sensor:" + var + " (check your recorder settings)")
+		# print("HomeAssistantAPI.callAPI(post data=",data,") = ", response)
 

@@ -17,7 +17,9 @@ All contribution to the software are welcome. Please contact alberic.delacrochai
  - devices witch start on plug like electrique car
  - connected devices like washing-machine.
 
-* A server we named "homeassistant" installed with debian based Linux OS connected to local lan. The script scripts/home-assistant.sh let you to install Home-Assistant. But if you have already a Home-Assistant install use it.
+* A server we named "homeassistant" installed with debian based Linux OS connected to local lan. The script scripts/home-assistant.sh let you to install Home-Assistant. But if you have already a Home-Assistant install use it
+ - Python3 tested on 3.9
+ - Systemd older than v240
 
 * In your internet box
  - Create a domain name that we named $DOMAINNAME.
