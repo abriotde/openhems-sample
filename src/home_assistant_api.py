@@ -287,19 +287,17 @@ class HomeAssistantAPI(HomeStateUpdater):
 				"HomeAssistantAPI.callAPI(",url,", ",data,")"
 			)
 			exit(1)
-		else:
-			if response.status_code == 500:
-				print("Unable to access Home Assistance due to error, check devices are up (",url,", ",data,")")
-			if response.status_code == 401:
-				print("Unable to access Home Assistance instance, TOKEN/KEY")
-				print("If using addon, try setting url and token to 'empty'")
-			if response.status_code > 299:
-				print("Request Get Error: {response.status_code}")
+		if response.status_code == 500:
+			print("Unable to access Home Assistance due to error, check devices are up (",url,", ",data,")")
+		elif response.status_code == 401:
+			print("Unable to access Home Assistance instance, TOKEN/KEY")
+			print("If using addon, try setting url and token to 'empty'")
+		elif response.status_code > 299:
+			print("Request Get Error: {response.status_code}")
 		"""import bz2 # Uncomment to save a serialized data for tests
 		import _pickle as cPickle
 		with bz2.BZ2File("data/test_response_get_data_get_method.pbz2", "w") as f: 
-			cPickle.dump(response, f)"""
-			return dict()
+		cPickle.dump(response, f)"""
 		try:  # Sometimes when there are connection problems we need to catch empty retrieved json
 			# print("Response: ",response.json())
 			return response.json()
