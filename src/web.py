@@ -3,6 +3,7 @@ from wsgiref.simple_server import make_server
 from pyramid.config import Configurator
 from pyramid.response import Response
 from pyramid.view import view_config
+import logging
 import json
 from json import JSONEncoder
 # Patch for jsonEncoder
@@ -16,6 +17,7 @@ JSONEncoder.default = wrapped_default
 from schedule import OpenHEMSSchedule
 
 openHEMSContext = None
+logger = logging.getLogger(__name__)
 
 @view_config(
     route_name='panel',
@@ -36,7 +38,7 @@ def states(request):
 		if id in openHEMSContext.schedule:
 			openHEMSContext.schedule[id].setSchedule(node["duration"], node["timeout"])
 		else:
-			print("ERROR : node id=", id, " not found.")
+			logger.error("Node id='"+id+"' not found.")
 	return openHEMSContext.schedule
 
 class OpenhemsHTTPServer():

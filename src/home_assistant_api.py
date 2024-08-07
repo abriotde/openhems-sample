@@ -5,6 +5,7 @@ import time
 import pandas as pd
 from requests import get, post
 import yaml
+import logging
 from openhems_node import *
 from typing import Final
 
@@ -21,6 +22,7 @@ class HATypeExcetion(Exception):
 class HomeAssistantAPI(HomeStateUpdater):
 
 	def __init__(self, conf) -> None:
+		self.logger = logging.getLogger(__name__)
 		if isinstance(conf, str):
 			with open(conf, 'r') as file:
 				print("Load YAML configuration from '"+conf+"'")
@@ -58,13 +60,13 @@ class HomeAssistantAPI(HomeStateUpdater):
 		if kkey in conf.keys():
 			key = conf[kkey]
 			if isinstance(key, str) and key in ha_elements.keys():
-				print("SourceFeeder(",key,")")
+				self.logger.info("SourceFeeder("+key+")")
 				feeder = SourceFeeder(key, self, params)
 			else:
-				print("ConstFeeder(",key,")")
+				self.logger.info("ConstFeeder("+str(key)+")")
 				feeder = ConstFeeder(key)
 		elif default_value is None:
-			print("ERROR : HomeAssistantAPI.getFeeder missing configuration key '",kkey,"'  for network in YAML file ")
+			self.logger.critical("HomeAssistantAPI.getFeeder missing configuration key '"+kkey+"'  for network in YAML file ")
 			exit(1)
 		else:
 			feeder = ConstFeeder(default_value)
@@ -88,7 +90,7 @@ class HomeAssistantAPI(HomeStateUpdater):
 			elif classname == "solarpanel":
 				node = SolarPanel(currentPower, maxPower, minPower, powerMargin)
 			else:
-				print("ERROR : HomeAssistantAPI.getNetwork : Unknown classname '",classname,"'")
+				self.logger.critical("HomeAssistantAPI.getNetwork : Unknown classname '"+classname+"'")
 				exit(1)
 			if "id" in e.keys():
 				node.id = e["id"]
@@ -109,11 +111,11 @@ class HomeAssistantAPI(HomeStateUpdater):
 				maxPower = self.getFeeder(e, "maxPower", ha_elements, "int", 2000)
 				node = OutNode(id, currentPower, maxPower, isOn)
 			else:
-				print("ERROR : HomeAssistantAPI.getNetwork : Unknown classname '",classname,"'")
+				self.logger.critical("HomeAssistantAPI.getNetwork : Unknown classname '"+classname+"'")
 				exit(1)
 			# print(node)
 			self.network.addNode(node, False)
-		self.network.print()
+		self.network.print(self.logger.info)
 		return self.network
 
 
@@ -146,7 +148,7 @@ class HomeAssistantAPI(HomeStateUpdater):
 	def updateNetwork(self):
 		response = self.callAPI("/states")
 		if len(self.cached_ids) == 0:
-			print("Warning : HomeAssistantAPI.updateNetwork() : No entities to update.")
+			self.logger.warning("HomeAssistantAPI.updateNetwork() : No entities to update.")
 			return True
 		ha_elements = dict()
 		for e in response:
@@ -160,7 +162,7 @@ class HomeAssistantAPI(HomeStateUpdater):
 					print("ERROR: For '",entity_id," : '",e.message)
 					value = e.defaultValue
 				self.cached_ids[entity_id][0] = value
-				print("HomeAssistantAPI.updateNetwork(",entity_id,") = ", value)
+				self.logger.info("HomeAssistantAPI.updateNetwork("+entity_id+") = "+str(value))
 		self.refresh_id += 1
 
 	def _getElemsKeysCache(self, id, elem=None):
@@ -187,7 +189,7 @@ class HomeAssistantAPI(HomeStateUpdater):
 		return e
 
 	def createNodeElement(self, elem):
-		print("createNodeElement(",elem,")")
+		self.logger.debug("createNodeElement(",elem,")")
 		return elem
 
 	def getElemById(self, id:str):
@@ -280,20 +282,16 @@ class HomeAssistantAPI(HomeStateUpdater):
 					# verify='/etc/letsencrypt/live/openproduct.freeboxos.fr/cert.pem'
 				)
 		except Exception as error:
-			print(
-				"Unable to access Home Assistance instance, check URL : ", error
-			)
-			print(
-				"HomeAssistantAPI.callAPI(",url,", ",data,")"
-			)
+			self.logger.critical("Unable to access Home Assistance instance, check URL : "+str(error))
+			self.logger.critical("HomeAssistantAPI.callAPI("+url+", "+str(data)+")")
 			exit(1)
 		if response.status_code == 500:
-			print("Unable to access Home Assistance due to error, check devices are up (",url,", ",data,")")
+			self.logger.error("Unable to access Home Assistance due to error, check devices are up ("+url+", "+str(data)+")")
 		elif response.status_code == 401:
-			print("Unable to access Home Assistance instance, TOKEN/KEY")
-			print("If using addon, try setting url and token to 'empty'")
+			self.logger.error("Unable to access Home Assistance instance, TOKEN/KEY")
+			self.logger.error("If using addon, try setting url and token to 'empty'")
 		elif response.status_code > 299:
-			print("Request Get Error: {response.status_code}")
+			self.logger.error("Request Get Error: {response.status_code}")
 		"""import bz2 # Uncomment to save a serialized data for tests
 		import _pickle as cPickle
 		with bz2.BZ2File("data/test_response_get_data_get_method.pbz2", "w") as f: 

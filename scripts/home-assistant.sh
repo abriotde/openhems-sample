@@ -148,6 +148,28 @@ ln -s /lib/systemd/system/openhems.service /etc/systemd/system/multi-user.target
 systemctl enable openhems.service
 systemctl start openhems.service
 
+
+cat >openhems <<EOF
+/var/log/openhems.log {
+  rotate 6
+  daily
+  compress
+  missingok
+  notifempty
+  delaycompress
+  create 640 root $USER
+}
+/var/log/openhems.error.log {
+  rotate 6
+  daily
+  compress
+  missingok
+  delaycompress
+  create 640 root $USER
+}
+EOF
+cp openhems /etc/logrotate.d/openhems
+
 exit
 
 docker exec -it $DOCKER_NAME  bash

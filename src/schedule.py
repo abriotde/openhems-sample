@@ -1,6 +1,8 @@
 
 import json
 from json import JSONEncoder
+import logging
+
 
 class OpenHEMSSchedule:
 	duration: int = 0
@@ -10,17 +12,22 @@ class OpenHEMSSchedule:
 		self.id = id
 		self.timeout = timeout
 		self.duration = duration
+		self.logger = logging.getLogger(__name__)
 
 	def schedule(self, timeout, duration):
 		self.timeout = timeout
 		self.duration = duration
 
 	def isScheduled(self):
-		print("OpenHEMSSchedule.isScheduled(",self.id,") : duration = ",self.duration)
+		self.logger.debug("OpenHEMSSchedule.isScheduled("+str(self.id)+") : duration = "+str(self.duration))
 		return self.duration>0
 
 	def setSchedule(self, duration: int, timeout):
-		print("OpenHEMSSchedule.setSchedule(",duration,", ",timeout,")")
+		msg = "OpenHEMSSchedule.setSchedule("+str(duration)+" seconds, timeout="+timeout+")"
+		if duration!=self.duration or self.timeout!=timeout:
+			self.logger.info(msg)
+		else:
+			self.logger.debug(msg)
 		self.duration = duration
 		self.timeout = timeout
 

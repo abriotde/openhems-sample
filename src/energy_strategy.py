@@ -1,11 +1,12 @@
 from datetime import datetime, timedelta
 import time
 import re
+import logging
 from openhems_node import OpenHEMSNetwork
 
 class EnergyStrategy:
 	def updateNetwork(self):
-		print("EnergyStrategy.updateNetwork() : To implement in sub-class")
+		logging.getLogger("EnergyStrategy").error("EnergyStrategy.updateNetwork() : To implement in sub-class")
 
 class OffPeakStrategy(EnergyStrategy):
 	"""
@@ -18,7 +19,8 @@ class OffPeakStrategy(EnergyStrategy):
 	network = None
 
 	def __init__(self, network: OpenHEMSNetwork, offpeakHoursRanges=[["22:00:00","06:00:00"]]):
-		print("OffPeakStrategy(",offpeakHoursRanges,")")
+		self.logger = logging.getLogger(__name__)
+		self.logger.info("OffPeakStrategy("+str(offpeakHoursRanges)+")")
 		self.network = network
 		self.setOffPeakHoursRanges(offpeakHoursRanges)
 		self.checkRange()
@@ -99,20 +101,20 @@ class OffPeakStrategy(EnergyStrategy):
 		assert nextTime<=240000
 		self.rangeEnd = self.mytime2datetime(nowDatetime, nextTime)
 		nbSecondsToNextRange = (self.rangeEnd - nowDatetime).total_seconds()
-		print("OffPeakStrategy.checkRange(",now,") => ", self.rangeEnd, ", ", nbSecondsToNextRange)
+		self.logger.info("OffPeakStrategy.checkRange("+str(now)+") => "+str(self.rangeEnd)+ ", "+str(nbSecondsToNextRange))
 		return nbSecondsToNextRange
 
 	def sleepUntillNextRange(self):
 		MARGIN = 1 # margin to wait more to be sure to change range... useless, not scientist?
 		time2wait = (self.rangeEnd - datetime.now()).total_seconds()
-		print("OffPeakStrategy.sleepUntillNextRange() : sleep(",round((time2wait+MARGIN)/60)," min, until ",self.rangeEnd,")")
+		self.logger.info("OffPeakStrategy.sleepUntillNextRange() : sleep("+str(round((time2wait+MARGIN)/60))+" min, until "+str(self.rangeEnd)+")")
 		time.sleep(time2wait+MARGIN)
 
 	def switchOffAll(self):
-		print("OffPeakStrategy.switchOffAll()")
-		self.network.print()
+		self.logger.info("OffPeakStrategy.switchOffAll()")
+		# self.network.print(self.logger.info)
 		powerMargin = self.network.getCurrentPower()
-		self.network.print()
+		# self.network.print(self.logger.info)
 		ok = True
 		for elem in self.network.out:
 			if elem.isSwitchable and elem.switchOn(False):
@@ -124,21 +126,21 @@ class OffPeakStrategy(EnergyStrategy):
 		if node.isSwitchable:
 			if node.isOn():
 				lastDuration = node.getSchedule().decreaseTime(cycleDuration)
-				print("Node ",node.id," isOn for ", lastDuration, " more seconds")
+				self.logger.debug("Node "+node.id+" isOn for "+str(lastDuration)+" more seconds")
 				if lastDuration==0:
-					print("Info : Switch off ",node.id," due to elapsed time.")
+					self.logger.info("Switch off "+node.id+" due to elapsed time.")
 					if node.switchOn(False):
-						print("Warning : Fail switch off ",node.id,".")
+						self.logger.warning("Fail switch off "+node.id+".")
 			elif doSwitchOn and node.getSchedule().isScheduled():
 				if node.switchOn(True):
-					print("Info : Switch on ",node.id," successfully.")
+					self.logger.info("Switch on ",node.id," successfully.")
 					return True
 				else:
-					print("Warning : Fail switch on ",node.id,".")
+					self.logger.warning("Fail switch on "+node.id+".")
 		return False
 
 	def switchOnMax(self, cycleDuration):
-		print("OffPeakStrategy.switchOnMax()")
+		self.logger.info("OffPeakStrategy.switchOnMax()")
 		ok = True
 		done = 0
 		todo = 0
@@ -170,10 +172,10 @@ class SolarOnlyProductionStrategy(EnergyStrategy):
 	Case we have just solar panel (and battery) as electricity source
 	"""
 	def __init__(self, network: OpenHEMSNetwork):
-		print("SolarOnlyProductionStrategy()")
+		logging.getLogger("SolarOnlyProductionStrategy").error("SolarOnlyProductionStrategy() : TODO")
 		# TODO
 	def updateNetwork(self, cycleDuration):
-		print("SolarOnlyProductionStrategy.updateNetwork() : TODO")
+		logging.getLogger("SolarOnlyProductionStrategy").error("SolarOnlyProductionStrategy.updateNetwork() : TODO")
 		pass
 		# TODO
 
@@ -183,11 +185,11 @@ class SolarNoSellProduction(EnergyStrategy):
 	Case we have solar panel (and battery) and public grid as source but we can't sell. We may have battery, if so we will disconnect public grid to insure ther is no sell.
 	"""
 	def __init__(self, network: OpenHEMSNetwork):
-		print("SolarNoSellProduction()")
+		logging.getLogger("SolarNoSellProduction").error("SolarNoSellProduction() : TODO")
 		# TODO
 
 	def updateNetwork(self, cycleDuration):
-		print("SolarNoSellProduction.updateNetwork() : TODO")
+		logging.getLogger("SolarNoSellProduction").error("SolarNoSellProduction.updateNetwork() : TODO")
 		pass
 		# TODO
 

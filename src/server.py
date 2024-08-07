@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 
+import logging
 import time
 import re
 from datetime import datetime
 from energy_strategy import EnergyStrategy,OffPeakStrategy
 
+
 class OpenHEMSServer:
 
 	def __init__(self, network, serverConf) -> None:
+		self.logger = logging.getLogger(__name__)
 		self.network = network
 		self.loop_delay = serverConf["loop_delay"]
 		strategy = serverConf["strategy"].lower()
@@ -16,11 +19,11 @@ class OpenHEMSServer:
 			params = [p.split("-") for p in strategy_params]
 			self.strategy = OffPeakStrategy(self.network, params)
 		else:
-			print("ERROR : OpenHEMSServer() : Unknown strategy '",strategy,"'")
+			self.logger.critical("OpenHEMSServer() : Unknown strategy '"+strategy+"'")
 			exit(1)
 
 	def loop(self, loop_delay):
-		print("OpenHEMSServer.loop()")
+		self.logger.debug("OpenHEMSServer.loop()")
 		self.network.updateStates()
 		self.strategy.updateNetwork(loop_delay)
 
@@ -33,10 +36,10 @@ class OpenHEMSServer:
 			self.loop(loop_delay)
 			t = time.time()
 			if t<nextloop:
-				print("OpenHEMSServer.run() : sleep(",(nextloop-t)/60," min)")
+				self.logger.debug("OpenHEMSServer.run() : sleep("+str((nextloop-t)/60)+" min)")
 				time.sleep(nextloop-t)
 				t = time.time()
 			elif t>nextloop:
-				print("Warning : OpenHomeEnergyManagement::run() : missing time for loop : ", (t-nextloop), "seconds")
+				self.logger.warning("OpenHomeEnergyManagement::run() : missing time for loop : "+str((nextloop-t))+" seconds")
 			nextloop = t + loop_delay
 

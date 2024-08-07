@@ -4,6 +4,8 @@ from collections import deque
 from typing import Final
 from schedule import OpenHEMSSchedule
 CYCLE_HISTORY: Final[int] = 10 # Number of cycle we keep history
+import logging
+logger = logging.getLogger(__name__)
 
 class Feeder:
 	value = None
@@ -58,8 +60,8 @@ class OpenHEMSNode:
 	def getCurrentPower(self):
 		currentPower = self.currentPower.getValue()
 		if self._isSwitchable and not self.isOn() and currentPower!=0:
-			print("Warning : ",self.id," is Off but current power=",currentPower)
-		print("OpenHEMSNode.getCurrentPower() = ", currentPower)
+			logger.warning(self.id+" is Off but current power="+str(currentPower))
+		logger.info("OpenHEMSNode.getCurrentPower() = "+str(currentPower))
 		return currentPower
 
 	def getMaxPower(self):
@@ -123,10 +125,10 @@ class HomeStateUpdater:
 	refresh_id = 0
 
 	def getNetwork(self):
-		print("HomeStateUpdater.getNetwork() : To implement in sub-class")
+		logger.error("HomeStateUpdater.getNetwork() : To implement in sub-class")
 
 	def updateNetwork(self):
-		print("HomeStateUpdater.updateNetwork() : To implement in sub-class")
+		logger.error("HomeStateUpdater.updateNetwork() : To implement in sub-class")
 
 class OpenHEMSNetwork:
 
@@ -134,15 +136,17 @@ class OpenHEMSNetwork:
 	out = []
 	network_updater: HomeStateUpdater = None
 
-	def print(self):
-		print("OpenHEMSNetwork(")
-		print(" IN : ")
+	def print(self, logger=None):
+		if logger is None:
+			logger = print
+		logger("OpenHEMSNetwork(")
+		logger(" IN : ")
 		for elem in self.inout:
-			print("  - ", elem.id)
-		print(" OUT : ")
+			logger("  - "+str(elem.id))
+		logger(" OUT : ")
 		for elem in self.out:
-			print("  - ", elem.id)
-		print(")")
+			logger("  - "+str(elem.id))
+		logger(")")
 
 	def __init__(self, network_updater: HomeStateUpdater):
 		self.network_updater = network_updater
@@ -169,7 +173,7 @@ class OpenHEMSNetwork:
 		for elem in self.inout:
 			p = elem.getCurrentPower()
 			if isinstance(p, str):
-				print("Error: power as string : ", p)
+				logger.critical("power as string : "+p)
 				exit(1)
 			pow += p
 		return pow
