@@ -5,6 +5,7 @@ from server import OpenHEMSServer
 from threading import Thread
 
 import logging
+from logging.handlers import TimedRotatingFileHandler
 import os
 import json
 import yaml
@@ -15,6 +16,37 @@ LOGFORMAT = '%(levelname)s : %(asctime)s : %(message)s'
 LOGFILE = '/var/log/openhems.log'
 
 class OpenHEMSApplication:
+
+	logger = None
+	def filer(self):
+		now = dt.datetime.now()
+		return 'openhems.'+now.strftime("%Y-%m-%d")+'.log'
+	def setLogger(self, loglevel, logformat, logfile):
+		if loglevel=="debug":
+			level=logging.DEBUG
+		elif loglevel=="warn" or loglevel=="warning":
+			level=logging.WARNING
+		elif loglevel=="error":
+			level=logging.ERROR
+		elif loglevel=="critical" or loglevel=="no":
+			level=logging.CRITICAL
+		else: # if loglevel=="info":
+			level=logging.INFO
+		rotating_file_handler = TimedRotatingFileHandler(filename=logfile,
+        	when='D',
+        	interval=1,
+        	backupCount=5)
+		rotating_file_handler.rotation_filename = OpenHEMSApplication.filer
+		formatter = logging.Formatter(logformat)
+		rotating_file_handler.setFormatter(formatter)
+		logging.basicConfig(level=level, format=logformat, handlers=[rotating_file_handler])
+		self.logger = logging.getLogger(__name__)
+		return self.logger
+
+	@staticmethod
+	def getLogger(self):
+		return self.logger
+
 	def __init__(self, yaml_conf):
 		conf = None
 		network = None
@@ -28,18 +60,7 @@ class OpenHEMSApplication:
 				loglevel = serverConf.get("loglevel", "info")
 				logformat = serverConf.get("logformat", LOGFORMAT)
 				logfile = serverConf.get("logfile", LOGFILE)
-				if loglevel=="debug":
-					level=logging.DEBUG
-				elif loglevel=="warn" or loglevel=="warning":
-					level=logging.WARNING
-				elif loglevel=="error":
-					level=logging.ERROR
-				elif loglevel=="critical" or loglevel=="no":
-					level=logging.CRITICAL
-				else: # if loglevel=="info":
-					level=logging.INFO
-				logging.basicConfig(filename=logfile, level=level, format=logformat)
-				self.logger = logging.getLogger(__name__)
+				self.setLogger(loglevel, logformat, logfile)
 				self.logger.info("Load YAML configuration from '"+yaml_conf+"'")
 				networkUpdater = None
 				networkSource = serverConf["network"].lower()

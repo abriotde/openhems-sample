@@ -19,8 +19,8 @@ function wait_homeassistant_container_up {
 
 # sudo hwclock --hctosys
 # sudo date --set "15 Jul 2024 22:55:00"
-# sudo dpkg-reconfigure tzdata
 sudo apt install ntp
+sudo dpkg-reconfigure tzdata
 sudo apt update
 sudo apt upgrade -y
 
@@ -143,12 +143,41 @@ Restart=always
 [Install]
 WantedBy = multi-user.target
 EOF
-sudo cp openhems.service /lib/systemd/system/
+sudo mv openhems.service /lib/systemd/system/
 ln -s /lib/systemd/system/openhems.service /etc/systemd/system/multi-user.target.wants
+
 systemctl enable openhems.service
 systemctl start openhems.service
 
+echo "Install Mosquitto : MQTT server" # https://shape.host/resources/mosquitto-mqtt-installation-guide-for-debian-11-easy-setup
+sudo apt install -y mosquitto mosquitto-clients
+sudo systemctl is-enabled mosquitto
+sudo systemctl status mosquitto
+sudo mosquitto_passwd -c /etc/mosquitto/.passwd shapehost
+cat >auth.conf <<EOF
+listener 1883
+allow_anonymous false
+password_file /etc/mosquitto/.passwd
+EOF
+sudo mv auth.conf /etc/mosquitto/conf.d/auth.conf
+sudo systemctl restart mosquitto
 
+sudo openssl dhparam -out /etc/mosquitto/certs/dhparam.pem 2048
+sudo chown -R mosquitto: /etc/mosquitto/certs
+
+cat >ssl.conf <<EOF
+listener 8883
+certfile /etc/letsencrypt/live/$DOMAINNAME/fullchain.pem
+cafile /etc/letsencrypt/live/$DOMAINNAME/chain.pem
+keyfile /etc/letsencrypt/live/$DOMAINNAME/privkey.pem
+dhparamfile /etc/mosquitto/certs/dhparam.pem
+EOF
+sudo mv ssl.conf /etc/mosquitto/conf.d/ssl.conf
+sudo systemctl restart mosquitto
+
+exit
+
+echo "Set logrotate but not working with Python.logging so use TimedRotatingFileHandler"
 cat >openhems <<EOF
 /var/log/openhems.log {
   rotate 6
@@ -168,12 +197,7 @@ cat >openhems <<EOF
   create 640 root $USER
 }
 EOF
-cp openhems /etc/logrotate.d/openhems
-
-exit
-
-docker exec -it $DOCKER_NAME  bash
-
+sudo mv openhems /etc/logrotate.d/openhems
 
 
 exit
