@@ -227,7 +227,12 @@ class OpenHEMSNetwork:
 							marginPowerOff += elem.maxPower # Not safe, should we use minPower or avgPower... TODO?
 			return 0
 		return marginPowerOff
-			
+
+	def notify(self, message:str):
+		"""
+		Send a notification using the appropriate way (Only push to HomeAssistant for the moment).
+		"""
+		self.network_updater.notify(message)
 
 	def updateStates(self):
 		self.network_updater.updateNetwork()

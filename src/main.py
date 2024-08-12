@@ -13,7 +13,7 @@ from home_assistant_api import HomeAssistantAPI
 
 yaml_conf = os.path.dirname(__file__)+"/../openhems.yaml"
 LOGFORMAT = '%(levelname)s : %(asctime)s : %(message)s'
-LOGFILE = '/var/log/openhems.log'
+LOGFILE = '/var/log/openhems/openhems.log'
 
 class OpenHEMSApplication:
 
@@ -75,6 +75,7 @@ class OpenHEMSApplication:
 			network = networkUpdater.getNetwork()
 		self.server = OpenHEMSServer(network, serverConf)
 		self.webserver = OpenhemsHTTPServer(network.getSchedule())
+		network.notify("Start OpenHEMS.")
 
 	def run_management_server(self):
 		self.server.run()

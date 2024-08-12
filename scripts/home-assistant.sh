@@ -127,6 +127,8 @@ sudo service nginx reload
 
 echo "Install OpenHEMS server"
 sudo apt install -y python3-pandas python3-yaml python3-pyramid python3-pyramid-jinja2
+OPENHEMS_LOGPATH=/var/log/openhems
+sudo mkdir -p $OPENHEMS_LOGPATH
 cat >openhems.service <<EOF
 [Unit]
 Description = OpenHEMS server (core and web).
@@ -135,8 +137,8 @@ After = docker.target
 [Service]
 # User=openhems
 ExecStart = $OPENHEMS_PATH/src/main.py
-StandardOutput=append:/var/log/openhems.log
-StandardError=append:/var/log/openhems.error.log
+StandardOutput=append:$OPENHEMS_LOGPATH/openhems.service.log
+StandardError=append:$OPENHEMS_LOGPATH/openhems.service.error.log
 SyslogIdentifier=OpenHEMS
 Restart=always
 

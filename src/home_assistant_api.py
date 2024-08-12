@@ -145,6 +145,7 @@ class HomeAssistantAPI(HomeStateUpdater):
 			print(".toType(",type,",",value,") : Unknwon type")
 			exit(1)
 		return value
+
 	def updateNetwork(self):
 		response = self.callAPI("/states")
 		if len(self.cached_ids) == 0:
@@ -159,7 +160,8 @@ class HomeAssistantAPI(HomeStateUpdater):
 				try:
 					value = self.toType(self.cached_ids[entity_id][1], val)
 				except HATypeExcetion as e:
-					print("ERROR: For '",entity_id," : '",e.message)
+					self.logger.error("For '"+entity_id+" : '"+e.message)
+					self.notify("For '"+entity_id+" : '"+e.message)
 					value = e.defaultValue
 				self.cached_ids[entity_id][0] = value
 				self.logger.info("HomeAssistantAPI.updateNetwork("+entity_id+") = "+str(value))
@@ -265,6 +267,14 @@ class HomeAssistantAPI(HomeStateUpdater):
 			if domain=="switch":
 				print(e)
 
+	def notify(self, message):
+		data = {
+			"message":message,
+			"title":"Notification from OpenHEMS."
+		}
+		self.callAPI("/services/notify/persistent_notification", data=data)
+		
+
 	def callAPI(self, url: str, data=None):
 		headers = {
 			"Authorization": "Bearer " + self.token,
@@ -285,21 +295,29 @@ class HomeAssistantAPI(HomeStateUpdater):
 			self.logger.critical("Unable to access Home Assistance instance, check URL : "+str(error))
 			self.logger.critical("HomeAssistantAPI.callAPI("+url+", "+str(data)+")")
 			exit(1)
+		errMsg = ""
 		if response.status_code == 500:
-			self.logger.error("Unable to access Home Assistance due to error, check devices are up ("+url+", "+str(data)+")")
+			errMsg = ("Unable to access Home Assistance due to error, check devices are up ("+url+", "+str(data)+")")
 		elif response.status_code == 401:
-			self.logger.error("Unable to access Home Assistance instance, TOKEN/KEY")
-			self.logger.error("If using addon, try setting url and token to 'empty'")
+			errMsg = ("Unable to access Home Assistance instance, TOKEN/KEY")
+			errMsg += ("If using addon, try setting url and token to 'empty'")
+		elif response.status_code == 404:
+			errMsg = ("Invalid URL '"+self.api_url+url+"'")
 		elif response.status_code > 299:
-			self.logger.error("Request Get Error: {response.status_code}")
+			errMsg = ("Request Get Error: {response.status_code}")
 		"""import bz2 # Uncomment to save a serialized data for tests
 		import _pickle as cPickle
 		with bz2.BZ2File("data/test_response_get_data_get_method.pbz2", "w") as f: 
 		cPickle.dump(response, f)"""
-		try:  # Sometimes when there are connection problems we need to catch empty retrieved json
-			# print("Response: ",response.json())
-			return response.json()
-		except IndexError:
-			print("The retrieved JSON is empty for day:"+ str(day) +", days_to_retrieve may be larger than the recorded history of sensor:" + var + " (check your recorder settings)")
-		# print("HomeAssistantAPI.callAPI(post data=",data,") = ", response)
+		if errMsg=="":
+			try:  # Sometimes when there are connection problems we need to catch empty retrieved json
+				# print("Response: ",response)
+				return response.json()
+			except IndexError:
+				print("The retrieved JSON is empty for day:"+ str(day) +", days_to_retrieve may be larger than the recorded history of sensor:" + var + " (check your recorder settings)")
+			# print("HomeAssistantAPI.callAPI(post data=",data,") = ", response)
+		else:
+			self.logger.error(errMsg)
+			self.notify("Error callAPI() : status_code="+response.status_code+" : "+errMsg)
+			return dict()
 
