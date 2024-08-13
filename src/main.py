@@ -9,6 +9,7 @@ from logging.handlers import TimedRotatingFileHandler
 import os
 import json
 import yaml
+from datetime import datetime
 from home_assistant_api import HomeAssistantAPI
 
 yaml_conf = os.path.dirname(__file__)+"/../openhems.yaml"
@@ -18,8 +19,9 @@ LOGFILE = '/var/log/openhems/openhems.log'
 class OpenHEMSApplication:
 
 	logger = None
-	def filer(self):
-		now = dt.datetime.now()
+	@staticmethod
+	def filer():
+		now = datetime.now()
 		return 'openhems.'+now.strftime("%Y-%m-%d")+'.log'
 	def setLogger(self, loglevel, logformat, logfile):
 		if loglevel=="debug":
