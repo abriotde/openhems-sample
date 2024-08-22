@@ -6,7 +6,7 @@ import pandas as pd
 from requests import get, post
 import yaml
 import logging
-from openhems_node import *
+from network import *
 from typing import Final
 
 POWER_MARGIN: Final[int] = 10 # Number of cycle we keep history

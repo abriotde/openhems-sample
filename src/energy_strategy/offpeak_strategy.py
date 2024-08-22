@@ -2,15 +2,13 @@ from datetime import datetime, timedelta
 import time
 import re
 import logging
-from openhems_node import OpenHEMSNetwork
-
-class EnergyStrategy:
-	def updateNetwork(self):
-		logging.getLogger("EnergyStrategy").error("EnergyStrategy.updateNetwork() : To implement in sub-class")
+from network import OpenHEMSNetwork
+from energy_strategy.energy_strategy import EnergyStrategy
 
 class OffPeakStrategy(EnergyStrategy):
 	"""
 	This is in case we just base on "off-peak" range hours to control output. Classic use-case is some grid contract (Like Tempo on EDF).
+	The strategy is to switch on electric devices only on "off-peak" hours with check to not exceed authorized max consumption
 	"""
 	MIDNIGHT = 240000
 	offpeakHoursRanges = []
@@ -47,36 +45,6 @@ class OffPeakStrategy(EnergyStrategy):
 			end = self.getTime(offpeakHoursRange[1])
 			self.offpeakHoursRanges.append([begin, end])
 
-	@staticmethod
-	def datetime2Mytime(time: datetime):
-		return int(time.strftime("%H%M%S"))
-	@staticmethod
-	def mytime2hourMinSec(time):
-		secs = time%100
-		min = int(time/100)%100
-		hours = int(time/10000)
-		return  [hours, min, secs]
-	@staticmethod
-	def mytime2datetime(now: datetime, time):
-		nowtime = OffPeakStrategy.datetime2Mytime(now)
-		h0, m0, s0 = OffPeakStrategy.mytime2hourMinSec(nowtime)
-		nowSecs = h0*3600+m0*60+s0
-		h, m, s = OffPeakStrategy.mytime2hourMinSec(time)
-		timeSecs = h*3600+m*60+s
-		nbSecondsToNextRange = -nowSecs + timeSecs
-		if nowtime>time: # It's next day
-			nbSecondsToNextRange += 86400
-		nextTime = now + timedelta(seconds=nbSecondsToNextRange)
-		return nextTime
-	@staticmethod
-	def getTimeToWait(now, nextTime):
-		if now>nextTime:
-			wait = OffPeakStrategy.MIDNIGHT-now+nextTime
-		else:
-			wait = nextTime-now
-		# print("getTimeToWait(",now,", ",nextTime,") = ",wait)
-		return wait
-		
 	
 	def checkRange(self, nowDatetime: datetime=None) -> int:
 		if nowDatetime is None:
@@ -110,17 +78,6 @@ class OffPeakStrategy(EnergyStrategy):
 		self.logger.info("OffPeakStrategy.sleepUntillNextRange() : sleep("+str(round((time2wait+MARGIN)/60))+" min, until "+str(self.rangeEnd)+")")
 		time.sleep(time2wait+MARGIN)
 
-	def switchOffAll(self):
-		self.logger.info("OffPeakStrategy.switchOffAll()")
-		# self.network.print(self.logger.info)
-		powerMargin = self.network.getCurrentPower()
-		# self.network.print(self.logger.info)
-		ok = True
-		for elem in self.network.out:
-			if elem.isSwitchable and elem.switchOn(False):
-				print("Warning : Fail to switch off ",elem.id)
-				ok = False
-		return ok
 
 	def switchOn(self, node, cycleDuration, doSwitchOn=True):
 		if node.isSwitchable:
@@ -160,36 +117,9 @@ class OffPeakStrategy(EnergyStrategy):
 			# We are in off-peak range hours : switch on all
 			self.switchOnMax(cycleDuration)
 		else: # Sleep untill end. 
-			if self.switchOffAll():
+			if self.network.switchOffAll():
 				self.sleepUntillNextRange()
 				self.checkRange() # To update self.rangeEnd (and should change self.inOffpeakRange)
 			else:
 				print("Warning : Fail to swnitch off all. We will try again on next loop.")
-
-# Linky case: switch-on on solar production.
-class SolarOnlyProductionStrategy(EnergyStrategy):
-	"""
-	Case we have just solar panel (and battery) as electricity source
-	"""
-	def __init__(self, network: OpenHEMSNetwork):
-		logging.getLogger("SolarOnlyProductionStrategy").error("SolarOnlyProductionStrategy() : TODO")
-		# TODO
-	def updateNetwork(self, cycleDuration):
-		logging.getLogger("SolarOnlyProductionStrategy").error("SolarOnlyProductionStrategy.updateNetwork() : TODO")
-		pass
-		# TODO
-
-# Linky case: switch-on on solar production and check no sell to linky.
-class SolarNoSellProduction(EnergyStrategy):
-	"""
-	Case we have solar panel (and battery) and public grid as source but we can't sell. We may have battery, if so we will disconnect public grid to insure ther is no sell.
-	"""
-	def __init__(self, network: OpenHEMSNetwork):
-		logging.getLogger("SolarNoSellProduction").error("SolarNoSellProduction() : TODO")
-		# TODO
-
-	def updateNetwork(self, cycleDuration):
-		logging.getLogger("SolarNoSellProduction").error("SolarNoSellProduction.updateNetwork() : TODO")
-		pass
-		# TODO
 
