@@ -5,6 +5,9 @@ import logging
 
 
 class OpenHEMSSchedule:
+	"""
+	This class aim to comunicate what devices user want to schedule to the OpenHEMS core server. The web server is the UI used to that.
+	"""
 	duration: int = 0
 	timeout = "00:00"
 	def __init__(self, id: str, name:str, duration: int = 0, timeout = 0):

@@ -14,7 +14,7 @@ wrapped_default.default = JSONEncoder().default
 JSONEncoder.original_default = JSONEncoder.default
 JSONEncoder.default = wrapped_default
 
-from schedule import OpenHEMSSchedule
+from .schedule import OpenHEMSSchedule
 
 openHEMSContext = None
 logger = logging.getLogger(__name__)
@@ -56,7 +56,7 @@ class OpenhemsHTTPServer():
 		    config.add_route('panel', '/')
 		    config.add_route('states', '/states')
 		    # config.add_route('favicon.ico', '/favicon.ico')
-		    config.add_static_view(name='img', path='web:../img')
+		    config.add_static_view(name='img', path='modules.web:../../../img')
 		    config.scan()
 		    app = config.make_wsgi_app()
 		server = make_server('0.0.0.0', 8000, app)

@@ -2,15 +2,14 @@ from datetime import datetime, timedelta
 import time
 import re
 import logging
-from network import OpenHEMSNetwork
-from energy_strategy.energy_strategy import EnergyStrategy
+from modules.network.network import OpenHEMSNetwork
+from .energy_strategy import EnergyStrategy
 
 class OffPeakStrategy(EnergyStrategy):
 	"""
 	This is in case we just base on "off-peak" range hours to control output. Classic use-case is some grid contract (Like Tempo on EDF).
 	The strategy is to switch on electric devices only on "off-peak" hours with check to not exceed authorized max consumption
 	"""
-	MIDNIGHT = 240000
 	offpeakHoursRanges = []
 	inOffpeakRange = False
 	rangeEnd = datetime.now()
@@ -52,8 +51,8 @@ class OffPeakStrategy(EnergyStrategy):
 		now = self.datetime2Mytime(nowDatetime)
 		# print("OffPeakStrategy.checkRange(",now,")")
 		self.inOffpeakRange = False
-		nextTime = now+OffPeakStrategy.MIDNIGHT
-		time2NextTime = OffPeakStrategy.MIDNIGHT # This has no real signification but it's usefull and the most simple way
+		nextTime = now+EnergyStrategy.MIDNIGHT
+		time2NextTime = EnergyStrategy.MIDNIGHT # This has no real signification but it's usefull and the most simple way
 		for offpeakHoursRange in self.offpeakHoursRanges:
 			begin, end = offpeakHoursRange
 			wait = self.getTimeToWait(now, begin)

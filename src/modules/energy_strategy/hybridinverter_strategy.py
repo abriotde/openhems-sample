@@ -2,9 +2,8 @@ from datetime import datetime, timedelta
 import time
 import re
 import logging
-from network import OpenHEMSNetwork
-
-from energy_strategy.solarbased_strategy import SolarBasedStrategy
+from modules.network.network import OpenHEMSNetwork
+from .solarbased_strategy import SolarBasedStrategy
 
 class HybridInverterStrategy(SolarBasedStrategy):
 	"""

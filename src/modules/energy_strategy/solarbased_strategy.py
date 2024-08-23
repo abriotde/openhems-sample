@@ -1,6 +1,6 @@
 import astral, astral.sun, datetime
-from energy_strategy.offpeak_strategy import OffPeakStrategy
-from network import OpenHEMSNetwork
+from .offpeak_strategy import OffPeakStrategy
+from modules.network.network import OpenHEMSNetwork
 
 
 class SolarBasedStrategy(OffPeakStrategy):

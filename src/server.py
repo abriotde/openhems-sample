@@ -4,7 +4,7 @@ import logging
 import time
 import re
 from datetime import datetime
-from energy_strategy.energy_strategy import EnergyStrategy,OffPeakStrategy
+from modules.energy_strategy import EnergyStrategy,OffPeakStrategy
 
 
 class OpenHEMSServer:

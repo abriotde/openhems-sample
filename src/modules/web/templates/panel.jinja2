@@ -69,7 +69,7 @@
 <body>
 <h1>Devices program</h1>
 <div id="network"></div>
-<input id="valid" type="image" src="{{request.static_url('web:../img/correct_32.ico')}}" onclick="onSave()" ></input>
+<input id="valid" type="image" src="{{request.static_url('modules.web:../../../img/correct_32.ico')}}" onclick="onSave()" ></input>
 <script>
 var nodes = {{ nodes|tojson }};
 var network = document.getElementById("network");
@@ -110,7 +110,7 @@ function setDevicesProgramm(nodes) {
 setDevicesProgramm(nodes);
 function changeSthg() {
 	// console.log("changeSthg()");
-	document.getElementById("valid").src="{{request.static_url('web:../img/save_32.ico')}}";
+	document.getElementById("valid").src="{{request.static_url('modules.web:../../../img/save_32.ico')}}";
 }
 function onSave() {
 	// console.log("onSave()");

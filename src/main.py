@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from web import OpenhemsHTTPServer
+from modules.web import OpenhemsHTTPServer
 from server import OpenHEMSServer
 from threading import Thread
 
@@ -10,7 +10,7 @@ import os
 import json
 import yaml
 from datetime import datetime
-from home_assistant_api import HomeAssistantAPI
+from modules.network.driver.home_assistant_api import HomeAssistantAPI
 
 yaml_conf = os.path.dirname(__file__)+"/../openhems.yaml"
 LOGFORMAT = '%(levelname)s : %(asctime)s : %(message)s'
