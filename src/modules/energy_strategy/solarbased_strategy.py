@@ -1,4 +1,4 @@
-import astral, astral.sun, datetime
+import astral, datetime
 from .offpeak_strategy import OffPeakStrategy
 from modules.network.network import OpenHEMSNetwork
 

@@ -318,6 +318,8 @@ class HomeAssistantAPI(HomeStateUpdater):
 				return response.json()
 			except IndexError:
 				print("The retrieved JSON is empty for day:"+ str(day) +", days_to_retrieve may be larger than the recorded history of sensor:" + var + " (check your recorder settings)")
+			else:
+				return dict()
 			# print("HomeAssistantAPI.callAPI(post data=",data,") = ", response)
 		else:
 			self.logger.error(errMsg)
