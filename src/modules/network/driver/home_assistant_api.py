@@ -323,6 +323,6 @@ class HomeAssistantAPI(HomeStateUpdater):
 			# print("HomeAssistantAPI.callAPI(post data=",data,") = ", response)
 		else:
 			self.logger.error(errMsg)
-			self.notify("Error callAPI() : status_code="+response.status_code+" : "+errMsg)
+			self.notify("Error callAPI() : status_code="+str(response.status_code)+" : "+errMsg)
 			return dict()
 
