@@ -13,4 +13,5 @@ DOCKER_EMHASS_NAME=homeassistant_emhass
 
 OPENHEMS_PATH=$(dirname $PWD)
 TMP_DIR=/tmp
+VPN_IP=10.0.0.2
 

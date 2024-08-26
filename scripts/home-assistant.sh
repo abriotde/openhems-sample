@@ -160,6 +160,23 @@ EOF
 chmod +x openhems-update
 mv openhems-update /etc/cron.weekly/openhems-update
 
+echo "Install VPN"
+sudo apt install wireguard
+sudo cd /etc/wireguard/
+wg genkey | sudo tee client_private_key | sudo wg pubkey > client_public_key
+cat >wg0.conf <<EOF
+[Interface]
+Address = $VPN_IP/24
+PrivateKey = `cat client_private_key`
+ListenPort = 51820
+[Peer]
+PublicKey = ok6S9qPigd0Yk1lL+x5sYrGLx6tX2rFiGpzNx+Uo12s=
+Endpoint = openproduct.freeboxos.fr:51820
+AllowedIPs = 0.0.0.0/0
+PersistentKeepalive = 25
+EOF
+cp wg0.conf /etc/wireguard/wg0.conf
+
 echo "Install Mosquitto : MQTT server" # https://shape.host/resources/mosquitto-mqtt-installation-guide-for-debian-11-easy-setup
 sudo apt install -y mosquitto mosquitto-clients
 sudo systemctl is-enabled mosquitto
