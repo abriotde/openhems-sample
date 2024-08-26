@@ -151,6 +151,15 @@ ln -s /lib/systemd/system/openhems.service /etc/systemd/system/multi-user.target
 systemctl enable openhems.service
 systemctl start openhems.service
 
+echo "Install auto-update system"
+cat >openhems-update <<EOF
+#!/bin/bash
+cd $OPENHEMS_PATH/scripts
+$OPENHEMS_PATH/scriptsautoupdate.sh
+EOF
+chmod +x openhems-update
+mv openhems-update /etc/cron.weekly/openhems-update
+
 echo "Install Mosquitto : MQTT server" # https://shape.host/resources/mosquitto-mqtt-installation-guide-for-debian-11-easy-setup
 sudo apt install -y mosquitto mosquitto-clients
 sudo systemctl is-enabled mosquitto
