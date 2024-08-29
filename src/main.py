@@ -20,7 +20,8 @@ class OpenHEMSApplication:
 
 	logger = None
 	@staticmethod
-	def filer():
+	def filer(self=None):
+		print("filer(",self,")")
 		now = datetime.now()
 		return 'openhems.'+now.strftime("%Y-%m-%d")+'.log'
 	def setLogger(self, loglevel, logformat, logfile):
