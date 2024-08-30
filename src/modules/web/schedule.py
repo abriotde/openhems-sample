@@ -26,7 +26,7 @@ class OpenHEMSSchedule:
 		return self.duration>0
 
 	def setSchedule(self, duration: int, timeout):
-		msg = "OpenHEMSSchedule.setSchedule("+str(duration)+" seconds, timeout="+timeout+")"
+		msg = "OpenHEMSSchedule.setSchedule("+str(duration)+" seconds, timeout="+str(timeout)+")"
 		if duration!=self.duration or self.timeout!=timeout:
 			self.logger.info(msg)
 		else:
