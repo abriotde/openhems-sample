@@ -19,7 +19,7 @@ if [ $ok == 1 ]; then
 		exit 1
 	fi
 	# Warning : do not erase configs...
-	rsync -apzh --delete --exclude='.git' openhems-sample $OPENHEMS_PATH/..
+	rsync -apzh --delete --exclude='.git' --exclude='config' openhems-sample $OPENHEMS_PATH/..
 	echo "OpenHEMS autoupdate : Stop service"
 	systemctl stop openhems.service
 	sleep 3

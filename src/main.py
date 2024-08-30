@@ -12,7 +12,7 @@ import yaml
 from datetime import datetime
 from modules.network.driver.home_assistant_api import HomeAssistantAPI
 
-yaml_conf = os.path.dirname(__file__)+"/../openhems.yaml"
+yaml_conf = os.path.dirname(__file__)+"/../config/openhems.yaml"
 LOGFORMAT = '%(levelname)s : %(asctime)s : %(message)s'
 LOGFILE = '/var/log/openhems/openhems.log'
 
