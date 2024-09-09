@@ -3,8 +3,11 @@ from .offpeak_strategy import OffPeakStrategy
 from modules.network.network import OpenHEMSNetwork
 
 
-class SolarBasedStrategy(OffPeakStrategy):
 
+class SolarBasedStrategy(OffPeakVariableStrategy):
+	"""
+		Abstract class for photovoltaic based production
+	"""
 	def  __init__(self, network: OpenHEMSNetwork, latitude, longitude, offpeakHoursRanges=[["17:00:00","09:00:00"]]):
 		self._nightime = False
 		self.isDayTime()

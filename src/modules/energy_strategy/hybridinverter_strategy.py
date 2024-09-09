@@ -4,6 +4,7 @@ import re
 import logging
 from modules.network.network import OpenHEMSNetwork
 from .solarbased_strategy import SolarBasedStrategy
+from .offpeak_strategy import OffPeakStrategy
 
 class HybridInverterStrategy(SolarBasedStrategy):
 	"""
@@ -16,8 +17,9 @@ class HybridInverterStrategy(SolarBasedStrategy):
 	Disadvantages : 
 	"""
 
-	def __init__(self, network: OpenHEMSNetwork):
+	def __init__(self, network: OpenHEMSNetwork, offpeakHoursRanges=[["22:00:00","06:00:00"]]):
 		logging.getLogger("HybridInverterStrategy").error("SolarOnlyProductionStrategy() : TODO")
+		self.offpeakHoursRanges = OffPeakStrategy.parseOffPeakHoursRanges(offpeakHoursRanges)
 		# TODO
 	def updateNetwork(self, cycleDuration):
 		logging.getLogger("HybridInverterStrategy").error("SolarOnlyProductionStrategy.updateNetwork() : TODO")

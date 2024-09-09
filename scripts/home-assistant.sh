@@ -71,6 +71,7 @@ sudo docker run -d \
   --restart=unless-stopped \
   -e TZ=MY_TIME_ZONE \
   -v $HOMEASSISTANT_DIR/config:/config \
+  -v /etc/localtime:/etc/localtime:ro
   -v /run/dbus:/run/dbus:ro \
   --network=host \
   ghcr.io/home-assistant/home-assistant:stable
@@ -89,6 +90,18 @@ docker stop homeassistant
 sleep 3
 docker start homeassistant
 wait_homeassistant_container_up
+
+echo "Install AppDeamon"
+sudo docker run -d \
+	--name appdeamon \
+	--restart=unless-stopped \
+	-v /etc/localtime:/etc/localtime:ro \
+	-v /home/olimex/openhems-sample/conf/:/conf \
+	-e HA_URL="http://127.0.0.1:8123" \
+	-e DASH_URL="http://127.0.0.1:5050" \
+	-e TOKEN="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJmMDQxZTAwMGMzZjY0NDlhOTczNjc3ODEzNDcyYmFjYSIsImlhdCI6MTcyMjg2MDU1MCwiZXhwIjoyMDM4MjIwNTUwfQ.ax43jT3rpbUnWJpurehBeOV4yQGAlW5-2VlDvhKREvg" \
+	--network=host \
+	acockburn/appdaemon:latest
 
 echo "Install HTTPS : reverse-proxy NginX"
 # sudo add-apt-repository ppa:certbot/certbot
