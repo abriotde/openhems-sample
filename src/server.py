@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import logging
+import logging, os
 import time
 import re
 from datetime import datetime
@@ -20,7 +20,7 @@ class OpenHEMSServer:
 			self.strategy = OffPeakStrategy(self.network, params)
 		else:
 			self.logger.critical("OpenHEMSServer() : Unknown strategy '"+strategy+"'")
-			exit(1)
+			os._exit(1)
 
 	def loop(self, loop_delay):
 		self.logger.debug("OpenHEMSServer.loop()")
