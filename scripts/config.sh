@@ -11,7 +11,9 @@ DOCKER_NAME=homeassistant
 HOMEASSISTANT_EMHASS_DIR=$HOMEASSISTANT_DIR/emhass
 DOCKER_EMHASS_NAME=homeassistant_emhass
 
-OPENHEMS_PATH=$(dirname $PWD)
+OPENHEMS_USER=olimex
+OPENHEMS_PATH=/home/olimex/openhems-sample
+OPENHEMS_BRANCH=main
 TMP_DIR=/tmp
 VPN_IP=10.0.0.2
 

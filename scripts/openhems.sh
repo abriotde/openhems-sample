@@ -6,7 +6,7 @@ source config.sh
 source functions.sh
 
 echo "Install OpenHEMS server"
-sudo apt install -y python3-pandas python3-yaml python3-pyramid python3-pyramid-jinja2 python3-astral
+sudo apt install -y python3-pandas python3-yaml python3-pyramid python3-pyramid-jinja2 python3-astral anacron
 OPENHEMS_LOGPATH=/var/log/openhems
 sudo mkdir -p $OPENHEMS_LOGPATH
 cat >openhems.service <<EOF
