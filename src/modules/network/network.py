@@ -2,7 +2,7 @@
 from enum import Enum
 from collections import deque
 from typing import Final
-import logging
+import logging, os
 logger = logging.getLogger(__name__)
 
 from .feeder import Feeder, SourceFeeder, ConstFeeder
@@ -62,7 +62,7 @@ class OpenHEMSNetwork:
 			p = elem.getCurrentPower()
 			if isinstance(p, str):
 				logger.critical("power as string : "+p)
-				exit(1)
+				os._exit(1)
 			pow += p
 		return pow
 	def getCurrentMaxPower(self):

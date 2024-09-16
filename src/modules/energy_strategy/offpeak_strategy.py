@@ -89,7 +89,7 @@ class OffPeakStrategy(EnergyStrategy):
 						self.logger.warning("Fail switch off "+node.id+".")
 			elif doSwitchOn and node.getSchedule().isScheduled():
 				if node.switchOn(True):
-					self.logger.info("Switch on ",node.id," successfully.")
+					self.logger.info("Switch on '"+str(node.id)+"' successfully.")
 					return True
 				else:
 					self.logger.warning("Fail switch on "+node.id+".")

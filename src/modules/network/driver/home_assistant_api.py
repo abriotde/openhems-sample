@@ -5,7 +5,7 @@ import time
 import pandas as pd
 from requests import get, post
 import yaml
-import logging
+import logging, os
 from modules.network.network import OpenHEMSNetwork, HomeStateUpdater
 from modules.network.node import *
 from modules.network.feeder import *
@@ -41,6 +41,7 @@ class HomeAssistantAPI(HomeStateUpdater):
 		self._elemsKeysCache = None
 		self.cached_ids = dict()
 		self.refresh_id = 0
+		self.sleep_duration_onerror = 2 # Time to sleep after wrong HomeAssistant call 
 
 	def getHANodes(self):
 		"""
@@ -70,7 +71,7 @@ class HomeAssistantAPI(HomeStateUpdater):
 				feeder = ConstFeeder(key)
 		elif default_value is None:
 			self.logger.critical("HomeAssistantAPI.getFeeder missing configuration key '"+kkey+"'  for network in YAML file ")
-			exit(1)
+			os._exit(1)
 		else:
 			feeder = ConstFeeder(default_value)
 		return feeder
@@ -94,7 +95,7 @@ class HomeAssistantAPI(HomeStateUpdater):
 				node = SolarPanel(currentPower, maxPower, minPower, powerMargin)
 			else:
 				self.logger.critical("HomeAssistantAPI.getNetwork : Unknown classname '"+classname+"'")
-				exit(1)
+				os._exit(1)
 			if "id" in e.keys():
 				node.id = e["id"]
 			# print(node)
@@ -115,7 +116,7 @@ class HomeAssistantAPI(HomeStateUpdater):
 				node = OutNode(id, currentPower, maxPower, isOn)
 			else:
 				self.logger.critical("HomeAssistantAPI.getNetwork : Unknown classname '"+classname+"'")
-				exit(1)
+				os._exit(1)
 			# print(node)
 			self.network.addNode(node, False)
 		self.network.print(self.logger.info)
@@ -146,7 +147,7 @@ class HomeAssistantAPI(HomeStateUpdater):
 				return value
 		else:
 			print(".toType(",type,",",value,") : Unknwon type")
-			exit(1)
+			os._exit(1)
 		return value
 
 	def updateNetwork(self):
@@ -297,7 +298,7 @@ class HomeAssistantAPI(HomeStateUpdater):
 		except Exception as error:
 			self.logger.critical("Unable to access Home Assistance instance, check URL : "+str(error))
 			self.logger.critical("HomeAssistantAPI.callAPI("+url+", "+str(data)+")")
-			exit(1)
+			os._exit(1)
 		errMsg = ""
 		if response.status_code == 500:
 			errMsg = ("Unable to access Home Assistance due to error, check devices are up ("+url+", "+str(data)+")")
@@ -313,6 +314,9 @@ class HomeAssistantAPI(HomeStateUpdater):
 		with bz2.BZ2File("data/test_response_get_data_get_method.pbz2", "w") as f: 
 		cPickle.dump(response, f)"""
 		if errMsg=="":
+			time.sleep(self.sleep_duration_onerror) # Maybe is the server overload, overwise it's better to slow down to avoid useless infinite loop on errors.
+			self.sleep_duration_onerror *= 2
+			if self.sleep_duration_onerror>64: self.sleep_duration_onerror=64
 			try:  # Sometimes when there are connection problems we need to catch empty retrieved json
 				# print("Response: ",response)
 				return response.json()
@@ -322,6 +326,8 @@ class HomeAssistantAPI(HomeStateUpdater):
 				return dict()
 			# print("HomeAssistantAPI.callAPI(post data=",data,") = ", response)
 		else:
+			if self.sleep_duration_onerror>2:
+				self.sleep_duration_onerror /= 2
 			self.logger.error(errMsg)
 			self.notify("Error callAPI() : status_code="+str(response.status_code)+" : "+errMsg)
 			return dict()
