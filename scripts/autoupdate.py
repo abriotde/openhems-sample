@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import os, requests
-import re
+import re, time
 import functools
 from importlib.machinery import SourceFileLoader
 
@@ -127,11 +127,17 @@ class Updater:
 				return False
 			current_version = self.getCurrentVersion()
 			self.postupdate(starting_version, current_version)
+			self.restartOpenHEMSServer()
 			print("Successfully update. Your OpenHEMS version was "+starting_version+" and is now "+current_version)
 			return True
 		else:
 			print("No new version available. Nothing more to do.")
 			return True
+	def restartOpenHEMSServer(self):
+		os.system('systemctl stop openhems.service')
+		time.sleep(3)
+		os.system('systemctl start openhems.service')
+
 updater = Updater.initFromEnv()
 updater.check4update()
 

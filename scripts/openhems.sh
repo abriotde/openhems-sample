@@ -6,7 +6,7 @@ source config.sh
 source functions.sh
 
 echo "Install OpenHEMS server"
-sudo apt install -y python3-pandas python3-yaml python3-pyramid python3-pyramid-jinja2 python3-astral anacron
+sudo apt install -y python3-pandas python3-yaml python3-pyramid python3-pyramid-jinja2 python3-astral anacron wireguard
 OPENHEMS_LOGPATH=/var/log/openhems
 sudo mkdir -p $OPENHEMS_LOGPATH
 cat >openhems.service <<EOF
@@ -56,6 +56,25 @@ dhparamfile /etc/mosquitto/certs/dhparam.pem
 EOF
 sudo mv ssl.conf /etc/mosquitto/conf.d/ssl.conf
 sudo systemctl restart mosquitto
+
+echo "Install VPN"
+wg genkey | sudo tee /etc/wireguard/private.key
+sudo chmod go= /etc/wireguard/private.key
+sudo cat /etc/wireguard/private.key | wg pubkey | sudo tee /etc/wireguard/public.key
+
+PRIV_KEY=$(sudo cat /etc/wireguard/client_private_key)
+cat >wg0.conf <<EOF
+[Interface]
+Address = $VPN_IP/24
+PrivateKey = $PRIV_KEY
+ListenPort = 51820
+[Peer]
+PublicKey = ok6S9qPigd0Yk1lL+x5sYrGLx6tX2rFiGpzNx+Uo12s=
+Endpoint = openproduct.freeboxos.fr:51820
+AllowedIPs = 0.0.0.0/0
+PersistentKeepalive = 25
+EOF
+sudo mv wg0.conf /etc/wireguard/wg0.conf
 
 exit
 
