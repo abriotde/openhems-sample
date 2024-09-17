@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
     renderer='templates/panel.jinja2'
 )
 def panel(request):
-    return { "nodes": openHEMSContext.schedule }
+	return { "nodes": openHEMSContext.schedule }
 
 def testVPN():
 	"""
