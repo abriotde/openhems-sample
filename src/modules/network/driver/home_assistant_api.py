@@ -250,7 +250,7 @@ class HomeAssistantAPI(HomeStateUpdater):
 		if isOn!=node.isOn():
 			if isOn: expectStr = "on"
 			else: expectStr = "off"
-			entity_id = node._isOn.nameid
+			entity_id = node.id
 			data = {"entity_id": entity_id}
 			response = self.callAPI("/services/switch/turn_"+expectStr, data)
 			if len(response)==0: # Case there is no change in switch position
@@ -303,7 +303,7 @@ class HomeAssistantAPI(HomeStateUpdater):
 		if response.status_code == 500:
 			errMsg = ("Unable to access Home Assistance due to error, check devices are up ("+url+", "+str(data)+")")
 		elif response.status_code == 401:
-			errMsg = ("Unable to access Home Assistance instance, TOKEN/KEY")
+			errMsg = ("Unable to access Home Assistance instance, (url="+url+", token="+self.token+" data="+str(data)+")")
 			errMsg += ("If using addon, try setting url and token to 'empty'")
 		elif response.status_code == 404:
 			errMsg = ("Invalid URL '"+self.api_url+url+"'")
@@ -329,6 +329,7 @@ class HomeAssistantAPI(HomeStateUpdater):
 			if self.sleep_duration_onerror>2:
 				self.sleep_duration_onerror /= 2
 			self.logger.error(errMsg)
-			self.notify("Error callAPI() : status_code="+str(response.status_code)+" : "+errMsg)
+			if url!="/services/notify/persistent_notification": # To avoid infinite loop
+				self.notify("Error callAPI() : status_code="+str(response.status_code)+" : "+errMsg)
 			return dict()
 

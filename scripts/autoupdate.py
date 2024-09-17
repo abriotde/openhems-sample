@@ -94,7 +94,7 @@ class Updater:
 		path = self.tmp_dir+"/"+self.project_name+"-"+self.branch
 		exeList = open(path+'/scripts/files.lst', 'r')
 		for filepath in exeList.readlines():
-			os.chmod(path+"/"+filepath, 0o755)
+			os.chmod(path+"/"+(filepath.strip()), 0o755)
 		for subdir in ["src","img","scripts", "version"]:
 			ok = os.system('rsync -apzh --delete "'+path+"/"+subdir+'" "'+self.path+'/"')
 			if ok!=0:
