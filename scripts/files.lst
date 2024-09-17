@@ -1,0 +1,14 @@
+scripts/autoupdate.py
+scripts/autoupdate.sh
+scripts/backup.sh
+scripts/deploy.sh
+scripts/emhass.sh
+scripts/home-assistant.sh
+scripts/init_server.sh
+scripts/installFromScratch.sh
+scripts/openhems.sh
+src/main.py
+src/modules/web/web.py
+src/server.py
+src/test.py
+src/testAPI.py
