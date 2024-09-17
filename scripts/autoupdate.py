@@ -27,10 +27,9 @@ class Updater:
 	@staticmethod
 	def initFromEnv():
 		path = os.environ.get('OPENHEMS_PATH')
-		user = os.environ.get('OPENHEMS_USER')
-		branch = os.environ.get('OPENHEMS_BRANCH')
-		if branch is None: branch="main"
-		tmp_dir = os.environ.get('TMP_DIR')
+		user = os.environ.get('OPENHEMS_USER', 'root')
+		branch = os.environ.get('OPENHEMS_BRANCH', 'main')
+		tmp_dir = os.environ.get('TMP_DIR', '/tmp')
 		project_name = "openhems-sample"
 		return Updater(project_name, path, tmp_dir, user, branch)
 
