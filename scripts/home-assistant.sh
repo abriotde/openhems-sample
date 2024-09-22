@@ -23,7 +23,7 @@ echo \
 sudo apt update
 # Add $USER to docker group
 sudo groupadd docker
-sudo usermod -aG docker $USER
+sudo usermod -aG docker $OPENHEMS_USER
 sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
 echo "Run Home-Assistant"

@@ -6,14 +6,18 @@ source config.sh
 
 # sudo hwclock --hctosys
 # sudo date --set "15 Jul 2024 22:55:00"
-sudo apt install ntp
+sudo apt install ntp ntpdate
 sudo dpkg-reconfigure tzdata
+sudo ntpdate ntp.ubuntu.com
 sudo apt update
 sudo apt upgrade -y
 
 echo "Change default password"
 passwd
 hostname -I
+
+echo "Change hostname"
+sudo echo "openhems" > /etc/hostname
 
 echo "Set static IP"
 cat >eth0  <<EOF
@@ -33,15 +37,15 @@ exit
 echo "Set static IP"
 cat >01-network-manager-all.yaml  <<EOF
 network:
- version: 2
- renderer: NetworkManager
- ethernets:
-   eth0:
-     dhcp4: no
-     addresses: [$HOMEASSISTANT_IP/20]
-     gateway4: `ip route|head -1|awk '{print $3}'`
-     nameservers:
-         addresses: [8.8.8.8,8.8.8.4]
+  version: 2
+  renderer: NetworkManager
+  ethernets:
+    eth0:
+      dhcp4: no
+      addresses: [$HOMEASSISTANT_IP/20]
+      gateway4: `ip route|head -1|awk '{print $3}'`
+      nameservers:
+        addresses: [8.8.8.8,8.8.8.4]
 EOF
 sudo mv 01-network-manager-all.yaml /etc/netplan/01-network-manager-all.yaml
 

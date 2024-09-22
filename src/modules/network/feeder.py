@@ -23,7 +23,10 @@ class SourceFeeder(Feeder):
 		return self.value
 
 class ConstFeeder(Feeder):
-	def __init__(self, value):
+	def __init__(self, value, nameid=None):
 		self.value = value
+		if nameid is None:
+			nameid = str(value)
+		self.nameid = nameid
 
 

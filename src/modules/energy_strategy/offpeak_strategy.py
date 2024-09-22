@@ -93,6 +93,10 @@ class OffPeakStrategy(EnergyStrategy):
 					return True
 				else:
 					self.logger.warning("Fail switch on "+node.id+".")
+			else:
+				self.logger.debug("switchOn() : Node is off and not schedule : "+node.id+".")
+		else:
+			self.logger.debug("switchOn() : Node is not switchable : "+node.id+".")
 		return False
 
 	def switchOnMax(self, cycleDuration):

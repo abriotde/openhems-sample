@@ -250,7 +250,7 @@ class HomeAssistantAPI(HomeStateUpdater):
 		if isOn!=node.isOn():
 			if isOn: expectStr = "on"
 			else: expectStr = "off"
-			entity_id = node.id
+			entity_id = node._isOn.nameid
 			data = {"entity_id": entity_id}
 			response = self.callAPI("/services/switch/turn_"+expectStr, data)
 			if len(response)==0: # Case there is no change in switch position
@@ -308,28 +308,22 @@ class HomeAssistantAPI(HomeStateUpdater):
 		elif response.status_code == 404:
 			errMsg = ("Invalid URL '"+self.api_url+url+"'")
 		elif response.status_code > 299:
-			errMsg = ("Request Get Error: {response.status_code}")
-		"""import bz2 # Uncomment to save a serialized data for tests
-		import _pickle as cPickle
-		with bz2.BZ2File("data/test_response_get_data_get_method.pbz2", "w") as f: 
-		cPickle.dump(response, f)"""
-		if errMsg=="":
+			errMsg = ("Request Get Error: %d, "%response.status_code)
+		if errMsg!="":
 			time.sleep(self.sleep_duration_onerror) # Maybe is the server overload, overwise it's better to slow down to avoid useless infinite loop on errors.
 			self.sleep_duration_onerror *= 2
 			if self.sleep_duration_onerror>64: self.sleep_duration_onerror=64
-			try:  # Sometimes when there are connection problems we need to catch empty retrieved json
-				# print("Response: ",response)
-				return response.json()
-			except IndexError:
-				print("The retrieved JSON is empty for day:"+ str(day) +", days_to_retrieve may be larger than the recorded history of sensor:" + var + " (check your recorder settings)")
-			else:
-				return dict()
-			# print("HomeAssistantAPI.callAPI(post data=",data,") = ", response)
-		else:
-			if self.sleep_duration_onerror>2:
-				self.sleep_duration_onerror /= 2
+			errMsg += " ("+url+", "+str(data)+")"
 			self.logger.error(errMsg)
 			if url!="/services/notify/persistent_notification": # To avoid infinite loop
 				self.notify("Error callAPI() : status_code="+str(response.status_code)+" : "+errMsg)
+		else:
+			if self.sleep_duration_onerror>2:
+				self.sleep_duration_onerror /= 2
+		try:  # Sometimes when there are connection problems we need to catch empty retrieved json
+			return response.json()
+		except Exception:
+			if errMsg=="":
+				self.logger.error("Fail parse response "+str(reponse))
 			return dict()
 
