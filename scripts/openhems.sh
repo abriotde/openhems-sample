@@ -16,7 +16,7 @@ After = docker.target
 
 [Service]
 # User=openhems
-ExecStart = $OPENHEMS_PATH/src/main.py
+ExecStart = $OPENHEMS_PATH/src/openhems/main.py
 StandardOutput=append:$OPENHEMS_LOGPATH/openhems.service.log
 StandardError=append:$OPENHEMS_LOGPATH/openhems.service.error.log
 SyslogIdentifier=OpenHEMS

@@ -1,7 +1,7 @@
 <!-- For Github : a cool 1st page -->
 <div align="center">
   <br>
-  <img alt="OpenHomeSystem" src="https://openhomesystem.com/wp-content/uploads/2024/10/cropped-logo_openhomesystem_100.png" width="300px">
+  <img alt="OpenHomeSystem" src="https://openhomesystem.com/wp-content/uploads/2024/10/cropped-logo_openhomesystem_100.png">
   <h1>OpenHEMS</h1>
   <strong>A simple Home Energy Management System</strong>
 </div>

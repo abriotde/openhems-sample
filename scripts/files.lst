@@ -7,8 +7,8 @@ scripts/home-assistant.sh
 scripts/init_server.sh
 scripts/installFromScratch.sh
 scripts/openhems.sh
-src/main.py
-src/modules/web/web.py
-src/server.py
-src/test.py
-src/testAPI.py
+src/openhems/main.py
+src/openhems/modules/web/web.py
+src/openhems/server.py
+src/openhems/test.py
+src/openhems/testAPI.py

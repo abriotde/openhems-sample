@@ -1,0 +1,26 @@
+[project]
+name = "OpenHEMS"
+version = "0.1.0"
+authors = [
+	{ name="OpenHomeSystem", email="contact@openhomesystem.com" },
+]
+maintainers = [
+	{ name="Albéric de la Crochais", email="alberic.delacrochais@protonmail.com" }
+]
+description = "A sample Home Energy Managment System based on Home-Assistant"
+readme = "readme.md"
+requires-python = ">=3"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GPLv3 License",
+    "Operating System :: Linux",
+]
+
+[project.urls]
+Homepage = "https://openhomesystem.com"
+Issues = "https://github.com/abriotde/openhems-sample/issues"
+
+[build-system]
+requires = ["pandas", "pyyaml", "pyramid", "pyramid-jinja2", "astral"]
+# build-backend = "openhems.build"
+

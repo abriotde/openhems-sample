@@ -3,7 +3,7 @@ Description = OpenHEMS server (core and web).
 After = docker.target
 
 [Service]
-ExecStart = /home/olimex/openhems-sample/src/main.py
+ExecStart = /home/olimex/openhems-sample/src/openhems/main.py
 
 [Install]
 WantedBy = multi-user.target
