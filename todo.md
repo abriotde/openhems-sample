@@ -16,3 +16,6 @@
 - dev/maintenance Add remote SSH maintenance (on 'dev')
 - dev/rust : re-implement it as Rust
 
+- PyPi : https://pypi.org/project/emhass/
+- https://readthedocs.org/dashboard/
+
