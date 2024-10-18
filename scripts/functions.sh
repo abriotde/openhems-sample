@@ -14,3 +14,13 @@ function wait_homeassistant_container_up {
 	sleep 30
 }
 
+function activate_service {
+	service = $1
+    systemctl enable $service
+    systemctl start $service
+    ok=`systemctl is-active --quiet $service`
+    if [ $ok != 0 ]; then
+        echo "ERROR : Fail activate '$service'. Something goes wrong. Cancel installation."
+        exit(1)
+    fi
+}

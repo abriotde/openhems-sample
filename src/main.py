@@ -5,7 +5,6 @@ from server import OpenHEMSServer
 from threading import Thread
 
 import logging
-from logging.handlers import TimedRotatingFileHandler
 import os
 import json
 import yaml
@@ -35,7 +34,7 @@ class OpenHEMSApplication:
 			level=logging.CRITICAL
 		else: # if loglevel=="info":
 			level=logging.INFO
-		rotating_file_handler = TimedRotatingFileHandler(filename=logfile,
+		rotating_file_handler = logging.handlers.TimedRotatingFileHandler(filename=logfile,
         	when='D',
         	interval=1,
         	backupCount=5)
@@ -44,6 +43,9 @@ class OpenHEMSApplication:
 		rotating_file_handler.setFormatter(formatter)
 		logging.basicConfig(level=level, format=logformat, handlers=[rotating_file_handler])
 		self.logger = logging.getLogger(__name__)
+		self.logger.addHandler(rotating_file_handler)
+		# watched_file_handler = logging.handlers.WatchedFileHandler(logfile)
+		# self.logger.addHandler(watched_file_handler)
 		return self.logger
 
 	@staticmethod

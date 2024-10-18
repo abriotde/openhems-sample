@@ -6,7 +6,7 @@ source config.sh
 source functions.sh
 
 echo "Install OpenHEMS server"
-sudo apt install -y python3-pandas python3-yaml python3-pyramid python3-pyramid-jinja2 python3-astral anacron wireguard
+sudo apt install -y python3-pandas python3-yaml python3-pyramid python3-pyramid-jinja2 python3-astral anacron wireguard logrotate
 OPENHEMS_LOGPATH=/var/log/openhems
 sudo mkdir -p $OPENHEMS_LOGPATH
 cat >openhems.service <<EOF
@@ -28,8 +28,7 @@ EOF
 sudo mv openhems.service /lib/systemd/system/
 ln -s /lib/systemd/system/openhems.service /etc/systemd/system/multi-user.target.wants
 
-systemctl enable openhems.service
-systemctl start openhems.service
+activate_service openhems.service
 
 echo "Install Mosquitto : MQTT server" # https://shape.host/resources/mosquitto-mqtt-installation-guide-for-debian-11-easy-setup
 sudo apt install -y mosquitto mosquitto-clients
@@ -78,25 +77,36 @@ sudo mv wg0.conf /etc/wireguard/wg0.conf
 
 exit
 
-echo "Set logrotate but not working with Python.logging so use TimedRotatingFileHandler"
+echo "Configure logrotate"
 cat >openhems <<EOF
-/var/log/openhems.log {
+/var/log/openhems/openhems.log {
   rotate 6
   daily
   compress
   missingok
   notifempty
   delaycompress
-  create 640 root $USER
+  create 644 root $USER
 }
-/var/log/openhems.error.log {
+/var/log/openhems/service.log {
+  rotate 6
+  daily
+  compress
+  missingok
+  notifempty
+  delaycompress
+  create 644 root $USER
+}
+/var/log/openhems/service.error.log {
   rotate 6
   daily
   compress
   missingok
   delaycompress
-  create 640 root $USER
+  create 644 root $USER
 }
 EOF
 sudo mv openhems /etc/logrotate.d/openhems
+sudo ln -s /lib/systemd/system/logrotate.service /etc/systemd/system/multi-user.target.wants/
+activate_service logrotate
 
