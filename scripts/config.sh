@@ -17,5 +17,3 @@ OPENHEMS_BRANCH=main
 TMP_DIR=/tmp
 VPN_IP=10.0.0.2
 
-source ../config/config.inc.sh
-
