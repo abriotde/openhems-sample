@@ -12,12 +12,12 @@
     <img alt="GitHub release (latest by date)" src="https://img.shields.io/github/v/release/abriotde/openhems-sample">
   </a>
   <a style="text-decoration:none" href="https://github.com/abriotde/openhems-sample/actions">
-    <img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/abriotde/openhems-sample/python-test.yml?branch=master">
+    <img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/abriotde/openhems-sample/python-test.yml?branch=main">
   </a>
   <a hstyle="text-decoration:none" ref="https://codecov.io/github/abriotde/openhems-sample" >
-    <img src="https://codecov.io/github/abriotde/openhems-sample/branch/master/graph/badge.svg?token=BW7KSCHN90"/>
+    <img src="https://codecov.io/github/abriotde/openhems-sample/branch/main/graph/badge.svg?token=BW7KSCHN90"/>
   </a>
-  <a style="text-decoration:none" href="https://github.com/abriotde/openhems-sample/blob/master/LICENSE">
+  <a style="text-decoration:none" href="https://github.com/abriotde/openhems-sample/blob/main/LICENSE">
     <img alt="GitHub" src="https://img.shields.io/github/license/abriotde/openhems-sample">
   </a>
   <!-- a style="text-decoration:none" href="https://pypi.org/project/openhems-sample/">
@@ -26,23 +26,23 @@
   <a style="text-decoration:none" href="https://pypi.org/project/openhems/">
     <img alt="PyPI - Status" src="https://img.shields.io/pypi/status/openhems">
   </a -->
-  <!-- a style="text-decoration:none" href="https://openhems.readthedocs.io/en/latest/">
+  <a style="text-decoration:none" href="https://openhems.readthedocs.io/en/latest/">
     <img alt="Read the Docs" src="https://img.shields.io/readthedocs/openhems-sample">
-  </a -->
+  </a>
 </p>
 
 <div align="center">
-  <!-- a style="text-decoration:none" href="https://openhems.readthedocs.io/en/latest/">
-      <img src="https://raw.githubusercontent.com/abriotde/openhems-sample/master/docs/images/Documentation_button.svg" alt="Documentation">
-  </a -->
+  <a style="text-decoration:none" href="https://openhems.readthedocs.io/en/latest/">
+      <img src="https://raw.githubusercontent.com/abriotde/openhems-sample/main/docs/images/Documentation_button.svg" alt="Documentation">
+  </a>
   <!-- a style="text-decoration:none" href="https://community.home-assistant.io/t/openhems-sample-an-energy-management-for-home-assistant/338126">
-      <img src="https://raw.githubusercontent.com/abriotde/openhems-sample/master/docs/images/Community_button.svg" alt="Community">
+      <img src="https://raw.githubusercontent.com/abriotde/openhems-sample/main/docs/images/Community_button.svg" alt="Community">
   </a -->
   <a style="text-decoration:none" href="https://github.com/abriotde/openhems-sample/issues">
-      <img src="https://raw.githubusercontent.com/abriotde/openhems-sample/master/docs/images/Issues_button.svg" alt="Issues">
+      <img src="https://raw.githubusercontent.com/abriotde/openhems-sample/main/docs/images/Issues_button.svg" alt="Issues">
   </a>
   <!-- a style="text-decoration:none" href="https://github.com/abriotde/openhems-sample-add-on">
-     <img src="https://raw.githubusercontent.com/abriotde/openhems-sample/master/docs/images/EMHASS_Add_on_button.svg" alt="OpenHEMS Add-on">
+     <img src="https://raw.githubusercontent.com/abriotde/openhems-sample/main/docs/images/EMHASS_Add_on_button.svg" alt="OpenHEMS Add-on">
   </a -->
 </div>
 

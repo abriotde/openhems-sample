@@ -96,6 +96,9 @@ class OpenHEMSApplication:
 		# t.join()
 		# t.run()
 
-app = OpenHEMSApplication(yaml_conf)
-app.run()
+def main():
+	app = OpenHEMSApplication(yaml_conf)
+	app.run()
+
+main()
 
