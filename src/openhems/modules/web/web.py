@@ -47,11 +47,11 @@ def startVPN(start:bool=True):
 	result = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
 
 @view_config(
-    route_name='params',
-    renderer='templates/params.jinja2'
+	route_name='params',
+	renderer='templates/params.jinja2'
 )
 def params(request):
-    return { "vpn": "up" if testVPN() else "down" }
+	return { "vpn": "up" if testVPN() else "down" }
 
 @view_config(
     route_name='vpn',
@@ -96,15 +96,15 @@ class OpenhemsHTTPServer():
 
 	def run(self):
 		with Configurator() as config:
-		    config.include('pyramid_jinja2')
-		    config.add_route('panel', '/')
-		    config.add_route('states', '/states')
-		    config.add_route('params', '/params')
-		    config.add_route('vpn', '/vpn')
-		    # config.add_route('favicon.ico', '/favicon.ico')
-		    config.add_static_view(name='img', path='modules.web:../../../img')
-		    config.scan()
-		    app = config.make_wsgi_app()
+			config.include('pyramid_jinja2')
+			config.add_route('panel', '/')
+			config.add_route('states', '/states')
+			config.add_route('params', '/params')
+			config.add_route('vpn', '/vpn')
+			# config.add_route('favicon.ico', '/favicon.ico')
+			config.add_static_view(name='img', path='modules.web:../../../img')
+			config.scan()
+			app = config.make_wsgi_app()
 		server = make_server('0.0.0.0', 8000, app)
 		server.serve_forever()
 

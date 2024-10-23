@@ -15,6 +15,7 @@ class SolarBasedStrategy(OffPeakStrategy):
 		self.lastAutonomousRatio = 0
 		self.setOffPeakHoursRanges(offpeakHoursRanges)
 		self.checkRange()
+		self._sunrise = datetime.now() # TODO
 
 	def updateNetwork(self):
 		logging.getLogger("SolarBasedStrategy").error("SolarBasedStrategy.updateNetwork() : To implement in sub-class")

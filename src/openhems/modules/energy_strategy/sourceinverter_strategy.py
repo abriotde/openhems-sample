@@ -18,7 +18,7 @@ class SourceInverterStrategy(SolarBasedStrategy):
 	"""
 
 
-	def __init__(self, network: OpenHEMSNetwork, gridId:str, inverterId:str, config):
+	def __init__(self, network: OpenHEMSNetwork, gridId:str, inverterId:str, config, offpeakHoursRanges):
 		self.logger = logging.getLogger(__name__)
 		self.logger.info("SourceInverterStrategy("+str(config)+")")
 		self.network = network
@@ -48,7 +48,7 @@ class SourceInverterStrategy(SolarBasedStrategy):
 					self.logger.warning("Fail to switch to solar production.")
 			else: # If solar production shouldn't satisfy switchable consumption, switch on devices.
 				if self.itsStressyDay() and self.isOffPeakTime():
-					self.switchOnMax()
+					self.switchOnMax(cycleDuration)
 				else:
 					self.switchOnCriticDevices(switchOffOthers=True)
 		else: # Grid source is off as it is an inverter

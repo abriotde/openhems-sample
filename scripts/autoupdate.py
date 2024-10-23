@@ -74,10 +74,7 @@ class Updater:
 				print("> Run postupdate ",version)
 				mod_name = "postupdate-"+version
 				filepath = self.path+"/scripts/postupdate/"
-				pyscript= SourceFileLoader(
-					mod_name,
-					filepath+"/"+mod_name+".py"
-				).load_module()
+				pyscript= SourceFileLoader(mod_name, filepath+"/"+mod_name+".py").load_module()
 				pyscript.update()
 		return True
 
@@ -125,7 +122,7 @@ class Updater:
 			print('New version available ("'+latest_version+'"). Updating...')
 			ok = self.update()
 			if not ok:
-				print("ERROR : OpenHEMS/Update : Fail copy directory '"+subdir+"'")
+				print("ERROR : OpenHEMS/Update : Fail")
 				return False
 			current_version = self.getCurrentVersion()
 			self.postupdate(starting_version, current_version)

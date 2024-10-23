@@ -130,7 +130,7 @@ class OpenHEMSNetwork:
 		ok = True
 		for elem in self.out:
 			if elem.isSwitchable and elem.switchOn(False):
-				logger.warning("Fail to switch off ",elem.id)
+				logger.warning("Fail to switch off '"+elem.id+"'")
 				ok = False
 		return ok
 

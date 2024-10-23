@@ -6,9 +6,10 @@ import pandas as pd
 from requests import get, post
 import yaml
 import logging, os
-from modules.network.network import OpenHEMSNetwork, HomeStateUpdater
-from modules.network.node import *
-from modules.network.feeder import *
+from openhems.modules.network.network import OpenHEMSNetwork, HomeStateUpdater
+from openhems.modules.network.node import *
+from openhems.modules.network.feeder import *
+from openhems.modules.network.node import OutNode
 from typing import Final
 
 
@@ -148,7 +149,6 @@ class HomeAssistantAPI(HomeStateUpdater):
 		else:
 			print(".toType(",type,",",value,") : Unknwon type")
 			os._exit(1)
-		return value
 
 	def updateNetwork(self):
 		response = self.callAPI("/states")
@@ -195,7 +195,7 @@ class HomeAssistantAPI(HomeStateUpdater):
 		return e
 
 	def createNodeElement(self, elem):
-		self.logger.debug("createNodeElement(",elem,")")
+		self.logger.debug("createNodeElement("+str(elem)+")")
 		return elem
 
 	def getElemById(self, id:str):
@@ -284,6 +284,7 @@ class HomeAssistantAPI(HomeStateUpdater):
 			"Authorization": "Bearer " + self.token,
 			"content-type": "application/json",
 		}
+		response = None
 		try:
 			if data is None:
 				response = get(self.api_url+url, 

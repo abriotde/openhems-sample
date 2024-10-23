@@ -11,7 +11,7 @@ class OffGridStrategy(SolarBasedStrategy):
 	"""
 
 
-	def __init__(self, network: OpenHEMSNetwork, gridId:str, inverterId:str, config):
+	def __init__(self, network: OpenHEMSNetwork, gridId:str, inverterId:str, config, offpeakHoursRanges):
 		self.logger = logging.getLogger(__name__)
 		self.logger.info("OffGridStrategy("+str(offpeakHoursRanges)+")")
 		self.network = network

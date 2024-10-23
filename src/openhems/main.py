@@ -4,6 +4,7 @@ from modules.web import OpenhemsHTTPServer
 from server import OpenHEMSServer
 from threading import Thread
 
+import sys
 import logging
 import os
 import json
@@ -19,8 +20,8 @@ class OpenHEMSApplication:
 
 	logger = None
 	@staticmethod
-	def filer(self=None):
-		print("filer(",self,")")
+	def filer(param=None):
+		print("filer(",param,")")
 		now = datetime.now()
 		return 'openhems.'+now.strftime("%Y-%m-%d")+'.log'
 	def setLogger(self, loglevel, logformat, logfile):
@@ -71,7 +72,7 @@ class OpenHEMSApplication:
 				networkSource = serverConf["network"].lower()
 			except KeyError as e:
 				print("ERROR : KeyError due to missing key "+str(e)+" in YAML configuration file '"+yaml_conf+"'")
-				exit(1)
+				sys.exit(1)
 			if networkSource=="homeassistant":
 				networkUpdater = HomeAssistantAPI(conf)
 			else:
@@ -83,12 +84,21 @@ class OpenHEMSApplication:
 		network.notify("Start OpenHEMS.")
 
 	def run_management_server(self):
+		"""
+		Run core server (Smart part) without the webserver part. 
+		"""
 		self.server.run()
 
 	def run_web_server(self):
+		"""
+		Run just the webserver part.
+		"""
 		self.webserver.run()
 
 	def run(self):
+		"""
+		Run wall OpenHEMS Application
+		"""
 		t0 = Thread(target=self.run_web_server, args=[])
 		t0.start()
 		t1 = Thread(target=self.run_management_server, args=[])
@@ -97,6 +107,9 @@ class OpenHEMSApplication:
 		# t.run()
 
 def main():
+	"""
+	Simple function to run wall OpenHEMS Application
+	"""
 	app = OpenHEMSApplication(yaml_conf)
 	app.run()
 

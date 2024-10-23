@@ -37,9 +37,9 @@ First edit `in:` and add as many line like bellow for all electrical source. Usu
 * Then edit `out:`. Each line correspond to a device.
 1. `id` : A name witch can be what you want without special caracters.
 2. `class` : Sensor type. Today just `switch` are available, but soon we will have `variator` when it can can be controlable power consumption or `cycle` when there is a user choice between few cycle.
-2. `currentPower`* : This is the currrent power delivered
-3. `maxPower`* : This is the maximum power we can get from that source.
-4. `isOn`* : This is the "switch" button that we can test and use.
+2. `current_power`* : This is the currrent power delivered
+3. `max_power`* : This is the maximum power we can get from that source.
+4. `is_on`* : This is the "switch" button that we can test and use.
 
 Save the configuration, put it on server and restart OpenHEMS server. 
 To restart the server, you can run `sudo systemctl restart openhems.service` on the terminal or overwise switch off/switch on it.

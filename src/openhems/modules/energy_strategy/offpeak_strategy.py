@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 import time
 import re
 import logging
-from modules.network.network import OpenHEMSNetwork
+from openhems.modules.network.network import OpenHEMSNetwork
 from .energy_strategy import EnergyStrategy
 
 class OffPeakStrategy(EnergyStrategy):

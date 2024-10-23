@@ -28,6 +28,7 @@ class OpenHEMSNode:
 			self._isSwitchable = True
 		else:
 			self._isSwitchable = False
+		self.previousPower = deque()
 
 	def setCurrentPower(self, currentPower):
 		if len(self.previousPower)>=CYCLE_HISTORY:
@@ -76,6 +77,7 @@ class OpenHEMSNode:
 
 	def isSwitchable(self):
 		"""
+			Return true if this OpenHEMSNode can be switch on/off.
 		"""
 		return self._isSwitchable
 	def isOn(self):
@@ -117,7 +119,6 @@ class InOutNode(OpenHEMSNode):
 	"""
 	def __init__(self, currentPower, maxPower, minPower, marginPower) -> None:
 		# isAutoAdatative: bool, isControlable: bool, isModulable: bool, isCyclic: bool
-		self.previousPower = deque()
 		self.currentPower = currentPower
 		self.marginPower = marginPower
 		self.maxPower = maxPower
@@ -155,7 +156,7 @@ class InOutNode(OpenHEMSNode):
 		"""
 		if not self.respectConstraints():
 			return 0
-		min, avg, max = self.estimateNextPower(self);
+		min, avg, max = self.estimateNextPower();
 		if not self.respectConstraints(avg):
 			return 1
 		if not (self.respectConstraints(min) or self.respectConstraints(max)):
