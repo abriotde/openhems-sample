@@ -47,12 +47,13 @@ class OpenHEMSNode:
 		return self.maxPower.getValue()
 
 	def estimateNextPower(self):
-		"""Estimate what could be the next value of currentPower if there is no change
+		"""
+		Estimate what could be the next value of currentPower if there is no change
 
-		This function would like to know if there is a constant growing/decreasing value or a random one or oscilating one...
+		This function would like to know if there is a constant
+		 growing/decreasing value or a random one or oscilating one...
 		:return list[int]: [minValue, bestBet, maxValue]
 		"""
-		avgDeltaPower = 0
 		p0 = self.currentPower
 		maxi = len(self.previousPower)
 		sum = 0
@@ -73,7 +74,9 @@ class OpenHEMSNode:
 			curDiff = lastDiff
 		else:
 			currDiff = avgDiff
-		return [self.currentPower-abs(maxDiff), self.currentPower+curDiff, self.currentPower+abs(maxDiff)]
+		return [self.currentPower-abs(maxDiff),\
+			self.currentPower+curDiff,\
+			self.currentPower+abs(maxDiff)]
 
 	def isSwitchable(self):
 		"""
@@ -82,6 +85,7 @@ class OpenHEMSNode:
 		return self._isSwitchable
 	def isOn(self):
 		"""
+		Return true if the node is not switchable or is switch on.
 		"""
 		# print("OpenHEMSNode.isOn(",self.id,")")
 		if self._isSwitchable:
@@ -96,12 +100,13 @@ class OpenHEMSNode:
 		"""
 		if self._isSwitchable:
 			return self.network.network_updater.switchOn(connect, self)
-		else:
-			print("Warning : try to switchOn/Off a not switchable device : ",self.id)
-			return connect # Consider node is always on network
+		print("Warning : try to switchOn/Off a not switchable device : ",self.id)
+		return connect # Consider node is always on network
 
 class OutNode(OpenHEMSNode):
-
+	"""
+	electricity source.
+	"""
 	def __init__(self, id, currentPower, maxPower, isOnFeeder=None):
 		OpenHEMSNode.__init__(self, currentPower, maxPower, isOnFeeder)
 		self.setId(id)
@@ -113,7 +118,8 @@ class OutNode(OpenHEMSNode):
 
 class InOutNode(OpenHEMSNode):
 	"""
-	It is electricity source, it may consume electricity over-production if possible (Battery with MPPT or Sell on public-grid)
+	It is electricity source, it may consume electricity over-production
+	 if possible (Battery with MPPT or Sell on public-grid)
 	param maxPower: positive value, max power we can consume at a time.
 	param minPower: negative value if we can sell or ther is battery, 0 overwise.
 	"""
@@ -125,7 +131,8 @@ class InOutNode(OpenHEMSNode):
 		self.minPower = minPower
 
 	def respectConstraints(self, power=None):
-		"""Check min/max constraints for power
+		"""
+		Check min/max constraints for power
 		
 		return bool: true if 'power' respects constraints
 		"""

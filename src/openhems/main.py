@@ -1,37 +1,50 @@
 #!/usr/bin/env python3
-
-from modules.web import OpenhemsHTTPServer
-from server import OpenHEMSServer
-from threading import Thread
+"""
+This is the OpenHEMS module. It aims to give
+ Home Energy Management Automating System on house. 
+ It is a back application of Home-Assistant.
+More informations on https://openhomesystem.com/
+"""
 
 import sys
-import logging
 import os
-import json
-import yaml
+import logging
 from datetime import datetime
-from modules.network.driver.home_assistant_api import HomeAssistantAPI
+from threading import Thread
+import yaml
+from openhems.modules.network.driver.home_assistant_api import HomeAssistantAPI
+from openhems.modules.web import OpenhemsHTTPServer
+from .server import OpenHEMSServer
 
 yaml_conf = os.path.dirname(__file__)+"/../../config/openhems.yaml"
 LOGFORMAT = '%(levelname)s : %(asctime)s : %(message)s'
 LOGFILE = '/var/log/openhems/openhems.log'
 
 class OpenHEMSApplication:
-
+	"""
+	This class is the main class to manage OpenHEMS as independant application.
+	"""
 	logger = None
 	@staticmethod
 	def filer(param=None):
+		"""
+		Function used to get filename on rotating log
+		"""
 		print("filer(",param,")")
 		now = datetime.now()
 		return 'openhems.'+now.strftime("%Y-%m-%d")+'.log'
+
 	def setLogger(self, loglevel, logformat, logfile):
+		"""
+		Configure a logger for all the Application.
+		"""
 		if loglevel=="debug":
 			level=logging.DEBUG
-		elif loglevel=="warn" or loglevel=="warning":
+		elif loglevel in ('warn', 'warning'):
 			level=logging.WARNING
 		elif loglevel=="error":
 			level=logging.ERROR
-		elif loglevel=="critical" or loglevel=="no":
+		elif loglevel in ('critical', 'no'):
 			level=logging.CRITICAL
 		else: # if loglevel=="info":
 			level=logging.INFO
@@ -49,17 +62,16 @@ class OpenHEMSApplication:
 		# self.logger.addHandler(watched_file_handler)
 		return self.logger
 
-	@staticmethod
 	def getLogger(self):
+		# pylint: disable=missing-function-docstring
 		return self.logger
 
-	def __init__(self, yaml_conf):
+	def __init__(self, yaml_conf_filepath):
 		conf = None
 		network = None
 		serverConf = None
-		schedule = {}
-		with open(yaml_conf, 'r') as file:
-			print("Load YAML configuration from '"+yaml_conf+"'")
+		with open(yaml_conf_filepath, 'r', encoding="utf-8") as file:
+			print(f"Load YAML configuration from '{yaml_conf_filepath}'")
 			conf = yaml.load(file, Loader=yaml.FullLoader)
 			try:
 				serverConf = conf['server']
@@ -67,17 +79,20 @@ class OpenHEMSApplication:
 				logformat = serverConf.get("logformat", LOGFORMAT)
 				logfile = serverConf.get("logfile", LOGFILE)
 				self.setLogger(loglevel, logformat, logfile)
-				self.logger.info("Load YAML configuration from '"+yaml_conf+"'")
+				self.logger.info("Load YAML configuration from '%s'",
+					yaml_conf_filepath)
 				networkUpdater = None
 				networkSource = serverConf["network"].lower()
 			except KeyError as e:
-				print("ERROR : KeyError due to missing key "+str(e)+" in YAML configuration file '"+yaml_conf+"'")
+				print(f"ERROR : KeyError due to missing key {e}\
+					in YAML configuration file '{yaml_conf_filepath}'")
 				sys.exit(1)
 			if networkSource=="homeassistant":
 				networkUpdater = HomeAssistantAPI(conf)
 			else:
-				self.logger.critical("OpenHEMSServer() : Unknown network source type '"+networkSource+"'")
-				exit(1)
+				self.logger.critical("OpenHEMSServer() : Unknown network source type '%s'",
+					networkSource)
+				sys.exit(1)
 			network = networkUpdater.getNetwork()
 		self.server = OpenHEMSServer(network, serverConf)
 		self.webserver = OpenhemsHTTPServer(network.getSchedule())
@@ -114,4 +129,3 @@ def main():
 	app.run()
 
 main()
-

@@ -1,3 +1,14 @@
+"""
+Case dual-source managed by controlled "source inverter" :
+- Solar pannel and batterie managed by MPPT
+- Grid
+Strategy is to :
+- Use grid energy when battery level is low and solar production less than consumption
+- Reverse if battery level is medium and/or solar production higher than conumption
+Advantages : No electricity goes in grid.
+Disadvantages : Could not charge battery on off-peak grid hours if there is- not so much solar production
+"""
+	
 from datetime import datetime, timedelta
 import time
 import re
@@ -18,7 +29,8 @@ class SourceInverterStrategy(SolarBasedStrategy):
 	"""
 
 
-	def __init__(self, network: OpenHEMSNetwork, gridId:str, inverterId:str, config, offpeakHoursRanges):
+	def __init__(self, network: OpenHEMSNetwork, gridId:str, inverterId:str,
+			config, offpeakHoursRanges):
 		self.logger = logging.getLogger(__name__)
 		self.logger.info("SourceInverterStrategy("+str(config)+")")
 		self.network = network
@@ -41,7 +53,9 @@ class SourceInverterStrategy(SolarBasedStrategy):
 			if self.isDayTime():
 				self.gridTime += 1
 			powerConsumption = self.network.getCurrentPowerConsumption()
-			if (batteryLevel>self.hightBatteryLevel) or (batteryLevel>self.lowBatteryLevel and solarProduction>powerConsumption):
+			if (batteryLevel>self.hightBatteryLevel) \
+					or (batteryLevel>self.lowBatteryLevel \
+					and solarProduction>powerConsumption):
 				if self.switch2solarProduction():
 					self.logger.info("Switched to solar production successfully.")
 				else:
@@ -70,6 +84,4 @@ class SourceInverterStrategy(SolarBasedStrategy):
 						self.network.switchOff(powerConsumption-solarProduction)
 					elif solarProduction>powerConsumption+MARGIN:
 						self.network.switchOn(solarProduction-powerConsumption)
-				
 		return True
-

@@ -1,34 +1,52 @@
-import astral, datetime
+"""
+Super class for all solar-based strategy
+"""
+
+import datetime
+import astral
 from .offpeak_strategy import OffPeakStrategy
 from modules.network.network import OpenHEMSNetwork
 
 
 class SolarBasedStrategy(OffPeakStrategy):
-
-	def  __init__(self, network: OpenHEMSNetwork, latitude, longitude, offpeakHoursRanges=[["17:00:00","09:00:00"]]):
+	"""
+	Super class for all solar-based strategy
+	"""
+	# pylint : disable=dangerous-default-value
+	def  __init__(self, network: OpenHEMSNetwork, latitude, longitude,
+			offpeakHoursRanges=[["17:00:00","09:00:00"]]):
 		self._nightime = False
 		self.isDayTime()
-		self.timezone = datetime.datetime.now(datetime.timezone.utc).astimezone().tzinfo
-		self.location = astral.LocationInfo('Custom Name', 'My Region', str(self.timezone), latitude, longitude)
+		self.timezone = datetime.datetime.now(datetime.timezone.utc)\
+			.astimezone().tzinfo
+		self.location = astral\
+			.LocationInfo('Custom Name', 'My Region', \
+				str(self.timezone), latitude, longitude)
 		self.gridTime = 0
 		self.solarTime = 0
 		self.lastAutonomousRatio = 0
 		self.setOffPeakHoursRanges(offpeakHoursRanges)
 		self.checkRange()
-		self._sunrise = datetime.now() # TODO
+		self._sunrise = datetime.datetime.now() # TODO
+		self._sunset = datetime.datetime.now() # TODO
 
-	def updateNetwork(self):
-		logging.getLogger("SolarBasedStrategy").error("SolarBasedStrategy.updateNetwork() : To implement in sub-class")
+	def updateNetwork(self, cycleDuration):
+		logging.getLogger("SolarBasedStrategy")\
+			.error("SolarBasedStrategy.updateNetwork() : \
+				To implement in sub-class")
 
 	def getAutonomousRatio(self):
-		return 100 * self.solarTime / (self.solarTime+self.gridTime) if (self.solarTime+self.gridTime)>0 else 0
+		if (self.solarTime+self.gridTime)>0:
+			return 100 * self.solarTime / (self.solarTime+self.gridTime)
+		else:
+			return 0
 
 	def isDayTime(self):
 		"""
 			Return True if it's daytime, else return false if it's nighttime
 			usefull for solar production management
 		"""
-		now = datetime.now()
+		now = datetime.datetime.now()
 		if self._nightime:
 			if now>self._sunrise:
 				self._nightime = False
@@ -43,6 +61,9 @@ class SolarBasedStrategy(OffPeakStrategy):
 				self.solarTime = self.gridTime = 0
 
 	def itsStressyDay(self):
+		"""
+		Return true if we should lack energy today
+		"""
 		return self.lastAutonomousRatio<50 and self.getAutonomousRatio()<50
 
 	def switchOnCriticDevices(self, switchOffOthers:bool=False):
@@ -54,11 +75,13 @@ class SolarBasedStrategy(OffPeakStrategy):
 
 	def isOffPeakTime(self):
 		"""
-		@return: True if we are in off-peak time. If there is none off-peak's return true (Like we are always on off-peak time, so we  can use electricity all the time as we want nethermind.)
+		@return: True if we are in off-peak time. 
+		If there is none off-peak's return true 
+		(Like we are always on off-peak time, so we  can use electricity
+		 all the time as we want nethermind.)
 		"""
 		if len(self.offpeakHoursRanges)<=0:
 			return True
-		if datetime.now()>self.rangeEnd:
+		if datetime.datetime.now()>self.rangeEnd:
 			self.checkRange()
 		return self.inOffpeakRange
-

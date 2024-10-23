@@ -1,8 +1,15 @@
-from datetime import datetime, timedelta
-import time
-import re
+"""
+Case dual-source managed by controlled "hybrid inverter with security mode" :
+- Solar pannel
+- batterie
+- Grid : disabled if off by the inverter
+Strategy is to minimize load/unload battery and minimize grid consumption
+Advantages : 
+Disadvantages : 
+"""
+
 import logging
-from modules.network.network import OpenHEMSNetwork
+from openhems.modules.network.network import OpenHEMSNetwork
 from .solarbased_strategy import SolarBasedStrategy
 
 class HybridInverterStrategy(SolarBasedStrategy):
@@ -16,11 +23,12 @@ class HybridInverterStrategy(SolarBasedStrategy):
 	Disadvantages : 
 	"""
 
-	def __init__(self, network: OpenHEMSNetwork):
-		logging.getLogger("HybridInverterStrategy").error("SolarOnlyProductionStrategy() : TODO")
+	def __init__(self, network: OpenHEMSNetwork, latitude, longitude):
+		super().__init__(network, latitude, longitude, offpeakHoursRanges=[])
+		logging.getLogger("HybridInverterStrategy")\
+			.error("SolarOnlyProductionStrategy() : TODO")
 		# TODO
 	def updateNetwork(self, cycleDuration):
-		logging.getLogger("HybridInverterStrategy").error("SolarOnlyProductionStrategy.updateNetwork() : TODO")
-		pass
+		logging.getLogger("HybridInverterStrategy")\
+			.error("SolarOnlyProductionStrategy.updateNetwork() : TODO")
 		# TODO
-

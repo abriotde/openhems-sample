@@ -1,16 +1,21 @@
 #!/usr/bin/env python3
-import inspect
+"""
+This HomeStateUpdater is based on home-Assistant software. 
+It access to this by the API using URL and long_lived_token
+"""
+
 import datetime
 import time
-import pandas as pd
 from requests import get, post
 import yaml
 import logging, os
+from typing import Final
 from openhems.modules.network.network import OpenHEMSNetwork, HomeStateUpdater
+# pylint: disable=unused-wildcard-import
 from openhems.modules.network.node import *
 from openhems.modules.network.feeder import *
 from openhems.modules.network.node import OutNode
-from typing import Final
+
 
 
 POWER_MARGIN: Final[int] = 10 # Number of cycle we keep history
@@ -19,12 +24,18 @@ todays_Date = datetime.date.fromtimestamp(time.time())
 date_in_ISOFormat = todays_Date.isoformat()
 
 class HATypeExcetion(Exception):
-    def __init__(self, message, defaultValue):
-        self.message = message
-        self.defaultValue = defaultValue
+	"""
+	Custom Home-Assitant excepton to be captured.
+	"""
+	def __init__(self, message, defaultValue):
+		self.message = message
+		self.defaultValue = defaultValue
 
 class HomeAssistantAPI(HomeStateUpdater):
-
+	"""
+	This HomeStateUpdater is based on home-Assistant software. 
+	It access to this by the API using URL and long_lived_token
+	"""
 	def __init__(self, conf) -> None:
 		self.logger = logging.getLogger(__name__)
 		if isinstance(conf, str):
@@ -42,7 +53,8 @@ class HomeAssistantAPI(HomeStateUpdater):
 		self._elemsKeysCache = None
 		self.cached_ids = dict()
 		self.refresh_id = 0
-		self.sleep_duration_onerror = 2 # Time to sleep after wrong HomeAssistant call 
+		# Time to sleep after wrong HomeAssistant call
+		self.sleep_duration_onerror = 2
 
 	def getHANodes(self):
 		"""
@@ -61,6 +73,11 @@ class HomeAssistantAPI(HomeStateUpdater):
 		return ha_elements
 
 	def getFeeder(self, conf, kkey, ha_elements, params, default_value=None) -> Feeder:
+		"""
+		Return a feeder considering
+		 if the "kkey" can be a Home-Assistant element id.
+		 Otherwise, it consider it as constant.
+		"""
 		feeder = None
 		if kkey in conf.keys():
 			key = conf[kkey]
@@ -68,16 +85,20 @@ class HomeAssistantAPI(HomeStateUpdater):
 				self.logger.info("SourceFeeder("+key+")")
 				feeder = SourceFeeder(key, self, params)
 			else:
-				self.logger.info("ConstFeeder("+str(key)+")")
+				self.logger.info("ConstFeeder(%s)" % key)
 				feeder = ConstFeeder(key)
 		elif default_value is None:
-			self.logger.critical("HomeAssistantAPI.getFeeder missing configuration key '"+kkey+"'  for network in YAML file ")
+			self.logger.critical("HomeAssistantAPI.getFeeder missing\
+				 configuration key '%s'  for network in YAML file " % kkey)
 			os._exit(1)
 		else:
 			feeder = ConstFeeder(default_value)
 		return feeder
 
 	def getNetwork(self) -> OpenHEMSNetwork:
+		"""
+		Explore the home device network available with Home-Assistant.
+		"""
 		# self.explore()
 		self.network = OpenHEMSNetwork(self)
 		ha_elements = self.getHANodes()
@@ -126,6 +147,11 @@ class HomeAssistantAPI(HomeStateUpdater):
 
 	@staticmethod
 	def toType(type, value):
+		"""
+		With Home-Assitant API we get all as string.
+		 If it's power or other int value, we need to convert it.
+		 We need to manage some incorrect value due to errors.
+		"""
 		if type=="int":
 			if isinstance(value, int):
 				return value
@@ -151,6 +177,10 @@ class HomeAssistantAPI(HomeStateUpdater):
 			os._exit(1)
 
 	def updateNetwork(self):
+		"""
+		Update network, but as we ever know it's architecture,
+		 we just have to update few values.
+		"""
 		response = self.callAPI("/states")
 		if len(self.cached_ids) == 0:
 			self.logger.warning("HomeAssistantAPI.updateNetwork() : No entities to update.")
@@ -195,10 +225,15 @@ class HomeAssistantAPI(HomeStateUpdater):
 		return e
 
 	def createNodeElement(self, elem):
+		"""
+		"""
 		self.logger.debug("createNodeElement("+str(elem)+")")
 		return elem
 
 	def getElemById(self, id:str):
+		"""
+		Return the node element eer explored by id
+		"""
 		if id in self.elems:
 			return self.elems[id]
 		else:
@@ -211,6 +246,10 @@ class HomeAssistantAPI(HomeStateUpdater):
 		return self._getElemsKeysCache(id)
 
 	def explore(self):
+		"""
+		@useless? Used for debug.
+		Explore the home device network available with Home-Assistant.
+		"""
 		response = self.callAPI("/states")
 		# elements = dict()
 		for e in response:
@@ -272,14 +311,19 @@ class HomeAssistantAPI(HomeStateUpdater):
 				print(e)
 
 	def notify(self, message):
+		"""
+		Send a notification to Home-Assistant. The end-user will see it.
+		"""
 		data = {
 			"message":message,
 			"title":"Notification from OpenHEMS."
 		}
 		self.callAPI("/services/notify/persistent_notification", data=data)
-		
 
 	def callAPI(self, url: str, data=None):
+		"""
+		Call Home-Assistant API.
+		"""
 		headers = {
 			"Authorization": "Bearer " + self.token,
 			"content-type": "application/json",
@@ -287,12 +331,12 @@ class HomeAssistantAPI(HomeStateUpdater):
 		response = None
 		try:
 			if data is None:
-				response = get(self.api_url+url, 
+				response = get(self.api_url+url,
 					headers=headers,
 					# verify='/etc/letsencrypt/live/openproduct.freeboxos.fr/cert.pem'
 				)
 			else:
-				response = post(self.api_url+url, 
+				response = post(self.api_url+url,
 					headers=headers, json=data
 					# verify='/etc/letsencrypt/live/openproduct.freeboxos.fr/cert.pem'
 				)
@@ -327,4 +371,3 @@ class HomeAssistantAPI(HomeStateUpdater):
 			if errMsg=="":
 				self.logger.error("Fail parse response "+str(reponse))
 			return dict()
-

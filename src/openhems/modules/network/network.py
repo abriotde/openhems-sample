@@ -1,25 +1,42 @@
-
+"""
+This module aim to abstract home network of connected devices.
+It is used to know devices and to switch on/off them.
+"""
 from enum import Enum
 from collections import deque
 from typing import Final
-import logging, os
-logger = logging.getLogger(__name__)
-
-from .feeder import Feeder, SourceFeeder, ConstFeeder
+import logging
+import os
 from .node import OpenHEMSNode
 
+logger = logging.getLogger(__name__)
+
 class HomeStateUpdater:
-	cached_ids = dict()
+	"""
+	This is an abstract class to update OpenHEMSNetwork
+	 ignoring the real source of the update.
+	Today only Home-Assistant updater is implemented (HomeAssistantAPI).
+	"""
+	cached_ids = {}
 	refresh_id = 0
 
 	def getNetwork(self):
+		"""
+		A function witch inspect home network and return OpenHEMSNetwork.
+		"""
 		logger.error("HomeStateUpdater.getNetwork() : To implement in sub-class")
 
 	def updateNetwork(self):
+		"""
+		A function witch update home network and return OpenHEMSNetwork.
+		"""
 		logger.error("HomeStateUpdater.updateNetwork() : To implement in sub-class")
 
 class OpenHEMSNetwork:
-
+	"""
+	This class aim to abstract home network of connected devices.
+	It is used to know devices and to switch on/off them.
+	"""
 	inout = []
 	out = []
 	network_updater: HomeStateUpdater = None
@@ -123,6 +140,9 @@ class OpenHEMSNetwork:
 		self.network_updater.notify(message)
 
 	def switchOffAll(self):
+		"""
+		Switch of all connected devices.
+		"""
 		logger.info("Network.switchOffAll()")
 		# self.print(logger.info)
 		powerMargin = self.getCurrentPowerConsumption()
@@ -135,13 +155,21 @@ class OpenHEMSNetwork:
 		return ok
 
 	def updateStates(self):
+		"""
+		Update network state using the NetworkUpdater
+		"""
 		self.network_updater.updateNetwork()
 
 	def isGridSourceOn(self):
+		"""
+		Return true if grid source is available (even if no power is used)
+		"""
 		# TODO
 		return True
 
 	def getBatteryLevel(self, inPercent:bool=True):
+		"""
+		Return battery level as Watt availables.
+		"""
 		# TODO
 		return 0
-

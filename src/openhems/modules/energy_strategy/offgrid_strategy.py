@@ -1,8 +1,9 @@
-from datetime import datetime, timedelta
-import time
-import re
+"""
+Case off-grid: minimize battery solicitation
+"""
+
 import logging
-from modules.network.network import OpenHEMSNetwork
+from openhems.modules.network.network import OpenHEMSNetwork
 from .solarbased_strategy import SolarBasedStrategy
 
 class OffGridStrategy(SolarBasedStrategy):
@@ -10,12 +11,14 @@ class OffGridStrategy(SolarBasedStrategy):
 	Case off-grid: minimize battery solicitation
 	"""
 
-
-	def __init__(self, network: OpenHEMSNetwork, gridId:str, inverterId:str, config, offpeakHoursRanges):
+	# pylint: disable=unused-argument
+	# pylint: disable=unused-variable
+	def __init__(self, network: OpenHEMSNetwork, latitude, longitude,
+			gridId:str, inverterId:str, config):
+		super().__init__(network, latitude, longitude, offpeakHoursRanges=[])
 		self.logger = logging.getLogger(__name__)
-		self.logger.info("OffGridStrategy("+str(offpeakHoursRanges)+")")
+		self.logger.info("OffGridStrategy()")
 		self.network = network
-		self.setOffPeakHoursRanges(offpeakHoursRanges)
 		self.checkRange()
 		self.maxBatteryLevel = config.get("maxBattery", 95)
 		self.hightBatteryLevel = config.get("hightBattery", 80)
@@ -23,8 +26,6 @@ class OffGridStrategy(SolarBasedStrategy):
 		self.minBatteryLevel = config.get("minBattery", 5)
 
 	def updateNetwork(self, cycleDuration):
-		
 		batteryLevel = self.network.getBatteryLevel()
 		solarProduction = self.network.getSolarProduction()
 		return True
-

@@ -2,9 +2,7 @@
 
 import logging, os
 import time
-import re
-from datetime import datetime
-from modules.energy_strategy import EnergyStrategy,OffPeakStrategy
+from modules.energy_strategy import OffPeakStrategy
 
 
 class OpenHEMSServer:
@@ -23,12 +21,19 @@ class OpenHEMSServer:
 			os._exit(1)
 
 	def loop(self, loop_delay):
+		"""
+		It's the content of each loop.
+		"""
 		self.logger.debug("OpenHEMSServer.loop()")
 		self.network.updateStates()
 		self.strategy.updateNetwork(loop_delay)
 
-	# Run an infinite loop where each loop shouldn't last more than loop_delay and will never last less than loop_delay
 	def run(self, loop_delay=0):
+		"""
+		Run an infinite loop
+		 where each loop shouldn't last more than loop_delay
+		 and will never last less than loop_delay
+		"""
 		if loop_delay==0:
 			loop_delay = self.loop_delay
 		nextloop = time.time() + loop_delay
@@ -36,10 +41,10 @@ class OpenHEMSServer:
 			self.loop(loop_delay)
 			t = time.time()
 			if t<nextloop:
-				self.logger.debug("OpenHEMSServer.run() : sleep("+str((nextloop-t)/60)+" min)")
+				self.logger.debug("OpenHEMSServer.run() : sleep(%f min)" % (nextloop-t)/60)
 				time.sleep(nextloop-t)
 				t = time.time()
 			elif t>nextloop:
-				self.logger.warning("OpenHomeEnergyManagement::run() : missing time for loop : "+str((nextloop-t))+" seconds")
+				self.logger.warning("OpenHomeEnergyManagement::run() \
+					: missing time for loop : %i seconds" % (nextloop-t))
 			nextloop = t + loop_delay
-
