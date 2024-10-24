@@ -4,21 +4,16 @@ This HomeStateUpdater is based on home-Assistant software.
 It access to this by the API using URL and long_lived_token
 """
 
+import os
+import logging
 import datetime
 import time
-from requests import get, post
+import requests
 import yaml
-import logging, os
-from typing import Final
 from openhems.modules.network.network import OpenHEMSNetwork, HomeStateUpdater
-# pylint: disable=unused-wildcard-import
-from openhems.modules.network.node import *
-from openhems.modules.network.feeder import *
-from openhems.modules.network.node import OutNode
-
-
-
-POWER_MARGIN: Final[int] = 10 # Number of cycle we keep history
+from openhems.modules.network.network import POWER_MARGIN
+from openhems.modules.network.feeder import Feeder, SourceFeeder, ConstFeeder
+from openhems.modules.network.node import PublicPowerGrid, SolarPanel, Battery, OutNode
 
 todays_Date = datetime.date.fromtimestamp(time.time())
 date_in_ISOFormat = todays_Date.isoformat()
@@ -39,7 +34,7 @@ class HomeAssistantAPI(HomeStateUpdater):
 	def __init__(self, conf) -> None:
 		self.logger = logging.getLogger(__name__)
 		if isinstance(conf, str):
-			with open(conf, 'r') as file:
+			with open(conf, 'r', encoding="utf-8") as file:
 				print("Load YAML configuration from '"+conf+"'")
 				conf = yaml.load(file, Loader=yaml.FullLoader)
 		self.conf = conf
@@ -47,28 +42,27 @@ class HomeAssistantAPI(HomeStateUpdater):
 		self.api_url = apiConf["url"]
 		self.token = apiConf["long_lived_token"]
 		self.elems = {}
-		for id,elem in conf['elems'].items():
-			elem['id'] = id
-			self.elems[id] = elem
+		for HAid,elem in conf['elems'].items():
+			elem['id'] = HAid
+			self.elems[HAid] = elem
 		self._elemsKeysCache = None
-		self.cached_ids = dict()
+		self.cached_ids = {}
 		self.refresh_id = 0
 		# Time to sleep after wrong HomeAssistant call
 		self.sleep_duration_onerror = 2
+		self.network = None
 
 	def getHANodes(self):
 		"""
 		Get all nodes according to Home-Assistants
 		"""
 		response = self.callAPI("/states")
-		ha_elements = dict()
+		ha_elements = {}
 		for e in response:
 			# print(e)
 			entity_id = e['entity_id']
 			ha_elements[entity_id] = e
-			state = e['state']
-			attributes = e['attributes']
-			# print(entity_id, state, attributes)
+			# print(entity_id, e['state'], e['attributes'])
 		# print("getHANodes() = ", ha_elements)
 		return ha_elements
 
@@ -82,27 +76,23 @@ class HomeAssistantAPI(HomeStateUpdater):
 		if kkey in conf.keys():
 			key = conf[kkey]
 			if isinstance(key, str) and key in ha_elements.keys():
-				self.logger.info("SourceFeeder("+key+")")
+				self.logger.info("SourceFeeder({key})")
 				feeder = SourceFeeder(key, self, params)
 			else:
-				self.logger.info("ConstFeeder(%s)" % key)
+				self.logger.info("ConstFeeder({key})")
 				feeder = ConstFeeder(key)
 		elif default_value is None:
 			self.logger.critical("HomeAssistantAPI.getFeeder missing\
-				 configuration key '%s'  for network in YAML file " % kkey)
+				 configuration key '{kkey}'  for network in YAML file ")
 			os._exit(1)
 		else:
 			feeder = ConstFeeder(default_value)
 		return feeder
 
-	def getNetwork(self) -> OpenHEMSNetwork:
+	def getNetworkIn(self, network_conf, ha_elements):
 		"""
-		Explore the home device network available with Home-Assistant.
+		Initialyze "in" network part.
 		"""
-		# self.explore()
-		self.network = OpenHEMSNetwork(self)
-		ha_elements = self.getHANodes()
-		network_conf = self.conf["network"]
 		# init Feeders
 		for e in network_conf["in"]:
 			classname = e["class"].lower()
@@ -115,66 +105,121 @@ class HomeAssistantAPI(HomeStateUpdater):
 				node = PublicPowerGrid(currentPower, maxPower, minPower, powerMargin)
 			elif classname == "solarpanel":
 				node = SolarPanel(currentPower, maxPower, minPower, powerMargin)
+			elif classname == "battery":
+				lowLevel = self.getFeeder(e, "lowLevel",
+					ha_elements, "int", POWER_MARGIN)
+				hightLevel = self.getFeeder(e, "hightLevel",
+					ha_elements, "int", POWER_MARGIN)
+				capacity = self.getFeeder(e, "capaciity",
+					ha_elements, "int", POWER_MARGIN)
+				currentLevel = self.getFeeder(e, "level", ha_elements, "int", 0)
+				node = Battery(currentPower, maxPower, powerMargin, capacity,
+					currentLevel ,minPower=minPower, lowLevel=lowLevel,
+					hightLevel=hightLevel)
 			else:
-				self.logger.critical("HomeAssistantAPI.getNetwork : Unknown classname '"+classname+"'")
+				self.logger.critical("HomeAssistantAPI.getNetwork : "
+					"Unknown classname '{classname}'")
 				os._exit(1)
 			if "id" in e.keys():
 				node.id = e["id"]
 			# print(node)
-			self.network.addNode(node, True)
+			self.network.addNode(node)
+
+	def getNetworkOut(self, network_conf, ha_elements):
+		"""
+		Initialyze "out" network part.
+		"""
 		i = 0
 		for e in network_conf["out"]:
 			classname = e["class"].lower()
 			node = None
 			if "id" in e.keys():
-				id = e["id"]
+				HAid = e["id"]
 			else:
-				id = "node_"+str(i)
+				HAid = "node_"+str(i)
 				i += 1
 			if classname == "switch":
 				currentPower = self.getFeeder(e, "currentPower", ha_elements, "int")
 				isOn = self.getFeeder(e, "isOn", ha_elements, "bool", True)
 				maxPower = self.getFeeder(e, "maxPower", ha_elements, "int", 2000)
-				node = OutNode(id, currentPower, maxPower, isOn)
+				node = OutNode(HAid, currentPower, maxPower, isOn)
 			else:
-				self.logger.critical("HomeAssistantAPI.getNetwork : Unknown classname '"+classname+"'")
+				self.logger.critical("HomeAssistantAPI.getNetwork : "
+					"Unknown classname '{classname}'")
 				os._exit(1)
 			# print(node)
-			self.network.addNode(node, False)
+			self.network.addNode(node)
+
+	def getNetwork(self) -> OpenHEMSNetwork:
+		"""
+		Explore the home device network available with Home-Assistant.
+		"""
+		# self.explore()
+		self.network = OpenHEMSNetwork(self)
+		ha_elements = self.getHANodes()
+		network_conf = self.conf["network"]
+		self.getNetworkIn(network_conf, ha_elements)
+		self.getNetworkOut(network_conf, ha_elements)
 		self.network.print(self.logger.info)
 		return self.network
 
+	@staticmethod
+	def toTypeInt(value):
+		"""
+		Convert to type integer
+		"""
+		retValue = None
+		if isinstance(value, int):
+			retValue = value
+		elif isinstance(value, str):
+			if value=="unavailable":
+				raise HATypeExcetion("WARNING : Unknown value for '"+value+"'", 0)
+			retValue = int(value)
+		return retValue
+	@staticmethod
+	def toTypeBool(value):
+		"""
+		Convert to type boolean
+		"""
+		retValue = None
+		if isinstance(value, int):
+			retValue = value>0
+		elif isinstance(value, str):
+			retValue = value.lower() in ["on", "true", "1", "vrai"]
+		elif isinstance(value, bool):
+			retValue = value
+		return retValue
+	@staticmethod
+	def toTypeStr(value):
+		"""
+		Convert to type string
+		"""
+		if isinstance(value, int):
+			retValue = str(value)
+		elif isinstance(value, str):
+			retValue = value
+		else:
+			retValue = str(value)
+		return retValue
 
 	@staticmethod
-	def toType(type, value):
+	def toType(destType, value):
 		"""
 		With Home-Assitant API we get all as string.
 		 If it's power or other int value, we need to convert it.
 		 We need to manage some incorrect value due to errors.
 		"""
-		if type=="int":
-			if isinstance(value, int):
-				return value
-			elif isinstance(value, str):
-				if value=="unavailable":
-					raise HATypeExcetion("WARNING : Unknown value for '"+value+"'", 0)
-				else:
-					return int(value)
-		elif type=="bool":
-			if isinstance(value, int):
-				return value>0
-			elif isinstance(value, str):
-				return value.lower() in ["on", "true", "1", "vrai"]
-			elif isinstance(value, bool):
-				return value
-		elif type=="str":
-			if isinstance(value, int):
-				return str(value)
-			elif isinstance(value, str):
-				return value
+		retValue = None
+		if destType=="int":
+			retValue = HomeAssistantAPI.toTypeInt(value)
+		elif destType=="bool":
+			retValue = HomeAssistantAPI.toTypeBool(value)
+		elif destType=="str":
+			retValue = HomeAssistantAPI.toTypeStr(value)
 		else:
-			print(".toType(",type,",",value,") : Unknwon type")
+			print(".toType(",destType,",",value,") : Unknwon type")
 			os._exit(1)
+		return retValue
 
 	def updateNetwork(self):
 		"""
@@ -183,9 +228,9 @@ class HomeAssistantAPI(HomeStateUpdater):
 		"""
 		response = self.callAPI("/states")
 		if len(self.cached_ids) == 0:
-			self.logger.warning("HomeAssistantAPI.updateNetwork() : No entities to update.")
+			self.logger.warning("HomeAssistantAPI.updateNetwork() : "
+				"No entities to update.")
 			return True
-		ha_elements = dict()
 		for e in response:
 			# print(e)
 			entity_id = e['entity_id']
@@ -198,52 +243,53 @@ class HomeAssistantAPI(HomeStateUpdater):
 					self.notify("For '"+entity_id+" : '"+e.message)
 					value = e.defaultValue
 				self.cached_ids[entity_id][0] = value
-				self.logger.info("HomeAssistantAPI.updateNetwork("+entity_id+") = "+str(value))
+				self.logger.info("HomeAssistantAPI.updateNetwork({entity_id}) = {value}")
 		self.refresh_id += 1
+		return True
 
-	def _getElemsKeysCache(self, id, elem=None):
+	def _getElemsKeysCache(self, HAid, elem=None):
 		"""
 		@param: If elem is None; get mode; else: insert mode;
 		"""
 		e = self._elemsKeysCache
-		sids = id.split('_')
+		sids = HAid.split('_')
 		length = len(sids)
 		for i,sid in enumerate(sids):
 			# print("Index:",i,"/",length)
 			if not sid in e:
 				if elem is None: # Get mode, return last not null elem
-					# print("_getElemsKeysCache(",id,") => ", e)
+					# print("_getElemsKeysCache(",HAid,") => ", e)
 					return e
-				e[sid] = dict()
+				e[sid] = {}
 			if i==length-1 and elem is not None: # Do insert for last sub-id
 				e[sid] = elem
-				# print("_getElemsKeysCache(",id,") => ", self._elemsKeysCache)
+				# print("_getElemsKeysCache(",HAid,") => ", self._elemsKeysCache)
 				return None
-			else:
-				e = e[sid]
-		# print("_getElemsKeysCache(",id,") => ", e)
+			e = e[sid]
+		# print("_getElemsKeysCache(",HAid,") => ", e)
 		return e
 
 	def createNodeElement(self, elem):
 		"""
+		Create node element
 		"""
-		self.logger.debug("createNodeElement("+str(elem)+")")
+		self.logger.debug("createNodeElement(%s)", elem)
 		return elem
 
-	def getElemById(self, id:str):
+	def getElemById(self, HAid:str):
 		"""
 		Return the node element eer explored by id
 		"""
-		if id in self.elems:
-			return self.elems[id]
-		else:
-			if self._elemsKeysCache is None:
-				self._elemsKeysCache = dict()
-				for id,elem in self.elems.items():
-					nodeElem = self.createNodeElement(elem)
-					self._getElemsKeysCache(id, nodeElem)
-				# print("getElemById(",id,") => ",self._elemsKeysCache)
-		return self._getElemsKeysCache(id)
+		if HAid in self.elems:
+			return self.elems[HAid]
+		elemId = None
+		if self._elemsKeysCache is None:
+			self._elemsKeysCache = {}
+			for elemId,elem in self.elems.items():
+				nodeElem = self.createNodeElement(elem)
+				self._getElemsKeysCache(elemId, nodeElem)
+		# print("getElemById(",elemId,") => ",self._elemsKeysCache)
+		return self._getElemsKeysCache(elemId)
 
 	def explore(self):
 		"""
@@ -251,7 +297,7 @@ class HomeAssistantAPI(HomeStateUpdater):
 		Explore the home device network available with Home-Assistant.
 		"""
 		response = self.callAPI("/states")
-		# elements = dict()
+		# elements = {}
 		for e in response:
 			# print(e)
 			entity_id = e['entity_id']
@@ -265,7 +311,9 @@ class HomeAssistantAPI(HomeStateUpdater):
 			if domain == "sensor":
 				if "device_class" in attributes:
 					device_class = attributes["device_class"]
-					if device_class not in ["timestamp","enum"] and "state_class" in attributes: # Timestamp (solar wakeup), Enum (Tempo day color)
+					# Timestamp (solar wakeup), Enum (Tempo day color)
+					if device_class not in ["timestamp","enum"] \
+							and "state_class" in attributes:
 						state_class = attributes["state_class"]
 						unit_of_measurement = attributes["unit_of_measurement"]
 						elem = self.getElemById(elem_id)
@@ -273,7 +321,7 @@ class HomeAssistantAPI(HomeStateUpdater):
 					# else: print(attributes)
 				# else: print(attributes) # how many red day last for Tempo
 			elif domain == "update":
-				None
+				pass
 			elif domain == "switch":
 				if "device_class" in attributes:
 					device_class = attributes["device_class"]
@@ -286,23 +334,28 @@ class HomeAssistantAPI(HomeStateUpdater):
 		"""
 		return: True if the switch is after on, False else
 		"""
-		if isOn!=node.isOn():
-			if isOn: expectStr = "on"
-			else: expectStr = "off"
-			entity_id = node._isOn.nameid
+		if isOn!=node.isOn() and node.isSwitchable():
+			expectStr = "on" if isOn else "off"
+			# pylint: disable=protected-access
+			entity_id = node._isOn.nameid # (Should do in an other way?)
 			data = {"entity_id": entity_id}
 			response = self.callAPI("/services/switch/turn_"+expectStr, data)
 			if len(response)==0: # Case there is no change in switch position
 				# print("HomeAssistantAPI.switch"+expectStr+"(",entity_id,") : Nothing to do.")
 				return isOn
-			ok = response[0]["state"]==expectStr
-			# print("HomeAssistantAPI.switch"+expectStr+"(",entity_id,") = " ,ok, "(", response[0]["state"], ")")
+			state = response[0]["state"]
+			ok = state==expectStr
+			# print("HomeAssistantAPI.switch"+expectStr+"(",entity_id,") \
+			#	= " ,ok, "(", response[0]["state"], ")")
 			return isOn if ok else (not isOn)
-		else:
-			# print("HomeAssistantAPI.switchOn(",isOn,", ",entity_id,") : Nothing to do.")
-			return isOn
+		# print("HomeAssistantAPI.switchOn(",isOn,", ",entity_id,") :
+		# Nothing to do.")
+		return node.isOn()
 
 	def getServices(self):
+		"""
+		Print Home-Assistant services list.
+		"""
 		response = self.callAPI("/services")
 		for e in response:
 			domain = e['domain']
@@ -329,39 +382,47 @@ class HomeAssistantAPI(HomeStateUpdater):
 			"content-type": "application/json",
 		}
 		response = None
+		# pylint: disable=broad-exception-caught
 		try:
 			if data is None:
-				response = get(self.api_url+url,
-					headers=headers,
+				response = requests.get(self.api_url+url,
+					headers=headers, timeout=5
 					# verify='/etc/letsencrypt/live/openproduct.freeboxos.fr/cert.pem'
 				)
 			else:
-				response = post(self.api_url+url,
-					headers=headers, json=data
+				response = requests.post(self.api_url+url,
+					headers=headers, json=data, timeout=5
 					# verify='/etc/letsencrypt/live/openproduct.freeboxos.fr/cert.pem'
 				)
 		except Exception as error:
-			self.logger.critical("Unable to access Home Assistance instance, check URL : "+str(error))
-			self.logger.critical("HomeAssistantAPI.callAPI("+url+", "+str(data)+")")
+			self.logger.critical("Unable to access Home Assistance instance, check URL : %s", error)
+			self.logger.critical("HomeAssistantAPI.callAPI({url}, {data})")
 			os._exit(1)
 		errMsg = ""
-		if response.status_code == 500:
-			errMsg = ("Unable to access Home Assistance due to error, check devices are up ("+url+", "+str(data)+")")
-		elif response.status_code == 401:
-			errMsg = ("Unable to access Home Assistance instance, (url="+url+", token="+self.token+" data="+str(data)+")")
-			errMsg += ("If using addon, try setting url and token to 'empty'")
-		elif response.status_code == 404:
-			errMsg = ("Invalid URL '"+self.api_url+url+"'")
+		err_code_msg = {
+			500 : ("Unable to access Home Assistance due to error, "
+					"check devices are up ({url}, {data})"),
+			401 : ("Unable to access Home Assistance instance, "
+					"(url={url}, token={self.token}, {data})"
+					"If using addon, try setting url and token to 'empty'"),
+			404 : "Invalid URL {self.api_url}{url}"
+		}
+		if response.status_code in err_code_msg:
+			errMsg = err_code_msg[response.status_code]
 		elif response.status_code > 299:
-			errMsg = ("Request Get Error: %d, "%response.status_code)
+			errMsg = "Request Get Error: {response.status_code}"
 		if errMsg!="":
-			time.sleep(self.sleep_duration_onerror) # Maybe is the server overload, overwise it's better to slow down to avoid useless infinite loop on errors.
-			self.sleep_duration_onerror *= 2
-			if self.sleep_duration_onerror>64: self.sleep_duration_onerror=64
+			time.sleep(self.sleep_duration_onerror)
+			# Maybe is the server overload,
+			# overwise it's better to slow down to avoid useless
+			# infinite loop on errors.
+			sleep_duration_onerror = min(sleep_duration_onerror*2, 64)
 			errMsg += " ("+url+", "+str(data)+")"
 			self.logger.error(errMsg)
-			if url!="/services/notify/persistent_notification": # To avoid infinite loop
-				self.notify("Error callAPI() : status_code="+str(response.status_code)+" : "+errMsg)
+			if url!="/services/notify/persistent_notification":
+				# To avoid infinite loop : It's url for notify()
+				self.notify("Error callAPI() : status_code="
+					"{response.status_code} : {errMsg}")
 		else:
 			if self.sleep_duration_onerror>2:
 				self.sleep_duration_onerror /= 2
@@ -369,5 +430,5 @@ class HomeAssistantAPI(HomeStateUpdater):
 			return response.json()
 		except Exception:
 			if errMsg=="":
-				self.logger.error("Fail parse response "+str(reponse))
-			return dict()
+				self.logger.error("Fail parse response '%s'",response)
+			return {}

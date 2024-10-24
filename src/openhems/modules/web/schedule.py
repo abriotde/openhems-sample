@@ -1,6 +1,7 @@
-
-import json
-from json import JSONEncoder
+"""
+This class aim to comunicate what devices user want to schedule to the OpenHEMS core server.
+The web server is the UI used to that.
+"""
 import logging
 
 
@@ -30,16 +31,16 @@ class OpenHEMSSchedule:
 		"""
 		Return True, if device is schedule to be on
 		"""
-		self.logger.debug("OpenHEMSSchedule.isScheduled(%i) : duration = %i" \
-			% (self.id, self.duration))
+		self.logger.debug("OpenHEMSSchedule.isScheduled({self.id}) "
+			": duration = {self.duration}")
 		return self.duration>0
 
 	def setSchedule(self, duration: int, timeout):
 		"""
 		Set duration for device to be on.
 		"""
-		msg = "OpenHEMSSchedule.setSchedule(%i seconds, timeout=%i)" \
-			% (duration, timeout)
+		msg = ("OpenHEMSSchedule.setSchedule("
+			"{duration} seconds, timeout={timeout})")
 		if duration!=self.duration or self.timeout!=timeout:
 			self.logger.info(msg)
 		else:
@@ -54,13 +55,11 @@ class OpenHEMSSchedule:
 		self.duration = max(self.duration-duration, 0)
 		return self.duration
 
+	# pylint: disable=unused-argument
 	def __json__(self, request=None):
 		"""
 		Export as JSON.
 		"""
-		return {"name":self.name, "duration":self.duration, "timeout":self.timeout}
-
-# Useless...
-class OpenHEMSJSONEncoder(JSONEncoder):
-	def default(self, o):
-		return o.__dict__
+		return {"name":self.name,
+			"duration":self.duration,
+			"timeout":self.timeout}

@@ -4,7 +4,7 @@ Case off-grid: minimize battery solicitation
 
 import logging
 from openhems.modules.network.network import OpenHEMSNetwork
-from .solarbased_strategy import SolarBasedStrategy
+from .solarbased_strategy import SolarBasedStrategy, GeoPosition
 
 class OffGridStrategy(SolarBasedStrategy):
 	"""
@@ -13,9 +13,8 @@ class OffGridStrategy(SolarBasedStrategy):
 
 	# pylint: disable=unused-argument
 	# pylint: disable=unused-variable
-	def __init__(self, network: OpenHEMSNetwork, latitude, longitude,
-			gridId:str, inverterId:str, config):
-		super().__init__(network, latitude, longitude, offpeakHoursRanges=[])
+	def __init__(self, network: OpenHEMSNetwork, geoposition: GeoPosition, config):
+		super().__init__(network, geoposition, offpeakHoursRanges=[])
 		self.logger = logging.getLogger(__name__)
 		self.logger.info("OffGridStrategy()")
 		self.network = network

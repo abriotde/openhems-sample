@@ -1,11 +1,18 @@
 #!/usr/bin/env python3
-
-import logging, os
+"""
+This is the server thread witch aim to centralize information and take right deccisions
+"""
+import logging
+import os
 import time
-from modules.energy_strategy import OffPeakStrategy
+from openhems.modules.energy_strategy import OffPeakStrategy
 
 
 class OpenHEMSServer:
+	"""
+	This is the server thread witch aim to centralize information
+	 and take right deccisions to optimize consumption
+	"""
 
 	def __init__(self, network, serverConf) -> None:
 		self.logger = logging.getLogger(__name__)
@@ -17,7 +24,7 @@ class OpenHEMSServer:
 			params = [p.split("-") for p in strategy_params]
 			self.strategy = OffPeakStrategy(self.network, params)
 		else:
-			self.logger.critical("OpenHEMSServer() : Unknown strategy '"+strategy+"'")
+			self.logger.critical("OpenHEMSServer() : Unknown strategy '{strategy}")
 			os._exit(1)
 
 	def loop(self, loop_delay):
@@ -41,10 +48,10 @@ class OpenHEMSServer:
 			self.loop(loop_delay)
 			t = time.time()
 			if t<nextloop:
-				self.logger.debug("OpenHEMSServer.run() : sleep(%f min)" % (nextloop-t)/60)
+				self.logger.debug("OpenHEMSServer.run() : sleep({(nextloop-t)/60} min)")
 				time.sleep(nextloop-t)
 				t = time.time()
 			elif t>nextloop:
-				self.logger.warning("OpenHomeEnergyManagement::run() \
-					: missing time for loop : %i seconds" % (nextloop-t))
+				self.logger.warning("OpenHomeEnergyManagement::run() "
+					": missing time for loop : {(nextloop-t)} seconds")
 			nextloop = t + loop_delay

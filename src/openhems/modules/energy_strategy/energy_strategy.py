@@ -13,7 +13,7 @@ class EnergyStrategy:
 	def  __init__(self):
 		pass
 
-	# puylint: disable=unused-argument
+	# pylint: disable=unused-argument
 	def updateNetwork(self, cycleDuration):
 		"""
 		Function to update OpenHEMSNetwork. To implement in sub-class
@@ -40,7 +40,8 @@ class EnergyStrategy:
 	def mytime2datetime(now: datetime, mytime):
 		"""
 		Convert custom "Mytime" (used for comparaison) type to standard Python datetime
-		 now is used to get next "mytime" because mytime do not keep information about date
+		 now is used to get next "mytime" because mytime
+		  do not keep information about date
 		"""
 		nowtime = EnergyStrategy.datetime2Mytime(now)
 		h0, m0, s0 = EnergyStrategy.mytime2hourMinSec(nowtime)
@@ -48,7 +49,7 @@ class EnergyStrategy:
 		h, m, s = EnergyStrategy.mytime2hourMinSec(mytime)
 		timeSecs = h*3600+m*60+s
 		nbSecondsToNextRange = -nowSecs + timeSecs
-		if nowtime>time: # It's next day
+		if nowtime>mytime: # It's next day
 			nbSecondsToNextRange += 86400
 		nextTime = now + timedelta(seconds=nbSecondsToNextRange)
 		return nextTime

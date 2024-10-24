@@ -1,26 +1,35 @@
+"""
+Represent device of home network
+"""
 
-from enum import Enum
+import logging
 from collections import deque
 from typing import Final
-from modules.web import OpenHEMSSchedule
+from openhems.modules.web import OpenHEMSSchedule
 from .feeder import Feeder
+
 CYCLE_HISTORY: Final[int] = 10 # Number of cycle we keep history
-import logging
 logger = logging.getLogger(__name__)
 
 class OpenHEMSNode:
-	id = ""
-	params = ""
-	network = None
-	_isSwitchable = False
-	_isOn: Feeder = None
-	currentPower: Feeder = 0
-	maxPower: Feeder = 2000
+	"""
+	Represent device of home network
+	"""
 
-	def setId(self, id):
-		self.id = id.strip().replace(" ", "_")
+	def setId(self, HAid):
+		"""
+		Set Home-Assistant id
+		"""
+		self.id = HAid.strip().replace(" ", "_")
 
 	def __init__(self, currentPower, maxPower, isOnFeeder=None):
+		self.id = ""
+		self.params = ""
+		self.network = None
+		self._isSwitchable = False
+		self._isOn: Feeder = None
+		self.currentPower: Feeder = 0
+		self.maxPower: Feeder = 2000
 		self.currentPower = currentPower
 		self.maxPower = maxPower
 		if isOnFeeder is not None:
@@ -31,19 +40,28 @@ class OpenHEMSNode:
 		self.previousPower = deque()
 
 	def setCurrentPower(self, currentPower):
+		"""
+		Get current power.
+		"""
 		if len(self.previousPower)>=CYCLE_HISTORY:
 			self.previousPower.popleft()
 		self.previousPower.append(self.currentPower)
 		self.currentPower = currentPower
 
 	def getCurrentPower(self):
+		"""
+		Get current power 
+		"""
 		currentPower = self.currentPower.getValue()
 		if self._isSwitchable and not self.isOn() and currentPower!=0:
-			logger.warning(self.id+" is Off but current power="+str(currentPower))
-		logger.info("OpenHEMSNode.getCurrentPower() = "+str(currentPower))
+			logger.warning("{self.id} is Off but current power={currentPower}")
+		logger.info("OpenHEMSNode.getCurrentPower() = {currentPower}")
 		return currentPower
 
 	def getMaxPower(self):
+		"""
+		Get max power 
+		"""
 		return self.maxPower.getValue()
 
 	def estimateNextPower(self):
@@ -56,24 +74,24 @@ class OpenHEMSNode:
 		"""
 		p0 = self.currentPower
 		maxi = len(self.previousPower)
-		sum = 0
+		summ = 0
 		lastDiff = 0
 		maxDiff = 0
 		for i in reversed(range(0, maxi)):
 			p1 = self.previousPower[i]
 			diff = p1-p0
-			if (i==maxi):
+			if i==maxi:
 				lastDiff = diff
-			if (abs(diff)>maxDiff):
+			if abs(diff)>maxDiff:
 				maxDiff = abs(diff)
-			sum += diff
+			summ += diff
 			p0 = p1
-		avgDiff = sum/maxi
-		if (avgDiff>0 and lastDiff>2*avgDiff) \
-				or (avgDiff<0 and lastDiff<2*avgDiff):
+		avgDiff = summ/maxi
+		if avgDiff>0 and lastDiff>2*avgDiff \
+				or avgDiff<0 and lastDiff<2*avgDiff:
 			curDiff = lastDiff
 		else:
-			currDiff = avgDiff
+			curDiff = avgDiff
 		return [self.currentPower-abs(maxDiff),\
 			self.currentPower+curDiff,\
 			self.currentPower+abs(maxDiff)]
@@ -90,8 +108,7 @@ class OpenHEMSNode:
 		# print("OpenHEMSNode.isOn(",self.id,")")
 		if self._isSwitchable:
 			return self._isOn.getValue()
-		else:
-			return True
+		return True
 	def switchOn(self, connect: bool) -> bool:
 		"""
 		May not work if it is impossible (No relay) or if it failed.
@@ -105,15 +122,18 @@ class OpenHEMSNode:
 
 class OutNode(OpenHEMSNode):
 	"""
-	electricity source.
+	Electricity consumer (like washing-machine, water-heater).
 	"""
-	def __init__(self, id, currentPower, maxPower, isOnFeeder=None):
-		OpenHEMSNode.__init__(self, currentPower, maxPower, isOnFeeder)
-		self.setId(id)
-		self.name = id
-		self.schedule = OpenHEMSSchedule(self.id, id)
+	def __init__(self, name_id, currentPower, maxPower, isOnFeeder=None):
+		super().__init__(currentPower, maxPower, isOnFeeder)
+		self.setId(name_id)
+		self.name = name_id
+		self.schedule = OpenHEMSSchedule(self.id, name_id)
 
 	def getSchedule(self):
+		"""
+		Return schedule
+		"""
 		return self.schedule
 
 class InOutNode(OpenHEMSNode):
@@ -125,6 +145,7 @@ class InOutNode(OpenHEMSNode):
 	"""
 	def __init__(self, currentPower, maxPower, minPower, marginPower) -> None:
 		# isAutoAdatative: bool, isControlable: bool, isModulable: bool, isCyclic: bool
+		super().__init__(currentPower, maxPower)
 		self.currentPower = currentPower
 		self.marginPower = marginPower
 		self.maxPower = maxPower
@@ -146,15 +167,25 @@ class InOutNode(OpenHEMSNode):
 		return True
 
 	def getCurrentMaxPower(self):
+		"""
+		Return current maximal power
+		"""
 		return self.maxPower.getValue()
 	def getCurrentMinPower(self):
+		"""
+		Return current minimal power
+		"""
 		return self.minPower.getValue()
 	def getMarginPower(self):
+		"""
+		Return current margin power
+		"""
 		return self.marginPower.getValue()
 
 	def getSafetyLevel(self):
-		"""Get a int value representing how safe is the current power value
-		
+		"""
+		Get a int value representing how safe is the current power value
+
 		return int:
 			- 0: unsafe
 			- 1: respect constraints but shouldn't on nex loop
@@ -163,55 +194,68 @@ class InOutNode(OpenHEMSNode):
 		"""
 		if not self.respectConstraints():
 			return 0
-		min, avg, max = self.estimateNextPower();
+		_min, avg, _max = self.estimateNextPower()
 		if not self.respectConstraints(avg):
 			return 1
-		if not (self.respectConstraints(min) or self.respectConstraints(max)):
+		if not (self.respectConstraints(_min) or self.respectConstraints(_max)):
 			return 2
 		return 3
 
 class PublicPowerGrid(InOutNode):
-	def __init__(self, currentPower, maxPower, minPower, marginPower) -> None:
-		super().__init__(currentPower, maxPower, minPower, marginPower)
+	"""
+	This represent Public power grid. Just one should be possible.
+	"""
+	# def __init__(self, currentPower, maxPower, minPower, marginPower):
+	#	super().__init__(currentPower, maxPower, minPower, marginPower)
 
 class SolarPanel(InOutNode):
-	def __init__(self, currentPower, maxPower, minPower, marginPower) -> None:
-		super().__init__(currentPower, maxPower, minPower, marginPower)
+	"""
+	This represent photovoltaïc solar panels. 
+	We can have many, but one can represent many solar panel.
+	It depends of sensors number.
+	"""
+	# def __init__(self, currentPower, maxPower, minPower, marginPower):
+	#	super().__init__(currentPower, maxPower, minPower, marginPower)
 	def getCurrentMaxPower(self):
+		"""
+		get current maximum power.
+		"""
 		return self.currentPower.getValue()
 
-"""
-class RTETempoContract(PublicPowerGrid):
-	def __init__(self, maxPower, minPower) -> None:
-		self.isAutoAdatative = True
+class Battery(InOutNode):
+	"""
+	This represent battery.
+	"""
+	# pylint: disable=too-many-arguments
+	def __init__(self, currentPower, maxPower, powerMargin,
+			capaciity, currentLevel
+			,minPower=None, lowLevel=None, hightLevel=None):
+		if minPower is None:
+			minPower = -maxPower
+		if lowLevel is None:
+			lowLevel = 0.2*capaciity
+		if hightLevel is None:
+			hightLevel = 0.8*capaciity
+		super().__init__(currentPower, maxPower, minPower, powerMargin)
 		self.isControlable = True
 		self.isModulable = False
-	def checkConstraints(self):
-		if self.currentPower
+		self.capaciity = capaciity
+		self.lowLevel = lowLevel
+		self.hightLevel = hightLevel
+		self.currentLevel = currentLevel
 
-class Switch(InOutNode):
-	def __init__(self, maxPower, minPower) -> None:
-		self.isControlable = False
-		self.isModulable = False
+	def getCapacity(self):
+		"""
+		Get battery max capacity.
+		"""
+		return self.capaciity.getValue()
 
-class CarCharger(Switch):
-	def __init__(self, maxPower, minPower, capacity) -> None:
-		assert minPower<=0 and maxPower<=0
-		self.isControlable = True
-		self.isModulable = False
+	def getLevel(self):
+		"""
+		Get battery level.
+		"""
+		return self.currentLevel.getValue()
 
-class WaterHeater(InOutNode):
-	def __init__(self, maxPower, minPower, capacity) -> None:
-		assert minPower<=0 and maxPower<=0
-		self.isControlable = True
-		self.isModulable = True
-
-class Battery(Switch):
-	def __init__(self, maxPower, minPower, capacity) -> None:
-		self.isControlable = True
-		self.isModulable = False
-
-	def __init__(self, id, use, type) -> None:
-		pass
-"""
-
+# class RTETempoContract(PublicPowerGrid):
+# class CarCharger(Switch):
+# class WaterHeater(InOutNode):

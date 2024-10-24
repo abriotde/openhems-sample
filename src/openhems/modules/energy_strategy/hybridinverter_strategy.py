@@ -10,7 +10,7 @@ Disadvantages :
 
 import logging
 from openhems.modules.network.network import OpenHEMSNetwork
-from .solarbased_strategy import SolarBasedStrategy
+from .solarbased_strategy import SolarBasedStrategy, GeoPosition
 
 class HybridInverterStrategy(SolarBasedStrategy):
 	"""
@@ -23,8 +23,8 @@ class HybridInverterStrategy(SolarBasedStrategy):
 	Disadvantages : 
 	"""
 
-	def __init__(self, network: OpenHEMSNetwork, latitude, longitude):
-		super().__init__(network, latitude, longitude, offpeakHoursRanges=[])
+	def __init__(self, network: OpenHEMSNetwork, geoposition: GeoPosition, offpeakHoursRanges=None):
+		super().__init__(network, geoposition, offpeakHoursRanges)
 		logging.getLogger("HybridInverterStrategy")\
 			.error("SolarOnlyProductionStrategy() : TODO")
 		# TODO

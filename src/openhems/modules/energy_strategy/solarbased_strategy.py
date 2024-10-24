@@ -3,43 +3,62 @@ Super class for all solar-based strategy
 """
 
 import datetime
+import logging
 import astral
+from openhems.modules.network.network import OpenHEMSNetwork
 from .offpeak_strategy import OffPeakStrategy
-from modules.network.network import OpenHEMSNetwork
 
+# pylint: disable=too-few-public-methods
+class GeoPosition:
+	"""
+	Class to represent Geographical position 
+	"""
+	def __init__(self, lattitude, longitude, altitude):
+		self.lat = lattitude
+		self.lon = longitude
+		self.alt = altitude
+
+	def getLatLon(self):
+		"""
+		Return array of latitude/longitude. 
+		"""
+		return [self.lat, self.lon]
 
 class SolarBasedStrategy(OffPeakStrategy):
 	"""
 	Super class for all solar-based strategy
 	"""
-	# pylint : disable=dangerous-default-value
-	def  __init__(self, network: OpenHEMSNetwork, latitude, longitude,
-			offpeakHoursRanges=[["17:00:00","09:00:00"]]):
+	def  __init__(self, network: OpenHEMSNetwork, geoposition:GeoPosition,
+			offpeakHoursRanges=None):
+		super().__init__(network, offpeakHoursRanges)
 		self._nightime = False
 		self.isDayTime()
 		self.timezone = datetime.datetime.now(datetime.timezone.utc)\
 			.astimezone().tzinfo
 		self.location = astral\
 			.LocationInfo('Custom Name', 'My Region', \
-				str(self.timezone), latitude, longitude)
+				str(self.timezone), geoposition.lat, geoposition.lon)
 		self.gridTime = 0
 		self.solarTime = 0
 		self.lastAutonomousRatio = 0
-		self.setOffPeakHoursRanges(offpeakHoursRanges)
-		self.checkRange()
 		self._sunrise = datetime.datetime.now() # TODO
 		self._sunset = datetime.datetime.now() # TODO
 
 	def updateNetwork(self, cycleDuration):
+		"""
+		Update the OpenHEMSNetwork.
+		"""
 		logging.getLogger("SolarBasedStrategy")\
 			.error("SolarBasedStrategy.updateNetwork() : \
 				To implement in sub-class")
 
 	def getAutonomousRatio(self):
+		"""
+		Get a ratio of autonomy from last 24h.
+		"""
 		if (self.solarTime+self.gridTime)>0:
 			return 100 * self.solarTime / (self.solarTime+self.gridTime)
-		else:
-			return 0
+		return 0
 
 	def isDayTime(self):
 		"""

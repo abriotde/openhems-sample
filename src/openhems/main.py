@@ -63,7 +63,9 @@ class OpenHEMSApplication:
 		return self.logger
 
 	def getLogger(self):
-		# pylint: disable=missing-function-docstring
+		"""
+		Return logger
+		"""
 		return self.logger
 
 	def __init__(self, yaml_conf_filepath):

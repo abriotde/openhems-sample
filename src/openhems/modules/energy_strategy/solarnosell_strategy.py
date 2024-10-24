@@ -9,7 +9,7 @@ Disadvantages :
 
 import logging
 from openhems.modules.network.network import OpenHEMSNetwork
-from .solarbased_strategy import SolarBasedStrategy
+from .solarbased_strategy import SolarBasedStrategy, GeoPosition
 
 class SolarNoSellStrategy(SolarBasedStrategy):
 	"""
@@ -22,17 +22,12 @@ class SolarNoSellStrategy(SolarBasedStrategy):
 	"""
 
 	# pylint: disable=unused-argument
-	def __init__(self, network: OpenHEMSNetwork, gridId:str, inverterId:str, 
-			config, latitude, longitude, offpeakHoursRanges):
+	def __init__(self, network: OpenHEMSNetwork,
+			config, geoPosition: GeoPosition, offpeakHoursRanges):
 		self.logger = logging.getLogger(__name__)
-		super().__init__(network, latitude, longitude, offpeakHoursRanges)
+		super().__init__(network, geoPosition, offpeakHoursRanges)
 		self.logger.info("SolarNoSellStrategy()")
 		self.network = network
-		self.checkRange()
-		self.maxBatteryLevel = config.get("maxBattery", 95)
-		self.hightBatteryLevel = config.get("hightBattery", 80)
-		self.lowBatteryLevel = config.get("lowBattery", 20)
-		self.minBatteryLevel = config.get("minBattery", 5)
 
 	def updateNetwork(self, cycleDuration):
 		return True

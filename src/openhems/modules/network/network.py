@@ -2,13 +2,14 @@
 This module aim to abstract home network of connected devices.
 It is used to know devices and to switch on/off them.
 """
-from enum import Enum
-from collections import deque
+
 from typing import Final
 import logging
 import os
-from .node import OpenHEMSNode
+import copy
+from .node import OpenHEMSNode, InOutNode, PublicPowerGrid, SolarPanel, Battery
 
+POWER_MARGIN: Final[int] = 10 # Margin of power consumption for security
 logger = logging.getLogger(__name__)
 
 class HomeStateUpdater:
@@ -37,67 +38,98 @@ class OpenHEMSNetwork:
 	This class aim to abstract home network of connected devices.
 	It is used to know devices and to switch on/off them.
 	"""
-	inout = []
-	out = []
 	network_updater: HomeStateUpdater = None
 
-	def print(self, logger=None):
-		if logger is None:
-			logger = print
-		logger("OpenHEMSNetwork(")
-		logger(" IN : ")
+	def print(self, printer=None):
+		"""
+		Print OpenHEMSNetwork as human readable string
+		"""
+		if printer is None:
+			printer = print
+		printer("OpenHEMSNetwork(")
+		printer(" IN : ")
 		for elem in self.inout:
-			logger("  - "+str(elem.id))
-		logger(" OUT : ")
+			printer("  - "+str(elem.id))
+		printer(" OUT : ")
 		for elem in self.out:
-			logger("  - "+str(elem.id))
-		logger(")")
+			printer("  - "+str(elem.id))
+		printer(")")
 
 	def __init__(self, network_updater: HomeStateUpdater):
 		self.network_updater = network_updater
+		self.inout = []
+		self.out = []
+		self.battery = []
+		self.publicpowergrid = []
+		self.solarpanel = []
 
 	def getSchedule(self):
-		schedule = dict()
+		"""
+		Return scheduled planning.
+		"""
+		schedule = {}
 		for node in self.out:
-			id = node.id
+			myid = node.id
 			sc = node.getSchedule()
-			schedule[id] = sc
+			schedule[myid] = sc
 		return schedule
 
-	def addNode(self, elem: OpenHEMSNode, inNode: bool) -> OpenHEMSNode:
-
+	def addNode(self, elem: OpenHEMSNode) -> OpenHEMSNode:
+		"""
+		Add a node.
+		"""
 		elem.network = self
-		if inNode:
+		if isinstance(elem, InOutNode):
 			self.inout.append(elem)
+			if isinstance(elem, Battery):
+				self.battery.append(elem)
+			elif isinstance(elem, PublicPowerGrid):
+				self.publicpowergrid.append(elem)
+			elif isinstance(elem, SolarPanel):
+				self.solarpanel.append(elem)
 		else:
 			self.out.append(elem)
 		return elem
 
 	def getCurrentPowerConsumption(self):
-		pow = 0
+		"""
+		Get current power consumption by all network..
+		"""
+		globalPower = 0
 		for elem in self.inout:
 			p = elem.getCurrentPower()
 			if isinstance(p, str):
-				logger.critical("power as string : "+p)
+				logger.critical("power as string : {p}")
 				os._exit(1)
-			pow += p
-		return pow
+			globalPower += p
+		return globalPower
 	def getCurrentMaxPower(self):
-		pow = 0
+		"""
+		Get current maximum power consumption possible.
+		"""
+		globalPower= 0
 		for elem in self.inout:
-			pow += elem.getCurrentMaxPower()
-		return pow
+			globalPower += elem.getCurrentMaxPower()
+		return globalPower
 	def getCurrentMinPower(self):
-		pow = 0
+		"""
+		Get current minimum power consumption possible.
+		0 mean, we can't give back power to network grid.
+		"""
+		globalPower = 0
 		for elem in self.inout:
-			pow += elem.getCurrentMinPower()
-		return pow
+			globalPower += elem.getCurrentMinPower()
+		return globalPower
 	def getMarginPower(self):
-		pow = 0
+		"""
+		Return margin power
+		(Power to keep before considering extrem value)
+		"""
+		globalPower = 0
 		for elem in self.inout:
 			if elem.isOn():
-				pow += elem.getMarginPower()
-		return pow
+				globalPower += elem.getMarginPower()
+		return globalPower
 	def getMarginPowerOn(self):
 		"""
 		Get how many power we can add safely
@@ -110,12 +142,11 @@ class OpenHEMSNetwork:
 			while marginPowerOn<0:
 				for elem in self.out:
 					if elem.isSwitchable() and elem.isOn():
-						pow = elem.getCurrentPower()
+						power = elem.getCurrentPower()
 						if elem.switchOn(False):
-							marginPowerOn += pow
+							marginPowerOn += power
 			return 0
-		else:
-			return maxPower-(currentPower+marginPower)
+		return maxPower-(currentPower+marginPower)
 	def getMarginPowerOff(self):
 		"""
 		Get how many power we can remove safely (Case we do not want to over produce)
@@ -129,13 +160,15 @@ class OpenHEMSNetwork:
 				for elem in self.out:
 					if elem.isSwitchable() and not elem.isOn():
 						if elem.switchOn(True):
-							marginPowerOff += elem.maxPower # Not safe, should we use minPower or avgPower... TODO?
+							marginPowerOff += elem.maxPower
+							# Not safe, should we use minPower or avgPower... TODO?
 			return 0
 		return marginPowerOff
 
 	def notify(self, message:str):
 		"""
-		Send a notification using the appropriate way (Only push to HomeAssistant for the moment).
+		Send a notification using the appropriate way 
+		(Only push to HomeAssistant for the moment).
 		"""
 		self.network_updater.notify(message)
 
@@ -145,12 +178,12 @@ class OpenHEMSNetwork:
 		"""
 		logger.info("Network.switchOffAll()")
 		# self.print(logger.info)
-		powerMargin = self.getCurrentPowerConsumption()
+		# powerMargin = self.getCurrentPowerConsumption()
 		# self.print(logger.info)
 		ok = True
 		for elem in self.out:
 			if elem.isSwitchable and elem.switchOn(False):
-				logger.warning("Fail to switch off '"+elem.id+"'")
+				logger.warning("Fail to switch off '%s'",elem.id)
 				ok = False
 		return ok
 
@@ -167,9 +200,14 @@ class OpenHEMSNetwork:
 		# TODO
 		return True
 
-	def getBatteryLevel(self, inPercent:bool=True):
+	def getBattery(self) -> Battery:
 		"""
-		Return battery level as Watt availables.
+		Return a battery representing the sum of all battery.
 		"""
+		l = len(self.battery)
+		if l<1:
+			return Battery(0, 0, 0, 0, 0)
+		if l==1:
+			return self.battery[0]
 		# TODO
-		return 0
+		return copy.copy(self.battery[0])

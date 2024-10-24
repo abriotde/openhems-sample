@@ -11,6 +11,10 @@ import logging
 from openhems.modules.network.network import OpenHEMSNetwork
 from .energy_strategy import EnergyStrategy
 
+# Time to wait in seconds before considering to be in offpeak range
+TIME_MARGIN_IN_S = 1
+
+# pylint: disable=broad-exception-raised
 class OffPeakStrategy(EnergyStrategy):
 	"""
 	This is in case we just base on "off-peak" range hours to control output.
@@ -23,9 +27,11 @@ class OffPeakStrategy(EnergyStrategy):
 	rangeEnd = datetime.now()
 	network = None
 
-	def __init__(self, network: OpenHEMSNetwork, offpeakHoursRanges=[["22:00:00","06:00:00"]]):
+	def __init__(self, network: OpenHEMSNetwork, offpeakHoursRanges=None):
 		self.logger = logging.getLogger(__name__)
-		self.logger.info("OffPeakStrategy("+str(offpeakHoursRanges)+")")
+		if offpeakHoursRanges is None:
+			offpeakHoursRanges = [["22:00:00","06:00:00"]]
+		self.logger.info("OffPeakStrategy({offpeakHoursRanges})")
 		self.network = network
 		self.setOffPeakHoursRanges(offpeakHoursRanges)
 		self.checkRange()
@@ -45,7 +51,7 @@ class OffPeakStrategy(EnergyStrategy):
 		elif not re.match("^[0-9]+h?[0-9]+$", strTime) is None:
 			pattern = '%Hh%M'
 		else:
-			raise Exception("Fail convert '%s' to Time." % strTime)
+			raise Exception("Fail convert '{strTime}' to Time.")
 		return int(datetime.strptime(strTime, pattern).strftime("%H%M%S"))
 
 	def setOffPeakHoursRanges(self, offPeakHoursRanges):
@@ -87,8 +93,7 @@ class OffPeakStrategy(EnergyStrategy):
 		assert nextTime<=240000
 		self.rangeEnd = self.mytime2datetime(nowDatetime, nextTime)
 		nbSecondsToNextRange = (self.rangeEnd - nowDatetime).total_seconds()
-		self.logger.info("OffPeakStrategy.checkRange({}) => {}, {}" \
-			.format(str(now), self.rangeEnd, str(nbSecondsToNextRange)))
+		self.logger.info("OffPeakStrategy.checkRange({now}) => {self.rangeEnd}, {nbSecondsToNextRange}")
 		return nbSecondsToNextRange
 
 	def sleepUntillNextRange(self):
@@ -97,12 +102,10 @@ class OffPeakStrategy(EnergyStrategy):
 		MARGIN: margin to wait more to be sure to change range... 
 		useless, not scientist?
 		"""
-		MARGIN = 1 
 		time2wait = (self.rangeEnd - datetime.now()).total_seconds()
 		self.logger.info("OffPeakStrategy.sleepUntillNextRange() :\
-			sleep(%f min, until %f)"\
-			% (round((time2wait+MARGIN)/60),self.rangeEnd))
-		time.sleep(time2wait+MARGIN)
+			sleep({round((time2wait+MARGIN)/60)} min, until {self.rangeEnd})")
+		time.sleep(time2wait+TIME_MARGIN_IN_S)
 
 
 	def switchOn(self, node, cycleDuration, doSwitchOn=True):
@@ -115,21 +118,20 @@ class OffPeakStrategy(EnergyStrategy):
 		if node.isSwitchable:
 			if node.isOn():
 				lastDuration = node.getSchedule().decreaseTime(cycleDuration)
-				self.logger.debug("Node "+node.id+" isOn for "+str(lastDuration)+" more seconds")
+				self.logger.debug("Node {node.id} isOn for {lastDuration} more seconds")
 				if lastDuration==0:
-					self.logger.info("Switch off "+node.id+" due to elapsed time.")
+					self.logger.info("Switch off {node.id} due to elapsed time.")
 					if node.switchOn(False):
-						self.logger.warning("Fail switch off "+node.id+".")
+						self.logger.warning("Fail switch off {node.id}.")
 			elif doSwitchOn and node.getSchedule().isScheduled():
 				if node.switchOn(True):
-					self.logger.info("Switch on '"+str(node.id)+"' successfully.")
+					self.logger.info("Switch on '{node.id}' successfully.")
 					return True
-				else:
-					self.logger.warning("Fail switch on "+node.id+".")
+				self.logger.warning("Fail switch on {node.id}.")
 			else:
-				self.logger.debug("switchOn() : Node is off and not schedule : "+node.id+".")
+				self.logger.debug("switchOn() : Node is off and not schedule : {node.id}.")
 		else:
-			self.logger.debug("switchOn() : Node is not switchable : "+node.id+".")
+			self.logger.debug("switchOn() : Node is not switchable : {node.id}.")
 		return False
 
 	def switchOnMax(self, cycleDuration):
@@ -143,11 +145,11 @@ class OffPeakStrategy(EnergyStrategy):
 		powerMargin = self.network.getMarginPowerOn()
 		doSwitchOn = True
 		if powerMargin<0:
-			return
+			return True
 		for elem in self.network.out:
 			if self.switchOn(elem, cycleDuration, doSwitchOn):
 				# Do just one at each loop to check Network constraint
-				doSwitchOn = False 
+				doSwitchOn = False
 				done += 1
 		return done == 0
 

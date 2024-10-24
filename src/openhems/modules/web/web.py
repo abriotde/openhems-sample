@@ -16,8 +16,9 @@ from pyramid.config import Configurator
 from pyramid.view import view_config
 # from .schedule import OpenHEMSSchedule
 
-# Patch for jsonEncoder
 # pylint: disable=unused-argument
+
+# Patch for jsonEncoder
 def wrapped_default(self, obj):
 	"""
 	Patch for jsonEncoder
@@ -35,7 +36,6 @@ logger = logging.getLogger(__name__)
     route_name='panel',
     renderer='templates/panel.jinja2'
 )
-# pylint: disable=unused-argument
 def panel(request):
 	"""
 	Web-service to get schedled devices.
@@ -54,8 +54,9 @@ def testVPN():
 	).stdout.read() as vpn_interfaces:
 		vpn_interfaces = str(vpn_interfaces).strip()
 		nb_interfaces = len(vpn_interfaces)
-		logger.info("VPN is "+("up" if (nb_interfaces>3) else "down"))
-		return nb_interfaces>3
+		ok = nb_interfaces>3
+		logger.info("VPN is {'up' if ok else 'down'}")
+		return ok
 	return False
 
 def startVPN(start:bool=True):
@@ -64,7 +65,8 @@ def startVPN(start:bool=True):
 	"""
 	cmd = "wg-quick "+("up" if start else "down")+" wg0"
 	# Start the VPN
-	subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+	with subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE) as _:
+		pass
 
 @view_config(
 	route_name='params',
@@ -80,7 +82,6 @@ def params(request):
     route_name='vpn',
     renderer='json'
 )
-# pylint: disable=unused-argument
 def vpn(request):
 	"""
 	Web-service to connect/disconnect the VPN
@@ -93,8 +94,8 @@ def vpn(request):
 		startVPN(False)
 	time.sleep(3)
 	connected = testVPN()
-	logger.info("/vpn?{}connect : {}"\
-		.format(("" if connect else "dis"), str(connected==connect)))
+	logger.info("/vpn?{'' if connect else 'dis'}connect : {%s}",
+		connected==connect)
 	return { "connected": connected }
 
 @view_config(
@@ -102,17 +103,23 @@ def vpn(request):
     renderer='json'
 )
 def states(request):
-	for id, node in request.POST.items():
-		datas = json.loads(id)
+	"""
+	Web service to get scheduledd devices.
+	"""
+	for i, node in request.POST.items():
+		datas = json.loads(i)
 	# print("datas:", datas)
-	for id, node in datas.items():
-		if id in openHEMSContext.schedule:
-			openHEMSContext.schedule[id].setSchedule(node["duration"], node["timeout"])
+	for i, node in datas.items():
+		if i in openHEMSContext.schedule:
+			openHEMSContext.schedule[i].setSchedule(node["duration"], node["timeout"])
 		else:
-			logger.error("Node id='%s' not found."%id)
+			logger.error("Node id='%s' not found.",i)
 	return openHEMSContext.schedule
 
 class OpenhemsHTTPServer():
+	"""
+	Class for HTTP Server for OpenHEMS UI configuration
+	"""
 	def print_context(self):
 		"""
 		For debug
@@ -121,6 +128,7 @@ class OpenhemsHTTPServer():
 
 	def __init__(self, schedule):
 		testVPN()
+		# pylint: disable=global-statement
 		global openHEMSContext
 		self.schedule = schedule
 		openHEMSContext = self
@@ -141,24 +149,3 @@ class OpenhemsHTTPServer():
 			app = config.make_wsgi_app()
 		server = make_server('0.0.0.0', 8000, app)
 		server.serve_forever()
-
-"""
-from http import server
-# SimpleHTTPRequestHandler
-
-
-class OpenhemsHTTPRequestHandler(server.BaseHTTPRequestHandler):
-    def do_GET(self):
-        self.send_response(200)
-        self.send_header("Content-type", "text/html")
-        self.end_headers()
-        html = "<html><p>hello world</p></html>"
-        self.wfile.write(html.encode())
-
-def OpenhemsHTTPServer():
-    server_address = ('', 8000)
-    httpd = server.HTTPServer(server_address, OpenhemsHTTPRequestHandler)
-    httpd.serve_forever()
-
-OpenhemsHTTPServer()
-"""
