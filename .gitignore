@@ -3,4 +3,5 @@ src/__pycache__
 # For pip PyPi
 dist/
 venv/
+docs/build/
 src/OpenHEMS.egg-info/
