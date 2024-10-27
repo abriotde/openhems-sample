@@ -1,14 +1,24 @@
 #!/usr/bin/env python3
-import os, requests
-import re, time
+"""
+Script to update OpenHEMS installation automatically.
+"""
+
+import os
+import re
+import time
 import functools
-from importlib.machinery import SourceFileLoader
+import importlib
+from zipfile import ZipFile
+import requests
 
 
 postupdateScriptRegexp = re.compile('postupdate-(?P<version>[0-9.]*)\\.py')
 
 
 def cmp_versions(a, b):
+	"""
+	Function to compare versions numbers (like 1.0.3 and 1.3.0)
+	"""
 	aList = a.split('.')
 	bList = b.split('.')
 	aLen = len(aList)
@@ -19,13 +29,19 @@ def cmp_versions(a, b):
 		bi = int(bList[i]) if bLen>i else 0
 		if ai<bi:
 			return -1
-		elif ai>bi:
+		if ai>bi:
 			return 1
 	return 0
 
 class Updater:
+	"""
+	Updater to update OpenHEMS installation automatically
+	"""
 	@staticmethod
 	def initFromEnv():
+		"""
+		Init Python variables from OS environment (instead of CLI arguments).
+		"""
 		path = os.environ.get('OPENHEMS_PATH')
 		user = os.environ.get('OPENHEMS_USER', 'root')
 		branch = os.environ.get('OPENHEMS_BRANCH', 'main')
@@ -47,6 +63,9 @@ class Updater:
 		self.branch = branch
 
 	def postupdate(self, starting_version, current_version):
+		"""
+		Run specific script to updates things between 2 versions.
+		"""
 		# print("postupdate(",starting_version,", ",current_version,")")
 		if starting_version==current_version:
 			return False
@@ -74,23 +93,30 @@ class Updater:
 				print("> Run postupdate ",version)
 				mod_name = "postupdate-"+version
 				filepath = self.path+"/scripts/postupdate/"
-				pyscript= SourceFileLoader(mod_name, filepath+"/"+mod_name+".py").load_module()
-				pyscript.update()
+				# https://betterstack.com/community/questions/how-to-import-python-module-dynamically/
+				spec = importlib.util.spec_from_file_location(mod_name, filepath)
+				module = importlib.util.module_from_spec(spec)
+				spec.loader.exec_module(module)
+				module.update()
 		return True
 
 	def update(self):
+		"""
+		Download and extract new version
+		"""
 		zipfile = self.tmp_dir+"/"+self.project_name+"-"+self.branch+".zip"
-		if os.path.exists(zipfile): os.remove(zipfile)
-		res = requests.get(self.repo_url)
-		open(zipfile , 'wb').write(res.content)
-		from zipfile import ZipFile
-		zf = ZipFile(zipfile, 'r')
-		zf.extractall()
-		zf.close()
+		if os.path.exists(zipfile):
+			os.remove(zipfile)
+		res = requests.get(self.repo_url, timeout=30)
+		with open(zipfile , 'wb') as fd:
+			fd.write(res.content)
+		with ZipFile(zipfile, 'r') as zf:
+			zf.extractall()
+			zf.close()
 		path = self.tmp_dir+"/"+self.project_name+"-"+self.branch
-		exeList = open(path+'/scripts/files.lst', 'r')
-		for filepath in exeList.readlines():
-			os.chmod(path+"/"+(filepath.strip()), 0o755)
+		with open(path+'/scripts/files.lst', 'r', encoding="utf-8") as exeList:
+			for filepath in exeList.readlines():
+				os.chmod(path+"/"+(filepath.strip()), 0o755)
 		for subdir in ["src","img","scripts", "version"]:
 			ok = os.system('rsync -apzh --delete "'+path+"/"+subdir+'" "'+self.path+'/"')
 			if ok!=0:
@@ -99,18 +125,27 @@ class Updater:
 		return True
 
 	def getCurrentVersion(self):
-		with open(self.path+'/version') as f:
+		"""
+		Return instaled version number
+		"""
+		with open(self.path+'/version', encoding="utf-8") as f:
 			return f.read().strip()
 		return None
 	def getLatestVersion(self):
+		"""
+		Return last version number available for install
+		"""
 		version_url	= self.repo_raw_url+'/version'
-		res = requests.get(version_url)
+		res = requests.get(version_url, timeout=30)
 		# print(res," for ",version_url)
 		if res.status_code!=200:
 			return None
 		return res.content.decode("utf-8").strip()
 
 	def check4update(self):
+		"""
+		Check if new versions are availables.
+		"""
 		print("Check for new version")
 		latest_version = self.getLatestVersion()
 		starting_version = self.getCurrentVersion()
@@ -127,16 +162,18 @@ class Updater:
 			current_version = self.getCurrentVersion()
 			self.postupdate(starting_version, current_version)
 			self.restartOpenHEMSServer()
-			print("Successfully update. Your OpenHEMS version was "+starting_version+" and is now "+current_version)
+			print("Successfully update. Your OpenHEMS version was "
+				"{starting_version} and is now {current_version}")
 			return True
-		else:
-			print("No new version available. Nothing more to do.")
-			return True
+		print("No new version available. Nothing more to do.")
+		return True
 	def restartOpenHEMSServer(self):
+		"""
+		Restart OpenHEMS server.
+		"""
 		os.system('systemctl stop openhems.service')
 		time.sleep(3)
 		os.system('systemctl start openhems.service')
 
 updater = Updater.initFromEnv()
 updater.check4update()
-

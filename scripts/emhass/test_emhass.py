@@ -1,15 +1,18 @@
 #!/bin/env python3
+"""
+Script used to test emhass by calling it as a docker.
+"""
 
-import emhass.command_line as em
-import emhass.utils as em_utils
+
 import logging
-import yaml
 from pathlib import Path
 import deferrable
+import emhass.command_line as em
+# import emhass.utils as em_utils
 # https://emhass.readthedocs.io/en/latest/emhass.html
 
 entity_path = "."
-input_data_dict = dict()
+input_data_dict = {}
 logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
 
@@ -47,12 +50,12 @@ optim_conf['set_def_constant'] = [d.constant for d in deferables]
 optim_conf['def_start_penalty'] = [d.start_penalty for d in deferables]
 optim_conf['treat_def_as_semi_cont'] = [d.as_semi_cont for d in deferables]
 
-# 'list_hp_periods': {'period_hp_1': [{'start': '02:54'}, {'end': '15:24'}], 'period_hp_2': [{'start': '17:24'}, {'end': '20:24'}]}
-# 'load_cost_hp': 0.1907, 'load_cost_hc': 0.1419, 'prod_sell_price': 0.065
+# 'list_hp_periods': {
+#    'period_hp_1': [{'start': '02:54'}, {'end': '15:24'}],
+#    'period_hp_2': [{'start': '17:24'}, {'end': '20:24'}]
+#  } 'load_cost_hp': 0.1907, 'load_cost_hc': 0.1419, 'prod_sell_price': 0.065
 
 data = em.dayahead_forecast_optim(input_data_dict, logger) # pandas.core.frame.DataFrame
-
-# print("THEN")
 
 # print(list(data.columns))
 # print(list(data.keys()))
@@ -63,6 +66,4 @@ for timestamp, row in data.iterrows():
 	for index, d in enumerate(deferables):
 		print(timestamp, "=>", row['P_deferrable'+str(index)])
 	# print(timestamp, "=>", row.P_deferrable1)
-	print();
-
-
+	print()
