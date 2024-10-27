@@ -15,7 +15,7 @@
     <img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/abriotde/openhems-sample/python-test.yml?branch=main">
   </a>
   <a hstyle="text-decoration:none" ref="https://codecov.io/github/abriotde/openhems-sample" >
-    <img src="https://codecov.io/github/abriotde/openhems-sample/branch/main/graph/badge.svg?token=BW7KSCHN90"/>
+    <img src="https://codecov.io/github/abriotde/openhems-sample/branch/main/graph/badge.svg?token=4Y5ANTFLW7"/>
   </a>
   <a style="text-decoration:none" href="https://github.com/abriotde/openhems-sample/blob/main/LICENSE">
     <img alt="GitHub" src="https://img.shields.io/github/license/abriotde/openhems-sample">

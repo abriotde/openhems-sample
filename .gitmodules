@@ -1,0 +1,3 @@
+[submodule "lib/emhass"]
+	path = lib/emhass
+	url = https://github.com/davidusb-geek/emhass.git
