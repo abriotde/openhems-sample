@@ -10,7 +10,7 @@ import functools
 import importlib
 from zipfile import ZipFile
 import requests
-
+from packaging.version import Version
 
 postupdateScriptRegexp = re.compile('postupdate-(?P<version>[0-9.]*)\\.py')
 
@@ -19,18 +19,12 @@ def cmp_versions(a, b):
 	"""
 	Function to compare versions numbers (like 1.0.3 and 1.3.0)
 	"""
-	aList = a.split('.')
-	bList = b.split('.')
-	aLen = len(aList)
-	bLen = len(bList)
-	llen = max(aLen, bLen)
-	for i in range(llen):
-		ai = int(aList[i]) if aLen>i else 0
-		bi = int(bList[i]) if bLen>i else 0
-		if ai<bi:
-			return -1
-		if ai>bi:
-			return 1
+	va = Version(a)
+	vb = Version(b)
+	if va<vb:
+		return -1
+	if va>vb:
+		return 1
 	return 0
 
 class Updater:

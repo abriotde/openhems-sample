@@ -215,7 +215,7 @@ method-naming-style=camelCase
 #method-rgx=
 
 # Naming style matching correct module names.
-module-naming-style=camelCase
+module-naming-style=snake_case
 
 # Regular expression matching correct module names. Overrides module-naming-
 # style. If left empty, module names will be checked with the set naming style.

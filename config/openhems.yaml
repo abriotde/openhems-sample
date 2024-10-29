@@ -4,6 +4,8 @@ api:
   ssl_certificate: /etc/letsencrypt/live/openproduct.freeboxos.fr/cert.pem
 latitude: 48.430883803968456
 longitude: -2.2153649964972693
+altitude: 100
+time_zone: Europe/Paris
 server:
   # logformat: Optional default is "%(levelname)s : %(asctime)s : %(message)s", for custom configuration see https://docs.python.org/3/library/logging.html#logrecord-attributes
   logfile: openhems.log # Optional, default is /var/log/openhems.log

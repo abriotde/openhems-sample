@@ -78,7 +78,7 @@ class OpenHEMSApplication:
 		network = None
 		serverConf = None
 		with open(yaml_conf_filepath, 'r', encoding="utf-8") as file:
-			print(f"Load YAML configuration from '{yaml_conf_filepath}'")
+			print("Load YAML configuration from '",yaml_conf_filepath,"'")
 			conf = yaml.load(file, Loader=yaml.FullLoader)
 			try:
 				serverConf = conf['server']
