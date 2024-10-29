@@ -31,7 +31,7 @@ class OffPeakStrategy(EnergyStrategy):
 		self.logger = logging.getLogger(__name__)
 		if offpeakHoursRanges is None:
 			offpeakHoursRanges = [["22:00:00","06:00:00"]]
-		self.logger.info("OffPeakStrategy({offpeakHoursRanges})")
+		self.logger.info("OffPeakStrategy(%s)", str(offpeakHoursRanges))
 		self.network = network
 		self.setOffPeakHoursRanges(offpeakHoursRanges)
 		self.checkRange()
@@ -93,18 +93,20 @@ class OffPeakStrategy(EnergyStrategy):
 		assert nextTime<=240000
 		self.rangeEnd = self.mytime2datetime(nowDatetime, nextTime)
 		nbSecondsToNextRange = (self.rangeEnd - nowDatetime).total_seconds()
-		self.logger.info("OffPeakStrategy.checkRange({now}) => {self.rangeEnd}, {nbSecondsToNextRange}")
+		self.logger.info("OffPeakStrategy.checkRange({now}) => %s, %d", \
+			self.rangeEnd, nbSecondsToNextRange)
 		return nbSecondsToNextRange
 
 	def sleepUntillNextRange(self):
 		"""
 		Set application to sleep until off-peak (or inverse) range end
-		MARGIN: margin to wait more to be sure to change range... 
+		TIME_MARGIN_IN_S: margin to wait more to be sure to change range... 
 		useless, not scientist?
 		"""
 		time2wait = (self.rangeEnd - datetime.now()).total_seconds()
-		self.logger.info("OffPeakStrategy.sleepUntillNextRange() :\
-			sleep({round((time2wait+MARGIN)/60)} min, until {self.rangeEnd})")
+		self.logger.info("OffPeakStrategy.sleepUntillNextRange() : "
+			"sleep(%d min, until %s)",\
+			round((time2wait+TIME_MARGIN_IN_S)/60), str(self.rangeEnd))
 		time.sleep(time2wait+TIME_MARGIN_IN_S)
 
 
@@ -118,20 +120,22 @@ class OffPeakStrategy(EnergyStrategy):
 		if node.isSwitchable:
 			if node.isOn():
 				lastDuration = node.getSchedule().decreaseTime(cycleDuration)
-				self.logger.debug("Node {node.id} isOn for {lastDuration} more seconds")
+				self.logger.debug("Node %s isOn for %s more seconds", \
+					node.id, lastDuration)
 				if lastDuration==0:
-					self.logger.info("Switch off {node.id} due to elapsed time.")
+					self.logger.info("Switch off %s due to elapsed time.", node.id)
 					if node.switchOn(False):
-						self.logger.warning("Fail switch off {node.id}.")
+						self.logger.warning("Fail switch off %s.", node.id)
 			elif doSwitchOn and node.getSchedule().isScheduled():
 				if node.switchOn(True):
-					self.logger.info("Switch on '{node.id}' successfully.")
+					self.logger.info("Switch on '%s' successfully.", node.id)
 					return True
-				self.logger.warning("Fail switch on {node.id}.")
+				self.logger.warning("Fail switch on %s.", node.id)
 			else:
-				self.logger.debug("switchOn() : Node is off and not schedule : {node.id}.")
+				self.logger.debug("switchOn() : Node is off and not schedule : %s.",
+					node.id)
 		else:
-			self.logger.debug("switchOn() : Node is not switchable : {node.id}.")
+			self.logger.debug("switchOn() : Node is not switchable : %s.", node.id)
 		return False
 
 	def switchOnMax(self, cycleDuration):

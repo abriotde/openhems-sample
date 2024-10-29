@@ -31,8 +31,8 @@ class OpenHEMSSchedule:
 		"""
 		Return True, if device is schedule to be on
 		"""
-		self.logger.debug("OpenHEMSSchedule.isScheduled({self.id}) "
-			": duration = {self.duration}")
+		self.logger.debug("OpenHEMSSchedule.isScheduled(%s)"
+			": duration = %d", self.id, self.duration)
 		return self.duration>0
 
 	def setSchedule(self, duration: int, timeout):

@@ -1,9 +1,10 @@
 #!/bin/env python3
 """
-Script used to test emhass by calling it as a docker.
+Script used to test emhass
+* by calling it as a docker.
+* by calling it source code
 """
 
-import os
 import sys
 import argparse
 import logging
@@ -14,13 +15,15 @@ import deferrable
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--docker', action='store_true',
-                    help='Set this option if the script run in emhass docker davidusb/emhass-docker-standalone')
+	help="Set this option if the script run"
+	" in emhass docker davidusb/emhass-docker-standalone")
 parser.add_argument('-e','--emhass_dir', type=str, default=None,
-                    help='The path to the directory where there is config_emhass.yaml, secrets_emhass.yaml and data dir.')
+	help="The path to the directory where there is config_emhass.yaml, "
+	"secrets_emhass.yaml and data dir.")
 parser.add_argument('-r','--emhass_root', type=str, default=None,
-                    help='The path to the directory where there is emhass sources and emhass/data/associations.csv and emhass/data/config_defaults.json.')
+	help="The path to the directory where there is emhass sources"
+	" and emhass/data/associations.csv and emhass/data/config_defaults.json.")
 args = parser.parse_args()
-
 
 if args.docker:
 	HOMEASSISTANT_EMHASS_DIR="/app"
@@ -31,6 +34,9 @@ else:
 	sys.path.append(path_emhass)
 	HOMEASSISTANT_EMHASS_DIR="/home/alberic/Documents/OpenHomeSystem/emhassenv"
 
+# pylint: disable=wrong-import-position
+# pylint: disable=import-error
+# Import here because when use local sources, we need first to set this folder in the path
 import emhass
 import emhass.command_line as em
 import emhass.utils as em_utils
@@ -106,9 +112,9 @@ if input_data_dict:
 	optim_conf['set_deferrable_startup_penalty'] = optim_conf['def_start_penalty']
 	optim_conf['end_timesteps_of_each_deferrable_load'] = optim_conf['def_end_timestep']
 	optim_conf['start_timesteps_of_each_deferrable_load'] = optim_conf['def_start_timestep']
-	
+
 #	print("New opt:", input_data_dict['opt'].optim_conf)
-	
+
 	# 'list_hp_periods': {
 	#    'period_hp_1': [{'start': '02:54'}, {'end': '15:24'}],
 	#    'period_hp_2': [{'start': '17:24'}, {'end': '20:24'}]

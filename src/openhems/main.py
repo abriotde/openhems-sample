@@ -9,14 +9,19 @@ More informations on https://openhomesystem.com/
 import sys
 import os
 import logging
+from logging import handlers
 from datetime import datetime
 from threading import Thread
+import argparse
+from pathlib import Path
 import yaml
+openhemsPath = Path(__file__).parents[1]
+sys.path.append(str(openhemsPath))
+# pylint: disable=wrong-import-position
 from openhems.modules.network.driver.home_assistant_api import HomeAssistantAPI
 from openhems.modules.web import OpenhemsHTTPServer
-from .server import OpenHEMSServer
+from openhems.server import OpenHEMSServer
 
-yaml_conf = os.path.dirname(__file__)+"/../../config/openhems.yaml"
 LOGFORMAT = '%(levelname)s : %(asctime)s : %(message)s'
 LOGFILE = '/var/log/openhems/openhems.log'
 
@@ -48,7 +53,7 @@ class OpenHEMSApplication:
 			level=logging.CRITICAL
 		else: # if loglevel=="info":
 			level=logging.INFO
-		rotating_file_handler = logging.handlers.TimedRotatingFileHandler(filename=logfile,
+		rotating_file_handler = handlers.TimedRotatingFileHandler(filename=logfile,
         	when='D',
         	interval=1,
         	backupCount=5)
@@ -127,7 +132,13 @@ def main():
 	"""
 	Simple function to run wall OpenHEMS Application
 	"""
-	app = OpenHEMSApplication(yaml_conf)
+	default_conf_filepath = os.path.dirname(__file__)+"/../../config/openhems.yaml"
+	parser = argparse.ArgumentParser()
+	parser.add_argument('-c', '--conf', type=str, default=default_conf_filepath,
+		                help='File path to YAML configuration file.')
+	args = parser.parse_args()
+	app = OpenHEMSApplication(args.conf)
 	app.run()
 
-main()
+if __name__ == "__main__":
+	main()
