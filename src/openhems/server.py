@@ -24,7 +24,7 @@ class OpenHEMSServer:
 			params = [p.split("-") for p in strategy_params]
 			self.strategy = OffPeakStrategy(self.network, params)
 		else:
-			self.logger.critical("OpenHEMSServer() : Unknown strategy '{strategy}")
+			self.logger.critical("OpenHEMSServer() : Unknown strategy '%s'", strategy)
 			os._exit(1)
 
 	def loop(self, loop_delay):
@@ -48,10 +48,10 @@ class OpenHEMSServer:
 			self.loop(loop_delay)
 			t = time.time()
 			if t<nextloop:
-				self.logger.debug("OpenHEMSServer.run() : sleep({(nextloop-t)/60} min)")
+				self.logger.debug("OpenHEMSServer.run() : sleep(%f min)", (nextloop-t)/60)
 				time.sleep(nextloop-t)
 				t = time.time()
 			elif t>nextloop:
 				self.logger.warning("OpenHomeEnergyManagement::run() "
-					": missing time for loop : {(nextloop-t)} seconds")
+					": missing time for loop : %d seconds", (nextloop-t))
 			nextloop = t + loop_delay

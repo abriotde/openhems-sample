@@ -76,14 +76,14 @@ class HomeAssistantAPI(HomeStateUpdater):
 		if kkey in conf.keys():
 			key = conf[kkey]
 			if isinstance(key, str) and key in ha_elements.keys():
-				self.logger.info("SourceFeeder({key})")
+				self.logger.info("SourceFeeder(%s)", key)
 				feeder = SourceFeeder(key, self, params)
 			else:
-				self.logger.info("ConstFeeder({key})")
+				self.logger.info("ConstFeeder(%s)", key)
 				feeder = ConstFeeder(key)
 		elif default_value is None:
 			self.logger.critical("HomeAssistantAPI.getFeeder missing\
-				 configuration key '{kkey}'  for network in YAML file ")
+				 configuration key '%s'  for network in YAML file ", kkey)
 			os._exit(1)
 		else:
 			feeder = ConstFeeder(default_value)
@@ -243,7 +243,8 @@ class HomeAssistantAPI(HomeStateUpdater):
 					self.notify("For '"+entity_id+" : '"+e.message)
 					value = e.defaultValue
 				self.cached_ids[entity_id][0] = value
-				self.logger.info("HomeAssistantAPI.updateNetwork({entity_id}) = {value}")
+				self.logger.info("HomeAssistantAPI.updateNetwork(%s) = %s", \
+					entity_id, value)
 		self.refresh_id += 1
 		return True
 
@@ -396,7 +397,7 @@ class HomeAssistantAPI(HomeStateUpdater):
 				)
 		except Exception as error:
 			self.logger.critical("Unable to access Home Assistance instance, check URL : %s", error)
-			self.logger.critical("HomeAssistantAPI.callAPI({url}, {data})")
+			self.logger.critical("HomeAssistantAPI.callAPI(%s, %s)", url, str(data))
 			os._exit(1)
 		errMsg = ""
 		err_code_msg = {
@@ -416,13 +417,13 @@ class HomeAssistantAPI(HomeStateUpdater):
 			# Maybe is the server overload,
 			# overwise it's better to slow down to avoid useless
 			# infinite loop on errors.
-			sleep_duration_onerror = min(sleep_duration_onerror*2, 64)
-			errMsg += " ("+url+", "+str(data)+")"
+			self.sleep_duration_onerror = min(self.sleep_duration_onerror*2, 64)
+			errMsg = errMsg.format_map(locals())+" ("+url+", "+str(data)+")"
 			self.logger.error(errMsg)
 			if url!="/services/notify/persistent_notification":
 				# To avoid infinite loop : It's url for notify()
-				self.notify("Error callAPI() : status_code="
-					"{response.status_code} : {errMsg}")
+				self.notify(f"Error callAPI() : \
+					status_code={response.status_code} : {errMsg}")
 		else:
 			if self.sleep_duration_onerror>2:
 				self.sleep_duration_onerror /= 2

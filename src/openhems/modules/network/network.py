@@ -99,7 +99,7 @@ class OpenHEMSNetwork:
 		for elem in self.inout:
 			p = elem.getCurrentPower()
 			if isinstance(p, str):
-				logger.critical("power as string : {p}")
+				logger.critical("power as string : '%s'", p)
 				os._exit(1)
 			globalPower += p
 		return globalPower

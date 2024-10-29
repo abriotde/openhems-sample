@@ -48,14 +48,14 @@ def testVPN():
 	We could use "wg show" but it need to be root
 	@return: bool : True if VPN is up, false else
 	"""
-	with subprocess.Popen(\
-		"ip a| grep 'wg0:'", \
-		shell=True, stdout=subprocess.PIPE\
-	).stdout.read() as vpn_interfaces:
+	with subprocess.Popen( "ip a| grep 'wg0:'", \
+				shell=True, stdout=subprocess.PIPE\
+			) as fd:
+		vpn_interfaces = fd.stdout.read()
 		vpn_interfaces = str(vpn_interfaces).strip()
 		nb_interfaces = len(vpn_interfaces)
 		ok = nb_interfaces>3
-		logger.info("VPN is {'up' if ok else 'down'}")
+		logger.info("VPN is %s", 'up' if ok else 'down')
 		return ok
 	return False
 
@@ -94,7 +94,8 @@ def vpn(request):
 		startVPN(False)
 	time.sleep(3)
 	connected = testVPN()
-	logger.info("/vpn?{'' if connect else 'dis'}connect : {%s}",
+	logger.info("/vpn?%sconnect : {%s}",
+		'' if connect else 'dis', 
 		connected==connect)
 	return { "connected": connected }
 
