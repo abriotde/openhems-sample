@@ -15,6 +15,7 @@ from openhems.modules.network.network import POWER_MARGIN
 from openhems.modules.network.feeder import Feeder, SourceFeeder, ConstFeeder
 from openhems.modules.network.node import PublicPowerGrid, SolarPanel, Battery, OutNode
 
+
 todays_Date = datetime.date.fromtimestamp(time.time())
 date_in_ISOFormat = todays_Date.isoformat()
 
@@ -41,10 +42,6 @@ class HomeAssistantAPI(HomeStateUpdater):
 		apiConf = conf['api']
 		self.api_url = apiConf["url"]
 		self.token = apiConf["long_lived_token"]
-		self.elems = {}
-		for HAid,elem in conf['elems'].items():
-			elem['id'] = HAid
-			self.elems[HAid] = elem
 		self._elemsKeysCache = None
 		self.cached_ids = {}
 		self.refresh_id = 0

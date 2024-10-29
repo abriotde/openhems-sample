@@ -11,7 +11,15 @@ import logging
 import json
 from pathlib import Path
 import deferrable
+from importlib import util
+from importlib.metadata import version
+from packaging.version import Version
 
+emhassModuleSpec = util.find_spec('emhass')
+if emhassModuleSpec is not None and Version(version('emhass'))>Version('0.9.0'):
+	print("module 'emhass' is installed on version ", version('emhass'))
+else:
+	print("module 'emhass' is not installed.")
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--docker', action='store_true',
@@ -41,6 +49,7 @@ import emhass
 import emhass.command_line as em
 import emhass.utils as em_utils
 # https://emhass.readthedocs.io/en/latest/emhass.html
+
 
 logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
@@ -76,6 +85,7 @@ else:
 	emhass_conf, built_secrets = em_utils.build_secrets(\
 		emhass_conf, logger, secrets_path=secrets_path)
 	params_secrets.update(built_secrets)
+	# print("paramsSecrets", built_secrets, secrets_path)
 	params = em_utils.build_params(emhass_conf, params_secrets, config, logger)
 	params = json.dumps(params)
 
