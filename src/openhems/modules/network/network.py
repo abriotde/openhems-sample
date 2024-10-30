@@ -18,20 +18,36 @@ class HomeStateUpdater:
 	 ignoring the real source of the update.
 	Today only Home-Assistant updater is implemented (HomeAssistantAPI).
 	"""
-	cached_ids = {}
-	refresh_id = 0
+	def __init__(self, conf) -> None:
+		self.cached_ids = {}
+		self.refresh_id = 0
+		self.logger = logging.getLogger(__name__)
+		self.network = None
+		self.network = None
+		if isinstance(conf, str):
+			with open(conf, 'r', encoding="utf-8") as file:
+				print("Load YAML configuration from '"+conf+"'")
+				conf = yaml.load(file, Loader=yaml.FullLoader)
+		self.conf = conf
 
 	def getNetwork(self):
 		"""
 		A function witch inspect home network and return OpenHEMSNetwork.
 		"""
-		logger.error("HomeStateUpdater.getNetwork() : To implement in sub-class")
+		self.network = OpenHEMSNetwork(self)
 
 	def updateNetwork(self):
 		"""
 		A function witch update home network and return OpenHEMSNetwork.
 		"""
-		logger.error("HomeStateUpdater.updateNetwork() : To implement in sub-class")
+		self.refresh_id += 1
+
+	def notify(self, message):
+		"""
+		A function witch notify the Network,
+		 this should be seen easily by the end user.
+		"""
+		self.logger.info(message)
 
 class OpenHEMSNetwork:
 	"""

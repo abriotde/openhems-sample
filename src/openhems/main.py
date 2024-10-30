@@ -19,6 +19,7 @@ openhemsPath = Path(__file__).parents[1]
 sys.path.append(str(openhemsPath))
 # pylint: disable=wrong-import-position
 from openhems.modules.network.driver.home_assistant_api import HomeAssistantAPI
+from openhems.modules.network.driver.fake_network import FakeNetwork
 from openhems.modules.web import OpenhemsHTTPServer
 from openhems.server import OpenHEMSServer
 
@@ -96,6 +97,8 @@ class OpenHEMSApplication:
 				sys.exit(1)
 			if networkSource=="homeassistant":
 				networkUpdater = HomeAssistantAPI(conf)
+			elif networkSource=="fake":
+				networkUpdater = FakeNetwork(conf)
 			else:
 				self.logger.critical("OpenHEMSServer() : Unknown network source type '%s'",
 					networkSource)

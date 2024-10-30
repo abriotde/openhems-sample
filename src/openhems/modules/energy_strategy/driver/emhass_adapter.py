@@ -127,6 +127,11 @@ class EmhassAdapter:
 
 	@staticmethod
 	def generateConfigFromOpenHEMS(path:Path):
+		"""
+		Generate configurations files from OpenHEMS configuration.
+		Avoid to maintain multiple files with duplicated informations
+		 (So possibly inconsistense and difficult error to resolv)
+		"""
 		openHEMSPath = path / "openhems.yaml"
 		emhassPath = path / "config_emhass.yaml"
 		emhassSecretsPath = path / "secrets_emhass.yaml"

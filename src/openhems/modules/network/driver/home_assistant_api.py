@@ -33,12 +33,7 @@ class HomeAssistantAPI(HomeStateUpdater):
 	It access to this by the API using URL and long_lived_token
 	"""
 	def __init__(self, conf) -> None:
-		self.logger = logging.getLogger(__name__)
-		if isinstance(conf, str):
-			with open(conf, 'r', encoding="utf-8") as file:
-				print("Load YAML configuration from '"+conf+"'")
-				conf = yaml.load(file, Loader=yaml.FullLoader)
-		self.conf = conf
+		super().__init__(conf)
 		apiConf = conf['api']
 		self.api_url = apiConf["url"]
 		self.token = apiConf["long_lived_token"]
@@ -47,7 +42,6 @@ class HomeAssistantAPI(HomeStateUpdater):
 		self.refresh_id = 0
 		# Time to sleep after wrong HomeAssistant call
 		self.sleep_duration_onerror = 2
-		self.network = None
 
 	def getHANodes(self):
 		"""
@@ -63,7 +57,7 @@ class HomeAssistantAPI(HomeStateUpdater):
 		# print("getHANodes() = ", ha_elements)
 		return ha_elements
 
-	def getFeeder(self, conf, kkey, ha_elements, params, default_value=None) -> Feeder:
+	def getFeeder(self, conf, kkey, ha_elements, expectedType, default_value=None) -> Feeder:
 		"""
 		Return a feeder considering
 		 if the "kkey" can be a Home-Assistant element id.
@@ -74,7 +68,7 @@ class HomeAssistantAPI(HomeStateUpdater):
 			key = conf[kkey]
 			if isinstance(key, str) and key in ha_elements.keys():
 				self.logger.info("SourceFeeder(%s)", key)
-				feeder = SourceFeeder(key, self, params)
+				feeder = SourceFeeder(key, self, expectedType)
 			else:
 				self.logger.info("ConstFeeder(%s)", key)
 				feeder = ConstFeeder(key)
@@ -151,8 +145,7 @@ class HomeAssistantAPI(HomeStateUpdater):
 		"""
 		Explore the home device network available with Home-Assistant.
 		"""
-		# self.explore()
-		self.network = OpenHEMSNetwork(self)
+		super().getNetwork()
 		ha_elements = self.getHANodes()
 		network_conf = self.conf["network"]
 		self.getNetworkIn(network_conf, ha_elements)
@@ -223,6 +216,7 @@ class HomeAssistantAPI(HomeStateUpdater):
 		Update network, but as we ever know it's architecture,
 		 we just have to update few values.
 		"""
+		super().updateNetwork()
 		response = self.callAPI("/states")
 		if len(self.cached_ids) == 0:
 			self.logger.warning("HomeAssistantAPI.updateNetwork() : "
@@ -242,7 +236,6 @@ class HomeAssistantAPI(HomeStateUpdater):
 				self.cached_ids[entity_id][0] = value
 				self.logger.info("HomeAssistantAPI.updateNetwork(%s) = %s", \
 					entity_id, value)
-		self.refresh_id += 1
 		return True
 
 	def _getElemsKeysCache(self, HAid, elem=None):
