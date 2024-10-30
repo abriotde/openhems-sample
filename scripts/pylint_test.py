@@ -101,5 +101,6 @@ def finalyze():
 
 # snake_case_conversion = init_snake_case_conversion()
 
-analyze_folder("./scripts")
 analyze_folder("./src/openhems")
+analyze_folder("./scripts")
+analyze_folder("./tests")

@@ -4,6 +4,8 @@ For the Network, we always "getValue" but when it's a dynamic value,
 the NetworkUpdater will really search to update the value. 
 """
 
+import random
+
 # pylint: disable=too-few-public-methods
 class Feeder:
 	"""
@@ -57,3 +59,50 @@ class ConstFeeder(Feeder):
 		if nameid is None:
 			nameid = str(value)
 		self.nameid = nameid
+
+class RandomFeeder(Feeder):
+	"""
+	The return 'value' is a random value between a 'minimum' and 'maximum',
+	 but on each openHEMS cycles it does not change a lot usualy.
+	The evolution is quite slow witch is more realistic.
+	"""
+	def __init__(self, source, minimum, maximum, averageStep=None):
+		self.source = source
+		self.min = minimum
+		self.max = maximum
+		if averageStep is None:
+			averageStep = (maximum - minimum)/10
+		self.avgStep = averageStep
+		self.value = (minimum + maximum) / 2
+		self.last_refresh_id = self.source.refresh_id-1
+
+	def getValue(self):
+		"""
+		The return 'value' is a random value between a 'minimum' and 'maximum',
+		But each step is a gaussian step between the current value.
+		"""
+		if self.last_refresh_id < self.source.refresh_id:
+			self.value = min(max(
+					self.value + random.gauss(0, 2*self.avgStep),
+				self.min), self.max)
+		return self.value
+
+class RotationFeeder(Feeder):
+	"""
+	The return 'value' rotate on a list of predefined 'values'.
+	It can be usefull to simulate a cylcle or random but with predicaled values
+	 (Usefull for tests)
+	"""
+	def __init__(self, source, valuesList:list):
+		self.values = valuesList
+		self.len = len(valuesList)
+		self.source = source
+
+	def getValue(self):
+		"""
+		The return 'value' rotate on a list of predefined 'values'.
+		On each OpenHEMS server loop, self.source.refresh_id should increment,
+		 witch occure the change, 
+		"""
+		i = self.source.refresh_id % self.len
+		return self.values[i]
