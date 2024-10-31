@@ -96,8 +96,10 @@ class OpenHEMSApplication:
 					in YAML configuration file '{yaml_conf_filepath}'")
 				sys.exit(1)
 			if networkSource=="homeassistant":
+				self.logger.info("Network: HomeAssistantAPI")
 				networkUpdater = HomeAssistantAPI(conf)
 			elif networkSource=="fake":
+				self.logger.info("Network: FakeNetwork")
 				networkUpdater = FakeNetwork(conf)
 			else:
 				self.logger.critical("OpenHEMSServer() : Unknown network source type '%s'",

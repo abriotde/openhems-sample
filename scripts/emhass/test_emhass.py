@@ -10,8 +10,8 @@ import argparse
 import logging
 import json
 from pathlib import Path
-import deferrable
 from importlib import util
+import deferrable
 from importlib.metadata import version
 from packaging.version import Version
 

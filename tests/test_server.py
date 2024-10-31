@@ -13,6 +13,7 @@ from pathlib import Path
 ROOT_PATH = Path(__file__).parents[1]
 sys.path.append(str(ROOT_PATH / "src"))
 from openhems.main import OpenHEMSApplication
+from openhems.modules.energy_strategy.energy_strategy import LOOP_DELAY_VIRTUAL
 
 class TestOpenHEMSServer(unittest.TestCase):
 	"""
@@ -25,7 +26,7 @@ class TestOpenHEMSServer(unittest.TestCase):
 		"""
 		configFile = ROOT_PATH / "config/openhems_fake4tests.yaml"
 		app = OpenHEMSApplication(configFile)
-		app.server.loop(10)
+		app.server.loop(LOOP_DELAY_VIRTUAL)
 		# pylint: disable=redundant-unittest-assert
 		self.assertTrue(True)
 

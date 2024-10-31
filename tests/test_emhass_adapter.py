@@ -4,11 +4,10 @@ Check common functionnality
  of openhems.modules.energy_strategy.offpeak_strategy.OffPeakStrategy
 """
 
-import pandas
 import sys
-import unittest
-from datetime import datetime
 from pathlib import Path
+import unittest
+import pandas
 # pylint: disable=wrong-import-position
 # pylint: disable=import-error
 sys.path.append(str(Path(__file__).parents[1] / "src"))
@@ -18,6 +17,10 @@ from openhems.modules.energy_strategy.driver.emhass_adapter import (
 )
 
 class TestEmhassAdapter(unittest.TestCase):
+	"""
+	Check common functionnality
+	 of openhems.modules.energy_strategy.offpeak_strategy.OffPeakStrategy
+	"""
 
 	def evalDeferrables(self, emhass, deferables):
 		"""
@@ -26,9 +29,9 @@ class TestEmhassAdapter(unittest.TestCase):
 		emhass.deferables = deferables
 		data = emhass.performOptim()
 		self.assertEqual(type(data) , pandas.core.frame.DataFrame)
-		for timestamp, row in data.iterrows():
+		for _, row in data.iterrows():
 			# type(timestamp) = pandas._libs.tslibs.timestamps.Timestamp
-			for index, d in enumerate(deferables):
+			for index, _ in enumerate(deferables):
 				val = row.get('P_deferrable'+str(index), None)
 				self.assertTrue(val is not None)
 

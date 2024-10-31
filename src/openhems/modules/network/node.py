@@ -101,6 +101,7 @@ class OpenHEMSNode:
 			Return true if this OpenHEMSNode can be switch on/off.
 		"""
 		return self._isSwitchable
+
 	def isOn(self):
 		"""
 		Return true if the node is not switchable or is switch on.

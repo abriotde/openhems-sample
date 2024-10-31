@@ -13,6 +13,6 @@ server:
     - 22h - 6h
 network:
   in: # List the source of electric power
-    - {id: linky, currentPower: RANDOM(100, 3000), powerMargin: 1000, maxPower: 10000, minPower: 0, class: PublicPowerGrid, contract: {type: sensor, elem: rte_tempo, value: couleur_actuelle_visuel, class: RTETempoContract, params: {}} }
+    - {id: linky, currentPower: "RANDOM(0, 6000.1, 100)", powerMargin: 1000, maxPower: 6000, minPower: 0, class: PublicPowerGrid, contract: {type: sensor, elem: rte_tempo, value: couleur_actuelle_visuel, class: RTETempoContract, params: {}} }
   out: # List on source of electric consumption
     - {id: voiture, class: switch, currentPower: 2000, maxPower:2000}
