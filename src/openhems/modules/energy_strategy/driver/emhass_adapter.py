@@ -7,11 +7,11 @@ import os
 import logging
 import json
 import sys
-import yaml
 import dataclasses
 from pathlib import Path
 import importlib
 from importlib.metadata import version
+import yaml
 from packaging.version import Version
 
 PATH_ROOT = Path(__file__).parents[5]
@@ -53,7 +53,7 @@ class EmhassAdapter:
 		self.logger = logging.getLogger(__name__)
 		if associationsPath is None:
 			associationsPath = rootPath / 'data/associations.csv'
-		self.logger.debug("EmhassAdapter(%s, %s, %s, %s)", 
+		self.logger.debug("EmhassAdapter(%s, %s, %s, %s)",
 			configPath, dataPath, rootPath , associationsPath)
 		# self.configPath = configPath
 		# self.dataPath = dataPath
@@ -122,8 +122,8 @@ class EmhassAdapter:
 		#    'period_hp_2': [{'start': '17:24'}, {'end': '20:24'}]
 		#  } 'load_cost_hp': 0.1907, 'load_cost_hc': 0.1419, 'prod_sell_price': 0.065
 
-		data = em.dayahead_forecast_optim(inputDataDict, self.logger)
-		return data
+		emhassData = em.dayahead_forecast_optim(inputDataDict, self.logger)
+		return emhassData
 
 	@staticmethod
 	def generateConfigFromOpenHEMS(path:Path):
@@ -157,7 +157,7 @@ lon: {longitude}
 alt: {altitude}
 """)
 			with open(emhassPath, 'w', encoding="utf-8") as emhassFile:
-				emhassSecretsFile.write("")
+				emhassFile.write("")
 
 	@staticmethod
 	def createForOpenHEMS():

@@ -30,6 +30,7 @@ class OpenHEMSServer:
 	def loop(self, loop_delay):
 		"""
 		It's the content of each loop.
+		If loop delay=0, we consider that we never sleep (For test or reactivity).
 		"""
 		self.logger.debug("OpenHEMSServer.loop()")
 		self.network.updateStates()
@@ -40,6 +41,7 @@ class OpenHEMSServer:
 		Run an infinite loop
 		 where each loop shouldn't last more than loop_delay
 		 and will never last less than loop_delay
+		If loop delay=0, we consider that we never sleep (For test or reactivity).
 		"""
 		if loop_delay==0:
 			loop_delay = self.loop_delay

@@ -9,7 +9,7 @@ import time
 import re
 import logging
 from openhems.modules.network.network import OpenHEMSNetwork
-from .energy_strategy import EnergyStrategy
+from .energy_strategy import EnergyStrategy, LOOP_DELAY_VIRTUAL
 
 # Time to wait in seconds before considering to be in offpeak range
 TIME_MARGIN_IN_S = 1
@@ -170,7 +170,8 @@ class OffPeakStrategy(EnergyStrategy):
 			self.switchOnMax(cycleDuration)
 		else: # Sleep untill end.
 			if self.network.switchOffAll():
-				self.sleepUntillNextRange()
-				self.checkRange() # To update self.rangeEnd (and should change self.inOffpeakRange)
+				if cycleDuration>LOOP_DELAY_VIRTUAL:
+					self.sleepUntillNextRange()
+					self.checkRange() # To update self.rangeEnd (and should change self.inOffpeakRange)
 			else:
 				print("Warning : Fail to swnitch off all. We will try again on next loop.")

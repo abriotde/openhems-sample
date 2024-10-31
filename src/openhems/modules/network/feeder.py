@@ -5,6 +5,8 @@ the NetworkUpdater will really search to update the value.
 """
 
 import random
+import logging
+logger = logging.getLogger(__name__)
 
 # pylint: disable=too-few-public-methods
 class Feeder:
@@ -67,13 +69,13 @@ class RandomFeeder(Feeder):
 	The evolution is quite slow witch is more realistic.
 	"""
 	def __init__(self, source, minimum, maximum, averageStep=None):
+		super().__init__((minimum + maximum) / 2)
 		self.source = source
 		self.min = minimum
 		self.max = maximum
 		if averageStep is None:
 			averageStep = (maximum - minimum)/10
 		self.avgStep = averageStep
-		self.value = (minimum + maximum) / 2
 		self.last_refresh_id = self.source.refresh_id-1
 
 	def getValue(self):
@@ -94,8 +96,13 @@ class RotationFeeder(Feeder):
 	 (Usefull for tests)
 	"""
 	def __init__(self, source, valuesList:list):
-		self.values = valuesList
 		self.len = len(valuesList)
+		if self.len==0:
+			logger.error("RotationFeeder() init with empty list. Sert to default [0]")
+			valuesList = [0]
+			self.len = len(valuesList)
+		super().__init__(valuesList[0])
+		self.values = valuesList
 		self.source = source
 
 	def getValue(self):
@@ -106,3 +113,36 @@ class RotationFeeder(Feeder):
 		"""
 		i = self.source.refresh_id % self.len
 		return self.values[i]
+
+class StateFeeder(ConstFeeder):
+	"""
+	This is a state machine : This value is the one set before.
+	(Like a ConstFeeder that we can change)
+	"""
+
+	def setValue(self, value):
+		"""
+		Change the value to new one.
+		"""
+		self.value = value
+
+class FakeSwitchFeeder(Feeder):
+	"""
+	The return 'value' rotate on a list of predefined 'values'.
+	It can be usefull to simulate a cylcle or random but with predicaled values
+	 (Usefull for tests)
+	"""
+	def __init__(self, source:Feeder, isOn:Feeder, defaultValue=0):
+		super().__init__(source)
+		self.isOn = isOn
+		self.defaultValue = defaultValue
+
+	def getValue(self):
+		"""
+		The return 'value' rotate on a list of predefined 'values'.
+		On each OpenHEMS server loop, self.source.refresh_id should increment,
+		 witch occure the change, 
+		"""
+		if self.isOn.getValue():
+			return self.value.getValue()
+		return self.defaultValue

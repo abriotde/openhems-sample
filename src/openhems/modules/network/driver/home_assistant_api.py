@@ -5,16 +5,12 @@ It access to this by the API using URL and long_lived_token
 """
 
 import os
-import logging
 import datetime
 import time
 import requests
-import yaml
-from openhems.modules.network.network import OpenHEMSNetwork, HomeStateUpdater
-from openhems.modules.network.network import POWER_MARGIN
+from openhems.modules.network.network import HomeStateUpdater
 from openhems.modules.network.feeder import Feeder, SourceFeeder, ConstFeeder
-from openhems.modules.network.node import PublicPowerGrid, SolarPanel, Battery, OutNode
-
+from openhems.util import CastUtililty, CastException
 
 todays_Date = datetime.date.fromtimestamp(time.time())
 date_in_ISOFormat = todays_Date.isoformat()
@@ -42,174 +38,44 @@ class HomeAssistantAPI(HomeStateUpdater):
 		self.refresh_id = 0
 		# Time to sleep after wrong HomeAssistant call
 		self.sleep_duration_onerror = 2
+		self.network = None
+		self.ha_elements = None
 
-	def getHANodes(self):
+	def initNetwork(self):
 		"""
 		Get all nodes according to Home-Assistants
 		"""
 		response = self.callAPI("/states")
-		ha_elements = {}
+		self.ha_elements = {}
 		for e in response:
 			# print(e)
 			entity_id = e['entity_id']
-			ha_elements[entity_id] = e
+			self.ha_elements[entity_id] = e
 			# print(entity_id, e['state'], e['attributes'])
-		# print("getHANodes() = ", ha_elements)
-		return ha_elements
+		# print("getHANodes() = ", self.ha_elements)
 
-	def getFeeder(self, conf, kkey, ha_elements, expectedType, default_value=None) -> Feeder:
+	def getFeeder(self, conf, key, expectedType=None, default_value=None) -> Feeder:
 		"""
 		Return a feeder considering
-		 if the "kkey" can be a Home-Assistant element id.
+		 if the "key" can be a Home-Assistant element id.
 		 Otherwise, it consider it as constant.
 		"""
 		feeder = None
-		if kkey in conf.keys():
-			key = conf[kkey]
-			if isinstance(key, str) and key in ha_elements.keys():
-				self.logger.info("SourceFeeder(%s)", key)
-				feeder = SourceFeeder(key, self, expectedType)
+		value = conf.get(key, None)
+		if value is not None:
+			if isinstance(k, str) and k in self.ha_elements:
+				self.logger.info("SourceFeeder(%s)", value)
+				feeder = SourceFeeder(value, self, expectedType)
 			else:
-				self.logger.info("ConstFeeder(%s)", key)
-				feeder = ConstFeeder(key)
+				self.logger.info("ConstFeeder(%s)", value)
+				feeder = ConstFeeder(value)
 		elif default_value is None:
 			self.logger.critical("HomeAssistantAPI.getFeeder missing\
-				 configuration key '%s'  for network in YAML file ", kkey)
+				 configuration key '%s'  for network in YAML file ", key)
 			os._exit(1)
 		else:
 			feeder = ConstFeeder(default_value)
 		return feeder
-
-	def getNetworkIn(self, network_conf, ha_elements):
-		"""
-		Initialyze "in" network part.
-		"""
-		# init Feeders
-		for e in network_conf["in"]:
-			classname = e["class"].lower()
-			currentPower = self.getFeeder(e, "currentPower", ha_elements, "int")
-			powerMargin = self.getFeeder(e, "powerMargin", ha_elements, "int", POWER_MARGIN)
-			maxPower = self.getFeeder(e, "maxPower", ha_elements, "int")
-			minPower = self.getFeeder(e, "minPower", ha_elements, "int", 0)
-			node = None
-			if classname == "publicpowergrid":
-				node = PublicPowerGrid(currentPower, maxPower, minPower, powerMargin)
-			elif classname == "solarpanel":
-				node = SolarPanel(currentPower, maxPower, minPower, powerMargin)
-			elif classname == "battery":
-				lowLevel = self.getFeeder(e, "lowLevel",
-					ha_elements, "int", POWER_MARGIN)
-				hightLevel = self.getFeeder(e, "hightLevel",
-					ha_elements, "int", POWER_MARGIN)
-				capacity = self.getFeeder(e, "capaciity",
-					ha_elements, "int", POWER_MARGIN)
-				currentLevel = self.getFeeder(e, "level", ha_elements, "int", 0)
-				node = Battery(currentPower, maxPower, powerMargin, capacity,
-					currentLevel ,minPower=minPower, lowLevel=lowLevel,
-					hightLevel=hightLevel)
-			else:
-				self.logger.critical("HomeAssistantAPI.getNetwork : "
-					"Unknown classname '{classname}'")
-				os._exit(1)
-			if "id" in e.keys():
-				node.id = e["id"]
-			# print(node)
-			self.network.addNode(node)
-
-	def getNetworkOut(self, network_conf, ha_elements):
-		"""
-		Initialyze "out" network part.
-		"""
-		i = 0
-		for e in network_conf["out"]:
-			classname = e["class"].lower()
-			node = None
-			if "id" in e.keys():
-				HAid = e["id"]
-			else:
-				HAid = "node_"+str(i)
-				i += 1
-			if classname == "switch":
-				currentPower = self.getFeeder(e, "currentPower", ha_elements, "int")
-				isOn = self.getFeeder(e, "isOn", ha_elements, "bool", True)
-				maxPower = self.getFeeder(e, "maxPower", ha_elements, "int", 2000)
-				node = OutNode(HAid, currentPower, maxPower, isOn)
-			else:
-				self.logger.critical("HomeAssistantAPI.getNetwork : "
-					"Unknown classname '{classname}'")
-				os._exit(1)
-			# print(node)
-			self.network.addNode(node)
-
-	def getNetwork(self) -> OpenHEMSNetwork:
-		"""
-		Explore the home device network available with Home-Assistant.
-		"""
-		super().getNetwork()
-		ha_elements = self.getHANodes()
-		network_conf = self.conf["network"]
-		self.getNetworkIn(network_conf, ha_elements)
-		self.getNetworkOut(network_conf, ha_elements)
-		self.network.print(self.logger.info)
-		return self.network
-
-	@staticmethod
-	def toTypeInt(value):
-		"""
-		Convert to type integer
-		"""
-		retValue = None
-		if isinstance(value, int):
-			retValue = value
-		elif isinstance(value, str):
-			if value=="unavailable":
-				raise HATypeExcetion("WARNING : Unknown value for '"+value+"'", 0)
-			retValue = int(value)
-		return retValue
-	@staticmethod
-	def toTypeBool(value):
-		"""
-		Convert to type boolean
-		"""
-		retValue = None
-		if isinstance(value, int):
-			retValue = value>0
-		elif isinstance(value, str):
-			retValue = value.lower() in ["on", "true", "1", "vrai"]
-		elif isinstance(value, bool):
-			retValue = value
-		return retValue
-	@staticmethod
-	def toTypeStr(value):
-		"""
-		Convert to type string
-		"""
-		if isinstance(value, int):
-			retValue = str(value)
-		elif isinstance(value, str):
-			retValue = value
-		else:
-			retValue = str(value)
-		return retValue
-
-	@staticmethod
-	def toType(destType, value):
-		"""
-		With Home-Assitant API we get all as string.
-		 If it's power or other int value, we need to convert it.
-		 We need to manage some incorrect value due to errors.
-		"""
-		retValue = None
-		if destType=="int":
-			retValue = HomeAssistantAPI.toTypeInt(value)
-		elif destType=="bool":
-			retValue = HomeAssistantAPI.toTypeBool(value)
-		elif destType=="str":
-			retValue = HomeAssistantAPI.toTypeStr(value)
-		else:
-			print(".toType(",destType,",",value,") : Unknwon type")
-			os._exit(1)
-		return retValue
 
 	def updateNetwork(self):
 		"""
@@ -228,8 +94,8 @@ class HomeAssistantAPI(HomeStateUpdater):
 			if entity_id in self.cached_ids:
 				val = e["state"]
 				try:
-					value = self.toType(self.cached_ids[entity_id][1], val)
-				except HATypeExcetion as e:
+					value = CastUtililty.toType(self.cached_ids[entity_id][1], val)
+				except CastException as e:
 					self.logger.error("For '"+entity_id+" : '"+e.message)
 					self.notify("For '"+entity_id+" : '"+e.message)
 					value = e.defaultValue
@@ -238,88 +104,12 @@ class HomeAssistantAPI(HomeStateUpdater):
 					entity_id, value)
 		return True
 
-	def _getElemsKeysCache(self, HAid, elem=None):
-		"""
-		@param: If elem is None; get mode; else: insert mode;
-		"""
-		e = self._elemsKeysCache
-		sids = HAid.split('_')
-		length = len(sids)
-		for i,sid in enumerate(sids):
-			# print("Index:",i,"/",length)
-			if not sid in e:
-				if elem is None: # Get mode, return last not null elem
-					# print("_getElemsKeysCache(",HAid,") => ", e)
-					return e
-				e[sid] = {}
-			if i==length-1 and elem is not None: # Do insert for last sub-id
-				e[sid] = elem
-				# print("_getElemsKeysCache(",HAid,") => ", self._elemsKeysCache)
-				return None
-			e = e[sid]
-		# print("_getElemsKeysCache(",HAid,") => ", e)
-		return e
-
 	def createNodeElement(self, elem):
 		"""
 		Create node element
 		"""
 		self.logger.debug("createNodeElement(%s)", elem)
 		return elem
-
-	def getElemById(self, HAid:str):
-		"""
-		Return the node element eer explored by id
-		"""
-		if HAid in self.elems:
-			return self.elems[HAid]
-		elemId = None
-		if self._elemsKeysCache is None:
-			self._elemsKeysCache = {}
-			for elemId,elem in self.elems.items():
-				nodeElem = self.createNodeElement(elem)
-				self._getElemsKeysCache(elemId, nodeElem)
-		# print("getElemById(",elemId,") => ",self._elemsKeysCache)
-		return self._getElemsKeysCache(elemId)
-
-	def explore(self):
-		"""
-		@useless? Used for debug.
-		Explore the home device network available with Home-Assistant.
-		"""
-		response = self.callAPI("/states")
-		# elements = {}
-		for e in response:
-			# print(e)
-			entity_id = e['entity_id']
-			state = e['state']
-			attributes = e['attributes']
-			# print(entity_id, state, attributes)
-			domain, elem_id = entity_id.split('.')
-			if elem_id.startswith("sm_a047f"):
-				print(e)
-			# elements[elem_id] = True
-			if domain == "sensor":
-				if "device_class" in attributes:
-					device_class = attributes["device_class"]
-					# Timestamp (solar wakeup), Enum (Tempo day color)
-					if device_class not in ["timestamp","enum"] \
-							and "state_class" in attributes:
-						state_class = attributes["state_class"]
-						unit_of_measurement = attributes["unit_of_measurement"]
-						elem = self.getElemById(elem_id)
-						print(" - ",entity_id,": ",state_class+"/"+device_class+" : ",state,unit_of_measurement, elem)
-					# else: print(attributes)
-				# else: print(attributes) # how many red day last for Tempo
-			elif domain == "update":
-				pass
-			elif domain == "switch":
-				if "device_class" in attributes:
-					device_class = attributes["device_class"]
-					if device_class=="outlet":
-						print(domain, elem_id, state)
-						self.getElemById(elem_id)
-		# print(elements)
 
 	def switchOn(self, isOn, node):
 		"""
