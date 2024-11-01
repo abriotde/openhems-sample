@@ -28,7 +28,7 @@ class FakeNetwork(HomeStateUpdater):
 #		super().__init__(conf)
 
 	# pylint: disable=unused-argument
-	def getFeeder(self, conf, key, expectedType=None, default_value=None) -> Feeder:
+	def getFeeder(self, conf, key, expectedType=None, defaultValue=None) -> Feeder:
 		"""
 		Return a feeder considering
 		 if the "key" can be a Home-Assistant element id.
@@ -48,9 +48,9 @@ class FakeNetwork(HomeStateUpdater):
 		elif isinstance(key, list):
 			self.logger.info("RotationFeeder(%s)", key)
 			feeder = RotationFeeder(self, key)
-		elif default_value is not None:
-			self.logger.info("ConstFeeder(%s) - default_value", default_value)
-			feeder = ConstFeeder(default_value)
+		elif defaultValue is not None:
+			self.logger.info("ConstFeeder(%s) - defaultValue", defaultValue)
+			feeder = ConstFeeder(defaultValue)
 		else:
 			self.logger.info("ConstFeeder(%s) - default", key)
 			feeder = ConstFeeder(key)

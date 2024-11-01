@@ -2,6 +2,7 @@
 Usefull function for standard usages
 """
 
+import os
 
 class CastException(Exception):
 	"""

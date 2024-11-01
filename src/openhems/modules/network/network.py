@@ -23,8 +23,8 @@ class HomeStateUpdater:
 	Today only Home-Assistant updater is implemented (HomeAssistantAPI).
 	"""
 	def __init__(self, conf) -> None:
-		self.cached_ids = {}
-		self.refresh_id = 0
+		self.cachedIds = {}
+		self.refreshId = 0
 		self.logger = logging.getLogger(__name__)
 		self.network = None
 		self.network = None
@@ -38,7 +38,7 @@ class HomeStateUpdater:
 		"""
 		A function witch update home network and return OpenHEMSNetwork.
 		"""
-		self.refresh_id += 1
+		self.refreshId += 1
 
 	def switchOn(self, isOn, _):
 		"""
@@ -61,19 +61,19 @@ class HomeStateUpdater:
 		"""
 
 	# pylint: disable=unused-argument
-	def getFeeder(self, conf, key, expectedType=None, default_value=None) -> Feeder:
+	def getFeeder(self, conf, key, expectedType=None, defaultValue=None) -> Feeder:
 		"""
 		Return a feeder considering
 		 This function should be overiden by sub-class
 		"""
 		return SourceFeeder(key, self, expectedType)
 
-	def getNetworkIn(self, network_conf):
+	def getNetworkIn(self, networkConf):
 		"""
 		Initialyze "in" network part.
 		"""
 		# init Feeders
-		for e in network_conf:
+		for e in networkConf:
 			classname = e["class"].lower()
 			currentPower = self.getFeeder(e, "currentPower", "int")
 			powerMargin = self.getFeeder(e, "powerMargin", "int", POWER_MARGIN)
@@ -111,12 +111,12 @@ class HomeStateUpdater:
 		maxPower = self.getFeeder(nodeConf, "maxPower", "int", 2000)
 		return OutNode(nameid, currentPower, maxPower, isOn)
 
-	def getNetworkOut(self, network_conf):
+	def getNetworkOut(self, networkConf):
 		"""
 		Initialyze "out" network part.
 		"""
 		i = 0
-		for e in network_conf:
+		for e in networkConf:
 			classname = e["class"].lower()
 			node = None
 			nameid = e.get("id", f"node_{i}")
@@ -140,9 +140,9 @@ class HomeStateUpdater:
 		"""
 		self.network = OpenHEMSNetwork(self)
 		self.initNetwork()
-		network_conf = self.conf["network"]
-		self.getNetworkIn(network_conf["in"])
-		self.getNetworkOut(network_conf["out"])
+		networkConf = self.conf["network"]
+		self.getNetworkIn(networkConf["in"])
+		self.getNetworkOut(networkConf["out"])
 		self.network.print(self.logger.info)
 		return self.network
 
@@ -151,7 +151,7 @@ class OpenHEMSNetwork:
 	This class aim to abstract home network of connected devices.
 	It is used to know devices and to switch on/off them.
 	"""
-	network_updater: HomeStateUpdater = None
+	networkUpdater: HomeStateUpdater = None
 
 	def print(self, printer=None):
 		"""
@@ -168,8 +168,8 @@ class OpenHEMSNetwork:
 			printer("  - "+str(elem.id))
 		printer(")")
 
-	def __init__(self, network_updater: HomeStateUpdater):
-		self.network_updater = network_updater
+	def __init__(self, networkUpdater: HomeStateUpdater):
+		self.networkUpdater = networkUpdater
 		self.inout = []
 		self.out = []
 		self.battery = []
@@ -283,7 +283,7 @@ class OpenHEMSNetwork:
 		Send a notification using the appropriate way 
 		(Only push to HomeAssistant for the moment).
 		"""
-		self.network_updater.notify(message)
+		self.networkUpdater.notify(message)
 
 	def switchOffAll(self):
 		"""
@@ -304,7 +304,7 @@ class OpenHEMSNetwork:
 		"""
 		Update network state using the NetworkUpdater
 		"""
-		self.network_updater.updateNetwork()
+		self.networkUpdater.updateNetwork()
 
 	def isGridSourceOn(self):
 		"""

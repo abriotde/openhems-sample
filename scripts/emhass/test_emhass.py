@@ -11,9 +11,9 @@ import logging
 import json
 from pathlib import Path
 from importlib import util
-import deferrable
 from importlib.metadata import version
 from packaging.version import Version
+import deferrable
 
 emhassModuleSpec = util.find_spec('emhass')
 if emhassModuleSpec is not None and Version(version('emhass'))>Version('0.9.0'):
@@ -37,25 +37,24 @@ if args.docker:
 	HOMEASSISTANT_EMHASS_DIR="/app"
 else:
 	# pip3 install numpy plotly skforecast setuptools requests bs4 pvlib pulp
-	path_root = Path(__file__).parents[2]
-	path_emhass = str(path_root)+'/lib/emhass/src/'
-	sys.path.append(path_emhass)
+	PATH_ROOT = Path(__file__).parents[2]
+	PATH_EMHASS = str(PATH_ROOT)+'/lib/emhass/src/'
+	sys.path.append(PATH_EMHASS)
 	HOMEASSISTANT_EMHASS_DIR="/home/alberic/Documents/OpenHomeSystem/emhassenv"
 
 # pylint: disable=wrong-import-position
-# pylint: disable=import-error
+# pylint: disable=no-name-in-module
 # Import here because when use local sources, we need first to set this folder in the path
-import emhass
-import emhass.command_line as em
-import emhass.utils as em_utils
+from emhass import command_line as em
+from emhass import utils as em_utils
 # https://emhass.readthedocs.io/en/latest/emhass.html
 
 
 logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
-action_name = "dayahead-optim"
-costfun = "profit"
-runtimeparams = None
+ACTION_NAME = "dayahead-optim"
+COSTFUN = "profit"
+RUNTIMEPARAMS = None
 
 # entity_path = "."
 # em.continual_publish(input_data_dict, entity_path, logger)
@@ -66,32 +65,32 @@ if args.docker:
 		'data_path' : Path('/app/data'),
 		'root_path' : Path('/app'),
 	}
-	secrets_path = '/app/secrets_emhass.yaml'
-	params = None
+	SECRETS_PATH = '/app/secrets_emhass.yaml'
+	PARAMS = None
 else:
 	emhass_conf = {
 		'config_path' : HOMEASSISTANT_EMHASS_DIR+'/config_emhass.yaml',
 		'data_path' : Path(HOMEASSISTANT_EMHASS_DIR+'/data'),
-		'root_path' : Path(path_emhass+"/emhass"),
-		'associations_path' : Path(path_emhass+'/emhass/data/associations.csv')
+		'root_path' : Path(PATH_EMHASS+"/emhass"),
+		'associations_path' : Path(PATH_EMHASS+'/emhass/data/associations.csv')
 	}
-	secrets_path = HOMEASSISTANT_EMHASS_DIR+'/secrets_emhass.yaml'
+	SECRETS_PATH = HOMEASSISTANT_EMHASS_DIR+'/secrets_emhass.yaml'
 	# print("emhass_conf:",emhass_conf)
 	config = em_utils.build_config(emhass_conf, logger,\
-		Path(path_emhass+'/emhass/data/config_defaults.json'),\
+		Path(PATH_EMHASS+'/emhass/data/config_defaults.json'),\
 		None,None )
 	# print("config:",config)
-	params_secrets = {}
+	PARAMS_secrets = {}
 	emhass_conf, built_secrets = em_utils.build_secrets(\
-		emhass_conf, logger, secrets_path=secrets_path)
-	params_secrets.update(built_secrets)
-	# print("paramsSecrets", built_secrets, secrets_path)
-	params = em_utils.build_params(emhass_conf, params_secrets, config, logger)
-	params = json.dumps(params)
+		emhass_conf, logger, SECRETS_PATH=SECRETS_PATH)
+	PARAMS_secrets.update(built_secrets)
+	# print("PARAMSSecrets", built_secrets, SECRETS_PATH)
+	PARAMS = em_utils.build_PARAMS(emhass_conf, PARAMS_secrets, config, logger)
+	PARAMS = json.dumps(PARAMS)
 
-# print("params:",params)
-input_data_dict = em.set_input_data_dict(emhass_conf, costfun,
-        params, runtimeparams, action_name, logger)
+# print("PARAMS:",PARAMS)
+input_data_dict = em.set_input_data_dict(emhass_conf, COSTFUN,
+        PARAMS, RUNTIMEPARAMS, ACTION_NAME, logger)
 # print("input_data_dict:",input_data_dict)
 
 if input_data_dict:
@@ -108,11 +107,11 @@ if input_data_dict:
 	optim_conf['num_def_loads'] = len(deferables)
 	optim_conf['P_deferrable_nom'] = [d.power for d in deferables]
 	optim_conf['def_total_hours'] = [d.duration for d in deferables]
-	optim_conf['def_start_timestep'] = [d.start_timestep for d in deferables]
-	optim_conf['def_end_timestep'] = [d.end_timestep for d in deferables]
+	optim_conf['def_start_timestep'] = [d.startTimestep for d in deferables]
+	optim_conf['def_end_timestep'] = [d.endTimestep for d in deferables]
 	optim_conf['set_def_constant'] = [d.constant for d in deferables]
-	optim_conf['def_start_penalty'] = [d.start_penalty for d in deferables]
-	optim_conf['treat_def_as_semi_cont'] = [d.as_semi_cont for d in deferables]
+	optim_conf['def_start_penalty'] = [d.startPenalty for d in deferables]
+	optim_conf['treat_def_as_semi_cont'] = [d.asSemiCont for d in deferables]
 
 	optim_conf['number_of_deferrable_loads'] = optim_conf['num_def_loads']
 	optim_conf['nominal_power_of_deferrable_loads'] = optim_conf['P_deferrable_nom']

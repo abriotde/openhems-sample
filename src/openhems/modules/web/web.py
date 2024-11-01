@@ -19,17 +19,17 @@ from pyramid.view import view_config
 # pylint: disable=unused-argument
 
 # Patch for jsonEncoder
-def wrapped_default(self, obj):
+def wrappedDefault(self, obj):
 	"""
 	Patch for jsonEncoder
 	"""
-	return getattr(obj.__class__, "__json__", wrapped_default.default)(obj)
-wrapped_default.default = JSONEncoder().default
+	return getattr(obj.__class__, "__json__", wrappedDefault.default)(obj)
+wrappedDefault.default = JSONEncoder().default
 # apply the patch
 JSONEncoder.original_default = JSONEncoder.default
-JSONEncoder.default = wrapped_default
+JSONEncoder.default = wrappedDefault
 
-openHEMSContext = None
+OPENHEMS_CONTEXT = None
 logger = logging.getLogger(__name__)
 
 @view_config(
@@ -40,7 +40,7 @@ def panel(request):
 	"""
 	Web-service to get schedled devices.
 	"""
-	return { "nodes": openHEMSContext.schedule }
+	return { "nodes": OPENHEMS_CONTEXT.schedule }
 
 def testVPN():
 	"""
@@ -51,10 +51,10 @@ def testVPN():
 	with subprocess.Popen( "ip a| grep 'wg0:'", \
 				shell=True, stdout=subprocess.PIPE\
 			) as fd:
-		vpn_interfaces = fd.stdout.read()
-		vpn_interfaces = str(vpn_interfaces).strip()
-		nb_interfaces = len(vpn_interfaces)
-		ok = nb_interfaces>3
+		vpnInterfaces = fd.stdout.read()
+		vpnInterfaces = str(vpnInterfaces).strip()
+		nbInterfaces = len(vpnInterfaces)
+		ok = nbInterfaces>3
 		logger.info("VPN is %s", 'up' if ok else 'down')
 		return ok
 	return False
@@ -111,28 +111,28 @@ def states(request):
 		datas = json.loads(i)
 	# print("datas:", datas)
 	for i, node in datas.items():
-		if i in openHEMSContext.schedule:
-			openHEMSContext.schedule[i].setSchedule(node["duration"], node["timeout"])
+		if i in OPENHEMS_CONTEXT.schedule:
+			OPENHEMS_CONTEXT.schedule[i].setSchedule(node["duration"], node["timeout"])
 		else:
 			logger.error("Node id='%s' not found.",i)
-	return openHEMSContext.schedule
+	return OPENHEMS_CONTEXT.schedule
 
 class OpenhemsHTTPServer():
 	"""
 	Class for HTTP Server for OpenHEMS UI configuration
 	"""
-	def print_context(self):
+	def printContext(self):
 		"""
 		For debug
 		"""
-		print("context", openHEMSContext)
+		print("context", OPENHEMS_CONTEXT)
 
 	def __init__(self, schedule):
 		testVPN()
 		# pylint: disable=global-statement
-		global openHEMSContext
+		global OPENHEMS_CONTEXT
 		self.schedule = schedule
-		openHEMSContext = self
+		OPENHEMS_CONTEXT = self
 
 	def run(self):
 		"""
