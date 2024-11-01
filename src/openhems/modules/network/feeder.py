@@ -37,18 +37,18 @@ class SourceFeeder(Feeder):
 		super().__init__()
 		self.nameid = nameid
 		self.source = source
-		if not nameid in self.source.cached_ids.keys():
-			self.source.cached_ids[nameid] = [None, valueParams]
-		self.source_id = 0 # For cache
+		if not nameid in self.source.cachedIds.keys():
+			self.source.cachedIds[nameid] = [None, valueParams]
+		self.sourceId = 0 # For cache
 	def getValue(self):
 		"""
 		getValue from the "source" if source.id has been updated.
 		"""
-		if self.source_id<self.source.refresh_id:
-			# Better to update source_id before in case value is
+		if self.sourceId<self.source.refreshId:
+			# Better to update sourceId before in case value is
 			# updated between the 2 next lines
-			self.source_id = self.source.refresh_id
-			self.value = self.source.cached_ids[self.nameid][0]
+			self.sourceId = self.source.refreshId
+			self.value = self.source.cachedIds[self.nameid][0]
 		return self.value
 
 # pylint: disable=too-few-public-methods
@@ -76,14 +76,14 @@ class RandomFeeder(Feeder):
 		if averageStep is None:
 			averageStep = (maximum - minimum)/10
 		self.avgStep = averageStep
-		self.last_refresh_id = self.source.refresh_id-1
+		self.lastRefreshId = self.source.refreshId-1
 
 	def getValue(self):
 		"""
 		The return 'value' is a random value between a 'minimum' and 'maximum',
 		But each step is a gaussian step between the current value.
 		"""
-		if self.last_refresh_id < self.source.refresh_id:
+		if self.lastRefreshId < self.source.refreshId:
 			self.value = min(max(
 					self.value + random.gauss(0, 2*self.avgStep),
 				self.min), self.max)
@@ -108,10 +108,10 @@ class RotationFeeder(Feeder):
 	def getValue(self):
 		"""
 		The return 'value' rotate on a list of predefined 'values'.
-		On each OpenHEMS server loop, self.source.refresh_id should increment,
+		On each OpenHEMS server loop, self.source.refreshId should increment,
 		 witch occure the change, 
 		"""
-		i = self.source.refresh_id % self.len
+		i = self.source.refreshId % self.len
 		return self.values[i]
 
 class StateFeeder(ConstFeeder):
@@ -140,7 +140,7 @@ class FakeSwitchFeeder(Feeder):
 	def getValue(self):
 		"""
 		The return 'value' rotate on a list of predefined 'values'.
-		On each OpenHEMS server loop, self.source.refresh_id should increment,
+		On each OpenHEMS server loop, self.source.refreshId should increment,
 		 witch occure the change, 
 		"""
 		if self.isOn.getValue():

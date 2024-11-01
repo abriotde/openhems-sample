@@ -31,30 +31,30 @@ class HomeAssistantAPI(HomeStateUpdater):
 	def __init__(self, conf) -> None:
 		super().__init__(conf)
 		apiConf = conf['api']
-		self.api_url = apiConf["url"]
+		self.apiUrl = apiConf["url"]
 		self.token = apiConf["long_lived_token"]
 		self._elemsKeysCache = None
-		self.cached_ids = {}
-		self.refresh_id = 0
+		self.cachedIds = {}
+		self.refreshId = 0
 		# Time to sleep after wrong HomeAssistant call
-		self.sleep_duration_onerror = 2
+		self.sleepDurationOnerror = 2
 		self.network = None
-		self.ha_elements = None
+		self.haElements = None
 
 	def initNetwork(self):
 		"""
 		Get all nodes according to Home-Assistants
 		"""
 		response = self.callAPI("/states")
-		self.ha_elements = {}
+		self.haElements = {}
 		for e in response:
 			# print(e)
-			entity_id = e['entity_id']
-			self.ha_elements[entity_id] = e
-			# print(entity_id, e['state'], e['attributes'])
-		# print("getHANodes() = ", self.ha_elements)
+			entityId = e['entityId']
+			self.haElements[entityId] = e
+			# print(entityId, e['state'], e['attributes'])
+		# print("getHANodes() = ", self.haElements)
 
-	def getFeeder(self, conf, key, expectedType=None, default_value=None) -> Feeder:
+	def getFeeder(self, conf, key, expectedType=None, defaultValue=None) -> Feeder:
 		"""
 		Return a feeder considering
 		 if the "key" can be a Home-Assistant element id.
@@ -63,18 +63,18 @@ class HomeAssistantAPI(HomeStateUpdater):
 		feeder = None
 		value = conf.get(key, None)
 		if value is not None:
-			if isinstance(k, str) and k in self.ha_elements:
+			if isinstance(value, str) and value in self.haElements:
 				self.logger.info("SourceFeeder(%s)", value)
 				feeder = SourceFeeder(value, self, expectedType)
 			else:
 				self.logger.info("ConstFeeder(%s)", value)
 				feeder = ConstFeeder(value)
-		elif default_value is None:
+		elif defaultValue is None:
 			self.logger.critical("HomeAssistantAPI.getFeeder missing\
 				 configuration key '%s'  for network in YAML file ", key)
 			os._exit(1)
 		else:
-			feeder = ConstFeeder(default_value)
+			feeder = ConstFeeder(defaultValue)
 		return feeder
 
 	def updateNetwork(self):
@@ -84,24 +84,24 @@ class HomeAssistantAPI(HomeStateUpdater):
 		"""
 		super().updateNetwork()
 		response = self.callAPI("/states")
-		if len(self.cached_ids) == 0:
+		if len(self.cachedIds) == 0:
 			self.logger.warning("HomeAssistantAPI.updateNetwork() : "
 				"No entities to update.")
 			return True
 		for e in response:
 			# print(e)
-			entity_id = e['entity_id']
-			if entity_id in self.cached_ids:
+			entityId = e['entityId']
+			if entityId in self.cachedIds:
 				val = e["state"]
 				try:
-					value = CastUtililty.toType(self.cached_ids[entity_id][1], val)
+					value = CastUtililty.toType(self.cachedIds[entityId][1], val)
 				except CastException as e:
-					self.logger.error("For '"+entity_id+" : '"+e.message)
-					self.notify("For '"+entity_id+" : '"+e.message)
+					self.logger.error("For '"+entityId+" : '"+e.message)
+					self.notify("For '"+entityId+" : '"+e.message)
 					value = e.defaultValue
-				self.cached_ids[entity_id][0] = value
+				self.cachedIds[entityId][0] = value
 				self.logger.info("HomeAssistantAPI.updateNetwork(%s) = %s", \
-					entity_id, value)
+					entityId, value)
 		return True
 
 	def createNodeElement(self, elem):
@@ -118,18 +118,18 @@ class HomeAssistantAPI(HomeStateUpdater):
 		if isOn!=node.isOn() and node.isSwitchable():
 			expectStr = "on" if isOn else "off"
 			# pylint: disable=protected-access
-			entity_id = node._isOn.nameid # (Should do in an other way?)
-			data = {"entity_id": entity_id}
+			entityId = node._isOn.nameid # (Should do in an other way?)
+			data = {"entityId": entityId}
 			response = self.callAPI("/services/switch/turn_"+expectStr, data)
 			if len(response)==0: # Case there is no change in switch position
-				# print("HomeAssistantAPI.switch"+expectStr+"(",entity_id,") : Nothing to do.")
+				# print("HomeAssistantAPI.switch"+expectStr+"(",entityId,") : Nothing to do.")
 				return isOn
 			state = response[0]["state"]
 			ok = state==expectStr
-			# print("HomeAssistantAPI.switch"+expectStr+"(",entity_id,") \
+			# print("HomeAssistantAPI.switch"+expectStr+"(",entityId,") \
 			#	= " ,ok, "(", response[0]["state"], ")")
 			return isOn if ok else (not isOn)
-		# print("HomeAssistantAPI.switchOn(",isOn,", ",entity_id,") :
+		# print("HomeAssistantAPI.switchOn(",isOn,", ",entityId,") :
 		# Nothing to do.")
 		return node.isOn()
 
@@ -166,12 +166,12 @@ class HomeAssistantAPI(HomeStateUpdater):
 		# pylint: disable=broad-exception-caught
 		try:
 			if data is None:
-				response = requests.get(self.api_url+url,
+				response = requests.get(self.apiUrl+url,
 					headers=headers, timeout=5
 					# verify='/etc/letsencrypt/live/openproduct.freeboxos.fr/cert.pem'
 				)
 			else:
-				response = requests.post(self.api_url+url,
+				response = requests.post(self.apiUrl+url,
 					headers=headers, json=data, timeout=5
 					# verify='/etc/letsencrypt/live/openproduct.freeboxos.fr/cert.pem'
 				)
@@ -180,24 +180,24 @@ class HomeAssistantAPI(HomeStateUpdater):
 			self.logger.critical("HomeAssistantAPI.callAPI(%s, %s)", url, str(data))
 			os._exit(1)
 		errMsg = ""
-		err_code_msg = {
+		errCodeMsg = {
 			500 : ("Unable to access Home Assistance due to error, "
 					"check devices are up ({url}, {data})"),
 			401 : ("Unable to access Home Assistance instance, "
 					"(url={url}, token={self.token}, {data})"
 					"If using addon, try setting url and token to 'empty'"),
-			404 : "Invalid URL {self.api_url}{url}"
+			404 : "Invalid URL {self.apiUrl}{url}"
 		}
-		if response.status_code in err_code_msg:
-			errMsg = err_code_msg[response.status_code]
+		if response.status_code in errCodeMsg:
+			errMsg = errCodeMsg[response.status_code]
 		elif response.status_code > 299:
 			errMsg = "Request Get Error: {response.status_code}"
 		if errMsg!="":
-			time.sleep(self.sleep_duration_onerror)
+			time.sleep(self.sleepDurationOnerror)
 			# Maybe is the server overload,
 			# overwise it's better to slow down to avoid useless
 			# infinite loop on errors.
-			self.sleep_duration_onerror = min(self.sleep_duration_onerror*2, 64)
+			self.sleepDurationOnerror = min(self.sleepDurationOnerror*2, 64)
 			errMsg = errMsg.format_map(locals())+" ("+url+", "+str(data)+")"
 			self.logger.error(errMsg)
 			if url!="/services/notify/persistent_notification":
@@ -205,8 +205,8 @@ class HomeAssistantAPI(HomeStateUpdater):
 				self.notify(f"Error callAPI() : \
 					status_code={response.status_code} : {errMsg}")
 		else:
-			if self.sleep_duration_onerror>2:
-				self.sleep_duration_onerror /= 2
+			if self.sleepDurationOnerror>2:
+				self.sleepDurationOnerror /= 2
 		try:  # Sometimes when there are connection problems we need to catch empty retrieved json
 			return response.json()
 		except Exception:

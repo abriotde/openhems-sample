@@ -9,7 +9,6 @@ import sys
 import unittest
 from pathlib import Path
 # pylint: disable=wrong-import-position
-# pylint: disable=import-error
 ROOT_PATH = Path(__file__).parents[1]
 sys.path.append(str(ROOT_PATH / "src"))
 from openhems.main import OpenHEMSApplication
@@ -20,6 +19,7 @@ class TestOpenHEMSServer(unittest.TestCase):
 	Try test wall core server (OpenHEMS part, not web part)
 	"""
 
+	# pylint: disable=invalid-name
 	def test_runServer(self):
 		"""
 		Test if server start well with FakeNetwork adapter

@@ -16,11 +16,11 @@ class OpenHEMSNode:
 	Represent device of home network
 	"""
 
-	def setId(self, HAid):
+	def setId(self, haId):
 		"""
 		Set Home-Assistant id
 		"""
-		self.id = HAid.strip().replace(" ", "_")
+		self.id = haId.strip().replace(" ", "_")
 
 	def __init__(self, currentPower, maxPower, isOnFeeder=None):
 		self.id = ""

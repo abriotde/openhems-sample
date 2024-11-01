@@ -11,8 +11,8 @@ class Deferrable:
 	"""
 	power: float # Nominal power
 	duration: int # Duration in seconds
-	start_timestep = 0
-	end_timestep = 0
+	startTimestep = 0
+	endTimestep = 0
 	constant = False
-	start_penalty: float = 0.0
-	as_semi_cont: bool = True
+	startPenalty: float = 0.0
+	asSemiCont: bool = True
