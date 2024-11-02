@@ -21,8 +21,8 @@ classifiers=[
 keywords = ['energy', 'HEMS', 'home automation', 'home-assistant', 'domotic']
 dependencies = ['requests', 'pandas', 'pyyaml', 'pyramid', 'pyramid-jinja2', 'packaging']
 
-[project.scripts]
-spam-cli = "openhems=openhems:main"
+[console_scripts]
+openhems = "openhems:main"
 
 [project.urls]
 Homepage = "https://openhomesystem.com"
