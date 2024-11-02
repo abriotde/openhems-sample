@@ -5,8 +5,6 @@ This is a fake network for tests.
 """
 
 import re
-import datetime
-import time
 from openhems.util import CastUtililty
 from openhems.modules.network.network import HomeStateUpdater
 from openhems.modules.network.feeder import (
@@ -14,10 +12,8 @@ from openhems.modules.network.feeder import (
 )
 from openhems.modules.network.node import OutNode
 
-regexpRandomFeeder = re.compile(r'^RANDOM\( *([0-9]+(.[0-9]+)?) *,'
-	' *([0-9]+(.[0-9]+)?) *, *([0-9]+(.[0-9]+)?) *)$')
-todays_Date = datetime.date.fromtimestamp(time.time())
-date_in_ISOFormat = todays_Date.isoformat()
+RANDOM_FEEDER = r'^RANDOM\( *([0-9]+(.[0-9]+)?) *, *([0-9]+(.[0-9]+)?) *, *([0-9]+(.[0-9]+)?) *\)$'
+REGEXP_RANDOM_FEEDER = re.compile(RANDOM_FEEDER)
 
 class FakeNetwork(HomeStateUpdater):
 	"""
@@ -38,8 +34,8 @@ class FakeNetwork(HomeStateUpdater):
 		key = conf.get(key, None)
 		if isinstance(key, str):
 			key = key.strip().upper()
-			if regexpRandomFeeder.match(key):
-				vals = regexpRandomFeeder.match(key)
+			if REGEXP_RANDOM_FEEDER.match(key):
+				vals = REGEXP_RANDOM_FEEDER.match(key)
 				self.logger.info("RandomFeeder(%s, %s, %s)", vals[1], vals[3], vals[5])
 				feeder = RandomFeeder(self, float(vals[1]), float(vals[3]), float(vals[5]))
 			else:

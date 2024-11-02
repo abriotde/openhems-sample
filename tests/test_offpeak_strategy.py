@@ -9,6 +9,7 @@ import unittest
 from datetime import datetime
 from pathlib import Path
 # pylint: disable=wrong-import-position
+# pylint: disable=import-error
 sys.path.append(str(Path(__file__).parents[1] / "src"))
 from openhems.modules.energy_strategy.offpeak_strategy import OffPeakStrategy
 

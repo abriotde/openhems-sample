@@ -117,7 +117,7 @@ class OpenHEMSNode:
 		return bool: False if fail to switchOn/switchOff
 		"""
 		if self._isSwitchable:
-			return self.network.network_updater.switchOn(connect, self)
+			return self.network.networkUpdater.switchOn(connect, self)
 		print("Warning : try to switchOn/Off a not switchable device : ",self.id)
 		return connect # Consider node is always on network
 

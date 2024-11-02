@@ -23,8 +23,7 @@ else:
 	print("module 'emhass' is not installed, Add it from source (",PATH_EMHASS,").")
 	sys.path.append(str(PATH_EMHASS))
 
-# pylint: disable=wrong-import-position
-# pylint: disable=import-error
+# pylint: disable=wrong-import-position, import-error, no-name-in-module
 # Import here because when use local sources, we need first to set this folder in the path
 # import emhass
 import emhass.command_line as em

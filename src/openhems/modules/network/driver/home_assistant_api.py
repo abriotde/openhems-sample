@@ -5,15 +5,11 @@ It access to this by the API using URL and long_lived_token
 """
 
 import os
-import datetime
 import time
 import requests
 from openhems.modules.network.network import HomeStateUpdater
 from openhems.modules.network.feeder import Feeder, SourceFeeder, ConstFeeder
 from openhems.util import CastUtililty, CastException
-
-todays_Date = datetime.date.fromtimestamp(time.time())
-date_in_ISOFormat = todays_Date.isoformat()
 
 class HATypeExcetion(Exception):
 	"""
