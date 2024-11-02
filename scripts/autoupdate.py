@@ -41,7 +41,7 @@ class Updater:
 		branch = os.environ.get('OPENHEMS_BRANCH', 'main')
 		tmpDir = os.environ.get('tmpDir', '/tmp')
 		projectName = "openhems-sample"
-		return Updater(projectName, path, tmpDir, user, branch)
+		return Updater(projectName, path, tmpDir=tmpDir, user=user, branch=branch)
 
 	def __init__(self, projectName, path, *, tmpDir="/tmp", user="root", branch="main"):
 		branch = "dev"
