@@ -82,8 +82,7 @@ class OpenHEMSNode:
 			diff = p1-p0
 			if i==maxi:
 				lastDiff = diff
-			if abs(diff)>maxDiff:
-				maxDiff = abs(diff)
+			maxDiff = max(maxDiff, abs(diff))
 			summ += diff
 			p0 = p1
 		avgDiff = summ/maxi
@@ -228,19 +227,21 @@ class Battery(InOutNode):
 	This represent battery.
 	"""
 	# pylint: disable=too-many-arguments
-	def __init__(self, currentPower, maxPower, powerMargin,
-			capaciity, currentLevel
+	def __init__(self, currentPower, maxPower,
+			capacity, currentLevel, *, powerMargin=None
 			,minPower=None, lowLevel=None, hightLevel=None):
 		if minPower is None:
 			minPower = -maxPower
 		if lowLevel is None:
-			lowLevel = 0.2*capaciity
+			lowLevel = 0.2*capacity
 		if hightLevel is None:
-			hightLevel = 0.8*capaciity
+			hightLevel = 0.8*capacity
+		if powerMargin is None:
+			powerMargin = capacity*0.1
 		super().__init__(currentPower, maxPower, minPower, powerMargin)
 		self.isControlable = True
 		self.isModulable = False
-		self.capaciity = capaciity
+		self.capacity = capacity
 		self.lowLevel = lowLevel
 		self.hightLevel = hightLevel
 		self.currentLevel = currentLevel
@@ -249,7 +250,7 @@ class Battery(InOutNode):
 		"""
 		Get battery max capacity.
 		"""
-		return self.capaciity.getValue()
+		return self.capacity.getValue()
 
 	def getLevel(self):
 		"""
