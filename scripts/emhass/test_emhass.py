@@ -13,7 +13,7 @@ from pathlib import Path
 from importlib import util
 from importlib.metadata import version
 from packaging.version import Version
-import deferrable
+from openhems.modules.energy_strategy.driver.emhass_adapter import Deferrable
 
 emhassModuleSpec = util.find_spec('emhass')
 if emhassModuleSpec is not None and Version(version('emhass'))>Version('0.9.0'):
@@ -40,6 +40,7 @@ else:
 	PATH_ROOT = Path(__file__).parents[2]
 	PATH_EMHASS = str(PATH_ROOT)+'/lib/emhass/src/'
 	sys.path.append(PATH_EMHASS)
+	sys.path.append(str(PATH_ROOT / 'src'))
 	HOMEASSISTANT_EMHASS_DIR="/home/alberic/Documents/OpenHomeSystem/emhassenv"
 
 # pylint: disable=wrong-import-position
@@ -99,9 +100,9 @@ if input_data_dict:
 
 	# Change deferables because in OpenHEMS, it can change from day to day
 	deferables = [
-		deferrable.Deferrable(1000, 3),
-		deferrable.Deferrable(300, 2),
-		deferrable.Deferrable(1500, 5)
+		Deferrable(1000, 3),
+		Deferrable(300, 2),
+		Deferrable(1500, 5)
 	]
 	optim_conf = input_data_dict['opt'].optim_conf
 	optim_conf['num_def_loads'] = len(deferables)

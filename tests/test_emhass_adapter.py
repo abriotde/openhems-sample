@@ -9,6 +9,7 @@ from pathlib import Path
 import unittest
 import pandas
 # pylint: disable=wrong-import-position
+# pylint: disable=import-error
 sys.path.append(str(Path(__file__).parents[1] / "src"))
 from openhems.modules.energy_strategy.driver.emhass_adapter import (
 	Deferrable,

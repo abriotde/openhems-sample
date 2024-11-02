@@ -1,3 +1,4 @@
+"""
 # Configuration file for the Sphinx documentation builder.
 #
 # For the full list of built-in configuration values, see the documentation:
@@ -5,7 +6,8 @@
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
-
+"""
+# pylint: disable=invalid-name, redefined-builtin
 project = 'OpenHEMS'
 copyright = 'GPLv3'
 author = 'Albéric de la Crochais'
@@ -39,4 +41,3 @@ html_static_path = ['_static']
 
 # -- Options for EPUB output
 epub_show_urls = 'footnote'
-
