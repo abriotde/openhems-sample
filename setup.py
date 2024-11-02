@@ -44,12 +44,5 @@ setup(
 		"console_scripts": [
 			"openhems=openhems:main",
 		],
-	},
-	project_urls={  # Optional
-		"Home Page": "https://openhomesystem.com",
-		"Source": "https://github.com/abriotde/openhems-sample",
-		"Bug Reports": "https://github.com/abriotde/openhems-sample/issues",
-	#	"Funding": "https://donate.pypi.org",
-	#	"Say Thanks!": "http://saythanks.io/to/example",
-	},
+	}
 )
