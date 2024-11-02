@@ -43,7 +43,7 @@ class Updater:
 		projectName = "openhems-sample"
 		return Updater(projectName, path, tmpDir, user, branch)
 
-	def __init__(self, projectName, path, tmpDir="/tmp", user="root", branch="main"):
+	def __init__(self, projectName, path, *, tmpDir="/tmp", user="root", branch="main"):
 		branch = "dev"
 		self.projectName = projectName
 		self.path = path
