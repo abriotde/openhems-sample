@@ -10,13 +10,17 @@ maintainers = [
 description = "A sample Home Energy Managment System based on Home-Assistant"
 readme = "readme.md"
 requires-python = ">=3.8"
-# classifiers = [
-#    "Programming Language :: Python :: 3",
-#    "License :: GPL-3.0-or-later",
-#    "Operating System :: Linux",
-# ]
-dynamic = []
-
+classifiers=[
+	"Development Status :: Alpha",
+	"Intended Audience :: Developers",
+	"Topic :: Software Development :: Build Tools",
+	"License :: GPL-3.0-or-later",
+	"Operating System :: Linux",
+	"Programming Language :: Python :: 3 :: Only",
+]
+scripts = ['openhems=openhems:main']
+keywords = ['energy', 'HEMS', 'home automation', 'home-assistant', 'domotic']
+dependencies = ['requests', 'pandas', 'pyyaml', 'pyramid', 'pyramid-jinja2', 'packaging']
 
 [project.urls]
 Homepage = "https://openhomesystem.com"
