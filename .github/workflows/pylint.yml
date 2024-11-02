@@ -17,7 +17,8 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install pylint pandas yaml pyramid pyramid-jinja2 astral
+        pip install pylint
+        apt install -y python3-pandas python3-yaml python3-pyramid python3-pyramid-jinja2 
     - name: Analysing the code with pylint
       run: |
         pylint $(git ls-files '*.py')
