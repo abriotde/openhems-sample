@@ -38,11 +38,4 @@ setup(
 	package_data={
 	# 	"sample": ["package_data.dat"],
 	},
-	# Entry points. The following would provide a command called `sample` which
-	# executes the function `main` from this package when invoked:
-	entry_points={
-		"console_scripts": [
-			"openhems=openhems:main",
-		],
-	}
 )
