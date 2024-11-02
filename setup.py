@@ -27,18 +27,10 @@ setup(
 	author="OpenHomeSystem",
 	author_email="contact@openhomesystem.com",
 	# For a list of valid classifiers, see https://pypi.org/classifiers/
-	classifiers=[
-		"Development Status :: 3 - Alpha",
-		"Intended Audience :: Developers",
-		"Topic :: Software Development :: Build Tools",
-		"License :: GPL-3.0-or-later",
-		"Programming Language :: Python :: 3 :: Only",
-	],
-	keywords="energy, HEMS, home automation, home-assistant",
 	package_dir={"": "src"},
 	packages=find_packages(where="src"),
 	python_requires=">=3.8, <4",
-	install_requires=["pandas", "pyyaml", "pyramid", "pyramid-jinja2"],
+	# install_requires=["requests", "pandas", "pyyaml", "pyramid", "pyramid-jinja2"],
 	extras_require={
 		# "dev": ["check-manifest"],
 		# "test": ["coverage"],
