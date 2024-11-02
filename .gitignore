@@ -9,4 +9,4 @@ venv/
 venvemhass/
 docs/build/
 src/OpenHEMS.egg-info/
-.coverage/
+.coverage
