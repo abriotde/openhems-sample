@@ -89,8 +89,8 @@ class HomeStateUpdater:
 				hightLevel = self.getFeeder(e, "hightLevel", "int", POWER_MARGIN)
 				capacity = self.getFeeder(e, "capaciity", "int", POWER_MARGIN)
 				currentLevel = self.getFeeder(e, "level", "int", 0)
-				node = Battery(currentPower, maxPower, powerMargin, capacity,
-					currentLevel ,minPower=minPower, lowLevel=lowLevel,
+				node = Battery(currentPower, maxPower, capacity, currentLevel,
+					powerMargin=powerMargin, minPower=minPower, lowLevel=lowLevel,
 					hightLevel=hightLevel)
 			else:
 				self.logger.critical("HomeAssistantAPI.getNetwork : "
@@ -319,7 +319,7 @@ class OpenHEMSNetwork:
 		"""
 		l = len(self.battery)
 		if l<1:
-			return Battery(0, 0, 0, 0, 0)
+			return Battery(0, 0, 0, 0)
 		if l==1:
 			return self.battery[0]
 		# TODO
