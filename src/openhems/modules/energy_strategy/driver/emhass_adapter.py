@@ -19,7 +19,7 @@ PATH_EMHASS = PATH_ROOT / 'lib/emhass/src/'
 emhassModuleSpec = importlib.util.find_spec('emhass')
 if emhassModuleSpec is not None:
 	# TODO (Error codecov pipeline) and Version(version('emhass'))>Version('0.9.0'):
-	print("module 'emhass' is installed on version ", version('emhass'))
+	print("module 'emhass' is installed on version ") # , version('emhass'))
 else:
 	print("module 'emhass' is not installed, Add it from source (",PATH_EMHASS,").")
 	sys.path.append(str(PATH_EMHASS))
