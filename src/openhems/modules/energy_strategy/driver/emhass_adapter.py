@@ -23,6 +23,7 @@ if False and emhassModuleSpec is not None:
 	# TODO (Error codecov pipeline, fail import package metadata)
 	print("module 'emhass' is installed on version ") # , version('emhass'))
 else:
+	print(os.listdir(PATH_EMHASS))
 	print("module 'emhass' is not installed, Add it from source (",PATH_EMHASS,").")
 	sys.path.append(str(PATH_EMHASS))
 
