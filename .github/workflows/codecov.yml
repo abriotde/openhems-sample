@@ -21,7 +21,7 @@ jobs:
           pip install pytest pytest-cov setuptools
           python setup.py install
           PWD=$(pwd)
-          export PYTHONPATH=$PWD/src:$PWD/tests:$PYTHONPATH
+          export PYTHONPATH=$PWD/src:$PWD/lib/emhass/src/:$PYTHONPATH
           echo "PYTHONPATH=$PYTHONPATH"
           echo "PYTHONPATH=$PYTHONPATH" >> $GITHUB_ENV
 
