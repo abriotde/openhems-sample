@@ -20,6 +20,10 @@ jobs:
         run: |
           pip install pytest pytest-cov setuptools
           python setup.py install
+          PWD=$(pwd)
+          export PYTHONPATH=$PWD/src:$PWD/tests:$PYTHONPATH
+          echo "PYTHONPATH=$PYTHONPATH"
+          echo "PYTHONPATH=$PYTHONPATH" >> $GITHUB_ENV
 
       - name: Run tests
         run: pytest --cov --cov-report=xml
