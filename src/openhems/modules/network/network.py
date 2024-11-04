@@ -7,7 +7,7 @@ from typing import Final
 import logging
 import os
 import copy
-import yaml
+from openhems.modules.util.configuration_manager import ConfigurationManager
 from .node import (
 	OpenHEMSNode, InOutNode, OutNode, PublicPowerGrid, SolarPanel, Battery
 )
@@ -22,16 +22,12 @@ class HomeStateUpdater:
 	 ignoring the real source of the update.
 	Today only Home-Assistant updater is implemented (HomeAssistantAPI).
 	"""
-	def __init__(self, conf) -> None:
+	def __init__(self, conf:ConfigurationManager) -> None:
 		self.cachedIds = {}
 		self.refreshId = 0
 		self.logger = logging.getLogger(__name__)
 		self.network = None
 		self.network = None
-		if isinstance(conf, str):
-			with open(conf, 'r', encoding="utf-8") as file:
-				print("Load YAML configuration from '"+conf+"'")
-				conf = yaml.load(file, Loader=yaml.FullLoader)
 		self.conf = conf
 
 	def updateNetwork(self):
@@ -140,9 +136,8 @@ class HomeStateUpdater:
 		"""
 		self.network = OpenHEMSNetwork(self)
 		self.initNetwork()
-		networkConf = self.conf["network"]
-		self.getNetworkIn(networkConf["in"])
-		self.getNetworkOut(networkConf["out"])
+		self.getNetworkIn(self.conf.get("network.in"))
+		self.getNetworkOut(self.conf.get("network.out"))
 		self.network.print(self.logger.info)
 		return self.network
 

@@ -26,6 +26,7 @@ class TestOpenHEMSServer(unittest.TestCase):
 		Test if server start well with FakeNetwork adapter
 		"""
 		configFile = ROOT_PATH / "config/openhems_fake4tests.yaml"
+		# print("test_runServer()")
 		app = OpenHEMSApplication(configFile)
 		app.server.loop(LOOP_DELAY_VIRTUAL)
 		# pylint: disable=redundant-unittest-assert

@@ -1,0 +1,19 @@
+api:
+  url: http://192.168.1.202:8123/api
+  long_lived_token: ""
+  ssl_certificate: /etc/letsencrypt/live/xxx/cert.pem
+latitude: 48.430883803968456
+longitude: -2.2153649964972693
+altitude: 100
+timeZone: Europe/Paris
+server:
+  # logformat: Optional default is "%(levelname)s : %(asctime)s : %(message)s", for custom configuration see https://docs.python.org/3/library/logging.html#logrecord-attributes
+  logfile: /var/log/openhems.log # Optional, default is /var/log/openhems.log
+  loglevel: info # Optional, default is info, availables are debug / info / warn / error / critical / no
+  loopDelay: 30 # interval beetween 2 loop
+  network: homeassistant # Define the type of network API used to control the home energy.
+  strategy: offpeak # Define the algorithm used to control the  home energy.
+  strategyParams: [] # parameters witch depends of the strategy
+network:
+  in: [] # List the source of electric power
+  out: [] # List on source of electric consumption

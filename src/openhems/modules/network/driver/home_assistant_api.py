@@ -9,7 +9,8 @@ import time
 import requests
 from openhems.modules.network.network import HomeStateUpdater
 from openhems.modules.network.feeder import Feeder, SourceFeeder, ConstFeeder
-from openhems.util import CastUtililty, CastException
+from openhems.modules.util.cast_utility import CastUtililty, CastException
+from openhems.modules.util.configuration_manager import ConfigurationManager
 
 class HATypeExcetion(Exception):
 	"""
@@ -24,11 +25,10 @@ class HomeAssistantAPI(HomeStateUpdater):
 	This HomeStateUpdater is based on home-Assistant software. 
 	It access to this by the API using URL and long_lived_token
 	"""
-	def __init__(self, conf) -> None:
+	def __init__(self, conf:ConfigurationManager) -> None:
 		super().__init__(conf)
-		apiConf = conf['api']
-		self.apiUrl = apiConf["url"]
-		self.token = apiConf["long_lived_token"]
+		self.apiUrl = conf.get("api.url")
+		self.token = conf.get("api.long_lived_token")
 		self._elemsKeysCache = None
 		self.cachedIds = {}
 		self.refreshId = 0
