@@ -17,6 +17,8 @@ import yaml
 PATH_ROOT = Path(__file__).parents[5]
 PATH_EMHASS = PATH_ROOT / 'lib/emhass/src/'
 emhassModuleSpec = importlib.util.find_spec('emhass')
+
+# pylint: disable=condition-evals-to-constant
 if False and emhassModuleSpec is not None:
 	# and Version(version('emhass'))>Version('0.9.0'):
 	# As we can't get EMHASS version, we can't be sure, it's ok
