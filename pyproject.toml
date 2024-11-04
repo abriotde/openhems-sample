@@ -23,7 +23,7 @@ dependencies = [
 	'requests', 'pandas', 'pyyaml', 'pyramid', 'pyramid-jinja2', 'packaging', 'astral',
 	# For EMHASS
 	'numpy', 'plotly', 'scikit-learn', 'skforecast', 'pvlib', 'beautifulsoup4', 'protobuf',
-	'pandas', 'scipy'
+	'pandas', 'scipy', 'h5py', 'pulp'
 ]
 
 [console_scripts]
@@ -40,7 +40,7 @@ requires = [
 	'requests', "pandas", "pyyaml", "pyramid", "pyramid-jinja2", 'packaging', 'astral',
 	# For EMHASS
 	'numpy', 'plotly', 'scikit-learn', 'skforecast', 'pvlib', 'beautifulsoup4' , 'protobuf',
-	'pandas', 'scipy'
+	'pandas', 'scipy', 'h5py', 'pulp'
 ]
 # build-backend = "openhems.build"
 
