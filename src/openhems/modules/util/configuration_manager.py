@@ -38,7 +38,7 @@ class ConfigurationManager(metaclass=Singleton):
 		if defaultPath  is None:
 			rootPath = Path(__file__).parents[4]
 			defaultPath = rootPath / "data/openhems_default.yaml"
-			print("defaultPath:",defaultPath)
+			# print("defaultPath:",defaultPath)
 		elif defaultPath is str:
 			defaultPath = Path(defaultPath)
 		self._conf = {}
