@@ -38,6 +38,7 @@ class ConfigurationManager(metaclass=Singleton):
 		if defaultPath  is None:
 			rootPath = Path(__file__).parents[4]
 			defaultPath = rootPath / "data/openhems_default.yaml"
+			print("defaultPath:",defaultPath)
 		elif defaultPath is str:
 			defaultPath = Path(defaultPath)
 		self._conf = {}
@@ -64,6 +65,7 @@ class ConfigurationManager(metaclass=Singleton):
 						raise ConfigurationException(msg)
 				if ok:
 					self.logger.debug("Configuration[%s] = %s", k, value)
+					print("Configuration[",k,"] = ", value)
 					self._conf[k] = value
 
 	def addYamlConfig(self, yamlConfig, init=False):
