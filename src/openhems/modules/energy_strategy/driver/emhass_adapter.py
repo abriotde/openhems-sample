@@ -82,7 +82,8 @@ class EmhassAdapter:
 		"""
 		# print("emhass_conf:",self._emhassConf)
 		config = em_utils.build_config(self._emhassConf, self.logger,\
-			self.rootPath / 'data/config_defaults.json', None, None)
+			self.rootPath / 'data/config_defaults.json',\
+			legacy_config_path=self._emhassConf['config_path'])
 		# print("config:",config)
 		paramsSecrets = {}
 		self._emhassConf, builtSecrets = em_utils.build_secrets(\

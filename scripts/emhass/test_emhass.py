@@ -13,7 +13,6 @@ from pathlib import Path
 from importlib import util
 from importlib.metadata import version
 from packaging.version import Version
-from openhems.modules.energy_strategy.driver.emhass_adapter import Deferrable
 
 emhassModuleSpec = util.find_spec('emhass')
 if emhassModuleSpec is not None and Version(version('emhass'))>Version('0.9.0'):
@@ -34,13 +33,16 @@ parser.add_argument('-r','--emhass_root', type=str, default=None,
 args = parser.parse_args()
 
 if args.docker:
+	print("In docker mode")
 	HOMEASSISTANT_EMHASS_DIR="/app"
+	CONFIG_DIR="/app"
 else:
-	# pip3 install numpy plotly skforecast setuptools requests bs4 pvlib pulp
 	PATH_ROOT = Path(__file__).parents[2]
-	PATH_EMHASS = str(PATH_ROOT)+'/lib/emhass/src/'
-	sys.path.append(PATH_EMHASS)
 	sys.path.append(str(PATH_ROOT / 'src'))
+	PATH_EMHASS = str(PATH_ROOT / 'lib/emhass/src')
+	sys.path.append(PATH_EMHASS)
+	# print("PATH:", sys.path)
+	CONFIG_DIR = str(PATH_ROOT / 'config')
 	HOMEASSISTANT_EMHASS_DIR="/home/alberic/Documents/OpenHomeSystem/emhassenv"
 
 # pylint: disable=wrong-import-position
@@ -68,31 +70,48 @@ if args.docker:
 	}
 	SECRETS_PATH = '/app/secrets_emhass.yaml'
 	PARAMS = None
+	import dataclasses
+	@dataclasses.dataclass
+	class Deferrable:
+		"""
+		Custom class to simplify emhass module live modifications.
+		"""
+		power: float # Nominal power
+		duration: int # Duration in seconds
+		startTimestep = 0
+		endTimestep = 0
+		constant = False
+		startPenalty: float = 0.0
+		asSemiCont: bool = True
 else:
+	from openhems.modules.energy_strategy.driver.emhass_adapter import Deferrable
 	emhass_conf = {
-		'config_path' : HOMEASSISTANT_EMHASS_DIR+'/config_emhass.yaml',
+		'config_path' : CONFIG_DIR+'/config_emhass.yaml',
 		'data_path' : Path(HOMEASSISTANT_EMHASS_DIR+'/data'),
 		'root_path' : Path(PATH_EMHASS+"/emhass"),
 		'associations_path' : Path(PATH_EMHASS+'/emhass/data/associations.csv')
 	}
-	SECRETS_PATH = HOMEASSISTANT_EMHASS_DIR+'/secrets_emhass.yaml'
+	SECRETS_PATH = CONFIG_DIR+'/secrets_emhass.yaml'
 	# print("emhass_conf:",emhass_conf)
-	config = em_utils.build_config(emhass_conf, logger,\
-		Path(PATH_EMHASS+'/emhass/data/config_defaults.json'),\
-		None,None )
+	retrieve_json = Path(PATH_EMHASS+'/emhass/data/config_defaults.json')
+	# print("retrieve_json:",retrieve_json)
+	config = em_utils.build_config(emhass_conf, logger, retrieve_json, \
+		legacy_config_path=emhass_conf['config_path'])
 	# print("config:",config)
-	PARAMS_secrets = {}
+	paramsSecrets = {}
 	emhass_conf, built_secrets = em_utils.build_secrets(\
-		emhass_conf, logger, SECRETS_PATH=SECRETS_PATH)
-	PARAMS_secrets.update(built_secrets)
+		emhass_conf, logger, secrets_path=SECRETS_PATH)
+	paramsSecrets.update(built_secrets)
 	# print("PARAMSSecrets", built_secrets, SECRETS_PATH)
-	PARAMS = em_utils.build_PARAMS(emhass_conf, PARAMS_secrets, config, logger)
+	PARAMS = em_utils.build_params(emhass_conf, paramsSecrets, config, logger)
 	PARAMS = json.dumps(PARAMS)
 
-# print("PARAMS:",PARAMS)
+print("PARAMS:",PARAMS)
+print("RUNTIMEPARAMS:",RUNTIMEPARAMS)
+print("emhass_conf:",emhass_conf)
 input_data_dict = em.set_input_data_dict(emhass_conf, COSTFUN,
         PARAMS, RUNTIMEPARAMS, ACTION_NAME, logger)
-# print("input_data_dict:",input_data_dict)
+print("input_data_dict:",input_data_dict)
 
 if input_data_dict:
 	# print("Opt:", input_data_dict)
