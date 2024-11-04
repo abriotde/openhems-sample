@@ -18,8 +18,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
-          git submodule update --init --recursive
-          git submodule update --recursive --remote
+          git submodule update --init --remote
           pip install pytest pytest-cov setuptools
           python setup.py install
           PWD=$(pwd)
