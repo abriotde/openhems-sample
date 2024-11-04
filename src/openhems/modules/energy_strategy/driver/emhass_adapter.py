@@ -81,10 +81,14 @@ class EmhassAdapter:
 		Initialyze HEMASS after defining paramters in __init__()
 		"""
 		# print("emhass_conf:",self._emhassConf)
+		config_default_json = self.rootPath / 'data/config_defaults.json'
+		emhass_config = self._emhassConf['config_path']
+		self.logger.info("Load config_default.json : %s, emhass_config.yaml : %s",
+			config_default_json, emhass_config)
 		config = em_utils.build_config(self._emhassConf, self.logger,\
-			self.rootPath / 'data/config_defaults.json',\
-			legacy_config_path=self._emhassConf['config_path'])
+			config_default_json, legacy_config_path=emhass_config)
 		# print("config:",config)
+		self.logger.info("Load emhass_secrets.yaml : %s", self._secretsPath)
 		paramsSecrets = {}
 		self._emhassConf, builtSecrets = em_utils.build_secrets(\
 			self._emhassConf, self.logger, secrets_path=str(self._secretsPath))

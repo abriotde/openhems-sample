@@ -45,7 +45,7 @@ class HomeAssistantAPI(HomeStateUpdater):
 		self.haElements = {}
 		for e in response:
 			# print(e)
-			entityId = e['entityId']
+			entityId = e['entity_id']
 			self.haElements[entityId] = e
 			# print(entityId, e['state'], e['attributes'])
 		# print("getHANodes() = ", self.haElements)
@@ -86,7 +86,7 @@ class HomeAssistantAPI(HomeStateUpdater):
 			return True
 		for e in response:
 			# print(e)
-			entityId = e['entityId']
+			entityId = e['entity_id']
 			if entityId in self.cachedIds:
 				val = e["state"]
 				try:
