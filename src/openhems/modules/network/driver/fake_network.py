@@ -5,7 +5,7 @@ This is a fake network for tests.
 """
 
 import re
-from openhems.util import CastUtililty
+from openhems.modules.util.cast_utility import CastUtililty
 from openhems.modules.network.network import HomeStateUpdater
 from openhems.modules.network.feeder import (
 	Feeder, RandomFeeder, ConstFeeder, RotationFeeder, FakeSwitchFeeder, StateFeeder

@@ -9,7 +9,7 @@ import time
 import requests
 from openhems.modules.network.network import HomeStateUpdater
 from openhems.modules.network.feeder import Feeder, SourceFeeder, ConstFeeder
-from openhems.util import CastUtililty, CastException
+from openhems.modules.util.cast_utility import CastUtililty, CastException
 
 class HATypeExcetion(Exception):
 	"""
