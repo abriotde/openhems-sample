@@ -24,9 +24,6 @@ from openhems.modules.web import OpenhemsHTTPServer
 from openhems.modules.util.configuration_manager import ConfigurationManager
 from openhems.server import OpenHEMSServer
 
-LOGFORMAT = '%(levelname)s : %(asctime)s : %(message)s'
-LOGFILE = '/var/log/openhems/openhems.log'
-
 class OpenHEMSApplication:
 	"""
 	This class is the main class to manage OpenHEMS as independant application.
@@ -128,11 +125,10 @@ def main():
 	"""
 	Simple function to run wall OpenHEMS Application
 	"""
-	defaultConfFilepath = os.path.dirname(__file__)+"/../../config/openhems.yaml"
+	defaultConfFilepath = Path(__file__).parents[2] / "config/openhems.yaml"
 	parser = argparse.ArgumentParser()
-	parser.add_argument('-c', '--conf', type=str, default=defaultConfFilepath,
-		                help='File path to YAML configuration file.')
-	args = parser.parse_args()
+	parser.add_argument('-c', '--conf', type=str, default=str(defaultConfFilepath),
+						help='File path to YAML configuration file.')
 	app = OpenHEMSApplication(args.conf)
 	app.run()
 

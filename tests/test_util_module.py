@@ -27,6 +27,7 @@ class TestConfigurationManager(unittest.TestCase):
 		"""
 		Test default values/overridden/singleton/unknown key
 		"""
+		# print("test_configurationsManager()")
 		defaultPath = ROOT_PATH / "data/openhems_default.yaml"
 		configurator = ConfigurationManager(logger, defaultPath=defaultPath)
 
@@ -41,19 +42,15 @@ class TestConfigurationManager(unittest.TestCase):
 		value = configurator.get("server.logfile")
 		self.assertEqual(value, 'openhems.log')
 
-		# Test singleton
-		configurator2 = ConfigurationManager(logger)
-		value = configurator2.get("server.logfile")
-		self.assertEqual(value, 'openhems.log')
-
 		# Test Invalid key
-		value = configurator2.get("toto")
+		value = configurator.get("toto")
 		self.assertIsNone(value)
 
 	def test_castUtility(self):
 		"""
 		Test Cast
 		"""
+		# print("test_castUtility()")
 		# Cast Str => Int
 		value = CastUtililty.toType('int', '2')
 		self.assertEqual(value, 2)

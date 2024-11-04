@@ -14,17 +14,7 @@ class ConfigurationException(Exception):
 		self.message = message
 		self.defaultValue = defaultValue
 
-class Singleton(type):
-	"""
-	To implement singleton easily in ConfigurationManager
-	"""
-	_instances = {}
-	def __call__(cls, *args, **kwargs):
-		if cls not in cls._instances:
-			cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
-		return cls._instances[cls]
-
-class ConfigurationManager(metaclass=Singleton):
+class ConfigurationManager():
 	"""
 	Usefull generic configuration manager.
 	Let allow get configuration by key.
@@ -34,6 +24,7 @@ class ConfigurationManager(metaclass=Singleton):
 	"""
 	_instance = None
 	def __init__(self, logger, defaultPath=None):
+		# print("ConfigurationManager()")
 		self.logger = logger
 		if defaultPath  is None:
 			rootPath = Path(__file__).parents[4]
@@ -65,13 +56,14 @@ class ConfigurationManager(metaclass=Singleton):
 						raise ConfigurationException(msg)
 				if ok:
 					self.logger.debug("Configuration[%s] = %s", k, value)
-					print("Configuration[",k,"] = ", value)
+					# print("Configuration[",k,"] = ", value)
 					self._conf[k] = value
 
 	def addYamlConfig(self, yamlConfig, init=False):
 		"""
 		Add configuration from yaml file path.
 		"""
+		# print("addYamlConfig(",yamlConfig,")")
 		if yamlConfig is str:
 			yamlConfig = Path(yamlConfig)
 		with yamlConfig.open('r', encoding="utf-8") as file:
