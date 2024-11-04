@@ -20,7 +20,8 @@ classifiers=[
 ]
 keywords = ['energy', 'HEMS', 'home automation', 'home-assistant', 'domotic']
 dependencies = [
-	'requests', 'pandas', 'pyyaml', 'pyramid', 'pyramid-jinja2', 'packaging', 'astral'
+	'requests', 'pandas', 'pyyaml', 'pyramid', 'pyramid-jinja2', 'packaging', 'astral',
+	'plotly'
 ]
 
 [console_scripts]
@@ -34,7 +35,8 @@ Repository = "https://github.com/abriotde/openhems-sample.git"
 	
 [build-system]
 requires = [
-	'requests', "pandas", "pyyaml", "pyramid", "pyramid-jinja2", 'packaging', 'astral'
+	'requests', "pandas", "pyyaml", "pyramid", "pyramid-jinja2", 'packaging', 'astral',
+	'plotly'
 ]
 # build-backend = "openhems.build"
 
