@@ -12,9 +12,9 @@ class OpenHEMSSchedule:
 	"""
 	duration: int = 0
 	timeout = "00:00"
-	def __init__(self, ha_id: str, name:str, duration: int = 0, timeout = 0):
+	def __init__(self, haId: str, name:str, duration: int = 0, timeout = 0):
 		self.name = name
-		self.id = ha_id
+		self.id = haId
 		self.timeout = timeout
 		self.duration = duration
 		self.logger = logging.getLogger(__name__)
@@ -31,8 +31,8 @@ class OpenHEMSSchedule:
 		"""
 		Return True, if device is schedule to be on
 		"""
-		self.logger.debug("OpenHEMSSchedule.isScheduled({self.id}) "
-			": duration = {self.duration}")
+		self.logger.debug("OpenHEMSSchedule.isScheduled(%s)"
+			": duration = %d", self.id, self.duration)
 		return self.duration>0
 
 	def setSchedule(self, duration: int, timeout):

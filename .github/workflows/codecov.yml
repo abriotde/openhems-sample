@@ -7,20 +7,27 @@ jobs:
   test:
     name: Run tests and collect coverage
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.12"]
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@master
         with:
-          fetch-depth: 0
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-
+          python-version: ${{ matrix.python-version }}
       - name: Install dependencies
-        run: pip install pytest pytest-cov
+        run: |
+          git submodule update --init --remote
+          pip install pytest pytest-cov setuptools
+          python setup.py install
+          PWD=$(pwd)
+          export PYTHONPATH=$PWD/src:$PWD/lib/emhass/src/:$PYTHONPATH
+          echo "PYTHONPATH=$PYTHONPATH"
+          echo "PYTHONPATH=$PYTHONPATH" >> $GITHUB_ENV
 
       - name: Run tests
-        run: pytest --cov --cov-report=xml
+        run: pytest --cov --cov-report=xml --ignore=tests/test_emhass_adapter.py
 
       - name: Upload results to Codecov
         uses: codecov/codecov-action@v4

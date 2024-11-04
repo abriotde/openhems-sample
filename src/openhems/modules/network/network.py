@@ -7,7 +7,11 @@ from typing import Final
 import logging
 import os
 import copy
-from .node import OpenHEMSNode, InOutNode, PublicPowerGrid, SolarPanel, Battery
+import yaml
+from .node import (
+	OpenHEMSNode, InOutNode, OutNode, PublicPowerGrid, SolarPanel, Battery
+)
+from .feeder import Feeder, SourceFeeder
 
 POWER_MARGIN: Final[int] = 10 # Margin of power consumption for security
 logger = logging.getLogger(__name__)
@@ -18,27 +22,136 @@ class HomeStateUpdater:
 	 ignoring the real source of the update.
 	Today only Home-Assistant updater is implemented (HomeAssistantAPI).
 	"""
-	cached_ids = {}
-	refresh_id = 0
-
-	def getNetwork(self):
-		"""
-		A function witch inspect home network and return OpenHEMSNetwork.
-		"""
-		logger.error("HomeStateUpdater.getNetwork() : To implement in sub-class")
+	def __init__(self, conf) -> None:
+		self.cachedIds = {}
+		self.refreshId = 0
+		self.logger = logging.getLogger(__name__)
+		self.network = None
+		self.network = None
+		if isinstance(conf, str):
+			with open(conf, 'r', encoding="utf-8") as file:
+				print("Load YAML configuration from '"+conf+"'")
+				conf = yaml.load(file, Loader=yaml.FullLoader)
+		self.conf = conf
 
 	def updateNetwork(self):
 		"""
 		A function witch update home network and return OpenHEMSNetwork.
 		"""
-		logger.error("HomeStateUpdater.updateNetwork() : To implement in sub-class")
+		self.refreshId += 1
+
+	def switchOn(self, isOn, _):
+		"""
+		return: True if the switch is on after, False else
+		"""
+		self.logger.error("switchOn() should be implemented in sub-class.")
+		return not isOn
+
+	def notify(self, message):
+		"""
+		A function witch notify the Network,
+		 this should be seen easily by the end user.
+		"""
+		self.logger.info(message)
+
+	def initNetwork(self):
+		"""
+		Can be overiden by sub-class if neeeded.
+		This function is called to initialyze network.
+		"""
+
+	# pylint: disable=unused-argument
+	def getFeeder(self, conf, key, expectedType=None, defaultValue=None) -> Feeder:
+		"""
+		Return a feeder considering
+		 This function should be overiden by sub-class
+		"""
+		return SourceFeeder(key, self, expectedType)
+
+	def getNetworkIn(self, networkConf):
+		"""
+		Initialyze "in" network part.
+		"""
+		# init Feeders
+		for e in networkConf:
+			classname = e["class"].lower()
+			currentPower = self.getFeeder(e, "currentPower", "int")
+			powerMargin = self.getFeeder(e, "powerMargin", "int", POWER_MARGIN)
+			maxPower = self.getFeeder(e, "maxPower", "int")
+			minPower = self.getFeeder(e, "minPower", "int", 0)
+			node = None
+			if classname == "publicpowergrid":
+				node = PublicPowerGrid(currentPower, maxPower, minPower, powerMargin)
+			elif classname == "solarpanel":
+				node = SolarPanel(currentPower, maxPower, minPower, powerMargin)
+			elif classname == "battery":
+				lowLevel = self.getFeeder(e, "lowLevel", "int", POWER_MARGIN)
+				hightLevel = self.getFeeder(e, "hightLevel", "int", POWER_MARGIN)
+				capacity = self.getFeeder(e, "capaciity", "int", POWER_MARGIN)
+				currentLevel = self.getFeeder(e, "level", "int", 0)
+				node = Battery(currentPower, maxPower, capacity, currentLevel,
+					powerMargin=powerMargin, minPower=minPower, lowLevel=lowLevel,
+					hightLevel=hightLevel)
+			else:
+				self.logger.critical("HomeAssistantAPI.getNetwork : "
+					"Unknown classname '{classname}'")
+				os._exit(1)
+			if "id" in e.keys():
+				node.id = e["id"]
+			# print(node)
+			self.network.addNode(node)
+
+	def getSwitch(self, nameid, nodeConf):
+		"""
+		Return a OpenHEMSNode representing a switch
+		 according to it's YAML configuration.
+		"""
+		currentPower = self.getFeeder(nodeConf, "currentPower", "int")
+		isOn = self.getFeeder(nodeConf, "isOn", "bool", True)
+		maxPower = self.getFeeder(nodeConf, "maxPower", "int", 2000)
+		return OutNode(nameid, currentPower, maxPower, isOn)
+
+	def getNetworkOut(self, networkConf):
+		"""
+		Initialyze "out" network part.
+		"""
+		i = 0
+		for e in networkConf:
+			classname = e["class"].lower()
+			node = None
+			nameid = e.get("id", f"node_{i}")
+			i += 1
+			if classname == "switch":
+				node = self.getSwitch(nameid, e)
+			else:
+				self.logger.critical("HomeStateUpdater.getNetworkOut : "
+					"Unknown classname '%s'", classname)
+				os._exit(1)
+			if node is not None:
+				self.network.addNode(node)
+			else:
+				self.logger.critical("HomeStateUpdater.getNetworkOut : "
+					"Fail get Node '%s'", str(e))
+				os._exit(1)
+
+	def getNetwork(self): # -> OpenHEMSNetwork:
+		"""
+		Explore the home device network available with Home-Assistant.
+		"""
+		self.network = OpenHEMSNetwork(self)
+		self.initNetwork()
+		networkConf = self.conf["network"]
+		self.getNetworkIn(networkConf["in"])
+		self.getNetworkOut(networkConf["out"])
+		self.network.print(self.logger.info)
+		return self.network
 
 class OpenHEMSNetwork:
 	"""
 	This class aim to abstract home network of connected devices.
 	It is used to know devices and to switch on/off them.
 	"""
-	network_updater: HomeStateUpdater = None
+	networkUpdater: HomeStateUpdater = None
 
 	def print(self, printer=None):
 		"""
@@ -55,8 +168,8 @@ class OpenHEMSNetwork:
 			printer("  - "+str(elem.id))
 		printer(")")
 
-	def __init__(self, network_updater: HomeStateUpdater):
-		self.network_updater = network_updater
+	def __init__(self, networkUpdater: HomeStateUpdater):
+		self.networkUpdater = networkUpdater
 		self.inout = []
 		self.out = []
 		self.battery = []
@@ -99,7 +212,7 @@ class OpenHEMSNetwork:
 		for elem in self.inout:
 			p = elem.getCurrentPower()
 			if isinstance(p, str):
-				logger.critical("power as string : {p}")
+				logger.critical("power as string : '%s'", p)
 				os._exit(1)
 			globalPower += p
 		return globalPower
@@ -170,7 +283,7 @@ class OpenHEMSNetwork:
 		Send a notification using the appropriate way 
 		(Only push to HomeAssistant for the moment).
 		"""
-		self.network_updater.notify(message)
+		self.networkUpdater.notify(message)
 
 	def switchOffAll(self):
 		"""
@@ -191,7 +304,7 @@ class OpenHEMSNetwork:
 		"""
 		Update network state using the NetworkUpdater
 		"""
-		self.network_updater.updateNetwork()
+		self.networkUpdater.updateNetwork()
 
 	def isGridSourceOn(self):
 		"""
@@ -206,7 +319,7 @@ class OpenHEMSNetwork:
 		"""
 		l = len(self.battery)
 		if l<1:
-			return Battery(0, 0, 0, 0, 0)
+			return Battery(0, 0, 0, 0)
 		if l==1:
 			return self.battery[0]
 		# TODO

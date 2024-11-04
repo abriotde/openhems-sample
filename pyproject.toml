@@ -1,6 +1,6 @@
 [project]
 name = "openhems"
-version = "0.1.0"
+version = "0.1.1"
 authors = [
 	{ name="OpenHomeSystem", email="contact@openhomesystem.com" },
 ]
@@ -10,19 +10,69 @@ maintainers = [
 description = "A sample Home Energy Managment System based on Home-Assistant"
 readme = "readme.md"
 requires-python = ">=3.8"
-# classifiers = [
-#    "Programming Language :: Python :: 3",
-#    "License :: GPL-3.0-or-later",
-#    "Operating System :: Linux",
-# ]
-dynamic = []
+classifiers=[
+	"Development Status :: Alpha",
+	"Intended Audience :: Developers",
+	"Topic :: Software Development :: Build Tools",
+	"License :: GPL-3.0-or-later",
+	"Operating System :: Linux",
+	"Programming Language :: Python :: 3 :: Only",
+]
+keywords = ['energy', 'HEMS', 'home automation', 'home-assistant', 'domotic']
+dependencies = [
+	'requests', 'pandas', 'pyyaml', 'pyramid', 'pyramid-jinja2', 'packaging', 'astral',
+	# For EMHASS
+	'numpy', 'plotly', 'scikit-learn', 'skforecast', 'pvlib', 'beautifulsoup4', 'protobuf',
+	'pandas', 'scipy', 'h5py', 'pulp'
+]
 
+[console_scripts]
+# openhems = "openhems:main"
 
 [project.urls]
 Homepage = "https://openhomesystem.com"
 Issues = "https://github.com/abriotde/openhems-sample/issues"
-
+Documentation = "https://openhems.readthedocs.io/en/latest/"
+Repository = "https://github.com/abriotde/openhems-sample.git"
+	
 [build-system]
-requires = ["pandas", "pyyaml", "pyramid", "pyramid-jinja2"]
+requires = [
+	'requests', "pandas", "pyyaml", "pyramid", "pyramid-jinja2", 'packaging', 'astral',
+	# For EMHASS
+	'numpy', 'plotly', 'scikit-learn', 'skforecast', 'pvlib', 'beautifulsoup4' , 'protobuf',
+	'pandas', 'scipy', 'h5py', 'pulp'
+]
 # build-backend = "openhems.build"
 
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q"
+testpaths = ["src/openhems", "tests"]
+
+[tool.coverage.run]
+branch = true
+source = ["src/openhems", "tests"]
+
+[tool.coverage.report]
+# Regexes for lines to exclude from consideration
+exclude_also = [
+    # Don't complain about missing debug-only code:
+    "def __repr__",
+    "if self\\.debug",
+
+    # Don't complain if tests don't hit defensive assertion code:
+    "raise AssertionError",
+    "raise NotImplementedError",
+
+    # Don't complain if non-runnable code isn't run:
+    "if 0:",
+    "if __name__ == .__main__.:",
+
+    # Don't complain about abstract methods, they aren't run:
+    "@(abc\\.)?abstractmethod",
+    ]
+
+ignore_errors = true
+
+[tool.coverage.html]
+directory = "coverage_html_report"

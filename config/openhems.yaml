@@ -4,22 +4,19 @@ api:
   ssl_certificate: /etc/letsencrypt/live/openproduct.freeboxos.fr/cert.pem
 latitude: 48.430883803968456
 longitude: -2.2153649964972693
+altitude: 100
+timeZone: Europe/Paris
 server:
   # logformat: Optional default is "%(levelname)s : %(asctime)s : %(message)s", for custom configuration see https://docs.python.org/3/library/logging.html#logrecord-attributes
   logfile: openhems.log # Optional, default is /var/log/openhems.log
   # loglevel: Optional, default is info, availables are debug / info / warn / error / critical / no
-  loop_delay: 30 # interval beetween 2
+  loopDelay: 30 # interval beetween 2
   network: homeassistant # Define the type of network API used to control the home energy.
   strategy: offpeak # Define the algorithm used to control the  home energy.
-  strategy_params: # parameters witch depends of the strategy
+  strategyParams: # parameters witch depends of the strategy
     - 22h - 6h
 network:
   in: # List the source of electric power
     - {id: linky, currentPower: sensor.lixee_zlinky_tic_puissance_apparente, powerMargin: 1000, maxPower: 10000, minPower: 0, class: PublicPowerGrid, contract: {type: sensor, elem: rte_tempo, value: couleur_actuelle_visuel, class: RTETempoContract, params: {}} }
   out: # List on source of electric consumption
     - {id: voiture, class: switch, isOn: switch.tz3000_2putqrmw_ts011f_commutateur_2, currentPower: sensor.tz3000_2putqrmw_ts011f_puissance_2, maxPower:2000}
-elems:
-  tz3000_2putqrmw_ts011f: {use: carCharger, class: CarCharger}
-  rte_tempo: {use: input, class: RTETempoContract}
-  prise_1: {use: HS, class: Switch}
-  lixee_zlinky_tic: {use: input, class: RTETempoContract}

@@ -16,11 +16,11 @@ class OpenHEMSNode:
 	Represent device of home network
 	"""
 
-	def setId(self, HAid):
+	def setId(self, haId):
 		"""
 		Set Home-Assistant id
 		"""
-		self.id = HAid.strip().replace(" ", "_")
+		self.id = haId.strip().replace(" ", "_")
 
 	def __init__(self, currentPower, maxPower, isOnFeeder=None):
 		self.id = ""
@@ -54,8 +54,8 @@ class OpenHEMSNode:
 		"""
 		currentPower = self.currentPower.getValue()
 		if self._isSwitchable and not self.isOn() and currentPower!=0:
-			logger.warning("{self.id} is Off but current power={currentPower}")
-		logger.info("OpenHEMSNode.getCurrentPower() = {currentPower}")
+			logger.warning("'%s' is Off but current power=%d", self.id, currentPower)
+		logger.info("OpenHEMSNode.getCurrentPower() = %d", currentPower)
 		return currentPower
 
 	def getMaxPower(self):
@@ -82,8 +82,7 @@ class OpenHEMSNode:
 			diff = p1-p0
 			if i==maxi:
 				lastDiff = diff
-			if abs(diff)>maxDiff:
-				maxDiff = abs(diff)
+			maxDiff = max(maxDiff, abs(diff))
 			summ += diff
 			p0 = p1
 		avgDiff = summ/maxi
@@ -101,6 +100,7 @@ class OpenHEMSNode:
 			Return true if this OpenHEMSNode can be switch on/off.
 		"""
 		return self._isSwitchable
+
 	def isOn(self):
 		"""
 		Return true if the node is not switchable or is switch on.
@@ -116,7 +116,7 @@ class OpenHEMSNode:
 		return bool: False if fail to switchOn/switchOff
 		"""
 		if self._isSwitchable:
-			return self.network.network_updater.switchOn(connect, self)
+			return self.network.networkUpdater.switchOn(connect, self)
 		print("Warning : try to switchOn/Off a not switchable device : ",self.id)
 		return connect # Consider node is always on network
 
@@ -227,19 +227,21 @@ class Battery(InOutNode):
 	This represent battery.
 	"""
 	# pylint: disable=too-many-arguments
-	def __init__(self, currentPower, maxPower, powerMargin,
-			capaciity, currentLevel
+	def __init__(self, currentPower, maxPower,
+			capacity, currentLevel, *, powerMargin=None
 			,minPower=None, lowLevel=None, hightLevel=None):
 		if minPower is None:
 			minPower = -maxPower
 		if lowLevel is None:
-			lowLevel = 0.2*capaciity
+			lowLevel = 0.2*capacity
 		if hightLevel is None:
-			hightLevel = 0.8*capaciity
+			hightLevel = 0.8*capacity
+		if powerMargin is None:
+			powerMargin = capacity*0.1
 		super().__init__(currentPower, maxPower, minPower, powerMargin)
 		self.isControlable = True
 		self.isModulable = False
-		self.capaciity = capaciity
+		self.capacity = capacity
 		self.lowLevel = lowLevel
 		self.hightLevel = hightLevel
 		self.currentLevel = currentLevel
@@ -248,7 +250,7 @@ class Battery(InOutNode):
 		"""
 		Get battery max capacity.
 		"""
-		return self.capaciity.getValue()
+		return self.capacity.getValue()
 
 	def getLevel(self):
 		"""

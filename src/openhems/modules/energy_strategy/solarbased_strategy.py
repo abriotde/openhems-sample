@@ -72,8 +72,8 @@ class SolarBasedStrategy(OffPeakStrategy):
 		else:
 			if now>self._sunset:
 				self._nightime = True
-				tomorow_date = datetime.date.today() + datetime.timedelta(days=1)
-				sun = astral.sun.sun(self.location.observer, date=tomorow_date)
+				tomorowDate = datetime.date.today() + datetime.timedelta(days=1)
+				sun = astral.sun.sun(self.location.observer, date=tomorowDate)
 				self._sunrise = sun['sunrise'].astimezone(self.timezone)
 				self._nightime = sun['sunset'].astimezone(self.timezone)
 				self.lastAutonomousRatio = self.getAutonomousRatio()

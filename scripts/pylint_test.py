@@ -1,4 +1,7 @@
 #!/bin/env python3
+"""
+Script used to test pylint compliance of this project and correct it.
+"""
 import os
 import re
 import json
@@ -9,38 +12,52 @@ snake_case_transformer = re.compile(r"(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z
 
 snake_case_conversion_todo = {}
 snake_case_conversion = {}
+SNAKECASE_CONVERSION_FILE = 'pylint_snake_case_conversion.json'
 
-def convert2camelcase_file(file, word, snake_case_word):
-	regex = re.compile("(.*[ (,\",'.])("+word+")([ (,\",'].*)")
-	filecontent = ""
+def convert2CamelcaseFile(file, word, snakeCaseWord):
+	"""
+	Should be used to convert a file to camelcase: CANCELED
+	"""
 	update = False
-	for line in open(file, 'r'):
-		ok = regex.match(line)
-		if ok:
-			update = True
-			new_line = ok[1]+snake_case_word+ok[3]
-			print("Find '",word,"' in '",file,"' (\n",line,"\n => \n",new_line,"\n)")
-			filecontent+=new_line
-		else:
-			filecontent+=line
-	if update:
-		with open(file, 'w') as f:
-			f.write(filecontent)
+	with re.compile("(.*[ (,\",'.])("+word+")([ (,\",'].*)") as regex:
+		filecontent = ""
+		with open(file, 'r', encoding='utf-8') as fd:
+			for line in fd:
+				ok = regex.match(line)
+				if ok:
+					update = True
+					newLine = ok[1]+snakeCaseWord+ok[3]
+					print("Find '",word,"' in '",file, \
+						"' (\n",line,"\n => \n",newLine,"\n)")
+					filecontent+=newLine
+				else:
+					filecontent+=line
+			if update:
+				with open(file, 'w', encoding='utf-8') as f:
+					f.write(filecontent)
 	return update
 
-def convert2camelcase(word, snake_case_word):
+def convert2camelcase(word, snakeCaseWord):
+	"""
+	Should be used to convert a specific word to camelcase in all folders: CANCELED
+	"""
 	# TODO ?
-	convert2camelcase_file("src/openhems/main.py", word, snake_case_word)
+	convert2CamelcaseFile("src/openhems/main.py", word, snakeCaseWord)
 
-def analyze_folder(folder):
+def analyzeFolder(folder):
+	"""
+	Analyze with "pylint" all python gited files
+	"""
 	stream = os.popen('pylint $(git ls-files \''+folder+'*.py\')')
 	for line in stream.readlines():
+		print(line)
+		# pylint: disable=pointless-string-statement
+		"""
 		ok = pattern_line.match(line)
-		snake_case_style = "conform to snake_case naming style"
 		if ok:
 			file = ok[1]
 			linenb = ok[2]
-			charstart = ok[3]
+			# charstart = ok[3]
 			code = ok[4]
 			description = ok[5]
 			# print(code, file, linenb)
@@ -50,13 +67,13 @@ def analyze_folder(folder):
 				if ok:
 					word = ok[1]
 					if not word in snake_case_conversion:
-						snake_case_word = snake_case_transformer.sub('_', word).lower()
-						snake_case_conversion_todo[word] = snake_case_word
-						print(word,"=>",snake_case_word)
+						snakeCaseWord = snake_case_transformer.sub('_', word).lower()
+						snake_case_conversion_todo[word] = snakeCaseWord
+						print(word,"=>",snakeCaseWord)
 					else:
-						snake_case_word = snake_case_conversion[word]
-						print("File:",file,"; Line:",linenb," : ", word,"=>",snake_case_word)
-						# convert2camelcase(word, snake_case_word)
+						snakeCaseWord = snake_case_conversion[word]
+						print("File:",file,"; Line:",linenb," : ", word,"=>",snakeCaseWord)
+						# convert2camelcase(word, snakeCaseWord)
 				# else: print("ERROR: should be a snake_case prolem: ", description)
 			elif code=="W0511":
 				# It's for TODO code (fixme).
@@ -65,20 +82,29 @@ def analyze_folder(folder):
 				print(line)
 		else:
 			print(line)
+		"""
 
-def init():
-	snake_case_conversion_file = 'pylint_snake_case_conversion.json'
-	if os.path.isfile(snake_case_conversion_file):
-		with open(snake_case_conversion_file, 'r', encoding="utf-8") as f:
-			snake_case_conversion = json.load(f)
+def initSnakeCaseConversion():
+	"""
+	Initialyze the script
+	"""
+	if os.path.isfile(SNAKECASE_CONVERSION_FILE):
+		with open(SNAKECASE_CONVERSION_FILE, 'r', encoding="utf-8") as f:
+			return json.load(f)
+	return {}
 
 def finalyze():
+	"""
+	Finalyze the script
+	"""
 	if len(snake_case_conversion_todo)>0:
 		print(snake_case_conversion_todo)
 		snake_case_conversion.update(snake_case_conversion_todo)
-		with open(snake_case_conversion_file, 'w', encoding="utf-8") as f:
+		with open(SNAKECASE_CONVERSION_FILE, 'w', encoding="utf-8") as f:
 			f.write(json.dumps(snake_case_conversion, indent=2))
 
-analyze_folder("./scripts")
-analyze_folder("./src/openhems")
+# snake_case_conversion = initSnakeCaseConversion()
 
+analyzeFolder("./src/openhems")
+analyzeFolder("./scripts")
+analyzeFolder("./tests")

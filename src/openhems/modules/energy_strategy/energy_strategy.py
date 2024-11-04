@@ -4,6 +4,7 @@ Super class for all EnergyStrategy modules
 from datetime import datetime, timedelta
 import logging
 # from openhems.modules.network.network import OpenHEMSNetwork
+LOOP_DELAY_VIRTUAL = 0
 
 class EnergyStrategy:
 	"""

@@ -1,5 +1,7 @@
 [MAIN]
 
+init-hook='import sys; from pathlib import Path; sys.path.append(str(Path(__file__) / "src")); sys.path.append(str(Path(__file__) / "lib/emhass/src"));'
+
 # Analyse import fallback blocks. This can be used to support both Python 2 and
 # 3 compatible code, which means that the block might have code that exists
 # only in one or another interpreter, leading to false positives when analysed.
@@ -215,7 +217,7 @@ method-naming-style=camelCase
 #method-rgx=
 
 # Naming style matching correct module names.
-module-naming-style=camelCase
+module-naming-style=snake_case
 
 # Regular expression matching correct module names. Overrides module-naming-
 # style. If left empty, module names will be checked with the set naming style.
@@ -430,7 +432,8 @@ disable=raw-checker-failed,
         deprecated-pragma,
         use-symbolic-message-instead,
         use-implicit-booleaness-not-comparison-to-string,
-        use-implicit-booleaness-not-comparison-to-zero
+        use-implicit-booleaness-not-comparison-to-zero,
+		fixme
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
