@@ -7,14 +7,12 @@ More informations on https://openhomesystem.com/
 """
 
 import sys
-import os
 import logging
 from logging import handlers
 from datetime import datetime
 from threading import Thread
 import argparse
 from pathlib import Path
-import yaml
 openhemsPath = Path(__file__).parents[1]
 sys.path.append(str(openhemsPath))
 # pylint: disable=wrong-import-position
@@ -128,7 +126,8 @@ def main():
 	defaultConfFilepath = Path(__file__).parents[2] / "config/openhems.yaml"
 	parser = argparse.ArgumentParser()
 	parser.add_argument('-c', '--conf', type=str, default=str(defaultConfFilepath),
-						help='File path to YAML configuration file.')
+		  			help='File path to YAML configuration file.')
+	args = parser.parse_args()
 	app = OpenHEMSApplication(args.conf)
 	app.run()
 
