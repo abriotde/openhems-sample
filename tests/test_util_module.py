@@ -36,7 +36,7 @@ class TestConfigurationManager(unittest.TestCase):
 		self.assertEqual(value, '/var/log/openhems.log')
 
 		# Test overriden configurations values
-		configurator.add_yaml_config(ROOT_PATH / 'config/openhems.yaml')
+		configurator.addYamlConfig(ROOT_PATH / 'config/openhems.yaml')
 		value = configurator.get("server.logfile")
 		self.assertEqual(value, 'openhems.log')
 
@@ -56,7 +56,7 @@ class TestConfigurationManager(unittest.TestCase):
 		# Cast Str => Int
 		value = CastUtililty.toType('int', '2')
 		self.assertEqual(value, 2)
-		with self.assertRaises(CastException) as context:
+		with self.assertRaises(CastException) as _:
 			value = CastUtililty.toType('int', 'unavailable')
 
 		# Str => Bool

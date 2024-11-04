@@ -6,6 +6,7 @@ import logging
 import os
 import time
 from openhems.modules.energy_strategy import OffPeakStrategy
+from openhems.modules.util.configuration_manager import ConfigurationManager
 
 
 class OpenHEMSServer:
@@ -14,12 +15,12 @@ class OpenHEMSServer:
 	 and take right deccisions to optimize consumption
 	"""
 
-	def __init__(self, network, serverConf) -> None:
+	def __init__(self, network, serverConf:ConfigurationManager) -> None:
 		self.logger = logging.getLogger(__name__)
 		self.network = network
-		self.loopDelay = serverConf["loopDelay"]
-		strategy = serverConf["strategy"].lower()
-		strategyParams = serverConf["strategyParams"]
+		self.loopDelay = serverConf.get("server.loopDelay")
+		strategy = serverConf.get("server.strategy").lower()
+		strategyParams = serverConf.get("server.strategyParams")
 		if strategy=="offpeak":
 			params = [p.split("-") for p in strategyParams]
 			self.strategy = OffPeakStrategy(self.network, params)
