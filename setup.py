@@ -18,12 +18,9 @@ long_description = (here / "readme.md").read_text(encoding="utf-8")
 # Fields marked as "Optional" may be commented out.
 
 setup(
-	name="openhems",
-	version="0.1.0",
-	description="A sample Home Energy Managment System based on Home-Assistant",
 	long_description=long_description,
 	long_description_content_type="text/markdown",
-	url="https://github.com/pypa/sampleproject",
+	url="https://github.com/abriotde/openhems-sample.git",
 	author="OpenHomeSystem",
 	author_email="contact@openhomesystem.com",
 	# For a list of valid classifiers, see https://pypi.org/classifiers/
