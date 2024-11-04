@@ -84,7 +84,7 @@ class EmhassAdapter:
 		config = em_utils.build_config(self._emhassConf, self.logger,\
 			self.rootPath / 'data/config_defaults.json',\
 			legacy_config_path=self._emhassConf['config_path'])
-		# print("config:",config)
+		print("config:",self._emhassConf['config_path'])
 		paramsSecrets = {}
 		self._emhassConf, builtSecrets = em_utils.build_secrets(\
 			self._emhassConf, self.logger, secrets_path=str(self._secretsPath))
@@ -99,7 +99,7 @@ class EmhassAdapter:
 			actionName, costfun, str(self))
 		runtimeparams = None
 		params = self._params if isinstance(self._params, str) else json.dumps(self._params)
-		# print("params:",params)
+		print("params:",params)
 		inputDataDict = em.set_input_data_dict(self._emhassConf, costfun,
 				params, runtimeparams, actionName, self.logger)
 

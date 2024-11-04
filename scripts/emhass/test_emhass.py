@@ -71,6 +71,8 @@ if args.docker:
 	SECRETS_PATH = '/app/secrets_emhass.yaml'
 	PARAMS = None
 	import dataclasses
+	# pylint: disable=duplicate-code
+	# No choice to duplicate code as docker as no access to OpenHEMS code.
 	@dataclasses.dataclass
 	class Deferrable:
 		"""
