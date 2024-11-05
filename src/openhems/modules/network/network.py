@@ -211,22 +211,22 @@ class OpenHEMSNetwork:
 				os._exit(1)
 			globalPower += p
 		return globalPower
-	def getCurrentMaxPower(self):
+	def getMaxPower(self):
 		"""
 		Get current maximum power consumption possible.
 		"""
 		globalPower= 0
 		for elem in self.inout:
-			globalPower += elem.getCurrentMaxPower()
+			globalPower += elem.getMaxPower()
 		return globalPower
-	def getCurrentMinPower(self):
+	def getMinPower(self):
 		"""
 		Get current minimum power consumption possible.
 		0 mean, we can't give back power to network grid.
 		"""
 		globalPower = 0
 		for elem in self.inout:
-			globalPower += elem.getCurrentMinPower()
+			globalPower += elem.getMinPower()
 		return globalPower
 	def getMarginPower(self):
 		"""
@@ -242,7 +242,7 @@ class OpenHEMSNetwork:
 		"""
 		Get how many power we can add safely
 		"""
-		maxPower = self.getCurrentMaxPower()
+		maxPower = self.getMaxPower()
 		currentPower = self.getCurrentPowerConsumption()
 		marginPower = self.getMarginPower()
 		marginPowerOn = maxPower-marginPower-currentPower
@@ -259,7 +259,7 @@ class OpenHEMSNetwork:
 		"""
 		Get how many power we can remove safely (Case we do not want to over produce)
 		"""
-		minPower = self.getCurrentMinPower()
+		minPower = self.getMinPower()
 		currentPower = self.getCurrentPowerConsumption()
 		marginPower = self.getMarginPower()
 		marginPowerOff = (currentPower-marginPower)-minPower

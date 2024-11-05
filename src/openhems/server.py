@@ -25,8 +25,7 @@ class OpenHEMSServer:
 			params = [p.split("-") for p in strategyParams]
 			self.strategy = OffPeakStrategy(self.network, params)
 		elif strategy=="emhass":
-			params = serverConf.get("server.strategyParams.emhassEvalFrequenceInMinutes")
-			self.strategy = EmhassStrategy(self.network, params)
+			self.strategy = EmhassStrategy(self.network, serverConf)
 		else:
 			self.logger.critical("OpenHEMSServer() : Unknown strategy '%s'", strategy)
 			os._exit(1)

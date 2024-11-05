@@ -7,6 +7,8 @@ So this require some more Python packages.
 import math
 from datetime import datetime, timedelta
 import logging
+import pytz
+import copy
 import numpy as np
 from openhems.modules.network.network import OpenHEMSNetwork
 from .energy_strategy import EnergyStrategy # , LOOP_DELAY_VIRTUAL
@@ -14,6 +16,8 @@ from .driver.emhass_adapter import (
 	Deferrable,
 	EmhassAdapter
 )
+from openhems.modules.util.configuration_manager import ConfigurationManager
+
 
 # Time to wait in seconds before considering to be in offpeak range
 TIME_MARGIN_IN_S = 1
@@ -26,16 +30,18 @@ class EmhassStrategy(EnergyStrategy):
 	So this require some more Python packages.
 	"""
 
-	def __init__(self, network: OpenHEMSNetwork, emhassFrequenceInMinutes=60):
+	def __init__(self, network: OpenHEMSNetwork, configuration:ConfigurationManager):
 		super().__init__()
 		self.adapter = EmhassAdapter.createForOpenHEMS()
-		self.logger.info("EmhassStrategy(%s)", str(emhassFrequenceInMinutes))
+		self.logger.info("EmhassStrategy()")
 		self.network = network
-		self.emhassEvalFrequence = timedelta(minutes=emhassFrequenceInMinutes)
+		freq = configuration.get("server.strategyParams.emhassEvalFrequenceInMinutes")
+		self.emhassEvalFrequence = timedelta(minutes=freq)
+		self.timezone = pytz.timezone(configuration.get("timeZone"))
 		self.data = None
 		self.deferables = {}
 		self.deferablesKeys = []
-		self.nextEvalDate = datetime.now() - self.emhassEvalFrequence
+		self.nextEvalDate = datetime.now(self.timezone) - self.emhassEvalFrequence
 
 	def emhassEval(self):
 		"""
@@ -59,7 +65,7 @@ class EmhassStrategy(EnergyStrategy):
 			data = None
 		self.deferablesKeys = self.deferables.keys()
 		self.data = data
-		self.nextEvalDate = datetime.now() + self.emhassEvalFrequence
+		self.nextEvalDate = datetime.now(self.timezone) + self.emhassEvalFrequence
 		return data
 
 	def getDurationInHour(self, durationInSecs):
@@ -77,7 +83,7 @@ class EmhassStrategy(EnergyStrategy):
 		"""
 		# print("EmhassStrategy.updateDeferables()")
 		update = False
-		deferables = {}
+		self.deferables = {}
 		for node in self.network.out:
 			nodeId = node.id
 			durationInSecs = node.getSchedule().duration
@@ -86,17 +92,18 @@ class EmhassStrategy(EnergyStrategy):
 			if deferable is None:
 				if durationInSecs>0: # Add a new deferrable
 					update = True
-					power = node.getCurrentMaxPower()
-					deferables[nodeId] = Deferrable(
+					power = node.getMaxPower()
+					self.deferables[nodeId] = Deferrable(
 						power=power, duration=durationInHour, node=node
 					)
 			else:
 				if durationInSecs<=0: # Remove a deferrable
-					del deferables[nodeId]
+					del self.deferables[nodeId]
 					update = True
 				elif deferable.duration!=durationInHour: # update a deferrable
 					update = True
 					deferable.duration = durationInHour
+		print("EmhassStrategy.updateDeferables() => ", update, )
 		return update
 
 	def check(self, now=None):
@@ -108,7 +115,7 @@ class EmhassStrategy(EnergyStrategy):
 		"""
 		# print("EmhassStrategy.check()")
 		if now is None:
-			now = datetime.now()
+			now = datetime.now(self.timezone)
 		if self.updateDeferables() or now>self.nextEvalDate:
 			# print("EmhassStrategy.check() : emhassEval")
 			self.emhassEval()
@@ -131,7 +138,7 @@ class EmhassStrategy(EnergyStrategy):
 		if self.data is None: # Case no deferables
 			return ((None, None, None), (None, None, None))
 		if now is None:
-			now = datetime.now()
+			now = datetime.now(self.timezone)
 		# Get row for current timestamp AND previous one and next one.
 		prevRow = None
 		curRow = None
@@ -161,13 +168,13 @@ class EmhassStrategy(EnergyStrategy):
 		This should apply emhass result (emhassEval call) : self.data
 		"""
 		if now is None:
-			now = datetime.now()
+			now = datetime.now(self.timezone)
 		timestamp, rows = self.getRowsAt(now)
 		if rows[1] is None: # Case no deferables
 			self.network.switchOffAll()
 			return True
 		if rows[0] is None: # !!! But prevous row can be None !!!
-			rows[0] = rows[1] # Do as Previous row confirm current row
+			rows[0] = copy.copy(rows[1]) # Do as Previous row confirm current row
 			# (Rate = 100 before mid-hour)
 		# Evaluate rate of correctness of each row.
 		# If we are in the middle of current timestamp range keep it otherwise apply a rate
@@ -178,7 +185,7 @@ class EmhassStrategy(EnergyStrategy):
 				(duration + 2*min(a,(duration-a)))/(2*duration),
 				max(duration-2*(duration-a), 0)/(2*duration))
 
-		for index, deferable in enumerate(self.deferablesKeys):
+		for index, deferableName in enumerate(self.deferablesKeys):
 			key = 'P_deferrable'+str(index)
 			vals = [row[key] for row in rows]
 			value = max(vals)
@@ -187,6 +194,7 @@ class EmhassStrategy(EnergyStrategy):
 				switchOnRate = 0.0
 			else:
 				switchOnRate = 100 * ( np.dot(vals, rates) ) / value
+			deferable = self.deferables[deferableName]
 			doSwitchOn = self.evaluatePertinenceSwitchOn(switchOnRate, deferable.node)
 			self.switchOn(deferable.node, cycleDuration, doSwitchOn)
 		return True
@@ -199,6 +207,8 @@ class EmhassStrategy(EnergyStrategy):
 		Now is used to get a fake 
 		"""
 		if now is None:
-			now = datetime.now()
+			now = datetime.now(self.timezone)
+		elif now.tzinfo is None or now.tzinfo!=self.timezone:
+			now = now.replace(tzinfo=self.timezone)
 		self.check(now)
 		self.emhassApply(cycleDuration, now=now)

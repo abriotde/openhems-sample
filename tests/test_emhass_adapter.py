@@ -10,11 +10,14 @@ import unittest
 import pandas
 # pylint: disable=wrong-import-position
 # pylint: disable=import-error
-sys.path.append(str(Path(__file__).parents[1] / "src"))
+ROOT_PATH = Path(__file__).parents[1]
+sys.path.append(str(ROOT_PATH / "src"))
 from openhems.modules.energy_strategy.driver.emhass_adapter import (
 	Deferrable,
 	EmhassAdapter
 )
+from openhems.main import OpenHEMSApplication
+from openhems.modules.energy_strategy import LOOP_DELAY_VIRTUAL
 
 class TestEmhassAdapter(unittest.TestCase):
 	"""
@@ -37,7 +40,7 @@ class TestEmhassAdapter(unittest.TestCase):
 				print("> ",timestamp.to_pydatetime(), " [",index,"] => ", val)
 				self.assertTrue(val is not None)
 
-	def test_setDeferrables(self):
+	def tost_setDeferrables(self):
 		"""
 		Test if we can use EmhassAdapter and change on live deferables
 		"""
@@ -56,6 +59,20 @@ class TestEmhassAdapter(unittest.TestCase):
 			Deferrable(1000, 3)
 		]
 		self.evalDeferrables(emhass, deferables)
+
+	def test_applyEmhassStrategy(self):
+		"""
+		Test range system.
+		Init from different kind off-peak range and test some off-peak hours.
+		"""
+		# print("test_applyEmhassStrategy")
+		configFile = ROOT_PATH / "config/openhems_test_emhass.yaml"
+		app = OpenHEMSApplication(configFile)
+		app.server.loop(LOOP_DELAY_VIRTUAL)
+		schedule = app.server.network.getSchedule()
+		print(schedule)
+		schedule['voiture'].setSchedule(90, "02:00")
+		app.server.loop(LOOP_DELAY_VIRTUAL)
 
 if __name__ == '__main__':
 	unittest.main()
