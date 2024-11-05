@@ -67,7 +67,7 @@ class ConfigurationManager():
 		if yamlConfig is str:
 			yamlConfig = Path(yamlConfig)
 		with yamlConfig.open('r', encoding="utf-8") as file:
-			self.logger.info("Load YAML configuration from '",yamlConfig,"'")
+			self.logger.info("Load YAML configuration from '%s'", yamlConfig)
 			dictConfig = yaml.load(file, Loader=yaml.FullLoader)
 			self._load(dictConfig, init)
 		# print(self._conf)

@@ -7,7 +7,6 @@ This is in case we just base on "off-peak" range hours to control output.
 from datetime import datetime
 import time
 import re
-import logging
 from openhems.modules.network.network import OpenHEMSNetwork
 from .energy_strategy import EnergyStrategy, LOOP_DELAY_VIRTUAL
 
@@ -28,7 +27,7 @@ class OffPeakStrategy(EnergyStrategy):
 	network = None
 
 	def __init__(self, network: OpenHEMSNetwork, offpeakHoursRanges=None):
-		self.logger = logging.getLogger(__name__)
+		super().__init__()
 		if offpeakHoursRanges is None:
 			offpeakHoursRanges = [["22:00:00","06:00:00"]]
 		self.logger.info("OffPeakStrategy(%s)", str(offpeakHoursRanges))
@@ -108,35 +107,6 @@ class OffPeakStrategy(EnergyStrategy):
 			"sleep(%d min, until %s)",\
 			round((time2wait+TIME_MARGIN_IN_S)/60), str(self.rangeEnd))
 		time.sleep(time2wait+TIME_MARGIN_IN_S)
-
-
-	def switchOn(self, node, cycleDuration, doSwitchOn=True):
-		"""
-		IF the node is ever on:
-		 - decrement his time to be on from cycleDuration
-		 - Switch off the node if time to be on elapsed
-		ELSE IF doSwitchOn=True: Switch on the node
-		"""
-		if node.isSwitchable:
-			if node.isOn():
-				lastDuration = node.getSchedule().decreaseTime(cycleDuration)
-				self.logger.debug("Node %s isOn for %s more seconds", \
-					node.id, lastDuration)
-				if lastDuration==0:
-					self.logger.info("Switch off %s due to elapsed time.", node.id)
-					if node.switchOn(False):
-						self.logger.warning("Fail switch off %s.", node.id)
-			elif doSwitchOn and node.getSchedule().isScheduled():
-				if node.switchOn(True):
-					self.logger.info("Switch on '%s' successfully.", node.id)
-					return True
-				self.logger.warning("Fail switch on %s.", node.id)
-			else:
-				self.logger.debug("switchOn() : Node is off and not schedule : %s.",
-					node.id)
-		else:
-			self.logger.debug("switchOn() : Node is not switchable : %s.", node.id)
-		return False
 
 	def switchOnMax(self, cycleDuration):
 		"""

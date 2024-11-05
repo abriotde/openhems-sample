@@ -5,7 +5,7 @@ This is the server thread witch aim to centralize information and take right dec
 import logging
 import os
 import time
-from openhems.modules.energy_strategy import OffPeakStrategy
+from openhems.modules.energy_strategy import OffPeakStrategy, EmhassStrategy
 from openhems.modules.util.configuration_manager import ConfigurationManager
 
 
@@ -24,6 +24,9 @@ class OpenHEMSServer:
 		if strategy=="offpeak":
 			params = [p.split("-") for p in strategyParams]
 			self.strategy = OffPeakStrategy(self.network, params)
+		elif strategy=="emhass":
+			params = serverConf.get("server.strategyParams.emhassEvalFrequenceInMinutes")
+			self.strategy = EmhassStrategy(self.network, params)
 		else:
 			self.logger.critical("OpenHEMSServer() : Unknown strategy '%s'", strategy)
 			os._exit(1)

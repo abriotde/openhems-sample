@@ -42,7 +42,8 @@ class Deferrable:
 	Custom class to simplify emhass module live modifications.
 	"""
 	power: float # Nominal power
-	duration: int # Duration in seconds
+	duration: float # Duration in hours? (In emhass granularity)
+	node:str = None
 	startTimestep = 0
 	endTimestep = 0
 	constant = False
@@ -81,12 +82,12 @@ class EmhassAdapter:
 		Initialyze HEMASS after defining paramters in __init__()
 		"""
 		# print("emhass_conf:",self._emhassConf)
-		config_default_json = self.rootPath / 'data/config_defaults.json'
-		emhass_config = self._emhassConf['config_path']
+		configDefaultJson = self.rootPath / 'data/config_defaults.json'
+		emhassConfig = self._emhassConf['config_path']
 		self.logger.info("Load config_default.json : %s, emhass_config.yaml : %s",
-			config_default_json, emhass_config)
+			configDefaultJson, emhassConfig)
 		config = em_utils.build_config(self._emhassConf, self.logger,\
-			config_default_json, legacy_config_path=emhass_config)
+			configDefaultJson, legacy_config_path=emhassConfig)
 		# print("config:",config)
 		self.logger.info("Load emhass_secrets.yaml : %s", self._secretsPath)
 		paramsSecrets = {}
