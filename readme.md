@@ -68,8 +68,8 @@ This software is usefull to get an as smart as possible management of power cons
 
 - If you have a public power grid source with variable cost, it will allow you to consume when it's lower cost.
 
-Warning : This software is under activ developpment but not functionally.
-All contribution to the software are welcome. Please contact alberic.delacrochais@protonmail.com for all questions.
+Warning : This software is under activ developpment and is used on production but remain at early developpment.
+All contribution to the software are welcome. Please contact contact@openhomesystem.com for any questions.
 
 # Prerequisites
 
@@ -79,18 +79,22 @@ All contribution to the software are welcome. Please contact alberic.delacrochai
 
 * Advantages to delay some consumption. Depending on your electric source (Contract with offpeak hours, solar panels).
 
-* More prerequisites, for installation are detailed on install documentation.
+* A Linux based server, connected to home network, with a recent Python installation.
+
+* And some software skills...
+
+* More prerequisites, for installation are detailed on installation's documentation.
 
 # Install this software
 
-See the documentation on doc/install.md
+See the [documentation](https://openhems.readthedocs.io/en/latest/installation.html)
 
 # Configure
 
-See the documentation on doc/configure.md
+See the [documentation](https://openhems.readthedocs.io/en/latest/configure.html)
 
 # usefull documentation
 
 - https://developers.home-assistant.io/docs/development_environment
 - https://www.home-assistant.io/installation/linux
-
+- https://emhass.readthedocs.io/en/latest/
