@@ -62,6 +62,7 @@ RUNTIMEPARAMS = None
 # entity_path = "."
 # em.continual_publish(input_data_dict, entity_path, logger)
 
+# pylint: disable=import-error
 if args.docker:
 	emhass_conf = {
 		'config_path' : '/app/config_emhass.yaml',

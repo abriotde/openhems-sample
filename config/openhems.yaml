@@ -1,6 +1,6 @@
 api:
   url: http://192.168.1.202:8123/api
-  long_lived_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJmMDQxZTAwMGMzZjY0NDlhOTczNjc3ODEzNDcyYmFjYSIsImlhdCI6MTcyMjg2MDU1MCwiZXhwIjoyMDM4MjIwNTUwfQ.ax43jT3rpbUnWJpurehBeOV4yQGAlW5-2VlDvhKREvg"
+  long_lived_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJmOTM4ZTFmY2FjNTA0MWEyYWZkYjEyOGYyYTJlNGNmYiIsImlhdCI6MTcyNjU2NTU1NiwiZXhwIjoyMDQxOTI1NTU2fQ.3DdEXGsM3cg5NgMUKj2k5FsEG07p2AkRF_Ad-CljSTQ"
   ssl_certificate: /etc/letsencrypt/live/openproduct.freeboxos.fr/cert.pem
 latitude: 48.430883803968456
 longitude: -2.2153649964972693

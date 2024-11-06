@@ -148,7 +148,6 @@ class InOutNode(OpenHEMSNode):
 		super().__init__(currentPower, maxPower)
 		self.currentPower = currentPower
 		self.marginPower = marginPower
-		self.maxPower = maxPower
 		self.minPower = minPower
 
 	def respectConstraints(self, power=None):
@@ -166,12 +165,7 @@ class InOutNode(OpenHEMSNode):
 			return False
 		return True
 
-	def getCurrentMaxPower(self):
-		"""
-		Return current maximal power
-		"""
-		return self.maxPower.getValue()
-	def getCurrentMinPower(self):
+	def getMinPower(self):
 		"""
 		Return current minimal power
 		"""
@@ -216,7 +210,7 @@ class SolarPanel(InOutNode):
 	"""
 	# def __init__(self, currentPower, maxPower, minPower, marginPower):
 	#	super().__init__(currentPower, maxPower, minPower, marginPower)
-	def getCurrentMaxPower(self):
+	def getMaxPower(self):
 		"""
 		get current maximum power.
 		"""
