@@ -7,20 +7,16 @@ So this require some more Python packages.
 import math
 from datetime import datetime, timedelta
 import logging
-import pytz
 import copy
+import pytz
 import numpy as np
 from openhems.modules.network.network import OpenHEMSNetwork
+from openhems.modules.util.configuration_manager import ConfigurationManager
 from .energy_strategy import EnergyStrategy # , LOOP_DELAY_VIRTUAL
 from .driver.emhass_adapter import (
 	Deferrable,
 	EmhassAdapter
 )
-from openhems.modules.util.configuration_manager import ConfigurationManager
-
-
-# Time to wait in seconds before considering to be in offpeak range
-TIME_MARGIN_IN_S = 1
 
 # pylint: disable=broad-exception-raised
 class EmhassStrategy(EnergyStrategy):
@@ -186,10 +182,8 @@ class EmhassStrategy(EnergyStrategy):
 				max(duration-2*(duration-a), 0)/(2*duration))
 
 		for index, deferableName in enumerate(self.deferablesKeys):
-			key = 'P_deferrable'+str(index)
-			vals = [row[key] for row in rows]
+			vals = [row['P_deferrable'+str(index)] for row in rows]
 			value = max(vals)
-			switchOnRate = 0.0
 			if value == 0:
 				switchOnRate = 0.0
 			else:
