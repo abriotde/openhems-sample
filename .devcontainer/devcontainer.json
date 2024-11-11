@@ -1,0 +1,41 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/python
+{
+	"name": "OpenHEMS",
+	"build": {
+		"dockerfile": "../Dockerfile",
+		"context": "../",
+		"args": { "TARGETARCH": "amd64"}
+	},
+	"features": {
+		"ghcr.io/devcontainers/features/common-utils:2": {
+			"installZsh": "true",
+			"configureZshAsDefaultShell": "true",
+			"installOhMyZsh": "false",
+			"installOhMyZshConfig": "false"
+		}
+		// "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
+	},
+	//"appPort": ["5000:5000"] //used to access app from external device (User discretion advised)
+
+
+	// Security issue, may be needed for Podman
+	// "runArgs": [
+	// 	"--userns=keep-id",
+	// 	"--pid=host"
+	// ],
+	// "remoteUser": "root",
+	// "containerUser": "root",
+
+
+	"customizations": {
+		// Configure properties specific to VS Code.
+		"vscode": {
+		  // Add the IDs of extensions you want installed when the container is created.
+		  "extensions": ["ms-python.debugpy", "ms-python.python"]
+		}
+	  },
+
+	"postCreateCommand": ["pip3", "install", "requests-mock", "--break-system-packages"]
+	  
+}

@@ -1,12 +1,15 @@
 #!/bin/bash
 
 # https://linuxfr.org/news/s-m-a-r-t-badblocks-badblocks2
+# https://wiki.crowncloud.net/index.php?How_to_Install_Python_3_11_on_Debian_11 (3.11.10)
+# virtualenv --python="/usr/bin/python2.6" "/path/to/new/virtualenv/"
+# https://www.tderflinger.com/using-systemd-to-start-a-python-application-with-virtualenv
 
 source config.sh
 source functions.sh
 
 echo "Install OpenHEMS server"
-sudo apt install -y python3-pandas python3-yaml python3-pyramid python3-pyramid-jinja2 python3-astral anacron wireguard logrotate
+sudo apt install -y python3-pandas python3-yaml python3-pyramid python3-pyramid-jinja2 python3-astral anacron wireguard logrotate python3-virtualenv
 OPENHEMS_LOGPATH=/var/log/openhems
 sudo mkdir -p $OPENHEMS_LOGPATH
 cat >openhems.service <<EOF
@@ -109,4 +112,8 @@ EOF
 sudo mv openhems /etc/logrotate.d/openhems
 sudo ln -s /lib/systemd/system/logrotate.service /etc/systemd/system/multi-user.target.wants/
 activate_service logrotate
+
+# Venv
+sudo apt install libffi-dev
+
 
