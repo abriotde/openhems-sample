@@ -7,8 +7,8 @@ More informations on https://openhomesystem.com/
 """
 
 from pathlib import Path
-from requests import get
 import json
+from requests import get
 import yaml
 
 yamlConfig = Path(__file__).parents[2] / "config/openhems.yaml"
@@ -23,7 +23,7 @@ with yamlConfig.open('r', encoding="utf-8") as file:
 		"content-type": "application/json",
 	}
 	print("GET "+url)
-	response = get(url, headers=headers)
+	response = get(url, headers=headers, timeout=60)
 	if response.status_code==200:
 		json_object = json.loads(response.text)
 		print(json.dumps(json_object, indent=1))

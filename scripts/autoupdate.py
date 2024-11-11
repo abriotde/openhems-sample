@@ -4,16 +4,16 @@ Script to update OpenHEMS installation automatically.
 """
 
 import os
+import sys
 from pathlib import Path
 import re
 import time
 import functools
 import importlib
-import git # https://gitpython.readthedocs.io/en/stable/tutorial.html#submodule-handling
 from zipfile import ZipFile
+import git # https://gitpython.readthedocs.io/en/stable/tutorial.html#submodule-handling
 import requests
 from packaging.version import Version
-from pprint import pprint
 
 postupdateScriptRegexp = re.compile('postupdate-(?P<version>[0-9.]*)\\.py')
 gitCommitIdRegexp = re.compile('^[a-z0-9A-Z]{40}$')
@@ -44,9 +44,9 @@ class Updater:
 		branch = os.environ.get('OPENHEMS_BRANCH', 'main')
 		tmpDir = Path(os.environ.get('tmpDir', '/tmp'))
 		projectName = "openhems-sample"
-		updater = Updater(projectName, path, tmpDir=tmpDir, user=user, branch=branch)
-		updater.addSubmodule("emhass", "lib/emhass", maintainer="davidusb-geek")
-		return updater
+		myupdater = Updater(projectName, path, tmpDir=tmpDir, user=user, branch=branch)
+		myupdater.addSubmodule("emhass", "lib/emhass", maintainer="davidusb-geek")
+		return myupdater
 
 	def __init__(self, projectName, path, *, tmpDir:Path="/tmp", user="root", branch="main",
 			maintainer='abriotde', subprojects=None):
@@ -68,6 +68,9 @@ class Updater:
 		self.gitHost = "github"
 
 	def getRawUrl(self, path):
+		"""
+		Return url to get raw file.
+		"""
 		url = ""
 		if self.gitHost=="github":
 			url="https://raw.githubusercontent.com/" \
@@ -75,33 +78,39 @@ class Updater:
 		else:
 			print("ERROR : unknown git host : ", self.gitHost
 				,". Only 'github' is supported.")
-			exit(1)
+			sys.exit(1)
 		return url
 
 	def updateFromGitClone(self):
-		tmp_repo = self.tmpDir / self.projectName
-		if not tmp_repo.is_dir():
+		"""
+		Git clone in order to get sources.
+		"""
+		tmpRepo = self.tmpDir / self.projectName
+		if not tmpRepo.is_dir():
 			url = self.getGitUrl()
 			print("INFO : Clone ",url," on ",self.tmpDir)
-			git.Repo.clone_from(url, tmp_repo)
-			repo = git.Repo(tmp_repo)
+			git.Repo.clone_from(url, tmpRepo)
+			repo = git.Repo(tmpRepo)
 		else:
-			repo = git.Repo(tmp_repo)
-			print("INFO : Update git repository ",repo.remotes.origin.url," on ",tmp_repo)
+			repo = git.Repo(tmpRepo)
+			print("INFO : Update git repository ",repo.remotes.origin.url," on ",tmpRepo)
 			repo.remotes.origin.pull()
 		repo.refs.main.checkout()
 		for submodule in repo.submodules:
-			sdir = tmp_repo / submodule.path
+			sdir = tmpRepo / submodule.path
 			if not sdir.is_dir():
 				sdir.mkdir()
 			print("INFO Update ",repr(submodule))
 			submodule.update(init=True, force=True)
 			submodule.module().heads.master.checkout(force=True)
-		self.copyOnProdExcept(tmp_repo)
+		self.copyOnProdExcept(tmpRepo)
 
 
 	def addSubmodule(self, projectName, relativPath, *, tmpDir=None, user="root",
 			branch="main", maintainer=None, subprojects=None):
+		"""
+		Add a git submodule.
+		"""
 		# TODO : find in git submodules and path and branches
 		if maintainer is None:
 			maintainer = self.maintainer
@@ -115,21 +124,28 @@ class Updater:
 		self.subprojects.append(submodule)
 
 	def getGitUrl(self):
+		"""
+		Return url for git clone of wall project.
+		"""
 		if self.gitHost=="github":
 			return "https://github.com/"+self.maintainer+"/"+self.projectName+".git"
+		return ""
 
-	def getZipUrl(self, path):
-		isGitCommitId = gitCommitIdRegexp.match(branch)
+	def getZipUrl(self):
+		"""
+		Return url to get git sources as zip.
+		"""
+		isGitCommitId = gitCommitIdRegexp.match(self.branch)
 		if self.gitHost=="github":
-			suburl = self.branch if isGitCommitId else ("refs/heads/"+branch)
-			url = "https://codeload.github.com/"
-			+self.maintainer+"/"+self.projectName+"/zip/"+suburl
+			suburl = self.branch if isGitCommitId else ("refs/heads/"+self.branch)
+			url = "https://codeload.github.com/"\
+				+self.maintainer+"/"+self.projectName+"/zip/"+suburl
 		else:
 			print("ERROR : unknown git host : ", self.gitHost
 				,". Only 'github' is supported.")
-			exit(1)
+			sys.exit(1)
 		return url
-		
+
 	def postupdate(self, startingVersion, currentVersion):
 		"""
 		Run specific script to updates things between 2 versions.
@@ -182,9 +198,13 @@ class Updater:
 			zf.extractall()
 			zf.close()
 		self.copyOnProdFromFileList(self.tmpDir / (self.projectName+"-"+self.branch))
+		return True
 
-	def copyOnProdFromFileList(tmpPath):
-		path =  / 'scripts/files.lst'
+	def copyOnProdFromFileList(self, tmpPath):
+		"""
+		Copy on prod a limited filelist.
+		"""
+		path =  tmpPath / 'scripts/files.lst'
 		with path.open('r', encoding="utf-8") as exeList:
 			for file in exeList.readlines():
 				filepath = path / (file.strip())
@@ -201,6 +221,9 @@ class Updater:
 		return True
 
 	def copyOnProdDirExcept(self, tmpPath, relativPath=None):
+		"""
+		Copy on prod folder directory except some know files (.git)
+		"""
 		if relativPath is None:
 			relativPath = Path('.')
 		origin = tmpPath / relativPath
@@ -216,9 +239,15 @@ class Updater:
 					self.copyOnProdFile(tmpPath, relativPath / file)
 
 	def copyOnProdFile(self, tmpPath, relativPath):
+		"""
+		Copy on prod a single file
+		"""
 		os.rename(tmpPath / relativPath, self.path / relativPath)
 
 	def copyOnProdExcept(self, tmpPath):
+		"""
+		Copy on prod a directory
+		"""
 		self.copyOnProdDirExcept(tmpPath)
 		return True
 
@@ -253,7 +282,7 @@ class Updater:
 			return False
 		if startingVersion!=latestVersion:
 			print('New version available ("'+latestVersion+'"). Updating...')
-			ok = self.update()
+			ok = self.updateFromExtract()
 			if not ok:
 				print("ERROR : OpenHEMS/Update : Fail")
 				return False

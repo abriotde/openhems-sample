@@ -5,7 +5,6 @@ HTTP web server to give UI to configure OpenHEMS server:
 * Switch on/offf VPN
 * 
 """
-import logging
 import subprocess
 import time
 import json
@@ -30,7 +29,6 @@ JSONEncoder.original_default = JSONEncoder.default
 JSONEncoder.default = wrappedDefault
 
 OPENHEMS_CONTEXT = None
-logger = logging.getLogger(__name__)
 
 @view_config(
     route_name='panel',
@@ -55,7 +53,7 @@ def testVPN():
 		vpnInterfaces = str(vpnInterfaces).strip()
 		nbInterfaces = len(vpnInterfaces)
 		ok = nbInterfaces>3
-		logger.info("VPN is %s", 'up' if ok else 'down')
+		OPENHEMS_CONTEXT.logger.info("VPN is %s", 'up' if ok else 'down')
 		return ok
 	return False
 
@@ -94,7 +92,7 @@ def vpn(request):
 		startVPN(False)
 	time.sleep(3)
 	connected = testVPN()
-	logger.info("/vpn?%sconnect : {%s}",
+	OPENHEMS_CONTEXT.logger.info("/vpn?%sconnect : {%s}",
 		'' if connect else 'dis', 
 		connected==connect)
 	return { "connected": connected }
@@ -114,7 +112,7 @@ def states(request):
 		if i in OPENHEMS_CONTEXT.schedule:
 			OPENHEMS_CONTEXT.schedule[i].setSchedule(node["duration"], node["timeout"])
 		else:
-			logger.error("Node id='%s' not found.",i)
+			OPENHEMS_CONTEXT.logger.error("Node id='%s' not found.",i)
 	return OPENHEMS_CONTEXT.schedule
 
 class OpenhemsHTTPServer():
@@ -127,11 +125,13 @@ class OpenhemsHTTPServer():
 		"""
 		print("context", OPENHEMS_CONTEXT)
 
-	def __init__(self, schedule):
+	def __init__(self, mylogger, schedule, port=8000):
 		testVPN()
+		self.logger = mylogger
+		self.schedule = schedule
+		self.port = port
 		# pylint: disable=global-statement
 		global OPENHEMS_CONTEXT
-		self.schedule = schedule
 		OPENHEMS_CONTEXT = self
 
 	def run(self):
@@ -148,5 +148,5 @@ class OpenhemsHTTPServer():
 			config.add_static_view(name='img', path='modules.web:../../../img')
 			config.scan()
 			app = config.make_wsgi_app()
-		server = make_server('0.0.0.0', 8000, app)
+		server = make_server('0.0.0.0', self.port, app)
 		server.serve_forever()

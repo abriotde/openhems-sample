@@ -26,8 +26,8 @@ class OffPeakStrategy(EnergyStrategy):
 	rangeEnd = datetime.now()
 	network = None
 
-	def __init__(self, network: OpenHEMSNetwork, offpeakHoursRanges=None):
-		super().__init__()
+	def __init__(self, mylogger, network: OpenHEMSNetwork, offpeakHoursRanges=None):
+		super().__init__(mylogger)
 		if offpeakHoursRanges is None:
 			offpeakHoursRanges = [["22:00:00","06:00:00"]]
 		self.logger.info("OffPeakStrategy(%s)", str(offpeakHoursRanges))

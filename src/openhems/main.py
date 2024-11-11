@@ -26,7 +26,6 @@ class OpenHEMSApplication:
 	"""
 	This class is the main class to manage OpenHEMS as independant application.
 	"""
-	logger = None
 	@staticmethod
 	def filer(param=None):
 		"""
@@ -70,14 +69,14 @@ class OpenHEMSApplication:
 		"""
 		return self.logger
 
-	def __init__(self, yamlConfFilepath):
+	def __init__(self, yamlConfFilepath, *, port=0, logfilepath=''):
 		# Temporary logger
-		logger = logging.getLogger(__name__)
-		configurator = ConfigurationManager(logger)
+		self.logger = logging.getLogger(__name__)
+		configurator = ConfigurationManager(self.logger)
 		configurator.addYamlConfig(Path(yamlConfFilepath))
 		loglevel = configurator.get("server.loglevel")
 		logformat = configurator.get("server.logformat")
-		logfile = configurator.get("server.logfile")
+		logfile = logfilepath if logfilepath!='' else configurator.get("server.logfile")
 		self.setLogger(loglevel, logformat, logfile)
 		networkUpdater = None
 		networkSource = configurator.get("server.network")
@@ -92,8 +91,9 @@ class OpenHEMSApplication:
 				networkSource)
 			sys.exit(1)
 		network = networkUpdater.getNetwork()
-		self.server = OpenHEMSServer(network, configurator)
-		self.webserver = OpenhemsHTTPServer(network.getSchedule())
+		self.server = OpenHEMSServer(self.logger, network, configurator)
+		port = port if port>0 else configurator.get("server.port")
+		self.webserver = OpenhemsHTTPServer(self.logger, network.getSchedule(), port)
 		network.notify("Start OpenHEMS.")
 
 	def runManagementServer(self):
@@ -127,8 +127,12 @@ def main():
 	parser = argparse.ArgumentParser()
 	parser.add_argument('-c', '--conf', type=str, default=str(defaultConfFilepath),
 		  			help='File path to YAML configuration file.')
+	parser.add_argument('-p', '--port', type=int, default=0,
+		  			help='HTTP web server port.')
+	parser.add_argument('-l', '--logfile', type=str, default=0,
+		  			help='Log file path.')
 	args = parser.parse_args()
-	app = OpenHEMSApplication(args.conf)
+	app = OpenHEMSApplication(args.conf, port=args.port, logfilepath=args.logfile)
 	app.run()
 
 if __name__ == "__main__":

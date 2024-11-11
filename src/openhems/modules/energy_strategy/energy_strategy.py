@@ -11,8 +11,10 @@ class EnergyStrategy:
 	Super class for all EnergyStrategy modules
 	"""
 	MIDNIGHT = 240000
-	def  __init__(self):
-		self.logger = logging.getLogger(__name__)
+	def  __init__(self, logger=None):
+		if logger is None:
+			logger = logging.getLogger(__name__)
+		self.logger = logger
 
 	# pylint: disable=unused-argument
 	def updateNetwork(self, cycleDuration):

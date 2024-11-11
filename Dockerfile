@@ -4,7 +4,8 @@
   ## OR docker build --build-arg TARGETARCH=amd64 -t openhems .
   ## docker run -d --name openhems openhems:latest
   ## docker exec -it openhems bash
-  ## docker run --rm -it -p 5000:5000 --name openhems -v ./config.json:/share/config.json -v ./secrets_emhass.yaml:/app/secrets_emhass.yaml openhems
+  ## docker run --rm -it -p 8000:8000 --name openhems openhems:latest
+  ## docker run --rm -it -p 8000:8000 --name openhems -v ./config/openhems.yaml:/app/config/openhems.yaml -v ./config/secrets_emhass.yaml:/app/config/secrets_emhass.yaml -v ./config/config_emhass.yaml:/app/config/config_emhass.yaml -v ./log:/log openhems:latest
 
 # armhf,amd64,armv7,aarch64
 ARG TARGETARCH
@@ -59,21 +60,22 @@ RUN [[ "${TARGETARCH}" == "armhf" || "${TARGETARCH}" == "armv7"  ]] &&  ln -sf /
 RUN [[ "${TARGETARCH}" == "armv7" ]] && apt-get update && apt-get install libatomic1 || echo "libatomic1 cant be installed"
 
 # remove build only packages
-# RUN apt-get purge -y --auto-remove \
-#     gcc \
-#     patchelf \
-#     cmake \
-#     meson \
-#     ninja-build \
-#     build-essential \
-#     pkg-config \
-#     gfortran \
-#     netcdf-bin \
-#     libnetcdf-dev \
-#     && rm -rf /var/lib/apt/lists/*
+RUN apt-get purge -y --auto-remove \
+  gcc \
+  patchelf \
+  cmake \
+  meson \
+  ninja-build \
+  build-essential \
+  pkg-config \
+  gfortran \
+  netcdf-bin \
+  libnetcdf-dev \
+  && rm -rf /var/lib/apt/lists/*
 
 # make sure data directory exists
 RUN mkdir -p /app/data/
+RUN mkdir -p /log/
 
 # make sure emhass share directory exists
 RUN mkdir -p /share/openhems/
@@ -118,9 +120,14 @@ LABEL \
     io.hass.type="addon" \
     io.hass.arch="aarch64|amd64|armhf|armv7"
 
+EXPOSE 8000
+VOLUME /log
+VOLUME /app/config
+
 # build OpenHEMS
 # RUN pip3 install --no-cache-dir --break-system-packages --no-deps --force-reinstall  .
 # ENTRYPOINT [ "python3", "-m", "openhems.main"]
+ENTRYPOINT ["/app/src/openhems/main.py", "-l", "/log/openhems.log"]
 
 # for running Unittest
 #COPY tests/ /app/tests
