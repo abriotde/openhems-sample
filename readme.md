@@ -35,9 +35,9 @@
   <a style="text-decoration:none" href="https://openhems.readthedocs.io/en/latest/">
       <img src="https://raw.githubusercontent.com/abriotde/openhems-sample/main/docs/images/Documentation_button.svg" alt="Documentation">
   </a>
-  <!-- a style="text-decoration:none" href="https://community.home-assistant.io/t/openhems-sample-an-energy-management-for-home-assistant/338126">
+  <a style="text-decoration:none" href="https://github.com/abriotde/openhems-sample/discussions">
       <img src="https://raw.githubusercontent.com/abriotde/openhems-sample/main/docs/images/Community_button.svg" alt="Community">
-  </a -->
+  </a>
   <a style="text-decoration:none" href="https://github.com/abriotde/openhems-sample/issues">
       <img src="https://raw.githubusercontent.com/abriotde/openhems-sample/main/docs/images/Issues_button.svg" alt="Issues">
   </a>

@@ -1,4 +1,5 @@
 ## OpenHEMS-sample Docker
+# https://masterdaweb.com/en/blog/fixing-requested-access-to-the-resource-is-denied-in-docker/
 ## Docker run addon testing example:
   ## docker build -t openhems .
   ## OR docker build --build-arg TARGETARCH=amd64 -t openhems .
