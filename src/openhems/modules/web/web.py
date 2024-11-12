@@ -148,5 +148,7 @@ class OpenhemsHTTPServer():
 			config.add_static_view(name='img', path='modules.web:../../../img')
 			config.scan()
 			app = config.make_wsgi_app()
-		server = make_server('0.0.0.0', self.port, app)
+		host = '0.0.0.0'
+		server = make_server(host, self.port, app)
+		self.logger.info("HTTP server is listening on '%s:%d'", host, self.port)
 		server.serve_forever()
