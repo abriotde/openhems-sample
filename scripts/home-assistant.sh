@@ -30,10 +30,9 @@ echo "Run Home-Assistant"
 mkdir -p $HOMEASSISTANT_DIR
 mkdir -p $HOMEASSISTANT_CONFIG_PATH
 sudo docker run -d \
-  --name $DOCKER_NAME \
+  --name $DOCKER_HA_NAME \
   --privileged \
   --restart=unless-stopped \
-  -e TZ=MY_TIME_ZONE \
   -v $HOMEASSISTANT_DIR/config:/config \
   -v /run/dbus:/run/dbus:ro \
   --network=host \
@@ -42,6 +41,35 @@ sudo docker run -d \
 wait_homeassistant_container_up
 
 cp $OPENHEMS_PATH/config/dashboards.yaml $OPENHEMS_PATH/config/configuration.yaml $HOMEASSISTANT_CONFIG_PATH
+
+# Systemd
+# ExecStart=/usr/local/bin/systemd-docker --cgroups name=systemd run --rm --name %n redis
+# go install github.com/ibuildthecloud/systemd-docker@latest
+# https://blog.container-solutions.com/running-docker-containers-with-systemd
+cat >homeassistant.service <<EOF
+[Unit]
+Description = Home-Assistant server.
+After=docker.service
+Requires=docker.service
+
+[Service]
+TimeoutStartSec=0
+Restart=always
+ExecStartPre=-/usr/bin/docker stop $DOCKER_HA_NAME
+ExecStartPre=-/usr/bin/docker rm $DOCKER_HA_NAME
+ExecStartPre=/usr/bin/docker pull $DOCKER_HA_NAME
+ExecStart=/usr/bin/docker run --rm --privileged --name $DOCKER_HA_NAME -v $HOMEASSISTANT_DIR/config:/config -v /run/dbus:/run/dbus:ro --network=host ghcr.io/home-assistant/home-assistant:stable
+StandardOutput=append:$OPENHEMS_LOGPATH/homeassistant.service.log
+StandardError=append:$OPENHEMS_LOGPATH/homeassistant.service.error.log
+SyslogIdentifier=HomeAssistant
+
+[Install]
+WantedBy = multi-user.target
+EOF
+sudo mv homeassistant.service /lib/systemd/system/
+ln -s /lib/systemd/system/homeassistant.service /etc/systemd/system/multi-user.target.wants
+
+
 
 echo "Install HACS"
 # https://hacs.xyz/docs/setup/download/

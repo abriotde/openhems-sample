@@ -3,7 +3,9 @@
 ## Docker run addon testing example:
   ## docker build -t openhems .
   ## OR docker build --build-arg TARGETARCH=amd64 -t openhems .
-  ## docker run -d --name openhems openhems:latest
+  ## docker tag openhems openhomesystem22/openhems:latest
+  ## docker push  openhomesystem22/openhems:latest
+  ## docker run -d --name openhems openhems
   ## docker exec -it openhems bash
   ## docker run --rm -it -p 8000:8000 --name openhems openhems:latest
   ## docker run --rm -it -p 8000:8000 --name openhems -v ./config/openhems.yaml:/app/config/openhems.yaml -v ./config/secrets_emhass.yaml:/app/config/secrets_emhass.yaml -v ./config/config_emhass.yaml:/app/config/config_emhass.yaml -v ./log:/log openhems:latest
