@@ -2,10 +2,9 @@
 """
 This is the server thread witch aim to centralize information and take right deccisions
 """
-import logging
 import os
 import time
-from openhems.modules.energy_strategy import OffPeakStrategy, EmhassStrategy
+from openhems.modules.energy_strategy import OffPeakStrategy
 from openhems.modules.util.configuration_manager import ConfigurationManager
 
 
@@ -15,17 +14,20 @@ class OpenHEMSServer:
 	 and take right deccisions to optimize consumption
 	"""
 
-	def __init__(self, network, serverConf:ConfigurationManager) -> None:
-		self.logger = logging.getLogger(__name__)
+	def __init__(self, mylogger, network, serverConf:ConfigurationManager) -> None:
+		self.logger = mylogger
 		self.network = network
 		self.loopDelay = serverConf.get("server.loopDelay")
 		strategy = serverConf.get("server.strategy").lower()
 		strategyParams = serverConf.get("server.strategyParams")
 		if strategy=="offpeak":
 			params = [p.split("-") for p in strategyParams]
-			self.strategy = OffPeakStrategy(self.network, params)
+			self.strategy = OffPeakStrategy(mylogger, self.network, params)
 		elif strategy=="emhass":
-			self.strategy = EmhassStrategy(self.network, serverConf)
+			# pylint: disable=import-outside-toplevel
+			# Avoid to import EmhassStrategy and all it's dependances when no needs.
+			from openhems.modules.energy_strategy.emhass_strategy import EmhassStrategy
+			self.strategy = EmhassStrategy(mylogger, self.network, serverConf)
 		else:
 			self.logger.critical("OpenHEMSServer() : Unknown strategy '%s'", strategy)
 			os._exit(1)

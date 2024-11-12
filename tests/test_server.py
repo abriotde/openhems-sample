@@ -7,6 +7,7 @@ TODO : Fake network
 
 import sys
 import unittest
+import logging
 from pathlib import Path
 # pylint: disable=wrong-import-position
 # pylint: disable=import-error
@@ -14,6 +15,7 @@ ROOT_PATH = Path(__file__).parents[1]
 sys.path.append(str(ROOT_PATH / "src"))
 from openhems.main import OpenHEMSApplication
 from openhems.modules.energy_strategy.energy_strategy import LOOP_DELAY_VIRTUAL
+logger = logging.getLogger(__name__)
 
 class TestOpenHEMSServer(unittest.TestCase):
 	"""

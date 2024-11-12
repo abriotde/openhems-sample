@@ -66,11 +66,17 @@ class ConfigurationManager():
 		# print("addYamlConfig(",yamlConfig,")")
 		if yamlConfig is str:
 			yamlConfig = Path(yamlConfig)
-		with yamlConfig.open('r', encoding="utf-8") as file:
+		with yamlConfig.open('r', encoding="utf-8") as yamlfile:
 			self.logger.info("Load YAML configuration from '%s'", yamlConfig)
-			dictConfig = yaml.load(file, Loader=yaml.FullLoader)
+			dictConfig = yaml.load(yamlfile, Loader=yaml.FullLoader)
 			self._load(dictConfig, init)
 		# print(self._conf)
+
+	def add(self, key, value):
+		"""
+		Force a new value for a key.
+		"""
+		self._conf[key] = value
 
 	def get(self, key):
 		"""

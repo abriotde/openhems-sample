@@ -17,7 +17,7 @@ ROOT_PATH = Path(__file__).parents[1]
 
 logger = logging.getLogger(__name__)
 
-class TestConfigurationManager(unittest.TestCase):
+class TestUtilModule(unittest.TestCase):
 	"""
 	Check common functionnality of util module (openhems.modules.util)
 	"""
@@ -35,7 +35,7 @@ class TestConfigurationManager(unittest.TestCase):
 		value = configurator.get("api.url")
 		self.assertEqual(value, 'http://192.168.1.202:8123/api')
 		value = configurator.get("server.logfile")
-		self.assertEqual(value, '/var/log/openhems.log')
+		self.assertEqual(value, 'openhems.log')
 
 		# Test overriden configurations values
 		configurator.addYamlConfig(ROOT_PATH / 'config/openhems.yaml')

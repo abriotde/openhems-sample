@@ -7,23 +7,43 @@
 
 source config.sh
 source functions.sh
+OPENHEMS_LOGPATH=/var/log/openhems
 
 echo "Install OpenHEMS server"
-sudo apt install -y python3-pandas python3-yaml python3-pyramid python3-pyramid-jinja2 python3-astral anacron wireguard logrotate python3-virtualenv
-OPENHEMS_LOGPATH=/var/log/openhems
+sudo apt install -y anacron wireguard logrotate
 sudo mkdir -p $OPENHEMS_LOGPATH
+
+sudo docker run -d \
+  --name $DOCKER_NAME \
+  --privileged \
+  --restart=unless-stopped \
+  -v $OPENHEMS_PATH/config:/app/config \
+  -v $OPENHEMS_LOGPATH:/log \
+  -p 8000:8000 \
+  openhomesystem22/openhems:openhems
+
+exitvimco
+
+# ExecStart=/usr/local/bin/systemd-docker --cgroups name=systemd run --rm --name %n redis
+# https://blog.container-solutions.com/running-docker-containers-with-systemd
 cat >openhems.service <<EOF
 [Unit]
 Description = OpenHEMS server (core and web).
-After = docker.target
+After=docker.service
+Requires=docker.service
+After=homeassisatant.service
+Requires=homeassisatant.service
 
 [Service]
-# User=openhems
-ExecStart = $OPENHEMS_PATH/src/openhems/main.py
+TimeoutStartSec=0
+Restart=always
+ExecStartPre=-/usr/bin/docker stop $DOCKER_NAME
+ExecStartPre=-/usr/bin/docker rm $DOCKER_NAME
+ExecStartPre=/usr/bin/docker pull $DOCKER_NAME
+ExecStart=/usr/bin/docker run --rm --name $DOCKER_NAME -v $OPENHEMS_PATH/config:/app/config -v $OPENHEMS_LOGPATH:/log -p 8000:8000 --link homeassistant.service:homeassistant openhomesystem22/openhems:openhems
 StandardOutput=append:$OPENHEMS_LOGPATH/openhems.service.log
 StandardError=append:$OPENHEMS_LOGPATH/openhems.service.error.log
 SyslogIdentifier=OpenHEMS
-Restart=always
 
 [Install]
 WantedBy = multi-user.target
