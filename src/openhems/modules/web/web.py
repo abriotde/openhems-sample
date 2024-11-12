@@ -126,13 +126,13 @@ class OpenhemsHTTPServer():
 		print("context", OPENHEMS_CONTEXT)
 
 	def __init__(self, mylogger, schedule, port=8000):
-		testVPN()
 		self.logger = mylogger
 		self.schedule = schedule
 		self.port = port
 		# pylint: disable=global-statement
 		global OPENHEMS_CONTEXT
 		OPENHEMS_CONTEXT = self
+		testVPN()
 
 	def run(self):
 		"""

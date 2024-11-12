@@ -6,12 +6,14 @@ Check common functionnality
 
 import sys
 import unittest
+import logging
 from datetime import datetime
 from pathlib import Path
 # pylint: disable=wrong-import-position
 # pylint: disable=import-error
 sys.path.append(str(Path(__file__).parents[1] / "src"))
 from openhems.modules.energy_strategy.offpeak_strategy import OffPeakStrategy
+logger = logging.getLogger(__name__)
 
 class TestOffPeakStrategy(unittest.TestCase):
 	"""
@@ -27,7 +29,7 @@ class TestOffPeakStrategy(unittest.TestCase):
 		"""
 		# print("test_checkRange")
 		# Check range contains midnight
-		t = OffPeakStrategy(None, [["22:00:00","06:00:00"]])
+		t = OffPeakStrategy(logger, None, [["22:00:00","06:00:00"]])
 		# Check for sensitive time for midnight
 		t.checkRange(datetime(2024, 7, 11, 23, 00, 00))
 		self.assertTrue(t.inOffpeakRange)
@@ -36,7 +38,7 @@ class TestOffPeakStrategy(unittest.TestCase):
 		self.assertFalse(t.inOffpeakRange)
 		self.assertEqual(t.rangeEnd.strftime("%H%M%S"), "220000")
 		# Check for 2 ranges
-		t = OffPeakStrategy(None, [["10:00:00","11:30:00"],["14:00:00","16:00:00"]])
+		t = OffPeakStrategy(logger, None, [["10:00:00","11:30:00"],["14:00:00","16:00:00"]])
 		t.checkRange(datetime(2024, 7, 11, 15, 00, 00))
 		self.assertTrue(t.inOffpeakRange)
 		self.assertEqual(t.rangeEnd.strftime("%H%M%S"), "160000")
