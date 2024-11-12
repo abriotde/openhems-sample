@@ -45,7 +45,7 @@ class Updater:
 		tmpDir = Path(os.environ.get('tmpDir', '/tmp'))
 		projectName = "openhems-sample"
 		myupdater = Updater(projectName, path, tmpDir=tmpDir, user=user, branch=branch)
-		myupdater.addSubmodule("emhass", "lib/emhass", maintainer="davidusb-geek")
+		# myupdater.addSubmodule("emhass", "lib/emhass", maintainer="davidusb-geek")
 		return myupdater
 
 	def __init__(self, projectName, path, *, tmpDir:Path="/tmp", user="root", branch="main",
@@ -191,28 +191,41 @@ class Updater:
 		zipfile = self.tmpDir / (self.projectName+"-"+self.branch+".zip")
 		if os.path.exists(zipfile):
 			os.remove(zipfile)
-		res = requests.get(self.getZipUrl(), timeout=30)
-		with open(zipfile , 'wb') as fd:
+		url = self.getZipUrl()
+		print("Download ", url)
+		res = requests.get(url, timeout=30)
+		with zipfile.open('wb') as fd:
 			fd.write(res.content)
-		with ZipFile(zipfile, 'r') as zf:
-			zf.extractall()
-			zf.close()
-		self.copyOnProdFromFileList(self.tmpDir / (self.projectName+"-"+self.branch))
-		return True
+			with ZipFile(zipfile, 'r') as zf:
+				print("Extract ", zipfile)
+				zf.extractall(self.tmpDir)
+				zf.close()
+				return self.copyOnProdFromFileList(
+					self.tmpDir / (self.projectName+"-"+self.branch)
+				)
+		return False
 
 	def copyOnProdFromFileList(self, tmpPath):
 		"""
 		Copy on prod a limited filelist.
 		"""
+		print("Copy on prod ", tmpPath, " => ", self.path)
 		path =  tmpPath / 'scripts/files.lst'
 		with path.open('r', encoding="utf-8") as exeList:
 			for file in exeList.readlines():
-				filepath = path / (file.strip())
+				filepath = tmpPath / (file.strip())
 				if filepath.is_file():
+					print("chmod 755 ", filepath)
 					filepath.chmod(0o755)
-		for subdir in ["src","img","scripts", "version"]:
-			ok = os.system('rsync -apzh --delete "'+str(path)\
-				+"/"+subdir+'" "'+str(self.path)+'/"')
+				else:
+					print("ERROR : chmod 755 ", filepath)
+		for subdir in ["src","img","scripts", "version", "data"]:
+			spath = tmpPath / subdir
+			print(" - ",str(spath))
+			if spath.is_dir():
+				ok = os.system('rsync -apzh "'+str(spath)+'" "'+str(self.path)+'/"')
+			else:
+				ok = os.system('rsync -pzh "'+str(spath)+'" "'+str(self.path)+'/"')
 			if ok!=0:
 				print("ERROR : OpenHEMS/Update : Fail copy directory '"+subdir+"'")
 				return False
@@ -224,13 +237,14 @@ class Updater:
 		"""
 		Copy on prod folder directory except some know files (.git)
 		"""
+		print("Copy on prod repository ",tmpPath," / ",relativPath)
 		if relativPath is None:
 			relativPath = Path('.')
 		origin = tmpPath / relativPath
 		destination = self.path / relativPath
 		if not destination.is_dir():
 			os.mkdir(destination)
-		for file in origin.listdir():
+		for file in os.listdir(origin):
 			if file not in ['.', '..', 'config']  and not file.find('.git'):
 				src = origin / file
 				if src.is_dir():
@@ -242,6 +256,7 @@ class Updater:
 		"""
 		Copy on prod a single file
 		"""
+		print("Copy on prod file ",tmpPath," / ",relativPath)
 		os.rename(tmpPath / relativPath, self.path / relativPath)
 
 	def copyOnProdExcept(self, tmpPath):
@@ -294,6 +309,7 @@ class Updater:
 			return True
 		print("No new version available. Nothing more to do.")
 		return True
+
 	def restartOpenHEMSServer(self):
 		"""
 		Restart OpenHEMS server.
@@ -303,7 +319,4 @@ class Updater:
 		os.system('systemctl start openhems.service')
 
 updater = Updater.initFromEnv()
-print(updater.getRawUrl(".gitmodules"))
-print(updater.getRawUrl(".git/modules/lib/emhass/HEAD"))
-print(updater.updateFromGitClone())
-# updater.check4update()
+updater.check4update()
