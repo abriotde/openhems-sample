@@ -8,14 +8,14 @@
   ## docker run -d --name openhems openhems
   ## docker exec -it openhems bash
   ## docker run --rm -it -p 8000:8000 --name openhems openhems:latest
-  ## docker run --rm -it -p 8000:8000 --name openhems -v ./config/openhems.yaml:/app/config/openhems.yaml -v ./config/secrets_emhass.yaml:/app/config/secrets_emhass.yaml -v ./config/config_emhass.yaml:/app/config/config_emhass.yaml -v ./log:/log openhems:latest
+  ## docker run --rm -it -p 8000:8000 --name openhems -v ./config/:/app/config/ -v /var/log/openhems:/log openhems:latest
 
 # armhf,amd64,armv7,aarch64
 ARG TARGETARCH
 # armhf=raspbian, amd64,armv7,aarch64=debian
 ARG os_version=debian
 
-FROM ghcr.io/home-assistant/$TARGETARCH-base-$os_version:bookworm AS base
+FROM debian:stable AS base
 
 # check if TARGETARCH was passed by build-arg
 ARG TARGETARCH
@@ -112,8 +112,8 @@ ADD . /app/
 # options.json file will be automatically generated and passed from Home Assistant using the addon
 
 #set python env variables
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
 # Docker Labels for hass
 LABEL \
