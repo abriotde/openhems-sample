@@ -129,7 +129,7 @@ def main():
 		  			help='File path to YAML configuration file.')
 	parser.add_argument('-p', '--port', type=int, default=0,
 		  			help='HTTP web server port.')
-	parser.add_argument('-l', '--logfile', type=str, default=0,
+	parser.add_argument('-l', '--logfile', type=str, default='',
 		  			help='Log file path.')
 	args = parser.parse_args()
 	app = OpenHEMSApplication(args.conf, port=args.port, logfilepath=args.logfile)
