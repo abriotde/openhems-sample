@@ -4,6 +4,7 @@
 # https://wiki.crowncloud.net/index.php?How_to_Install_Python_3_11_on_Debian_11 (3.11.10)
 # virtualenv --python="/usr/bin/python2.6" "/path/to/new/virtualenv/"
 # https://www.tderflinger.com/using-systemd-to-start-a-python-application-with-virtualenv
+# https://hub.docker.com/r/linuxserver/wireguard
 
 source config.sh
 source functions.sh

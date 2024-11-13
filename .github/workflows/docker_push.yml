@@ -1,3 +1,7 @@
+# Inspired by
+# https://docs.docker.com/build/ci/github-actions/multi-platform/
+# template modified from: https://docs.docker.com/build/ci/github-actions/multi-platform/ & https://docs.github.com/en/actions/use-cases-and-examples/publishing-packages/publishing-docker-images
+# docker run --rm -it ghcr.io/abriotde/openhems-sample:main
 name: Docker Image CI
 
 on:
