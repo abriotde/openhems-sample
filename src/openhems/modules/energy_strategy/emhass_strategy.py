@@ -131,7 +131,7 @@ class EmhassStrategy(EnergyStrategy):
 		Return a tuple of datetime and rows for datetime = "now", 
 			with previous (If present) and Next one
 		"""
-		if self.data is None: # Case no deferables
+		if self.data is None or isinstance(self.data, bool): # Case no deferables or Error
 			return ((None, None, None), (None, None, None))
 		if now is None:
 			now = datetime.now(self.timezone)
