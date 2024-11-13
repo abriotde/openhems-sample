@@ -115,7 +115,7 @@
 <div class="page">
 	<h1>Devices program</h1>
 	<div id="network"></div>
-	<input id="valid" type="image" src="{{request.static_url('modules.web:../../../img/correct_32.ico')}}" onclick="onSave()" ></input>
+	<input id="valid" type="image" src="{{request.static_url('openhems.modules.web:../../../../img/correct_32.ico')}}" onclick="onSave()" ></input>
 </div>
 <script>
 var nodes = {{ nodes|tojson }};
@@ -174,7 +174,7 @@ function initMainPage() {
 }
 function changeSthg() {
 	// console.log("changeSthg()");
-	document.getElementById("valid").src="{{request.static_url('modules.web:../../../img/save_32.ico')}}";
+	document.getElementById("valid").src="{{request.static_url('openhems.modules.web:../../../../img/save_32.ico')}}";
 }
 function onSave() {
 	// console.log("onSave()");

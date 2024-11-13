@@ -20,6 +20,7 @@ sudo docker run -d \
   --restart=unless-stopped \
   -v $OPENHEMS_PATH/config:/app/config \
   -v $OPENHEMS_LOGPATH:/log \
+  -e TZ=$MY_TIME_ZONE \
   -p 8000:8000 \
   openhomesystem22/openhems:openhems
 

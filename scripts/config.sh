@@ -17,6 +17,7 @@ OPENHEMS_PATH=/home/olimex/openhems-sample
 OPENHEMS_BRANCH=main
 TMP_DIR=/tmp
 VPN_IP=10.0.0.2
+MY_TIME_ZONE=`cat /etc/timezone`
 
 source ../config/config.inc.sh
 

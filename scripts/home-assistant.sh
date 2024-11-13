@@ -35,6 +35,7 @@ sudo docker run -d \
   --restart=unless-stopped \
   -v $HOMEASSISTANT_DIR/config:/config \
   -v /run/dbus:/run/dbus:ro \
+  -e TZ=$MY_TIME_ZONE \
   --network=host \
   ghcr.io/home-assistant/home-assistant:stable
 

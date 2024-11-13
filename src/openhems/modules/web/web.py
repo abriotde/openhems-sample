@@ -145,7 +145,7 @@ class OpenhemsHTTPServer():
 			config.add_route('params', '/params')
 			config.add_route('vpn', '/vpn')
 			# config.add_route('favicon.ico', '/favicon.ico')
-			config.add_static_view(name='img', path='modules.web:../../../img')
+			config.add_static_view(name='img', path='openhems.modules.web:../../../../img')
 			config.scan()
 			app = config.make_wsgi_app()
 		host = '0.0.0.0'

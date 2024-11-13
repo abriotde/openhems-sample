@@ -14,8 +14,10 @@
 ARG TARGETARCH
 # armhf=raspbian, amd64,armv7,aarch64=debian
 ARG os_version=debian
+# if (TARGETARCH==armhf)
+# 	{os_version=raspbian}
 
-FROM debian:stable AS base
+FROM ghcr.io/home-assistant/$TARGETARCH-base-$os_version:bookworm AS base
 
 # check if TARGETARCH was passed by build-arg
 ARG TARGETARCH
