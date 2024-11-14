@@ -157,7 +157,7 @@ class EmhassStrategy(EnergyStrategy):
 		if not stop: # should be impossible : Relaunch emhassEval()?
 			self.logger.error("No row in data previsions from EMHASS for current datetime.")
 			return ((None, None, None), (None, None, None))
-		return ([prevDT, curDT, nextDT], [prevRow, curRow, nextRow])
+		return [[prevDT, curDT, nextDT], [prevRow, curRow, nextRow]]
 
 	def emhassApply(self, cycleDuration, now=None):
 		"""
