@@ -108,7 +108,7 @@ class EmhassAdapter:
 		inputDataDict = em.set_input_data_dict(self._emhassConf, costfun,
 				params, runtimeparams, actionName, self.logger)
 
-		assert(not isinstance(inputDataDict, bool))
+		assert not isinstance(inputDataDict, bool)
 		if isinstance(inputDataDict, bool):
 			return False
 

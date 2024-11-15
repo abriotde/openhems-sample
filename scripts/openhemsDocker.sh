@@ -11,7 +11,7 @@ source functions.sh
 OPENHEMS_LOGPATH=/var/log/openhems
 
 echo "Install OpenHEMS server"
-sudo apt install -y anacron wireguard logrotate
+sudo apt install -y anacron wireguard logrotate incron
 sudo mkdir -p $OPENHEMS_LOGPATH
 
 sudo docker run -d \
@@ -20,11 +20,26 @@ sudo docker run -d \
   --restart=unless-stopped \
   -v $OPENHEMS_PATH/config:/app/config \
   -v $OPENHEMS_LOGPATH:/log \
+  -v /data:/opt
   -e TZ=$MY_TIME_ZONE \
   -p 8000:8000 \
   openhomesystem22/openhems:openhems
 
-exitvimco
+exit
+
+
+echo "Set incrontab for VPN"
+grep root /etc/incron.allow
+if [ $? != 0 ]; then
+	echo root >> /etc/incron.allow
+fi
+mkdir -p /data/vpn/
+touch /data/vpn/request
+touch /data/vpn/response
+cat >incrontab.root <<EOF
+/data/vpn/request       IN_ATTRIB,IN_CLOSE_WRITE        $OPENHEMS_PATH/scripts/vpn_server.py
+EOF
+incrontab incrontab.root
 
 # ExecStart=/usr/local/bin/systemd-docker --cgroups name=systemd run --rm --name %n redis
 # https://blog.container-solutions.com/running-docker-containers-with-systemd

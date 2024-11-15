@@ -8,7 +8,7 @@
   ## docker run -d --name openhems openhems
   ## docker exec -it openhems bash
   ## docker run --rm -it -p 8000:8000 --name openhems openhems:latest
-  ## docker run --rm -it -p 8000:8000 --name openhems -v ./config/:/app/config/ -v /var/log/openhems:/log openhems:latest
+  ## docker run --rm -it -p 8000:8000 --name openhems -v /home/alberic/Documents/OpenHomeSystem/openhems-sample/config/:/app/config/ -v /home/alberic/Documents/OpenHomeSystem/openhems-sample/log:/log ghcr.io/abriotde/openhems-sample:main
 
 # armhf,amd64,armv7,aarch64
 ARG TARGETARCH

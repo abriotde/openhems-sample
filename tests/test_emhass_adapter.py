@@ -37,7 +37,7 @@ class TestEmhassAdapter(unittest.TestCase):
 		data = emhass.performOptim()
 		self.assertIsInstance(data, pandas.core.frame.DataFrame)
 		self.assertEqual(type(data) , pandas.core.frame.DataFrame)
-		for timestamp, row in data.iterrows():
+		for _, row in data.iterrows():
 			# print("timestamp:", type(timestamp)) # pandas._libs.tslibs.timestamps.Timestamp
 			for index, _ in enumerate(deferables):
 				val = row.get('P_deferrable'+str(index), None)

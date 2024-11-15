@@ -10,5 +10,3 @@ scripts/openhems.sh
 src/openhems/main.py
 src/openhems/modules/web/web.py
 src/openhems/server.py
-src/openhems/test.py
-src/openhems/testAPI.py
