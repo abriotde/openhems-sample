@@ -70,7 +70,7 @@ class OpenHEMSApplication:
 		"""
 		return self.logger
 
-	def __init__(self, yamlConfFilepath, *, port=0, logfilepath=''):
+	def __init__(self, yamlConfFilepath, *, port=0, logfilepath='', inDocker=False):
 		# Temporary logger
 		self.logger = logging.getLogger(__name__)
 		configurator = ConfigurationManager(self.logger)
@@ -94,7 +94,9 @@ class OpenHEMSApplication:
 		network = networkUpdater.getNetwork()
 		self.server = OpenHEMSServer(self.logger, network, configurator)
 		port = port if port>0 else configurator.get("server.port")
-		self.webserver = OpenhemsHTTPServer(self.logger, network.getSchedule(), port)
+		inDocker = inDocker or configurator.get("server.inDocker").lower()=="true"
+		self.webserver = OpenhemsHTTPServer(self.logger,
+			network.getSchedule(), port, inDocker)
 		network.notify("Start OpenHEMS.")
 
 	def runManagementServer(self):
@@ -127,13 +129,18 @@ def main():
 	defaultConfFilepath = Path(__file__).parents[2] / "config/openhems.yaml"
 	parser = argparse.ArgumentParser()
 	parser.add_argument('-c', '--conf', type=str, default=str(defaultConfFilepath),
-		  			help='File path to YAML configuration file.')
+		help='File path to YAML configuration file.')
 	parser.add_argument('-p', '--port', type=int, default=0,
-		  			help='HTTP web server port.')
+		help='HTTP web server port.')
+	parser.add_argument('-d', '--docker', type=bool, default=False,
+		help="""If this option is set, run as it run on docker container.
+			If not set, consider it is not in docker
+			except if configuration key server.inDocker = True """)
 	parser.add_argument('-l', '--logfile', type=str, default='',
-		  			help='Log file path.')
+		help='Log file path.')
 	args = parser.parse_args()
-	app = OpenHEMSApplication(args.conf, port=args.port, logfilepath=args.logfile)
+	app = OpenHEMSApplication(args.conf, port=args.port,
+		logfilepath=args.logfile, inDocker=args.docker)
 	app.run()
 
 if __name__ == "__main__":
