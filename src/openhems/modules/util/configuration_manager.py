@@ -4,8 +4,8 @@ Let allow get configuration by key, init with a default value.
 """
 
 from pathlib import Path
-from .cast_utility import CastUtililty
 import yaml
+from .cast_utility import CastUtililty
 
 class ConfigurationException(Exception):
 	"""

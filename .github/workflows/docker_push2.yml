@@ -2,13 +2,13 @@
 # https://docs.docker.com/build/ci/github-actions/multi-platform/
 # template modified from: https://docs.docker.com/build/ci/github-actions/multi-platform/ & https://docs.github.com/en/actions/use-cases-and-examples/publishing-packages/publishing-docker-images
 # docker run --rm -it ghcr.io/abriotde/openhems-sample:main
-name: Docker Image CI
+name: Docker Image CI for docker.io
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "toto" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "toto" ]
 
 env:
   REGISTRY: hub.docker.com

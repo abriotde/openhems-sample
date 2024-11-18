@@ -68,19 +68,27 @@ class VpnDriverIncronServer:
 		return ''
 
 	def startVPN(self):
+		"""
+		Start the VPN using 'driver'
+		"""
 		self.logger.info("Start VPN")
 		self.driver.startVPN()
 		self.testVPN()
 	def stopVPN(self):
+		"""
+		Stop the VPN using 'driver'
+		"""
 		self.logger.info("Stop VPN")
 		self.driver.startVPN(False)
 		self.testVPN()
 	def testVPN(self):
+		"""
+		Test the VPN using 'driver'
+		"""
 		up = self.driver.testVPN()
 		response = self.response(up)
 		self.logger.info("VPN Status = '%s'", response)
 		return up
-		
 
 	def run(self):
 		"""
@@ -98,6 +106,13 @@ class VpnDriverIncronServer:
 				self.logger.error("Uknwon VPN action : '%s'", action)
 
 	def runServer(self):
+		"""
+		Run a real server witch check the request file...
+		 It is not the goal but used when there is no incron
+		  (Debian Buleseye).
+		 It should be better to use FIFO... 
+		 but  won't be compatible with incron.
+		"""
 		up = self.driver.testVPN()
 		lastAction = "start" if up else "stop"
 		while True:
