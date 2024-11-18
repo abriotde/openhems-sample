@@ -2,6 +2,7 @@
 Thos module is used to monitor/drive VPN.
 """
 import subprocess
+import time
 from pathlib import Path
 
 class VpnDriverWireguard:
@@ -53,37 +54,66 @@ class VpnDriverIncronServer:
 		self.responseFile = self.pathVpn / 'response'
 		self.driver = VpnDriverWireguard(logger)
 
-	def response(self):
+	def response(self, up=None):
 		"""
 		Write VPN status on self.responseFile.
 		"""
-		up = self.driver.testVPN()
+		if up is None:
+			up = self.driver.testVPN()
 		msg = "up" if up else "down"
 		with self.responseFile.open("w", encoding='utf-8') as f:
 			f.write(msg)
 			self.logger.info("VPN Status = %s", msg)
-			return msg
+			return up
 		return ''
+
+	def startVPN(self):
+		self.logger.info("Start VPN")
+		self.driver.startVPN()
+		self.testVPN()
+	def stopVPN(self):
+		self.logger.info("Stop VPN")
+		self.driver.startVPN(False)
+		self.testVPN()
+	def testVPN(self):
+		up = self.driver.testVPN()
+		response = self.response(up)
+		self.logger.info("VPN Status = '%s'", response)
+		return up
+		
 
 	def run(self):
 		"""
 		The function is called, each time self.requestFile is accessed.
 		"""
 		with self.requestFile.open("r", encoding='utf-8') as f:
-			action = f.read()
+			action = f.read().strip()
 			if action == "start":
-				self.logger.info("Start VPN")
-				self.driver.startVPN()
-				self.response()
+				self.startVPN()
 			elif action == "stop":
-				self.logger.info("Stop VPN")
-				self.driver.startVPN(False)
-				self.response()
+				self.stopVPN()
 			elif action == "test":
-				response = self.response()
-				self.logger.info("VPN Status = '%s'", response)
+				self.testVPN()
 			else:
 				self.logger.error("Uknwon VPN action : '%s'", action)
+
+	def runServer(self):
+		up = self.driver.testVPN()
+		lastAction = "start" if up else "stop"
+		while True:
+			with self.requestFile.open("r", encoding='utf-8') as f:
+				action = f.read().strip()
+				if lastAction!=action:
+					if action == "start":
+						self.startVPN()
+					elif action == "stop":
+						self.stopVPN()
+					elif action == "test":
+						up = self.testVPN()
+					else:
+						self.logger.error("Uknwon VPN action : '%s'", action)
+					lastAction = action
+			time.sleep(10)
 
 class VpnDriverIncronClient:
 	"""
