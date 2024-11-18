@@ -28,10 +28,19 @@ EOF
 
 function updateOpenHEMS {
 	cd $OPENHEMS_PATH/scripts
-	./autoupdate.sh
+	mkdir -p $TMP_DIR/openhems-sample
+	TMP_DIR=$TMP_DIR/openhems-sample
+	export OPENHEMS_PATH
+	export OPENHEMS_USER
+	export OPENHEMS_BRANCH
+	export TMP_DIR
+	$OPENHEMS_PATH/scripts/autoupdate.py
 }
 
 # TODO : Install custom Python + venv ?
+# https://wiki.crowncloud.net/index.php?How_to_Install_Python_3_11_on_Debian_11 (3.11.10)
+# virtualenv --python="/usr/bin/python2.6" "/path/to/new/virtualenv/"
+# https://www.tderflinger.com/using-systemd-to-start-a-python-application-with-virtualenv
 
 # Venv
 # sudo apt install libffi-dev

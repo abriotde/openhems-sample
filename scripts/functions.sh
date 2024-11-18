@@ -26,6 +26,11 @@ function activate_service {
 }
 
 function installDocker {
+	if docker run hello-world 2>&1 >/dev/null; then
+		echo "Docker is ever installed"
+		return
+	fi
+
 	echo "Install docker"
 	# https://docs.docker.com/engine/install/debian/
 	for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do sudo apt remove $pkg; done

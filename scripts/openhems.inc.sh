@@ -32,6 +32,7 @@ EOF
 	sudo systemctl restart mosquitto
 }
 
+# https://hub.docker.com/r/linuxserver/wireguard
 function installVPN {
 	echo "Install VPN"
 	sudo apt install -y wireguard
@@ -91,3 +92,12 @@ EOF
 	activate_service logrotate
 }
 
+function installAutoupdate {
+	cat >openhems-update <<EOF
+#!/bin/bash
+cd /home/olimex/openhems-sample/scripts
+/home/olimex/openhems-sample/scripts/openhems.sh update
+EOF
+	chmod +x openhems-update
+	sudo mv openhems-update /etc/cron.weekly/openhems-update
+}

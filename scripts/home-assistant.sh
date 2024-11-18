@@ -99,7 +99,7 @@ function updateHomeAsssistant {
 	# TODO : Backup home-assistant...
 	docker stop $DOCKER_HA_NAME
 	docker container rm $DOCKER_HA_NAME
-	docker rmi $DOCKER_HA_NAME
+	# docker rmi ghcr.io/home-assistant/home-assistant:stable
 	# tar -xOf <backup_tar_file> "./homeassistant.tar.gz" | tar --strip-components=1 -zxf - -C <restore_directory>
 	launchDocker $DOCKER_HA_NAME
 	wait_homeassistant_container_up
