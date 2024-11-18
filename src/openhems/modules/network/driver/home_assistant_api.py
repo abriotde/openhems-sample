@@ -115,8 +115,10 @@ class HomeAssistantAPI(HomeStateUpdater):
 			expectStr = "on" if isOn else "off"
 			# pylint: disable=protected-access
 			entityId = node._isOn.nameid # (Should do in an other way?)
-			data = {"entityId": entityId}
-			response = self.callAPI("/services/switch/turn_"+expectStr, data)
+			response = self.callAPI(
+				"/services/switch/turn_"+expectStr,
+				{"entity_id": entityId}
+			)
 			if len(response)==0: # Case there is no change in switch position
 				# print("HomeAssistantAPI.switch"+expectStr+"(",entityId,") : Nothing to do.")
 				return isOn

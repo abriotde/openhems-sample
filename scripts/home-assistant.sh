@@ -5,49 +5,21 @@
 source config.sh
 source functions.sh
 
-echo "Install docker"
-# https://docs.docker.com/engine/install/debian/
-for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do sudo apt remove $pkg; done
 
-# Add Docker's official GPG key:
-sudo apt update
-sudo apt install -y ca-certificates curl
-sudo install -m 0755 -d /etc/apt/keyrings
-sudo curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
-sudo chmod a+r /etc/apt/keyrings/docker.asc
-# Add the repository to Apt sources:
-echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian \
-  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
-  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-sudo apt update
-# Add $USER to docker group
-sudo groupadd docker
-sudo usermod -aG docker $OPENHEMS_USER
-sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+function installHomeAsssistant {
+	echo "Run Home-Assistant"
+	mkdir -p $HOMEASSISTANT_DIR
+	mkdir -p $HOMEASSISTANT_CONFIG_PATH
+	launchDocker $DOCKER_HA_NAME
+	wait_homeassistant_container_up
 
-echo "Run Home-Assistant"
-mkdir -p $HOMEASSISTANT_DIR
-mkdir -p $HOMEASSISTANT_CONFIG_PATH
-sudo docker run -d \
-  --name $DOCKER_HA_NAME \
-  --privileged \
-  --restart=unless-stopped \
-  -v $HOMEASSISTANT_DIR/config:/config \
-  -v /run/dbus:/run/dbus:ro \
-  -e TZ=$MY_TIME_ZONE \
-  --network=host \
-  ghcr.io/home-assistant/home-assistant:stable
+	cp $OPENHEMS_PATH/config/dashboards.yaml $OPENHEMS_PATH/config/configuration.yaml $HOMEASSISTANT_CONFIG_PATH
 
-wait_homeassistant_container_up
-
-cp $OPENHEMS_PATH/config/dashboards.yaml $OPENHEMS_PATH/config/configuration.yaml $HOMEASSISTANT_CONFIG_PATH
-
-# Systemd
-# ExecStart=/usr/local/bin/systemd-docker --cgroups name=systemd run --rm --name %n redis
-# go install github.com/ibuildthecloud/systemd-docker@latest
-# https://blog.container-solutions.com/running-docker-containers-with-systemd
-cat >homeassistant.service <<EOF
+	# Systemd
+	# ExecStart=/usr/local/bin/systemd-docker --cgroups name=systemd run --rm --name %n redis
+	# go install github.com/ibuildthecloud/systemd-docker@latest
+	# https://blog.container-solutions.com/running-docker-containers-with-systemd
+	cat >homeassistant.service <<EOF
 [Unit]
 Description = Home-Assistant server.
 After=docker.service
@@ -67,40 +39,42 @@ SyslogIdentifier=HomeAssistant
 [Install]
 WantedBy = multi-user.target
 EOF
-sudo mv homeassistant.service /lib/systemd/system/
-ln -s /lib/systemd/system/homeassistant.service /etc/systemd/system/multi-user.target.wants
+	sudo mv homeassistant.service /lib/systemd/system/
+	ln -s /lib/systemd/system/homeassistant.service /etc/systemd/system/multi-user.target.wants
 
 
 
-echo "Install HACS"
-# https://hacs.xyz/docs/setup/download/
-mkdir -p $HOMEASSISTANT_CONFIG_PATH/custom_components
-cd $HOMEASSISTANT_CONFIG_PATH
-wget -O - https://get.hacs.xyz | bash -
+	echo "Install HACS"
+	# https://hacs.xyz/docs/setup/download/
+	mkdir -p $HOMEASSISTANT_CONFIG_PATH/custom_components
+	cd $HOMEASSISTANT_CONFIG_PATH
+	wget -O - https://get.hacs.xyz | bash -
 
-docker stop homeassistant
-sleep 3
-docker start homeassistant
-wait_homeassistant_container_up
+	docker stop homeassistant
+	sleep 3
+	docker start homeassistant
+	wait_homeassistant_container_up
+}
 
-echo "Install HTTPS : reverse-proxy NginX"
-# sudo add-apt-repository ppa:certbot/certbot
-# sudo apt update
-sudo apt install -y nginx software-properties-common python3-certbot-nginx
-sudo certbot --nginx
-cat >reverse-proxy-ssl.conf <<EOF
+function installHttps {
+	echo "Install HTTPS : reverse-proxy NginX"
+	# sudo add-apt-repository ppa:certbot/certbot
+	# sudo apt update
+	sudo apt install -y nginx software-properties-common python3-certbot-nginx
+	sudo certbot --nginx
+	cat >reverse-proxy-ssl.conf <<EOF
 map \$http_upgrade \$connection_upgrade {
-    default upgrade;
-    ''      close;
+	default upgrade;
+	''      close;
 }
 server {
-    listen 443 ssl;
-    server_name         $DOMAINNAME;
-    ssl_certificate     /etc/letsencrypt/live/$DOMAINNAME/cert.pem;
-    ssl_certificate_key /etc/letsencrypt/live/$DOMAINNAME/privkey.pem;
-    access_log /var/log/nginx/reverse-access.log;
-    error_log /var/log/nginx/reverse-error.log;
-    location / {
+	listen 443 ssl;
+	server_name         $DOMAINNAME;
+	ssl_certificate     /etc/letsencrypt/live/$DOMAINNAME/cert.pem;
+	ssl_certificate_key /etc/letsencrypt/live/$DOMAINNAME/privkey.pem;
+	access_log /var/log/nginx/reverse-access.log;
+	error_log /var/log/nginx/reverse-error.log;
+	location / {
 		proxy_pass http://127.0.0.1:8123;
 		proxy_set_header Host \$host;
 		proxy_redirect http:// https://;
@@ -109,12 +83,53 @@ server {
 		proxy_set_header Upgrade \$http_upgrade;
 		proxy_set_header Connection \$connection_upgrade;
 		#   proxy_set_header X-Forwarded-Port  443;
-    }
+	}
 }
 EOF
-sudo cp reverse-proxy-ssl.conf /etc/nginx/sites-available/
-sudo ln -s /etc/nginx/sites-available/reverse-proxy-ssl.conf /etc/nginx/sites-enabled/reverse-proxy-ssl.conf
-sudo unlink /etc/nginx/sites-enabled/default
-sudo nginx -t
-sudo service nginx reload
+	sudo cp reverse-proxy-ssl.conf /etc/nginx/sites-available/
+	sudo ln -s /etc/nginx/sites-available/reverse-proxy-ssl.conf /etc/nginx/sites-enabled/reverse-proxy-ssl.conf
+	sudo unlink /etc/nginx/sites-enabled/default
+	sudo nginx -t
+	sudo service nginx reload
+}
+function updateHomeAsssistant {
+	# https://www.home-assistant.io/integrations/backup/
+	# http://192.168.1.202:8123/developer-tools/service?service=backup.create
+	docker pull ghcr.io/home-assistant/home-assistant:stable
+	# TODO : Backup home-assistant...
+	docker stop $DOCKER_HA_NAME
+	docker container rm $DOCKER_HA_NAME
+	docker rmi $DOCKER_HA_NAME
+	# tar -xOf <backup_tar_file> "./homeassistant.tar.gz" | tar --strip-components=1 -zxf - -C <restore_directory>
+	launchDocker $DOCKER_HA_NAME
+	wait_homeassistant_container_up
+}
 
+if [[ $# != 1 ]] ; then
+	echo "ERROR : Missing argument (install|start|stop|update)"
+	exit  1
+fi
+
+if [[ $1 == "start" ]]; then
+	echo "Start $DOCKER_HA_NAME"
+	launchDocker $DOCKER_HA_NAME
+else if [[ $1 == "stop" ]]; then
+	echo "Stop $DOCKER_HA_NAME"
+	docker stop $DOCKER_HA_NAME
+	docker ps
+else if [[ $1 == "install" ]]; then
+	echo "Install $DOCKER_HA_NAME docker"
+	installDocker
+	installHomeAsssistant
+	installHttps
+else if [[ $1 == "update" ]]; then
+	echo "Update $DOCKER_HA_NAME docker"
+	echo " It will take a long time"
+	updateHomeAsssistant
+else
+	echo "ERROR : Ivalid argument '$1' (install|start|stop|update)"
+	exit  1
+fi
+fi
+fi
+fi

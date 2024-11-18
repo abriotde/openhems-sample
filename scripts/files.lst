@@ -8,5 +8,6 @@ scripts/init_server.sh
 scripts/installFromScratch.sh
 scripts/openhems.sh
 src/openhems/main.py
+src/openhems/check_homeassisant_api.py
 src/openhems/modules/web/web.py
 src/openhems/server.py

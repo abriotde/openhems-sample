@@ -23,10 +23,20 @@ sudo docker run -d \
   -v /data:/opt
   -e TZ=$MY_TIME_ZONE \
   -p 8000:8000 \
-  openhomesystem22/openhems:openhems
+  ghcr.io/abriotde/openhems-sample:main
 
 exit
 
+sudo docker run -d \
+  --name openhems \
+  --privileged \
+  --restart=unless-stopped \
+  -v $OPENHEMS_PATH/config:/app/config \
+  -v $OPENHEMS_LOGPATH:/log \
+  -v /data:/opt
+  -e TZ=Europe/Paris \
+  -p 8000:8000 \
+  ghcr.io/abriotde/openhems-sample:main
 
 echo "Set incrontab for VPN"
 grep root /etc/incron.allow
