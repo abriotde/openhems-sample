@@ -5,7 +5,6 @@ HTTP web server to give UI to configure OpenHEMS server:
 * Switch on/offf VPN
 * 
 """
-import subprocess
 import time
 import json
 from json import JSONEncoder
@@ -13,6 +12,7 @@ from wsgiref.simple_server import make_server
 from pyramid.config import Configurator
 # from pyramid.response import Response
 from pyramid.view import view_config
+from .driver_vpn import VpnDriverWireguard, VpnDriverIncronClient
 # from .schedule import OpenHEMSSchedule
 
 # pylint: disable=unused-argument
@@ -40,32 +40,6 @@ def panel(request):
 	"""
 	return { "nodes": OPENHEMS_CONTEXT.schedule }
 
-def testVPN():
-	"""
-	Use 'ip a| grep "wg0:"' to test if Wireguard VPN is Up.
-	We could use "wg show" but it need to be root
-	@return: bool : True if VPN is up, false else
-	"""
-	with subprocess.Popen( "ip a| grep 'wg0:'", \
-				shell=True, stdout=subprocess.PIPE\
-			) as fd:
-		vpnInterfaces = fd.stdout.read()
-		vpnInterfaces = str(vpnInterfaces).strip()
-		nbInterfaces = len(vpnInterfaces)
-		ok = nbInterfaces>3
-		OPENHEMS_CONTEXT.logger.info("VPN is %s", 'up' if ok else 'down')
-		return ok
-	return False
-
-def startVPN(start:bool=True):
-	"""
-	@param start: bool: if False stop the Wireguard's VPN else start it.
-	"""
-	cmd = "wg-quick "+("up" if start else "down")+" wg0"
-	# Start the VPN
-	with subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE) as _:
-		pass
-
 @view_config(
 	route_name='params',
 	renderer='templates/params.jinja2'
@@ -74,7 +48,7 @@ def params(request):
 	"""
 	Get all configurables params for params page and there value.
 	"""
-	return { "vpn": "up" if testVPN() else "down" }
+	return { "vpn": "up" if OPENHEMS_CONTEXT.vpnDriver.testVPN() else "down" }
 
 @view_config(
     route_name='vpn',
@@ -87,11 +61,11 @@ def vpn(request):
 	print("request.GET", request.GET)
 	connect = request.GET.get("connect")=="true"
 	if connect:
-		startVPN()
+		OPENHEMS_CONTEXT.vpnDriver.startVPN()
 	else:
-		startVPN(False)
+		OPENHEMS_CONTEXT.vpnDriver.startVPN(False)
 	time.sleep(3)
-	connected = testVPN()
+	connected = OPENHEMS_CONTEXT.vpnDriver.testVPN()
 	OPENHEMS_CONTEXT.logger.info("/vpn?%sconnect : {%s}",
 		'' if connect else 'dis', 
 		connected==connect)
@@ -125,14 +99,19 @@ class OpenhemsHTTPServer():
 		"""
 		print("context", OPENHEMS_CONTEXT)
 
-	def __init__(self, mylogger, schedule, port=8000):
+	def __init__(self, mylogger, schedule, port=8000, inDocker=False):
 		self.logger = mylogger
 		self.schedule = schedule
 		self.port = port
+		if inDocker:
+			vpnDriver = VpnDriverIncronClient(mylogger)
+		else:
+			vpnDriver = VpnDriverWireguard(mylogger)
+		self.vpnDriver = vpnDriver
 		# pylint: disable=global-statement
 		global OPENHEMS_CONTEXT
 		OPENHEMS_CONTEXT = self
-		testVPN()
+		OPENHEMS_CONTEXT.vpnDriver.testVPN()
 
 	def run(self):
 		"""
@@ -148,5 +127,7 @@ class OpenhemsHTTPServer():
 			config.add_static_view(name='img', path='openhems.modules.web:../../../../img')
 			config.scan()
 			app = config.make_wsgi_app()
-		server = make_server('0.0.0.0', self.port, app)
+		host = '0.0.0.0'
+		server = make_server(host, self.port, app)
+		self.logger.info("HTTP server is listening on '%s:%d'", host, self.port)
 		server.serve_forever()

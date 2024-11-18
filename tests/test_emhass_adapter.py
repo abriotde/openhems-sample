@@ -7,6 +7,7 @@ Check common functionnality
 import sys
 from pathlib import Path
 import unittest
+import logging
 import pandas
 # pylint: disable=wrong-import-position
 # pylint: disable=import-error
@@ -18,6 +19,8 @@ from openhems.modules.energy_strategy.driver.emhass_adapter import (
 )
 from openhems.main import OpenHEMSApplication
 from openhems.modules.energy_strategy import LOOP_DELAY_VIRTUAL
+
+logger = logging.getLogger(__name__)
 
 class TestEmhassAdapter(unittest.TestCase):
 	"""
@@ -32,15 +35,16 @@ class TestEmhassAdapter(unittest.TestCase):
 		"""
 		emhass.deferables = deferables
 		data = emhass.performOptim()
+		self.assertIsInstance(data, pandas.core.frame.DataFrame)
 		self.assertEqual(type(data) , pandas.core.frame.DataFrame)
-		for timestamp, row in data.iterrows():
-			print("timestamp:", type(timestamp)) # pandas._libs.tslibs.timestamps.Timestamp
+		for _, row in data.iterrows():
+			# print("timestamp:", type(timestamp)) # pandas._libs.tslibs.timestamps.Timestamp
 			for index, _ in enumerate(deferables):
 				val = row.get('P_deferrable'+str(index), None)
-				print("> ",timestamp.to_pydatetime(), " [",index,"] => ", val)
+				# print("> ",timestamp.to_pydatetime(), " [",index,"] => ", val)
 				self.assertTrue(val is not None)
 
-	def tost_setDeferrables(self):
+	def test_setDeferrables(self):
 		"""
 		Test if we can use EmhassAdapter and change on live deferables
 		"""
@@ -70,7 +74,6 @@ class TestEmhassAdapter(unittest.TestCase):
 		app = OpenHEMSApplication(configFile)
 		app.server.loop(LOOP_DELAY_VIRTUAL)
 		schedule = app.server.network.getSchedule()
-		print(schedule)
 		schedule['voiture'].setSchedule(90, "02:00")
 		app.server.loop(LOOP_DELAY_VIRTUAL)
 

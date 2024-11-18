@@ -108,6 +108,10 @@ class EmhassAdapter:
 		inputDataDict = em.set_input_data_dict(self._emhassConf, costfun,
 				params, runtimeparams, actionName, self.logger)
 
+		assert not isinstance(inputDataDict, bool)
+		if isinstance(inputDataDict, bool):
+			return False
+
 		optimConf = inputDataDict['opt'].optim_conf
 		optimConf['num_def_loads'] = len(self.deferables)
 		optimConf['P_deferrable_nom'] = [d.power for d in self.deferables]

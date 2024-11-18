@@ -131,7 +131,7 @@ class EmhassStrategy(EnergyStrategy):
 		Return a tuple of datetime and rows for datetime = "now", 
 			with previous (If present) and Next one
 		"""
-		if self.data is None: # Case no deferables
+		if self.data is None or isinstance(self.data, bool): # Case no deferables or Error
 			return ((None, None, None), (None, None, None))
 		if now is None:
 			now = datetime.now(self.timezone)
@@ -157,7 +157,7 @@ class EmhassStrategy(EnergyStrategy):
 		if not stop: # should be impossible : Relaunch emhassEval()?
 			self.logger.error("No row in data previsions from EMHASS for current datetime.")
 			return ((None, None, None), (None, None, None))
-		return ([prevDT, curDT, nextDT], [prevRow, curRow, nextRow])
+		return [[prevDT, curDT, nextDT], [prevRow, curRow, nextRow]]
 
 	def emhassApply(self, cycleDuration, now=None):
 		"""

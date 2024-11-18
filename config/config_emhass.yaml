@@ -2,7 +2,7 @@
 
 retrieve_hass_conf:
   freq: 30 # The time step to resample retrieved data from hass in minutes
-  days_to_retrieve: 2 # We will retrieve data from now and up to days_to_retrieve days
+  days_to_retrieve: 2 # We will retrieve data from now and up to days_to_retrieve days. Minimum is 2
   var_PV: 'sensor.tz3000_2putqrmw_ts011f_puissance_2' # Photovoltaic produced power sensor in Watts
   var_load: 'sensor.lixee_zlinky_tic_puissance_apparente' # Household power consumption sensor in Watts (deferrable loads should be substracted)
   load_negative: False # Set to True if the retrived load variable is negative by convention

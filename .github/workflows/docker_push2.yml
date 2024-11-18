@@ -2,17 +2,18 @@
 # https://docs.docker.com/build/ci/github-actions/multi-platform/
 # template modified from: https://docs.docker.com/build/ci/github-actions/multi-platform/ & https://docs.github.com/en/actions/use-cases-and-examples/publishing-packages/publishing-docker-images
 # docker run --rm -it ghcr.io/abriotde/openhems-sample:main
-name: Docker Image CI CI for ghcr.io
+name: Docker Image CI for docker.io
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "toto" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "toto" ]
 
 env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  REGISTRY: hub.docker.com
+  IMAGE_NAME: openhems
+  IMAGE_NAME_LOWER: openhems
 
 jobs:
   build:
@@ -33,9 +34,6 @@ jobs:
         ]
     steps:
     # Pull git repo and build each architecture image separately (with QEMU and Buildx)
-      - name: lowercase repo
-        run: |
-          echo "IMAGE_NAME_LOWER=${GITHUB_REPOSITORY,,}" >>${GITHUB_ENV}
       - name: Checkout the repository
         uses: actions/checkout@v4
       - name: Set up QEMU
@@ -46,8 +44,8 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@v5
@@ -63,7 +61,7 @@ jobs:
             TARGETARCH=${{ matrix.platform.target_arch }}
             os_version=${{ matrix.platform.os_version }}
           labels: ${{ steps.meta.outputs.labels }}
-          outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }},push-by-digest=true,name-canonical=true,push=true
+          outputs: type=image,name=${{ vars.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME_LOWER }},push-by-digest=true,name-canonical=true,push=true
       # Export the build images as artifact for the next job of merging
       - name: Export digest
         run: |
@@ -89,9 +87,6 @@ jobs:
     needs:
       - build
     steps:
-      - name: lowercase repo  
-        run: |
-          echo "IMAGE_NAME_LOWER=${GITHUB_REPOSITORY,,}" >>${GITHUB_ENV}
       - name: Download digests
         uses: actions/download-artifact@v4
         with:
@@ -104,18 +99,18 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}
+          images: ${{ vars.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME_LOWER }}
       - name: Log in to the Container registry
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Create manifest list and push
         working-directory: /tmp/digests
         run: |
           docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-            $(printf '${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}@sha256:%s ' *)
+            $(printf '${{ vars.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME_LOWER }}@sha256:%s ' *)
       - name: Inspect image
         run: |
-          docker buildx imagetools inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:${{ steps.meta.outputs.version }}
+          docker buildx imagetools inspect ${{ vars.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME_LOWER }}:${{ steps.meta.outputs.version }}

@@ -5,6 +5,7 @@ Let allow get configuration by key, init with a default value.
 
 from pathlib import Path
 import yaml
+from .cast_utility import CastUtililty
 
 class ConfigurationException(Exception):
 	"""
@@ -78,9 +79,12 @@ class ConfigurationManager():
 		"""
 		self._conf[key] = value
 
-	def get(self, key):
+	def get(self, key, expectedType=None):
 		"""
 		Return value for this key.
 		Rturn None if the key is unknown.
 		"""
-		return self._conf.get(key, None)
+		val = self._conf.get(key, None)
+		if expectedType is not None:
+			val = CastUtililty.toType(expectedType, val)
+		return val

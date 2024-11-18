@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.3 - 2024-11-18
+### Improvement
+- Aplication as a Docker
+
+### Fix
+- FIX and stabilize Emhass
+
 ## 0.1.2 - 2024-10-11
 ### Improvement
 - EmhassStrategy
