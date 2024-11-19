@@ -9,9 +9,9 @@
 - dev/updater : Add HomeStateUpdater from openhab_api.py
 - dev/strategy : Add solar panel without internet, use Python skyfield module or pvlib module
 - dev/datas : Script to get EDF datas.
+- dev/strategy : switch off/on during date/time range.
 - dev/schedule : Set available schedule by power (Kwh) instead of time.
 - dev/maintenance Add remote SSH maintenance (on 'dev')
-- dev/rust : re-implement it as Rust
 - dev/admin : PyPi : https://pypi.org/project/emhass/
-- dev/admin : Docker version
-
+- dev/ihm : Edit Yaml configuration whith HTML. : https://github.com/google/yaml-ui-editor
+- dev/rust : re-implement it as Rust
