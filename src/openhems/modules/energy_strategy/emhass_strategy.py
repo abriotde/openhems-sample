@@ -26,12 +26,15 @@ class EmhassStrategy(EnergyStrategy):
 	So this require some more Python packages.
 	"""
 
-	def __init__(self, mylogger, network: OpenHEMSNetwork, configuration:ConfigurationManager):
-		super().__init__(mylogger)
+	def __init__(self, mylogger, network: OpenHEMSNetwork, nameid,
+			configuration:ConfigurationManager, strategy):
+		super().__init__(mylogger, strategy)
 		self.adapter = EmhassAdapter.createForOpenHEMS()
 		self.logger.info("EmhassStrategy()")
 		self.network = network
-		freq = configuration.get("server.strategyParams.emhassEvalFrequenceInMinutes")
+		freq = strategy.get("evalFrequenceInMinutes",
+			configuration.get("server.strategy.emhass.evalFrequenceInMinutes")
+		)
 		self.emhassEvalFrequence = timedelta(minutes=freq)
 		self.timezone = pytz.timezone(configuration.get("timeZone"))
 		self.data = None
@@ -193,7 +196,7 @@ class EmhassStrategy(EnergyStrategy):
 			self.switchOn(deferable.node, cycleDuration, doSwitchOn)
 		return True
 
-	def updateNetwork(self, cycleDuration, now=None):
+	def updateNetwork(self, cycleDuration, now=None, allowSleep=True):
 		"""
 		Decide what to do during the cycle:
 		 IF off-peak : switch on all

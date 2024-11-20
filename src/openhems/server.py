@@ -18,18 +18,21 @@ class OpenHEMSServer:
 		self.logger = mylogger
 		self.network = network
 		self.loopDelay = serverConf.get("server.loopDelay")
-		strategy = serverConf.get("server.strategy").lower()
-		strategyParams = serverConf.get("server.strategyParams")
-		if strategy=="offpeak":
-			params = [p.split("-") for p in strategyParams]
-			self.strategy = OffPeakStrategy(mylogger, self.network, params)
-		elif strategy=="emhass":
-			# pylint: disable=import-outside-toplevel
-			# Avoid to import EmhassStrategy and all it's dependances when no needs.
-			from openhems.modules.energy_strategy.emhass_strategy import EmhassStrategy
-			self.strategy = EmhassStrategy(mylogger, self.network, serverConf)
-		else:
-			self.logger.critical("OpenHEMSServer() : Unknown strategy '%s'", strategy)
+		strategies = serverConf.get("server.strategy")
+		for strategy in strategies:
+			stratType = strategy.type
+			if stratType=="offpeak":
+				params = [p.split("-") for p in strategy.get("params", "[22h-6h]")]
+				self.strategies.append(OffPeakStrategy(mylogger, self.network, params))
+			elif stratType=="emhass":
+				# pylint: disable=import-outside-toplevel
+				# Avoid to import EmhassStrategy and all it's dependances when no needs.
+				from openhems.modules.energy_strategy.emhass_strategy import EmhassStrategy
+				self.strategies.append(EmhassStrategy(mylogger, self.network, serverConf, strategy))
+			elif stratType=="range":
+				self.strategies.append(RangeStrategy(mylogger, self.network, strategy))
+			else:
+				self.logger.critical("OpenHEMSServer() : Unknown strategy '%s'", strategy)
 			os._exit(1)
 
 	def loop(self, loopDelay):
@@ -39,7 +42,9 @@ class OpenHEMSServer:
 		"""
 		self.logger.debug("OpenHEMSServer.loop()")
 		self.network.updateStates()
-		self.strategy.updateNetwork(loopDelay)
+		allowSleep = len(self.strategies)<=1
+		for strategy in self.strategies:
+			strategy.updateNetwork(loopDelay, allowSleep)
 
 	def run(self, loopDelay=0):
 		"""

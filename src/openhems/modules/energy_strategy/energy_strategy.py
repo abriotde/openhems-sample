@@ -11,10 +11,13 @@ class EnergyStrategy:
 	Super class for all EnergyStrategy modules
 	"""
 	MIDNIGHT = 240000
-	def  __init__(self, logger=None):
+	def  __init__(self, strategy, logger=None):
 		if logger is None:
 			logger = logging.getLogger(__name__)
 		self.logger = logger
+		self.id = strategy.get('id', None)
+		if self.id is None:
+			self.logger.error("No 'id' attribute for strategy.")
 
 	# pylint: disable=unused-argument
 	def updateNetwork(self, cycleDuration):

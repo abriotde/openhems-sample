@@ -14,9 +14,8 @@ server:
   loglevel: info # Optional, default is info, availables are debug / info / warn / error / critical / no
   loopDelay: 30 # interval beetween 2 loop
   network: homeassistant # Define the type of network API used to control the home energy.
-  strategy: offpeak # Define the algorithm used to control the  home energy.
-  strategyParams: [] # parameters witch depends of the strategy
-  strategyParams.emhassEvalFrequenceInMinutes: 30
+  strategy: [] # Define the algorithm used to control the  home energy.
+  strategy.emhass.evalFrequenceInMinutes: 30
 network:
   in: [] # List the source of electric power
   out: [] # List on source of electric consumption
