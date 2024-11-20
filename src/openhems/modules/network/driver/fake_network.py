@@ -62,7 +62,6 @@ class FakeNetwork(HomeStateUpdater):
 		node = OutNode(nameid, currentPowerRealisttic, maxPower, isOn)
 		return node
 
-
 	def switchOn(self, isOn:bool, node):
 		"""
 		return: True if the switch is on after, False else
@@ -70,3 +69,11 @@ class FakeNetwork(HomeStateUpdater):
 		# pylint: disable=protected-access
 		node._isOn.setValue(isOn) # (Should do in an other way?)
 		return node.isOn()
+
+	def notify(self, message, printer=None):
+		"""
+		Test notify function
+		"""
+		if printer is None:
+			printer = print
+		printer(f"FakeNetwork.notify({message})")

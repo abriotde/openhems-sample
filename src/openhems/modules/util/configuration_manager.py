@@ -5,7 +5,7 @@ Let allow get configuration by key, init with a default value.
 
 from pathlib import Path
 import yaml
-from .cast_utility import CastUtililty
+from openhems.modules.util.cast_utility import CastUtililty
 
 class ConfigurationException(Exception):
 	"""

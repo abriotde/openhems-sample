@@ -8,6 +8,7 @@ import logging
 import os
 import copy
 from openhems.modules.util.configuration_manager import ConfigurationManager
+from openhems.modules.util.notification_manager import NotificationManager
 from .node import (
 	OpenHEMSNode, InOutNode, OutNode, PublicPowerGrid, SolarPanel, Battery
 )
@@ -170,6 +171,7 @@ class OpenHEMSNetwork:
 		self.battery = []
 		self.publicpowergrid = []
 		self.solarpanel = []
+		self.notificationManager = NotificationManager(self.networkUpdater)
 
 	def getSchedule(self):
 		"""
@@ -278,7 +280,7 @@ class OpenHEMSNetwork:
 		Send a notification using the appropriate way 
 		(Only push to HomeAssistant for the moment).
 		"""
-		self.networkUpdater.notify(message)
+		self.notificationManager.notify(message)
 
 	def switchOffAll(self):
 		"""

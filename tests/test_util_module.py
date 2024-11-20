@@ -8,14 +8,25 @@ import sys
 import unittest
 from pathlib import Path
 import logging
+import io
+import contextlib
 # pylint: disable=wrong-import-position
 # pylint: disable=import-error
-sys.path.append(str(Path(__file__).parents[1] / "src"))
+ROOT_PATH = Path(__file__).parents[1]
+sys.path.append(str(ROOT_PATH / "src"))
 from openhems.modules.util.configuration_manager import ConfigurationManager
 from openhems.modules.util.cast_utility import CastUtililty, CastException
-ROOT_PATH = Path(__file__).parents[1]
+from openhems.modules.network.driver.fake_network import FakeNetwork
+from openhems.modules.util.notification_manager import NotificationManager, MessageHistory
 
+stdout_handler = logging.StreamHandler(stream=sys.stdout)
+logging.basicConfig(
+    level=logging.ERROR,
+    format='[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s',
+    handlers=[stdout_handler]
+)
 logger = logging.getLogger(__name__)
+
 
 class TestUtilModule(unittest.TestCase):
 	"""
@@ -67,6 +78,28 @@ class TestUtilModule(unittest.TestCase):
 		self.assertEqual(value, True)
 		value = CastUtililty.toType('bool', 0)
 		self.assertEqual(value, False)
+
+	def test_notifyManager(self):
+		"""
+		Test NotificationManager class.
+		"""
+		# For 64 notifications, should output 3 lines:
+		#   FakeNetwork.notify(A test message.)
+		#   FakeNetwork.notify("A test message." occured 7 more times)
+		#   FakeNetwork.notify("A test message." occured 56 more times)
+		f = io.StringIO()
+		with contextlib.redirect_stdout(f):
+			networkUpdater = FakeNetwork(None)
+			notificator = NotificationManager(networkUpdater, logger)
+			fakeMessage = "A test message."
+			# notificator.notify(fakeMessage)
+			for _ in range(MessageHistory.COMPACT_SIZE*MessageHistory.COMPACT_SIZE):
+				notificator.notify(fakeMessage)
+			notificator.notify(fakeMessage)
+			notificator.loop()
+		output = f.getvalue().strip()
+		length = len(output.split('\n'))
+		self.assertTrue(length==3)
 
 if __name__ == '__main__':
 	unittest.main()
