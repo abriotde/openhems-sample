@@ -7,7 +7,7 @@ import datetime
 import dataclasses
 import logging
 from itertools import islice
-import traceback
+# import traceback
 
 @dataclasses.dataclass
 class MessageLog:
@@ -90,7 +90,7 @@ class MessageHistory:
 		for l in islice(self.logs, 1, None):
 			count += l.count
 		if count==0 and len(self.logs)==1:
-			count = (self.logs[0].count/self.COMPACT_SIZE*(self.COMPACT_SIZE-1))
+			count = self.logs[0].count/self.COMPACT_SIZE*(self.COMPACT_SIZE-1)
 			return f"\"{self.message}\" occured {int(count)} more times"
 		return f"\"{self.message}\" occured {int(count)} times between {first} and {last}"
 
@@ -105,8 +105,10 @@ class MessageHistory:
 		"""
 		if delete:
 			return self.logs[-1].date<histo
-		else:
+		if self.logs[0].date<histo:
 			self.logs = list(filter(lambda x: x.date>histo, self.logs))
+			return True
+		return False
 
 	def notify(self):
 		"""
@@ -190,7 +192,7 @@ class NotificationManager:
 			histo = now - MessageHistory.PURGE_HISTO_IN_DAY
 			for message,elem in self.history.items():
 				if elem.purge(histo, True):
-					self.pop(message)
+					self.history.pop(message)
 			self.nextPurgeDate =  now + MessageHistory.PURGE_HISTO_IN_DAY
 
 	def notify(self, message):
