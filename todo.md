@@ -5,6 +5,7 @@
 - funding/crowd : kickstarter
 - promote : LinuxFR
 - prod/mvp : Minimum Valuable Product
+- dev/schedule : Gestion des Kw consommés dans le but de facturer au Kw
 - dev/admin : Run openhems as user 'openhems' instead root
 - dev/updater : Add HomeStateUpdater from openhab_api.py
 - dev/strategy : Add solar panel without internet, use Python skyfield module or pvlib module
