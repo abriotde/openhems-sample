@@ -63,3 +63,11 @@ class OpenHEMSSchedule:
 		return {"name":self.name,
 			"duration":self.duration,
 			"timeout":self.timeout}
+
+	def toJSON(self):
+		"""
+		Export as JSON.
+		"""
+		return json.dumps(
+			self,
+			default=lambda o: o.__dict__)
