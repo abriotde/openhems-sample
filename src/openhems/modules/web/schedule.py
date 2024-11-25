@@ -3,21 +3,24 @@ This class aim to comunicate what devices user want to schedule to the OpenHEMS 
 The web server is the UI used to that.
 """
 import logging
-
+import datetime
 
 class OpenHEMSSchedule:
 	"""
 	This class aim to comunicate what devices user want to schedule to the OpenHEMS core server.
 	 The web server is the UI used to that.
 	"""
-	duration: int = 0
-	timeout = "00:00"
-	def __init__(self, haId: str, name:str, duration: int = 0, timeout = 0):
+	def __init__(self, haId: str, name:str, timeout=None,
+			duration:int=0, energy:int=0, cycleId=None):
+		self.logger = logging.getLogger(__name__)
 		self.name = name
 		self.id = haId
+		if timeout is None:
+			timeout = datetime.datetime.now() + datetime.timedelta(days=5)
 		self.timeout = timeout
-		self.duration = duration
-		self.logger = logging.getLogger(__name__)
+		self.duration: int = duration # in seconds
+		self.energy: float = energy # in Wh
+		self.cycleId = cycleId
 
 	def schedule(self, timeout, duration):
 		"""
@@ -33,9 +36,9 @@ class OpenHEMSSchedule:
 		"""
 		self.logger.debug("OpenHEMSSchedule.isScheduled(%s)"
 			": duration = %d", self.id, self.duration)
-		return self.duration>0
+		return self.duration>0 or self.kwh>0 or self.cycleId is not None
 
-	def setSchedule(self, duration: int, timeout):
+	def setSchedule(self, *, duration:int=0, energy:int=0, cycleId=None, timeout=None):
 		"""
 		Set duration for device to be on.
 		"""
@@ -46,14 +49,18 @@ class OpenHEMSSchedule:
 		else:
 			self.logger.debug(msg)
 		self.duration = duration
+		self.energy = energy
 		self.timeout = timeout
 
-	def decreaseTime(self, duration):
+	def decreaseTime(self, duration, power):
 		"""
 		decrease time to be on from elapsed time.
+		@return : True if there is more scheduled to do.
 		"""
-		self.duration = max(self.duration-duration, 0)
-		return self.duration
+		self.duration = self.duration-duration
+		energy = power*duration/3600 # watt * heure = watt * seconds/3600
+		self.energy = self.energy-energy
+		return self.isScheduled()
 
 	# pylint: disable=unused-argument
 	def __json__(self, request=None):

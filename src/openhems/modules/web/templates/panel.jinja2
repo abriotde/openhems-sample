@@ -100,8 +100,12 @@
 			border-bottom: 2px solid white;
 		}
 		.page{
-		  margin: 0px 20px;
-		  height: 1500px;
+			margin: 0px 20px;
+			height: 1500px;
+		}
+		.negativValue {
+			color:red;
+			background: #e6f3ff;
 		}
 	</style>
 </head>
@@ -130,7 +134,7 @@ function setDevicesProgramm(nodes) {
 		var id ="node"+nodeid;
 		nodeDiv.id = "div"+id;
 		duration = Math.floor(node.duration/60); // Keep only minutes, forget seconds.
-		if (duration=="0") {
+		if (duration<=0) {
 			checked	= "";
 			display = " style=\"display:none\"";
 		} else {
@@ -147,8 +151,21 @@ function setDevicesProgramm(nodes) {
 			+  '<span class="slider round"></span>'
 			+'</label>'
 			+'<span id="'+id+'_conf" '+display+'>'
-			+	' Duration (hr:min): <input type="time" id="'+id+'_duration" name="'+id+'_duration" value="'+duration+'" onchange="changeSthg()">'
-			+	' Timeout (Next hr:min): <input type="time" id="'+id+'_timeout" name="'+id+'_timeout" value="'+node.timeout+'" onchange="changeSthg()">'
+
+			+'<span id="'+id+'_duration_space" '+((node.duration<0)?' class="negativValue" ':'')+'>'
+			+'<label for="'+id+'_duration">Duration (hr:min):</label>'
+			+'<input type="time" id="'+id+'_duration" name="'+id+'_duration" value="'+duration+'" onchange="changeSthg(\""'+id+'_duration"\")">'
+			+'</span>'
+
+			+'<span id="'+id+'_energy_space" '+((node.energy<0)?' class="negativValue" ':'')+'>'
+			+'<label for="'+id+'_energy">Energy (Kwh):</label>'
+			+'<input type="number" id="'+id+'_energy" name="'+id+'_energy" value="'+node.energy+'" onchange="changeSthg(\"'+id+'_energy\")">'
+			+'</span>'
+
+			+'<span id="'+id+'_timeout_space" '+((node.timeout<0)?' class="negativValue" ':'')+'>'
+			+'<label for="'+id+'_timeout">Timeout (Next hr:min):</label>'
+			+'<input type="time" id="'+id+'_timeout" name="'+id+'_timeout" value="'+node.timeout+'" onchange="changeSthg(\"'+id+'_timeout\")">'
+			+'</span>'
 			+'</span>';
 		network.appendChild(nodeDiv);
 		i++;
@@ -172,9 +189,14 @@ function initMainPage() {
 	}
 	setDevicesProgramm(nodes);
 }
-function changeSthg() {
+function changeSthg(id) {
 	// console.log("changeSthg()");
-	document.getElementById("valid").src="{{request.static_url('openhems.modules.web:../../../../img/save_32.ico')}}";
+	document.getElementById("valid")
+		.src="{{request.static_url('openhems.modules.web:../../../../img/save_32.ico')}}";
+	if (id) {
+		var elem = document.getElementById(id+"_space");
+		if (elem) elem.classList.remove("negativValue");;
+	}
 }
 function onSave() {
 	// console.log("onSave()");
@@ -196,11 +218,18 @@ function onSave() {
 			}
 			timeout = divnode.children[2].children[1].value;
 			if (timeout=="") timeout = 0;
+			energy = divnode.children[2].children[1].value;
 		} else {
 			duration = 0;
 			timeout = 0;
+			energy = 0;
 		}
-		nodes[id] = {name: label, duration: duration*60, timeout: timeout} // Convert minutes to seconds
+		nodes[id] = {
+			name: label,
+			duration: duration*60, // Convert minutes to seconds
+			energy: energy*1000, // Convert Kwh to Wh
+			timeout: timeout
+		}
 	}
 	console.log("onSave() : nodes=",nodes);
 	var xhr = new XMLHttpRequest();
@@ -214,7 +243,7 @@ function onSave() {
         	var json = JSON.parse(xhr.responseText);
         	console.log("Response : ",json);
         	setDevicesProgramm(json);
-        	document.getElementById("valid").src="../../img/correct_32.ico";
+        	document.getElementById("valid").src="{{request.static_url('openhems.modules.web:../../../../img/correct_32.ico')}}";
     	}
 	};
 	xhr.send(JSON.stringify(nodes));

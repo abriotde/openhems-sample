@@ -195,6 +195,18 @@ class InOutNode(OpenHEMSNode):
 			return 2
 		return 3
 
+	def decreaseTime(self, duration):
+		"""
+		Should be called on each loop when witched on.
+		Decrease time (and power consumption) of what scheduled.
+		"""
+		schedule = self.getSchedule()
+		if self.isOn():
+			power = self.currentPower.getValue()
+			return schedule.decreaseTime(cycleDuration, power)
+		else:
+			return schedule.isScheduled()
+
 class PublicPowerGrid(InOutNode):
 	"""
 	This represent Public power grid. Just one should be possible.

@@ -71,7 +71,11 @@ def states(request):
 	# print("datas:", datas)
 	for i, node in datas.items():
 		if i in OPENHEMS_CONTEXT.schedule:
-			OPENHEMS_CONTEXT.schedule[i].setSchedule(node["duration"], node["timeout"])
+			OPENHEMS_CONTEXT.schedule[i].setSchedule(
+				duration=node["duration"],
+				energy=node["energy"],
+				timeout=node["timeout"]
+			)
 		else:
 			OPENHEMS_CONTEXT.logger.error("Node id='%s' not found.",i)
 	return OPENHEMS_CONTEXT.schedule

@@ -35,17 +35,17 @@ class EnergyStrategy:
 		"""
 		if node.isSwitchable:
 			if node.isOn():
-				remainingTime = node.getSchedule().decreaseTime(cycleDuration)
-				if remainingTime==0 or not doSwitchOn:
+				needMore = node.decreaseTime(cycleDuration)
+				if (not needMore) or not doSwitchOn:
 					self.logger.info("Switch off '%s' due to %s.",
-						node.id, "elapsed time" if remainingTime==0 else "strategy")
+						node.id, "strategy" if needMore else "achievement" )
 					if node.switchOn(False):
 						self.logger.warning("Fail switch off '%s'.", node.id)
 				else:
 					self.logger.debug("Node %s isOn for %s more seconds", \
 						node.id, remainingTime)
 			else:
-				if doSwitchOn and node.getSchedule().duration>0:
+				if doSwitchOn and node.getSchedule().isScheduled():
 					if node.switchOn(True):
 						self.logger.info("Switch on '%s' successfully.", node.id)
 						return True
