@@ -14,8 +14,6 @@
 - dev/schedule : Set available schedule by power (Kwh) instead of time.
 - dev/maintenance Add remote SSH maintenance (on 'dev')
 - dev/admin : PyPi : https://pypi.org/project/emhass/
-- dev/emhass : Auto-generation of EMHASS config
-- dev/admin : configure HTML root for proxy.
 - dev/ihm : Edit Yaml configuration whith HTML. : https://github.com/google/yaml-ui-editor
 - dev/schedule/automatic : For devices with a sensor witch give a value to maintain in a range goal (VMC, water heater, freezer, heater) => need to introduce an emergency notion && an average frequency
 - dev/rust : re-implement it as Rust

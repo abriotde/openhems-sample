@@ -94,10 +94,9 @@ class OpenHEMSApplication:
 		network = networkUpdater.getNetwork()
 		self.server = OpenHEMSServer(self.logger, network, configurator)
 		port = port if port>0 else configurator.get("server.port")
-		root = configurator.get("server.htmlRoot")
 		inDocker = inDocker or configurator.get("server.inDocker", "bool")
 		self.webserver = OpenhemsHTTPServer(self.logger,
-			network.getSchedule(), port, root, inDocker)
+			network.getSchedule(), port, inDocker)
 		network.notify("Start OpenHEMS.")
 
 	def runManagementServer(self):

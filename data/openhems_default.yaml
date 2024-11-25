@@ -9,7 +9,6 @@ timeZone: Europe/Paris
 server:
   inDocker: False
   port: 8000
-  htmlRoot: /
   logformat: "%(levelname)s : %(asctime)s : %(message)s" # for custom configuration see https://docs.python.org/3/library/logging.html#logrecord-attributes
   logfile: openhems.log # Optional, default is /var/log/openhems.log
   loglevel: info # Optional, default is info, availables are debug / info / warn / error / critical / no

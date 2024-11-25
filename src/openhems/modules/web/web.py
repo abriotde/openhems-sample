@@ -15,6 +15,19 @@ from pyramid.view import view_config
 from .driver_vpn import VpnDriverWireguard, VpnDriverIncronClient
 # from .schedule import OpenHEMSSchedule
 
+# pylint: disable=unused-argument
+
+# Patch for jsonEncoder
+def wrappedDefault(self, obj):
+	"""
+	Patch for jsonEncoder
+	"""
+	return getattr(obj.__class__, "__json__", wrappedDefault.default)(obj)
+wrappedDefault.default = JSONEncoder().default
+# apply the patch
+JSONEncoder.original_default = JSONEncoder.default
+JSONEncoder.default = wrappedDefault
+
 OPENHEMS_CONTEXT = None
 
 @view_config(
@@ -90,11 +103,10 @@ class OpenhemsHTTPServer():
 		"""
 		print("context", OPENHEMS_CONTEXT)
 
-	def __init__(self, mylogger, schedule, port=8000, htmlRoot="/", inDocker=False):
+	def __init__(self, mylogger, schedule, port=8000, inDocker=False):
 		self.logger = mylogger
 		self.schedule = schedule
 		self.port = port
-		self.htmlRoot = htmlRoot
 		if inDocker:
 			vpnDriver = VpnDriverIncronClient(mylogger)
 		else:
@@ -116,12 +128,7 @@ class OpenhemsHTTPServer():
 			config.add_route('params', '/params')
 			config.add_route('vpn', '/vpn')
 			# config.add_route('favicon.ico', '/favicon.ico')
-			root = (self.htmlRoot+'/img').replace('//','/')
-			print("ROOT:",root)
-			config.add_static_view(
-				name=root,
-				path='openhems.modules.web:../../../../img'
-			)
+			config.add_static_view(name='img', path='openhems.modules.web:../../../../img')
 			config.scan()
 			app = config.make_wsgi_app()
 		host = '0.0.0.0'
