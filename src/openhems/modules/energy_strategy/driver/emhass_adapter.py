@@ -12,11 +12,13 @@ from pathlib import Path
 import importlib
 # from importlib.metadata import version
 import yaml
+import jinja2
+from jinja2 import Environment, FileSystemLoader
 # from packaging.version import Version
-
 PATH_ROOT = Path(__file__).parents[5]
 PATH_EMHASS = PATH_ROOT / 'lib/emhass/src/'
 emhassModuleSpec = importlib.util.find_spec('emhass')
+logger = logging.getLogger(__name__)
 
 # pylint: disable=condition-evals-to-constant
 if False and emhassModuleSpec is not None:
@@ -141,28 +143,22 @@ class EmhassAdapter:
 		return emhassData
 
 	@staticmethod
-	def generateConfigFromOpenHEMS(path:Path):
+	def generateSecretConfig(configurator, emhassSecretsPath:Path):
 		"""
 		Generate configurations files from OpenHEMS configuration.
 		Avoid to maintain multiple files with duplicated informations
 		 (So possibly inconsistense and difficult error to resolv)
 		"""
-		openHEMSPath = path / "openhems.yaml"
-		emhassPath = path / "config_emhass.yaml"
-		emhassSecretsPath = path / "secrets_emhass.yaml"
-		with open(openHEMSPath, 'r', encoding="utf-8") as openHEMSFile:
-			openhemsConf = yaml.load(openHEMSFile, Loader=yaml.FullLoader)
-			apiConf = openhemsConf["api"]
-			url = apiConf["url"]
-			token = apiConf["long_lived_token"]
-			url = apiConf["url"]
-			latitude = openhemsConf["latitude"]
-			longitude = openhemsConf["longitude"]
-			altitude = openhemsConf["altitude"]
-			tz = openhemsConf["time_zone"]
-			with open(emhassSecretsPath, 'w', encoding="utf-8") as emhassSecretsFile:
-				emhassSecretsFile.write(f"""
-# Auto-generated file by openhems.EmhassAdapter.generateConfigFromOpenHEMS()
+		url = configurator.get("api.url")
+		token = configurator.get("api.long_lived_token")
+		tz = configurator.get("timeZone")
+		latitude = configurator.get("latitude")
+		longitude = configurator.get("longitude")
+		altitude = configurator.get("altitude")
+		with emhassSecretsPath.open('w', encoding="utf-8") as emhassSecretsFile:
+			logger.info("Write EMHASS secret configuration on '%s'", emhassSecretsPath)
+			emhassSecretsFile.write(f"""
+# Auto-generated file by openhems.EmhassAdapter.generateSecretConfig()
 
 hass_url: {url}
 long_lived_token: {token}
@@ -171,16 +167,117 @@ lat: {latitude}
 lon: {longitude}
 alt: {altitude}
 """)
-			with open(emhassPath, 'w', encoding="utf-8") as emhassFile:
-				emhassFile.write("")
 
 	@staticmethod
-	def createForOpenHEMS():
+	def haTemplateVar(varName):
+		"""
+		Return Home-Assistant dynamic var value
+		 used for formule in YAML Home-Assistant file configuration.
+		"""
+		return '(states("'+varName+'") | float(0))'
+
+	@staticmethod
+	def generateHomeAssistantTemplateConfig(configurator, network, templateYamlPath:Path):
+		"""
+		Return Home-Assistant template.yaml file
+		 fill according to openhems.yaml config.
+		"""
+		# TODO: compute varPV && varLoad
+		varPV = EmhassAdapter.haTemplateVar('sensor.lixee_zlinky_tic_puissance_apparente')
+			+" - "+ EmhassAdapter.haTemplateVar('sensor.lixee_zlinky_tic_puissance_apparente')
+		varLoad = EmhassAdapter.haTemplateVar('sensor.lixee_zlinky_tic_puissance_apparente')
+			+" - "+ EmhassAdapter.haTemplateVar('sensor.lixee_zlinky_tic_puissance_apparente')
+		with templateYamlPath.open('w', encoding="utf-8") as file:
+			logger.info("Write home-Assistant template configuration on '%s'", templateYamlPath)
+			file.write(f"""
+# Auto-generated file by openhems.EmhassAdapter.generateHomeAssistantTemplateConfig()
+  - sensor:
+    - unique_id: sensor.emhass_photovoltaic_power_produced
+      name: "EMHASS - Photovoltaic power-produced"
+      state: '{{ {varPV} }}'
+      unit_of_measurement: "Watt"
+      device_class: energy
+  - sensor:
+    - unique_id: sensor.emhass_household_power_consumption
+      name: "EMHASS - Household power consumption"
+      state: '{{ {varLoad} }}'
+      unit_of_measurement: "Watt"
+      device_class: energy
+""")
+
+	@staticmethod
+	def getEmhassDatas(configurator, network):
+		"""
+		"""
+		datas = configurator.get("emhass", None, True)
+		# P_from_grid_max / P_to_grid_max
+		maxPower = network.getMaxPower()
+		datas['P_from_grid_max'] = network.getMaxPower("publicpowergrid")
+		datas['P_to_grid_max'] = network.getMinPower("publicpowergrid")
+		setUseBattery = False
+		Pd_max = 0
+		eta_disch = 0
+		for elem in network.getAll("solarpanel"):
+			setUseBattery = True
+			Pd_max += elem.
+		datas['set_use_battery'] = setUseBattery
+		datas['Pd_max'] = Pd_max
+		datas['Pc_max'] = Pc_max
+		datas['eta_disch'] = eta_disch
+		datas['eta_ch'] = setUseBattery
+		datas['Enom'] = setUseBattery
+		datas['SOCmin'] = SOCmin
+		datas['SOCmax'] = SOCmax
+		datas['SOCtarget'] = 
+		print("Datas:",datas)
+		return datas
+
+	@staticmethod
+	def generateYamlConfig(configurator, network, emhassConfigPath:Path):
+		templateDirPath = str(Path(__file__).parents[0] / "data/")
+		templateName = "config_emhass.jinja2.yaml"
+		environment = Environment(loader=FileSystemLoader(templateDirPath))
+		datas = EmhassAdapter.getEmhassDatas(configurator, network)
+		try:
+			template = environment.get_template(templateName)
+			content = template.render(
+				datas,
+				max_score=100,
+				test_name="toto"
+			)
+			with emhassConfigPath.open('w', encoding="utf-8") as emhassFile:
+				logger.info("Write EMHASS configuration on '%s'", emhassConfigPath)
+				emhassFile.write("# Auto-generated file by openhems.EmhassAdapter.generateYamlConfig()")
+				emhassFile.write(content)
+				return True
+		except jinja2.exceptions.TemplateNotFound:
+			logger.error(
+				"Fail write EMHASS configuration on '%s : TemplateNotFound(%s/%s)",
+				emhassConfigPath, templateDirPath, templateName
+			)
+		exit(1)
+		return False
+
+	@staticmethod
+	def createFromOpenHEMS(configuration=None, network=None):
 		"""
 		Create EmhassAdapter with parameters for standard OpenHEMS installations
 		"""
 		configPath = PATH_ROOT / "config"
-		# self.generateConfigFromOpenHEMS()
+		if configuration is not None:
+			# EmhassAdapter.generateSecretConfig(
+			# 	configuration,
+			# 	configPath / "secrets_emhass.yaml"
+			# )
+			if network is not None:
+				EmhassAdapter.generateYamlConfig(
+					configuration, network,
+					configPath / "config_emhass.yaml"
+				)
+				EmhassAdapter.generateHomeAssistantTemplateConfig(
+					configuration, network,
+					configPath / "template.yaml"
+				)
 		dataPath = Path("/tmp/emhass_data")
 		if not os.path.exists(dataPath):
 			os.mkdir(dataPath)
@@ -198,7 +295,10 @@ alt: {altitude}
 		return EmhassAdapter(rootPath, dataPath, rootPath)
 
 if __name__ == "__main__":
-	emhass = EmhassAdapter.createForOpenHEMS()
+	sys.path.append(str(PATH_ROOT/"src"))
+	from openhems.modules.util.configuration_manager import ConfigurationManager
+	configurator = ConfigurationManager(logger)
+	emhass = EmhassAdapter.createFromOpenHEMS(configurator)
 	emhass.deferables = [
 		Deferrable(1000, 3),
 		Deferrable(300, 2),

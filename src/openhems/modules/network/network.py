@@ -84,7 +84,7 @@ class HomeStateUpdater:
 			elif classname == "battery":
 				lowLevel = self.getFeeder(e, "lowLevel", "int", POWER_MARGIN)
 				hightLevel = self.getFeeder(e, "hightLevel", "int", POWER_MARGIN)
-				capacity = self.getFeeder(e, "capaciity", "int", POWER_MARGIN)
+				capacity = self.getFeeder(e, "capacity", "int", POWER_MARGIN)
 				currentLevel = self.getFeeder(e, "level", "int", 0)
 				node = Battery(currentPower, maxPower, capacity, currentLevel,
 					powerMargin=powerMargin, minPower=minPower, lowLevel=lowLevel,
@@ -172,6 +172,7 @@ class OpenHEMSNetwork:
 		self.publicpowergrid = []
 		self.solarpanel = []
 		self.notificationManager = NotificationManager(self.networkUpdater)
+		self._elemsCache = {}
 
 	def getSchedule(self):
 		"""
@@ -213,12 +214,45 @@ class OpenHEMSNetwork:
 				os._exit(1)
 			globalPower += p
 		return globalPower
-	def getMaxPower(self):
+	
+	def _getAll(self, filterId, elemFilter=None):
+		"""
+		Return Out nodes, filtered by strategy=strategyId if set.
+		!!! WARNING !!! filterId and elemFilter must be bijectiv (one-to-one)
+		"""
+		out = self._elemsCache.get(filterId, None)
+		if out is None:
+			if elemFilter is None:
+				filters = {
+					"inout" : (lambda x: isinstance(x, InOutNode)),
+					"out" : (lambda x: isinstance(x, OutNode)),
+					"publicpowergrid" : (lambda x: isinstance(x, PublicPowerGrid)),
+					"battery" : (lambda x: isinstance(x, Battery)),
+					"solarpanel" : (lambda x: isinstance(x, SolarPanel)),
+				}
+				elemFilter = filters.get(filterId, None)
+			if elemFilter is not None:
+				out = filter(f, self.inout)
+			elif filterId=="":
+				out = self.inout
+			else:
+				out = None
+			self._elemsCache[filterId] = out
+		return out
+
+	def getAll(self, filterId):
+		"""
+		Same as private _getAll() except that we can't set custom elemFilter
+		 to avoid incoherence between elemFilter AND filterId
+		"""
+		return self._getAll(filterId)
+
+	def getMaxPower(self, filterId=None):
 		"""
 		Get current maximum power consumption possible.
 		"""
 		globalPower= 0
-		for elem in self.inout:
+		for elem in self._getAll("publicpowergrid"):
 			globalPower += elem.getMaxPower()
 		return globalPower
 	def getMinPower(self):

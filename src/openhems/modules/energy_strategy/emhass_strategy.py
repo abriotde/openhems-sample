@@ -10,6 +10,7 @@ import logging
 import copy
 import pytz
 import numpy as np
+import jinja2
 from openhems.modules.network.network import OpenHEMSNetwork
 from openhems.modules.util.configuration_manager import ConfigurationManager
 from .energy_strategy import EnergyStrategy # , LOOP_DELAY_VIRTUAL
@@ -28,7 +29,7 @@ class EmhassStrategy(EnergyStrategy):
 
 	def __init__(self, mylogger, network: OpenHEMSNetwork, configuration:ConfigurationManager):
 		super().__init__(mylogger)
-		self.adapter = EmhassAdapter.createForOpenHEMS()
+		self.adapter = EmhassAdapter.createFromOpenHEMS(configuration, network)
 		self.logger.info("EmhassStrategy()")
 		self.network = network
 		freq = configuration.get("server.strategyParams.emhassEvalFrequenceInMinutes")
