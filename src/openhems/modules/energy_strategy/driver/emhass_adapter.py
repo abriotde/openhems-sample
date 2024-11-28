@@ -11,7 +11,6 @@ import dataclasses
 from pathlib import Path
 import importlib
 # from importlib.metadata import version
-import yaml
 import jinja2
 from jinja2 import Environment, FileSystemLoader
 # from packaging.version import Version
@@ -143,18 +142,18 @@ class EmhassAdapter:
 		return emhassData
 
 	@staticmethod
-	def generateSecretConfig(configurator, emhassSecretsPath:Path):
+	def generateSecretConfig(configuration, emhassSecretsPath:Path):
 		"""
 		Generate configurations files from OpenHEMS configuration.
 		Avoid to maintain multiple files with duplicated informations
 		 (So possibly inconsistense and difficult error to resolv)
 		"""
-		url = configurator.get("api.url")
-		token = configurator.get("api.long_lived_token")
-		tz = configurator.get("timeZone")
-		latitude = configurator.get("latitude")
-		longitude = configurator.get("longitude")
-		altitude = configurator.get("altitude")
+		url = configuration.get("api.url")
+		token = configuration.get("api.long_lived_token")
+		tz = configuration.get("timeZone")
+		latitude = configuration.get("latitude")
+		longitude = configuration.get("longitude")
+		altitude = configuration.get("altitude")
 		with emhassSecretsPath.open('w', encoding="utf-8") as emhassSecretsFile:
 			logger.info("Write EMHASS secret configuration on '%s'", emhassSecretsPath)
 			emhassSecretsFile.write(f"""
@@ -169,24 +168,25 @@ alt: {altitude}
 """)
 
 	@staticmethod
-	def haTemplateVar(varName):
-		"""
-		Return Home-Assistant dynamic var value
-		 used for formule in YAML Home-Assistant file configuration.
-		"""
-		return '(states("'+varName+'") | float(0))'
-
-	@staticmethod
-	def generateHomeAssistantTemplateConfig(configurator, network, templateYamlPath:Path):
+	def generateHomeAssistantTemplateConfig(network, templateYamlPath:Path):
 		"""
 		Return Home-Assistant template.yaml file
 		 fill according to openhems.yaml config.
 		"""
-		# TODO: compute varPV && varLoad
-		varPV = EmhassAdapter.haTemplateVar('sensor.lixee_zlinky_tic_puissance_apparente')
-			+" - "+ EmhassAdapter.haTemplateVar('sensor.lixee_zlinky_tic_puissance_apparente')
-		varLoad = EmhassAdapter.haTemplateVar('sensor.lixee_zlinky_tic_puissance_apparente')
-			+" - "+ EmhassAdapter.haTemplateVar('sensor.lixee_zlinky_tic_puissance_apparente')
+		inout = ['(states("'+elem.currentPower.nameid+'") | float(0))'
+			for elem in network.getAll("inout")]
+		out = ['(states("'+elem.currentPower.nameid+'") | float(0))'
+			for elem in network.getAll("out")]
+		solarpanel = ['(states("'+elem.currentPower.nameid+'") | float(0))'
+			for elem in network.getAll("solarpanel")]
+		if len(inout)==0 or len(out)==0 or len(solarpanel)==0:
+			logger.error("Emhass optimization need %s configuration.",
+				"inout" if len(inout)==0 else
+				"out" if len(out)==0 else
+				"solarpanel" if len(solarpanel)==0 else "")
+			return False
+		varLoad = " + ".join(inout) + " - "+ " - ".join(out)
+		varPV = " + ".join(solarpanel)
 		with templateYamlPath.open('w', encoding="utf-8") as file:
 			logger.info("Write home-Assistant template configuration on '%s'", templateYamlPath)
 			file.write(f"""
@@ -204,40 +204,85 @@ alt: {altitude}
       unit_of_measurement: "Watt"
       device_class: energy
 """)
+			return True
+		return False
 
 	@staticmethod
-	def getEmhassDatas(configurator, network):
+	def getYamlList(elems, caller):
 		"""
+		Convert a Python list to a YAML one
 		"""
-		datas = configurator.get("emhass", None, True)
+		elems = [caller(elem).getValue() for elem in elems]
+		return "\n  - ".join(elems)
+
+	@staticmethod
+	def getEmhassDatas(configuration, network):
+		"""
+		Extract usefull informations from openhems.yaml configuration
+		 for configuring EMHASS
+		Return: Dict of varname=>String to felle configuration file.
+		"""
+		datas = configuration.get("emhass", None, True)
 		# P_from_grid_max / P_to_grid_max
-		maxPower = network.getMaxPower()
 		datas['P_from_grid_max'] = network.getMaxPower("publicpowergrid")
 		datas['P_to_grid_max'] = network.getMinPower("publicpowergrid")
-		setUseBattery = False
-		Pd_max = 0
-		eta_disch = 0
-		for elem in network.getAll("solarpanel"):
-			setUseBattery = True
-			Pd_max += elem.
-		datas['set_use_battery'] = setUseBattery
-		datas['Pd_max'] = Pd_max
-		datas['Pc_max'] = Pc_max
-		datas['eta_disch'] = eta_disch
-		datas['eta_ch'] = setUseBattery
-		datas['Enom'] = setUseBattery
-		datas['SOCmin'] = SOCmin
-		datas['SOCmax'] = SOCmax
-		datas['SOCtarget'] = 
+		# Feel solarpanel fields
+		elems = network.getAll("solarpanel")
+		datas['module_model'] = EmhassAdapter.getYamlList(elems, lambda x:
+			x.moduleModel)
+		datas['inverter_model'] = EmhassAdapter.getYamlList(elems, lambda x:
+			x.inverterModel)
+		datas['surface_tilt'] = EmhassAdapter.getYamlList(elems, lambda x:
+			x.tilt)
+		datas['surface_azimuth'] = EmhassAdapter.getYamlList(elems, lambda x:
+			x.azimuth)
+		datas['modules_per_string'] = EmhassAdapter.getYamlList(elems, lambda x:
+			x.modulesPerString)
+		datas['strings_per_inverter'] = EmhassAdapter.getYamlList(elems, lambda x:
+			x.stringsPerInverter)
+
+		# Feel battery fields
+		maxPowerOut = 0
+		maxPowerIn = 0
+		efficiencyIn = 0
+		efficiencyOut = 0
+		capacity = 0
+		lowLevel = 0
+		highLevel = 0
+		targetLevel = 0
+		for elem in network.getAll("battery"):
+			maxPowerOut += elem.getMaxPower()
+			maxPowerIn += elem.getMinPower()
+			capa += elem.capacity
+			efficiencyIn += elem.efficiencyIn * capa
+			efficiencyOut += elem.efficiencyOut * capa
+			capacity += capa
+			lowLevel += elem.lowLevel * capa
+			highLevel += elem.highLevel * capa
+			targetLevel += elem.targetLevel * capa
+		datas['set_use_battery'] = maxPowerOut>0 and capacity>0
+		if capacity>0:
+			datas['Pd_max'] = maxPowerOut
+			datas['Pc_max'] = maxPowerIn
+			datas['eta_disch'] = efficiencyIn / capacity
+			datas['eta_ch'] = efficiencyOut / capacity
+			datas['Enom'] = capacity
+			datas['SOCmin'] = lowLevel / capacity
+			datas['SOCmax'] = highLevel / capacity
+			datas['SOCtarget'] = targetLevel / capacity
 		print("Datas:",datas)
+		sys.exit(0)
 		return datas
 
 	@staticmethod
-	def generateYamlConfig(configurator, network, emhassConfigPath:Path):
+	def generateYamlConfig(configuration, network, emhassConfigPath:Path):
+		"""
+		Generate Emhass YAML config file : config_emhass.yaml from openhems.yaml
+		"""
 		templateDirPath = str(Path(__file__).parents[0] / "data/")
 		templateName = "config_emhass.jinja2.yaml"
 		environment = Environment(loader=FileSystemLoader(templateDirPath))
-		datas = EmhassAdapter.getEmhassDatas(configurator, network)
+		datas = EmhassAdapter.getEmhassDatas(configuration, network)
 		try:
 			template = environment.get_template(templateName)
 			content = template.render(
@@ -255,7 +300,6 @@ alt: {altitude}
 				"Fail write EMHASS configuration on '%s : TemplateNotFound(%s/%s)",
 				emhassConfigPath, templateDirPath, templateName
 			)
-		exit(1)
 		return False
 
 	@staticmethod
@@ -275,7 +319,7 @@ alt: {altitude}
 					configPath / "config_emhass.yaml"
 				)
 				EmhassAdapter.generateHomeAssistantTemplateConfig(
-					configuration, network,
+					network,
 					configPath / "template.yaml"
 				)
 		dataPath = Path("/tmp/emhass_data")
@@ -297,8 +341,7 @@ alt: {altitude}
 if __name__ == "__main__":
 	sys.path.append(str(PATH_ROOT/"src"))
 	from openhems.modules.util.configuration_manager import ConfigurationManager
-	configurator = ConfigurationManager(logger)
-	emhass = EmhassAdapter.createFromOpenHEMS(configurator)
+	emhass = EmhassAdapter.createFromOpenHEMS()
 	emhass.deferables = [
 		Deferrable(1000, 3),
 		Deferrable(300, 2),

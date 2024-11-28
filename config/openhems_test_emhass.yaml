@@ -18,6 +18,6 @@ server:
 network:
   in:
     - {id: linky, currentPower: sensor.lixee_zlinky_tic_puissance_apparente, powerMargin: 1000, maxPower: 6000, minPower: 0, class: PublicPowerGrid, contract: {type: sensor, elem: rte_tempo, value: couleur_actuelle_visuel, class: RTETempoContract, params: {}} }
-    - {id: linky, currentPower: sensor.tz3000_2putqrmw_ts011f_puissance_2, powerMargin: 1000, maxPower: 2000, minPower: 0, class: SolarPanel}
+    - {id: solarpanel, currentPower: sensor.tz3000_2putqrmw_ts011f_puissance_2, powerMargin: 1000, maxPower: 2000, minPower: 0, class: SolarPanel}
   out:
     - {id: voiture, class: switch, isOn: switch.tz3000_2putqrmw_ts011f_commutateur_2, currentPower: sensor.tz3000_2putqrmw_ts011f_puissance_2, maxPower:2000}

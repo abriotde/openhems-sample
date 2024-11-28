@@ -28,6 +28,8 @@ class CastUtililty:
 			if value=="unavailable":
 				raise CastException("WARNING : Unknown value for '"+value+"'", 0)
 			retValue = int(value)
+		else:
+			raise CastException("Impossible cast to int: Undefined algorythm : '"+type(value)+"'", 0)
 		return retValue
 	@staticmethod
 	def toTypeBool(value):
@@ -41,6 +43,8 @@ class CastUtililty:
 			retValue = value.lower() in ["on", "true", "1", "vrai"]
 		elif isinstance(value, bool):
 			retValue = value
+		else:
+			raise CastException("Impossible cast to bool: Undefined algorythm : '"+type(value)+"'", 0)
 		return retValue
 	@staticmethod
 	def toTypeStr(value):
@@ -53,6 +57,24 @@ class CastUtililty:
 			retValue = value
 		else:
 			retValue = str(value)
+		return retValue
+	@staticmethod
+	def toTypeFloat(value):
+		"""
+		Convert to type float
+		"""
+		retValue = None
+		if isinstance(value, int) or isinstance(value, float):
+			retValue = value
+		elif isinstance(value, str):
+			if value.isnumeric():
+				retValue = float(value)
+			elif value=="unavailable":
+				raise CastException("No value for '"+value+"'", 0)
+			else:
+				raise CastException("Incorect string value for  float: '"+value+"'", 0)
+		else:
+			raise CastException("Impossible cast to float: Undefined algorythm : '"+type(value)+"'", 0)
 		return retValue
 
 	@staticmethod
@@ -69,7 +91,8 @@ class CastUtililty:
 			retValue = CastUtililty.toTypeBool(value)
 		elif destType=="str":
 			retValue = CastUtililty.toTypeStr(value)
+		elif destType=="float":
+			retValue = CastUtililty.toTypeFloat(value)
 		else:
-			print(".toType(",destType,",",value,") : Unknwon type")
-			os._exit(1)
+			raise CastException(".toType(",destType,",",value,") : Unknwon type")
 		return retValue

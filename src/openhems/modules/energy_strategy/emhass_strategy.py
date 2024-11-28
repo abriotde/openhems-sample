@@ -10,7 +10,6 @@ import logging
 import copy
 import pytz
 import numpy as np
-import jinja2
 from openhems.modules.network.network import OpenHEMSNetwork
 from openhems.modules.util.configuration_manager import ConfigurationManager
 from .energy_strategy import EnergyStrategy # , LOOP_DELAY_VIRTUAL

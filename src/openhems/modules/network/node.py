@@ -208,8 +208,18 @@ class SolarPanel(InOutNode):
 	We can have many, but one can represent many solar panel.
 	It depends of sensors number.
 	"""
-	# def __init__(self, currentPower, maxPower, minPower, marginPower):
-	#	super().__init__(currentPower, maxPower, minPower, marginPower)
+	def __init__(self, currentPower, maxPower, *, 
+			moduleModel=None, inverterModel=None,
+			tilt=45, azimuth=180, 
+			modulesPerString=1,
+			stringsPerInverter=1):
+		super().__init__(currentPower, maxPower, 0, 0)
+		self.moduleModel = moduleModel
+		self.inverterModel = inverterModel
+		self.tilt = tilt
+		self.azimuth = azimuth
+		self.modulesPerString = modulesPerString
+		self.stringsPerInverter = stringsPerInverter
 	def getMaxPower(self):
 		"""
 		get current maximum power.
@@ -221,9 +231,9 @@ class Battery(InOutNode):
 	This represent battery.
 	"""
 	# pylint: disable=too-many-arguments
-	def __init__(self, currentPower, maxPower,
-			capacity, currentLevel, *, powerMargin=None
-			,minPower=None, lowLevel=None, hightLevel=None):
+	def __init__(self, capacity, currentPower, *, maxPowerIn=None,
+			maxPowerOut=None, powerMargin=None,
+			level=None, lowLevel=None, hightLevel=None):
 		if minPower is None:
 			minPower = -maxPower
 		if lowLevel is None:
@@ -232,7 +242,7 @@ class Battery(InOutNode):
 			hightLevel = 0.8*capacity
 		if powerMargin is None:
 			powerMargin = capacity*0.1
-		super().__init__(currentPower, maxPower, minPower, powerMargin)
+		super().__init__(currentPower, maxPowerIn, -maxPowerOut, powerMargin)
 		self.isControlable = True
 		self.isModulable = False
 		self.capacity = capacity

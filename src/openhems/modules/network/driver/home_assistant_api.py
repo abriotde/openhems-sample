@@ -60,15 +60,13 @@ class HomeAssistantAPI(HomeStateUpdater):
 		value = conf.get(key, None)
 		if value is not None:
 			if isinstance(value, str) and value in self.haElements:
-				self.logger.info("SourceFeeder(%s)", value)
+				self.logger.debug("SourceFeeder(%s)", value)
 				feeder = SourceFeeder(value, self, expectedType)
 			else:
-				self.logger.info("ConstFeeder(%s)", value)
+				self.logger.debug("ConstFeeder(%s)", value)
 				feeder = ConstFeeder(value)
 		elif defaultValue is None:
-			self.logger.critical("HomeAssistantAPI.getFeeder missing\
-				 configuration key '%s'  for network in YAML file ", key)
-			os._exit(1)
+			feeder = defaultValue
 		else:
 			feeder = ConstFeeder(defaultValue)
 		return feeder

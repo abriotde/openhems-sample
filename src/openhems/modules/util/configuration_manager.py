@@ -105,6 +105,8 @@ class ConfigurationManager():
 			val = self._getDict(key)
 			if len(val)==0:
 				val = None
+		elif val=="None" or val is None:
+			val = None
 		elif expectedType is not None:
 			val = CastUtililty.toType(expectedType, val)
 		return val

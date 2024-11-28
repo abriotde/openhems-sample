@@ -36,26 +36,26 @@ class FakeNetwork(HomeStateUpdater):
 			key = key.strip().upper()
 			if REGEXP_RANDOM_FEEDER.match(key):
 				vals = REGEXP_RANDOM_FEEDER.match(key)
-				self.logger.info("RandomFeeder(%s, %s, %s)", vals[1], vals[3], vals[5])
+				self.logger.debug("RandomFeeder(%s, %s, %s)", vals[1], vals[3], vals[5])
 				feeder = RandomFeeder(self, float(vals[1]), float(vals[3]), float(vals[5]))
 			else:
-				self.logger.info("ConstFeeder(%s) - default str", key)
+				self.logger.debug("ConstFeeder(%s) - default str", key)
 				feeder = ConstFeeder(float(key))
 		elif isinstance(key, list):
-			self.logger.info("RotationFeeder(%s)", key)
+			self.logger.debug("RotationFeeder(%s)", key)
 			feeder = RotationFeeder(self, key)
 		elif defaultValue is not None:
-			self.logger.info("ConstFeeder(%s) - defaultValue", defaultValue)
+			self.logger.debug("ConstFeeder(%s) - defaultValue", defaultValue)
 			feeder = ConstFeeder(defaultValue)
 		else:
-			self.logger.info("ConstFeeder(%s) - default", key)
+			self.logger.debug("ConstFeeder(%s) - default", key)
 			feeder = ConstFeeder(key)
 		return feeder
 
 	def getSwitch(self, nameid, nodeConf):
 		currentPower = self.getFeeder(nodeConf, "currentPower")
 		_isOn = CastUtililty.toTypeBool(nodeConf.get('isOn', True))
-		self.logger.info("StateFeeder(%s)", str(_isOn))
+		self.logger.debug("StateFeeder(%s)", str(_isOn))
 		isOn = StateFeeder(_isOn)
 		maxPower = self.getFeeder(nodeConf, "maxPower", 2000)
 		currentPowerRealisttic = FakeSwitchFeeder(currentPower, isOn)

@@ -50,6 +50,8 @@ class SourceFeeder(Feeder):
 			self.sourceId = self.source.refreshId
 			self.value = self.source.cachedIds[self.nameid][0]
 		return self.value
+	def __str__(self):
+		return "SourceFeeder("+self.nameid+")"
 
 # pylint: disable=too-few-public-methods
 class ConstFeeder(Feeder):
@@ -61,6 +63,8 @@ class ConstFeeder(Feeder):
 		if nameid is None:
 			nameid = str(value)
 		self.nameid = nameid
+	def __str__(self):
+		return "'"+self.nameid+"'"
 
 class RandomFeeder(Feeder):
 	"""
@@ -88,6 +92,8 @@ class RandomFeeder(Feeder):
 					self.value + random.gauss(0, 2*self.avgStep),
 				self.min), self.max)
 		return self.value
+	def __str__(self):
+		return "RandomFeeder("+self.min+", "+self.max+")"
 
 class RotationFeeder(Feeder):
 	"""
@@ -113,6 +119,8 @@ class RotationFeeder(Feeder):
 		"""
 		i = self.source.refreshId % self.len
 		return self.values[i]
+	def __str__(self):
+		return "RotationFeeder("+str(self.values)+")"
 
 class StateFeeder(ConstFeeder):
 	"""
@@ -125,6 +133,8 @@ class StateFeeder(ConstFeeder):
 		Change the value to new one.
 		"""
 		self.value = value
+	def __str__(self):
+		return "StateFeeder("+str(self.value)+")"
 
 class FakeSwitchFeeder(Feeder):
 	"""
@@ -146,3 +156,5 @@ class FakeSwitchFeeder(Feeder):
 		if self.isOn.getValue():
 			return self.value.getValue()
 		return self.defaultValue
+	def __str__(self):
+		return "FakeSwitchFeeder()"

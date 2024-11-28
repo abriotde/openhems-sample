@@ -7,8 +7,9 @@ from typing import Final
 import logging
 import os
 import copy
-from openhems.modules.util.configuration_manager import ConfigurationManager
+from openhems.modules.util.configuration_manager import ConfigurationManager, ConfigurationException
 from openhems.modules.util.notification_manager import NotificationManager
+from .feeder import ConstFeeder
 from .node import (
 	OpenHEMSNode, InOutNode, OutNode, PublicPowerGrid, SolarPanel, Battery
 )
@@ -65,52 +66,86 @@ class HomeStateUpdater:
 		"""
 		return SourceFeeder(key, self, expectedType)
 
-	def getNetworkIn(self, networkConf):
+	def getPublicPowerGrid(self, nameid, nodeConf):
+		"""
+		Return a PublicPowerGrid according nodeConf 
+		"""
+		self.tmp = "publicpowergrid"
+		currentPower = self._getFeeder(nodeConf, "currentPower", "int")
+		powerMargin = self._getFeeder(nodeConf, "powerMargin", "int")
+		maxPower = self._getFeeder(nodeConf, "maxPower", "int")
+		minPower = self._getFeeder(nodeConf, "minPower", "int")
+		node = PublicPowerGrid(currentPower, maxPower, minPower, powerMargin)
+		self.logger.info("PublicPowerGrid(%s, maxPower=%s, minPower=%s, powerMargin=%s)",
+			currentPower, maxPower, minPower, powerMargin)
+		return node
+
+	def getSolarPanel(self, nameid, nodeConf):
+		"""
+		Return a SolarPanel according nodeConf 
+		"""
+		self.tmp = "solarpanel"
+		currentPower = self._getFeeder(nodeConf, "currentPower", "int")
+		maxPower = self._getFeeder(nodeConf, "maxPower", "int")
+		moduleModel = self._getFeeder(nodeConf, "moduleModel", "str")
+		inverterModel = self._getFeeder(nodeConf, "inverterModel", "str")
+		tilt = self._getFeeder(nodeConf, "tilt", "float")
+		azimuth = self._getFeeder(nodeConf, "azimuth", "int")
+		modulesPerString = self._getFeeder(nodeConf, "modulesPerString", "int")
+		stringsPerInverter = self._getFeeder(nodeConf, "stringsPerInverter", "int")
+		node = SolarPanel(currentPower, maxPower, 
+			moduleModel=moduleModel, inverterModel=inverterModel,
+			tilt=tilt, azimuth=azimuth, 
+			modulesPerString=modulesPerString,
+			stringsPerInverter=stringsPerInverter)
+		self.logger.info("""SolarPanel(%s, %s, 
+			moduleModel=%s, inverterModel=%s, tilt=%s, azimuth=%s, 
+			modulesPerString=%s, stringsPerInverter=%s)""",
+			currentPower, maxPower, moduleModel, inverterModel,
+			tilt, azimuth, modulesPerString, stringsPerInverter)
+		return node
+
+	def getBattery(self, nameid, nodeConf):
+		"""
+		Return a Battery according nodeConf 
+		"""
+		self.tmp = "battery"
+		currentPower = self._getFeeder(nodeConf, "currentPower", "int")
+		capacity = self._getFeeder(nodeConf, "capacity", "int")
+		maxPowerIn = self._getFeeder(nodeConf, "maxPowerIn", "int")
+		maxPowerOut = self._getFeeder(nodeConf, "maxPowerOut", "int")
+		powerMargin = self._getFeeder(nodeConf, "powerMargin", "int")
+		level = self._getFeeder(nodeConf, "level", "float")
+		lowLevel = self._getFeeder(nodeConf, "lowLevel", "float")
+		hightLevel = self._getFeeder(nodeConf, "hightLevel", "float")
+		node = Battery(capacity, currentPower, maxPowerIn=maxPowerIn,
+			maxPowerOut=maxPowerOut, powerMargin=powerMargin,
+			level=level, lowLevel=lowLevel, hightLevel=hightLevel)
+		self.logger.info("""Battery(capacity=%s, currentPower=%s,
+			maxPowerIn=%s, maxPowerOut=%s, powerMargin=%s, 
+			level=%s, lowLevel=%s, hightLevel=%s)""",
+			capacity, currentPower, maxPowerIn, maxPowerOut, powerMargin,
+			level, lowLevel, hightLevel)
+		return node
+
+	# pylint: disable=unused-argument
+	def _getFeeder(self, conf, key, expectedType=None) -> Feeder:
+		"""
+		Return a feeder, search in configuration for default value if not set. 
+		"""
+		feeder = self.getFeeder(conf, key, expectedType, None)
+		if feeder is None:
+			value = self.conf.get("default.node."+self.tmp+"."+key, expectedType)
+			if value is None:
+				msg = "Argument '"+key+"' is required for node '"+self.tmp+"'"
+				self.logger.critical(msg)
+				raise ConfigurationException(msg)
+			feeder = ConstFeeder(value)
+		return feeder
+
+	def _getNetwork(self, networkConf):
 		"""
 		Initialyze "in" network part.
-		"""
-		# init Feeders
-		for e in networkConf:
-			classname = e["class"].lower()
-			currentPower = self.getFeeder(e, "currentPower", "int")
-			powerMargin = self.getFeeder(e, "powerMargin", "int", POWER_MARGIN)
-			maxPower = self.getFeeder(e, "maxPower", "int")
-			minPower = self.getFeeder(e, "minPower", "int", 0)
-			node = None
-			if classname == "publicpowergrid":
-				node = PublicPowerGrid(currentPower, maxPower, minPower, powerMargin)
-			elif classname == "solarpanel":
-				node = SolarPanel(currentPower, maxPower, minPower, powerMargin)
-			elif classname == "battery":
-				lowLevel = self.getFeeder(e, "lowLevel", "int", POWER_MARGIN)
-				hightLevel = self.getFeeder(e, "hightLevel", "int", POWER_MARGIN)
-				capacity = self.getFeeder(e, "capacity", "int", POWER_MARGIN)
-				currentLevel = self.getFeeder(e, "level", "int", 0)
-				node = Battery(currentPower, maxPower, capacity, currentLevel,
-					powerMargin=powerMargin, minPower=minPower, lowLevel=lowLevel,
-					hightLevel=hightLevel)
-			else:
-				self.logger.critical("HomeAssistantAPI.getNetwork : "
-					"Unknown classname '{classname}'")
-				os._exit(1)
-			if "id" in e.keys():
-				node.id = e["id"]
-			# print(node)
-			self.network.addNode(node)
-
-	def getSwitch(self, nameid, nodeConf):
-		"""
-		Return a OpenHEMSNode representing a switch
-		 according to it's YAML configuration.
-		"""
-		currentPower = self.getFeeder(nodeConf, "currentPower", "int")
-		isOn = self.getFeeder(nodeConf, "isOn", "bool", True)
-		maxPower = self.getFeeder(nodeConf, "maxPower", "int", 2000)
-		return OutNode(nameid, currentPower, maxPower, isOn)
-
-	def getNetworkOut(self, networkConf):
-		"""
-		Initialyze "out" network part.
 		"""
 		i = 0
 		for e in networkConf:
@@ -119,17 +154,33 @@ class HomeStateUpdater:
 			nameid = e.get("id", f"node_{i}")
 			i += 1
 			if classname == "switch":
-				node = self.getSwitch(nameid, e)
+				node = node = self.getSwitch(nameid, e)
+			elif classname == "publicpowergrid":
+				node = self.getPublicPowerGrid(nameid, e)
+			elif classname == "solarpanel":
+				node = self.getSolarPanel(nameid, e)
+			elif classname == "battery":
+				node = self.getBattery(nameid, e)
 			else:
-				self.logger.critical("HomeStateUpdater.getNetworkOut : "
-					"Unknown classname '%s'", classname)
-				os._exit(1)
-			if node is not None:
-				self.network.addNode(node)
-			else:
-				self.logger.critical("HomeStateUpdater.getNetworkOut : "
-					"Fail get Node '%s'", str(e))
-				os._exit(1)
+				msg = f"HomeAssistantAPI.getNetwork : Unknown classname '{classname}'"
+				self.logger.critical(msg)
+				raise ConfigurationException(msg)
+			self.network.addNode(node)
+
+	def getSwitch(self, nameid, nodeConf):
+		"""
+		Return a OpenHEMSNode representing a switch
+		 according to it's YAML configuration.
+		"""
+		self.tmp = "switch"
+		currentPower = self._getFeeder(nodeConf, "currentPower", "int")
+		maxPower = self._getFeeder(nodeConf, "maxPower", "int")
+		isOn = self._getFeeder(nodeConf, "isOn", "bool")
+		node = OutNode(nameid, currentPower, maxPower, isOn)
+		self.logger.info("""OutNode(nameid=%s, currentPower=%s,
+			maxPower=%s, isOn=%s)""",
+			nameid, currentPower, maxPower, isOn)
+		return node
 
 	def getNetwork(self): # -> OpenHEMSNetwork:
 		"""
@@ -137,8 +188,8 @@ class HomeStateUpdater:
 		"""
 		self.network = OpenHEMSNetwork(self)
 		self.initNetwork()
-		self.getNetworkIn(self.conf.get("network.in"))
-		self.getNetworkOut(self.conf.get("network.out"))
+		self._getNetwork(self.conf.get("network.in"))
+		self._getNetwork(self.conf.get("network.out"))
 		self.network.print(self.logger.info)
 		return self.network
 
@@ -214,7 +265,7 @@ class OpenHEMSNetwork:
 				os._exit(1)
 			globalPower += p
 		return globalPower
-	
+
 	def _getAll(self, filterId, elemFilter=None):
 		"""
 		Return Out nodes, filtered by strategy=strategyId if set.
@@ -232,10 +283,12 @@ class OpenHEMSNetwork:
 				}
 				elemFilter = filters.get(filterId, None)
 			if elemFilter is not None:
-				out = filter(f, self.inout)
+				out = filter(elemFilter, self.inout)
 			elif filterId=="":
 				out = self.inout
 			else:
+				logger.error("Network.getAll() : unknown filterId '%s'",
+					 filterId)
 				out = None
 			self._elemsCache[filterId] = out
 		return out
@@ -247,33 +300,35 @@ class OpenHEMSNetwork:
 		"""
 		return self._getAll(filterId)
 
+	def _sumNodesValues(self, filterId, defaultFilter, function):
+		"""
+		Sum all values from nodes (filtered by filterId).
+		"""
+		if filterId is None:
+			filterId = defaultFilter
+		globalPower= 0
+		for elem in self._getAll(filterId):
+			globalPower += function(elem)
+
 	def getMaxPower(self, filterId=None):
 		"""
 		Get current maximum power consumption possible.
 		"""
-		globalPower= 0
-		for elem in self._getAll("publicpowergrid"):
-			globalPower += elem.getMaxPower()
-		return globalPower
-	def getMinPower(self):
+		return self._sumNodesValues(filterId, "inout", (lambda x: x.getMaxPower()))
+		
+	def getMinPower(self, filterId=None):
 		"""
 		Get current minimum power consumption possible.
 		0 mean, we can't give back power to network grid.
 		"""
-		globalPower = 0
-		for elem in self.inout:
-			globalPower += elem.getMinPower()
-		return globalPower
+		return self._sumNodesValues(filterId, "inout", (lambda x: x.getMinPower()))
 	def getMarginPower(self):
 		"""
 		Return margin power
 		(Power to keep before considering extrem value)
 		"""
-		globalPower = 0
-		for elem in self.inout:
-			if elem.isOn():
-				globalPower += elem.getMarginPower()
-		return globalPower
+		return self._sumNodesValues(filterId, "inout", (lambda x: x.getMarginPower()))
+
 	def getMarginPowerOn(self):
 		"""
 		Get how many power we can add safely
