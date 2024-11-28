@@ -2,8 +2,6 @@
 Usefull function for standard usages
 """
 
-import os
-
 class CastException(Exception):
 	"""
 	Custom Home-Assitant excepton to be captured.
@@ -64,7 +62,7 @@ class CastUtililty:
 		Convert to type float
 		"""
 		retValue = None
-		if isinstance(value, int) or isinstance(value, float):
+		if isinstance(value, (int, float)):
 			retValue = value
 		elif isinstance(value, str):
 			if value.isnumeric():
@@ -94,5 +92,5 @@ class CastUtililty:
 		elif destType=="float":
 			retValue = CastUtililty.toTypeFloat(value)
 		else:
-			raise CastException(".toType(",destType,",",value,") : Unknwon type")
+			raise CastException(".toType("+destType+","+value+") : Unknwon type", 0)
 		return retValue

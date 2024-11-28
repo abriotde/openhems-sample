@@ -124,17 +124,20 @@ class OutNode(OpenHEMSNode):
 	"""
 	Electricity consumer (like washing-machine, water-heater).
 	"""
-	def __init__(self, name_id, currentPower, maxPower, isOnFeeder=None):
+	def __init__(self, nameId, currentPower, maxPower, isOnFeeder=None):
 		super().__init__(currentPower, maxPower, isOnFeeder)
-		self.setId(name_id)
-		self.name = name_id
-		self.schedule = OpenHEMSSchedule(self.id, name_id)
+		self.setId(nameId)
+		self.name = nameId
+		self.schedule = OpenHEMSSchedule(self.id, nameId)
 
 	def getSchedule(self):
 		"""
 		Return schedule
 		"""
 		return self.schedule
+	def __str__(self):
+		return (f"OutNode(name={self.name}, currentPower={self.currentPower},"
+			f"maxPower={self.maxPower}, isOn={self._isOn})")
 
 class InOutNode(OpenHEMSNode):
 	"""
@@ -201,6 +204,9 @@ class PublicPowerGrid(InOutNode):
 	"""
 	# def __init__(self, currentPower, maxPower, minPower, marginPower):
 	#	super().__init__(currentPower, maxPower, minPower, marginPower)
+	def __str__(self):
+		return (f"PublicPowerGrid({self.currentPower}, maxPower={self.maxPower},"
+			f" minPower={self.minPower}, powerMargin={self.marginPower})")
 
 class SolarPanel(InOutNode):
 	"""
@@ -208,11 +214,10 @@ class SolarPanel(InOutNode):
 	We can have many, but one can represent many solar panel.
 	It depends of sensors number.
 	"""
-	def __init__(self, currentPower, maxPower, *, 
-			moduleModel=None, inverterModel=None,
-			tilt=45, azimuth=180, 
-			modulesPerString=1,
-			stringsPerInverter=1):
+	# pylint: disable=too-many-arguments
+	def __init__(self, currentPower, maxPower, *,
+			moduleModel=None, inverterModel=None, tilt=45, azimuth=180,
+			modulesPerString=1, stringsPerInverter=1):
 		super().__init__(currentPower, maxPower, 0, 0)
 		self.moduleModel = moduleModel
 		self.inverterModel = inverterModel
@@ -225,6 +230,12 @@ class SolarPanel(InOutNode):
 		get current maximum power.
 		"""
 		return self.currentPower.getValue()
+	def __str__(self):
+		return (f"SolarPanel({self.currentPower}, {self.maxPower},"
+		f" moduleModel={self.moduleModel}, inverterModel={self.inverterModel},"
+		f" tilt={self.tilt}, azimuth={self.azimuth},"
+		f" modulesPerString={self.modulesPerString},"
+		f"stringsPerInverter={self.stringsPerInverter})")
 
 class Battery(InOutNode):
 	"""
@@ -232,23 +243,25 @@ class Battery(InOutNode):
 	"""
 	# pylint: disable=too-many-arguments
 	def __init__(self, capacity, currentPower, *, maxPowerIn=None,
-			maxPowerOut=None, powerMargin=None,
-			level=None, lowLevel=None, hightLevel=None):
-		if minPower is None:
-			minPower = -maxPower
+			maxPowerOut=None, marginPower=None,
+			currentLevel=None, lowLevel=None, hightLevel=None):
+		if maxPowerIn is None:
+			maxPowerIn = 2000
+		if maxPowerOut is None:
+			maxPowerOut = -1 * maxPowerIn
 		if lowLevel is None:
 			lowLevel = 0.2*capacity
 		if hightLevel is None:
 			hightLevel = 0.8*capacity
-		if powerMargin is None:
-			powerMargin = capacity*0.1
-		super().__init__(currentPower, maxPowerIn, -maxPowerOut, powerMargin)
+		if marginPower is None:
+			marginPower = capacity*0.1
+		super().__init__(currentPower, maxPowerIn, maxPowerOut, marginPower)
 		self.isControlable = True
 		self.isModulable = False
 		self.capacity = capacity
+		self.currentLevel = currentLevel
 		self.lowLevel = lowLevel
 		self.hightLevel = hightLevel
-		self.currentLevel = currentLevel
 
 	def getCapacity(self):
 		"""
@@ -261,6 +274,11 @@ class Battery(InOutNode):
 		Get battery level.
 		"""
 		return self.currentLevel.getValue()
+	def __str__(self):
+		return (f"Battery(capacity={self.capacity}, currentPower={self.currentPower},"
+			f" maxPowerIn={self.maxPower}, maxPowerOut={self.minPower},"
+			f" powerMargin={self.marginPower}, level={self.currentLevel},"
+			f" lowLevel={self.lowLevel}, hightLevel={self.hightLevel})")
 
 # class RTETempoContract(PublicPowerGrid):
 # class CarCharger(Switch):

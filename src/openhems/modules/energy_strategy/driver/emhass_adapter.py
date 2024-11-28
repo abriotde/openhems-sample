@@ -208,39 +208,25 @@ alt: {altitude}
 		return False
 
 	@staticmethod
-	def getYamlList(elems, caller):
+	def getYamlList(elems, caller=None, indent="  "):
 		"""
 		Convert a Python list to a YAML one
 		"""
-		elems = [caller(elem).getValue() for elem in elems]
-		return "\n  - ".join(elems)
+		if caller is not None:
+			elems = [str(caller(elem).getValue()) for elem in elems]
+		if len(elems)==0:
+			return ""
+		init = "\n"+indent+"- "
+		return init+(init.join(elems))
 
 	@staticmethod
-	def getEmhassDatas(configuration, network):
+	def getEmhassDatasBattery(network):
 		"""
 		Extract usefull informations from openhems.yaml configuration
-		 for configuring EMHASS
+		 for configuring EMHASS Battery fields
 		Return: Dict of varname=>String to felle configuration file.
 		"""
-		datas = configuration.get("emhass", None, True)
-		# P_from_grid_max / P_to_grid_max
-		datas['P_from_grid_max'] = network.getMaxPower("publicpowergrid")
-		datas['P_to_grid_max'] = network.getMinPower("publicpowergrid")
-		# Feel solarpanel fields
-		elems = network.getAll("solarpanel")
-		datas['module_model'] = EmhassAdapter.getYamlList(elems, lambda x:
-			x.moduleModel)
-		datas['inverter_model'] = EmhassAdapter.getYamlList(elems, lambda x:
-			x.inverterModel)
-		datas['surface_tilt'] = EmhassAdapter.getYamlList(elems, lambda x:
-			x.tilt)
-		datas['surface_azimuth'] = EmhassAdapter.getYamlList(elems, lambda x:
-			x.azimuth)
-		datas['modules_per_string'] = EmhassAdapter.getYamlList(elems, lambda x:
-			x.modulesPerString)
-		datas['strings_per_inverter'] = EmhassAdapter.getYamlList(elems, lambda x:
-			x.stringsPerInverter)
-
+		datas = {}
 		# Feel battery fields
 		maxPowerOut = 0
 		maxPowerIn = 0
@@ -270,8 +256,48 @@ alt: {altitude}
 			datas['SOCmin'] = lowLevel / capacity
 			datas['SOCmax'] = highLevel / capacity
 			datas['SOCtarget'] = targetLevel / capacity
-		print("Datas:",datas)
-		sys.exit(0)
+		return datas
+
+	@staticmethod
+	def getEmhassDatas(configuration, network):
+		"""
+		Extract usefull informations from openhems.yaml configuration
+		 for configuring EMHASS
+		Return: Dict of varname=>String to felle configuration file.
+		"""
+		datas = configuration.get("emhass", None, True)
+		# P_from_grid_max / P_to_grid_max
+		datas['P_from_grid_max'] = network.getMaxPower("publicpowergrid")
+		datas['P_to_grid_max'] = network.getMinPower("publicpowergrid")
+		elems = network.getAll("inout")
+		zeroRelacementVars = [
+			'sensor.emhass_photovoltaic_power_produced',
+			'sensor.emhass_household_power_consumption'
+		] + [elem.currentPower.nameid for elem in elems]
+		datas['var_replace_zero'] = EmhassAdapter.getYamlList(zeroRelacementVars)
+		elems = network.getAll("solarpanel")
+		interpretVars = [
+			'sensor.emhass_photovoltaic_power_produced'
+		] + [elem.currentPower.nameid for elem in elems]
+		datas['var_interp'] = EmhassAdapter.getYamlList(interpretVars)
+
+		# Feel solarpanel fields
+		elems = network.getAll("solarpanel")
+		datas['module_model'] = EmhassAdapter.getYamlList(elems, lambda x:
+			x.moduleModel)
+		datas['inverter_model'] = EmhassAdapter.getYamlList(elems, lambda x:
+			x.inverterModel)
+		datas['surface_tilt'] = EmhassAdapter.getYamlList(elems, lambda x:
+			x.tilt)
+		datas['surface_azimuth'] = EmhassAdapter.getYamlList(elems, lambda x:
+			x.azimuth)
+		datas['modules_per_string'] = EmhassAdapter.getYamlList(elems, lambda x:
+			x.modulesPerString)
+		datas['strings_per_inverter'] = EmhassAdapter.getYamlList(elems, lambda x:
+			x.stringsPerInverter)
+
+		datas = datas|EmhassAdapter.getEmhassDatasBattery(network)
+		# print("Datas:",datas)
 		return datas
 
 	@staticmethod
@@ -309,10 +335,10 @@ alt: {altitude}
 		"""
 		configPath = PATH_ROOT / "config"
 		if configuration is not None:
-			# EmhassAdapter.generateSecretConfig(
-			# 	configuration,
-			# 	configPath / "secrets_emhass.yaml"
-			# )
+			EmhassAdapter.generateSecretConfig(
+				configuration,
+				configPath / "secrets_emhass.yaml"
+			)
 			if network is not None:
 				EmhassAdapter.generateYamlConfig(
 					configuration, network,
@@ -340,7 +366,6 @@ alt: {altitude}
 
 if __name__ == "__main__":
 	sys.path.append(str(PATH_ROOT/"src"))
-	from openhems.modules.util.configuration_manager import ConfigurationManager
 	emhass = EmhassAdapter.createFromOpenHEMS()
 	emhass.deferables = [
 		Deferrable(1000, 3),

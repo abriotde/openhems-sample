@@ -1,15 +1,14 @@
-# TODO : Auto-generate this file
 
+# Auto-generated file by openhems.EmhassAdapter.generateHomeAssistantTemplateConfig()
   - sensor:
     - unique_id: sensor.emhass_photovoltaic_power_produced
       name: "EMHASS - Photovoltaic power-produced"
-      state: '{{ (states("sensor.lixee_zlinky_tic_puissance_apparente") | float(0)) - (states("sensor.tz3000_2putqrmw_ts011f_puissance_2") | float(0)) }}'
+      state: '{ (states("sensor.tz3000_2putqrmw_ts011f_puissance_2") | float(0)) }'
       unit_of_measurement: "Watt"
       device_class: energy
   - sensor:
     - unique_id: sensor.emhass_household_power_consumption
       name: "EMHASS - Household power consumption"
-      state: '{{ (states("sensor.lixee_zlinky_tic_puissance_apparente") | float(0)) + (states("sensor.tz3000_2putqrmw_ts011f_puissance_2") | float(0)) }}'
+      state: '{ (states("sensor.lixee_zlinky_tic_puissance_apparente") | float(0)) + (states("sensor.tz3000_2putqrmw_ts011f_puissance_2") | float(0)) - (states("sensor.tz3000_2putqrmw_ts011f_puissance_2") | float(0)) }'
       unit_of_measurement: "Watt"
       device_class: energy
-

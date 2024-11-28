@@ -29,8 +29,8 @@ class HomeStateUpdater:
 		self.refreshId = 0
 		self.logger = logging.getLogger(__name__)
 		self.network = None
-		self.network = None
 		self.conf = conf
+		self.tmp = None # Used to avoid method argument repeated.
 
 	def updateNetwork(self):
 		"""
@@ -76,8 +76,7 @@ class HomeStateUpdater:
 		maxPower = self._getFeeder(nodeConf, "maxPower", "int")
 		minPower = self._getFeeder(nodeConf, "minPower", "int")
 		node = PublicPowerGrid(currentPower, maxPower, minPower, powerMargin)
-		self.logger.info("PublicPowerGrid(%s, maxPower=%s, minPower=%s, powerMargin=%s)",
-			currentPower, maxPower, minPower, powerMargin)
+		# self.logger.info(node)
 		return node
 
 	def getSolarPanel(self, nameid, nodeConf):
@@ -93,16 +92,12 @@ class HomeStateUpdater:
 		azimuth = self._getFeeder(nodeConf, "azimuth", "int")
 		modulesPerString = self._getFeeder(nodeConf, "modulesPerString", "int")
 		stringsPerInverter = self._getFeeder(nodeConf, "stringsPerInverter", "int")
-		node = SolarPanel(currentPower, maxPower, 
+		node = SolarPanel(currentPower, maxPower,
 			moduleModel=moduleModel, inverterModel=inverterModel,
-			tilt=tilt, azimuth=azimuth, 
+			tilt=tilt, azimuth=azimuth,
 			modulesPerString=modulesPerString,
 			stringsPerInverter=stringsPerInverter)
-		self.logger.info("""SolarPanel(%s, %s, 
-			moduleModel=%s, inverterModel=%s, tilt=%s, azimuth=%s, 
-			modulesPerString=%s, stringsPerInverter=%s)""",
-			currentPower, maxPower, moduleModel, inverterModel,
-			tilt, azimuth, modulesPerString, stringsPerInverter)
+		# self.logger.info(str(node))
 		return node
 
 	def getBattery(self, nameid, nodeConf):
@@ -114,18 +109,14 @@ class HomeStateUpdater:
 		capacity = self._getFeeder(nodeConf, "capacity", "int")
 		maxPowerIn = self._getFeeder(nodeConf, "maxPowerIn", "int")
 		maxPowerOut = self._getFeeder(nodeConf, "maxPowerOut", "int")
-		powerMargin = self._getFeeder(nodeConf, "powerMargin", "int")
-		level = self._getFeeder(nodeConf, "level", "float")
+		marginPower = self._getFeeder(nodeConf, "marginPower", "int")
+		currentLevel = self._getFeeder(nodeConf, "currentLevel", "float")
 		lowLevel = self._getFeeder(nodeConf, "lowLevel", "float")
 		hightLevel = self._getFeeder(nodeConf, "hightLevel", "float")
 		node = Battery(capacity, currentPower, maxPowerIn=maxPowerIn,
-			maxPowerOut=maxPowerOut, powerMargin=powerMargin,
-			level=level, lowLevel=lowLevel, hightLevel=hightLevel)
-		self.logger.info("""Battery(capacity=%s, currentPower=%s,
-			maxPowerIn=%s, maxPowerOut=%s, powerMargin=%s, 
-			level=%s, lowLevel=%s, hightLevel=%s)""",
-			capacity, currentPower, maxPowerIn, maxPowerOut, powerMargin,
-			level, lowLevel, hightLevel)
+			maxPowerOut=maxPowerOut, marginPower=marginPower,
+			currentLevel=currentLevel, lowLevel=lowLevel, hightLevel=hightLevel)
+		# self.logger.info(node)
 		return node
 
 	# pylint: disable=unused-argument
@@ -177,9 +168,7 @@ class HomeStateUpdater:
 		maxPower = self._getFeeder(nodeConf, "maxPower", "int")
 		isOn = self._getFeeder(nodeConf, "isOn", "bool")
 		node = OutNode(nameid, currentPower, maxPower, isOn)
-		self.logger.info("""OutNode(nameid=%s, currentPower=%s,
-			maxPower=%s, isOn=%s)""",
-			nameid, currentPower, maxPower, isOn)
+		# self.logger.info(node)
 		return node
 
 	def getNetwork(self): # -> OpenHEMSNetwork:
@@ -208,20 +197,16 @@ class OpenHEMSNetwork:
 			printer = print
 		printer("OpenHEMSNetwork(")
 		printer(" IN : ")
-		for elem in self.inout:
-			printer("  - "+str(elem.id))
+		for elem in self.getAll("inout"):
+			printer("  - "+str(elem))
 		printer(" OUT : ")
-		for elem in self.out:
-			printer("  - "+str(elem.id))
+		for elem in self.getAll("out"):
+			printer("  - "+str(elem))
 		printer(")")
 
 	def __init__(self, networkUpdater: HomeStateUpdater):
 		self.networkUpdater = networkUpdater
-		self.inout = []
-		self.out = []
-		self.battery = []
-		self.publicpowergrid = []
-		self.solarpanel = []
+		self.nodes = []
 		self.notificationManager = NotificationManager(self.networkUpdater)
 		self._elemsCache = {}
 
@@ -230,7 +215,7 @@ class OpenHEMSNetwork:
 		Return scheduled planning.
 		"""
 		schedule = {}
-		for node in self.out:
+		for node in self.getAll("out"):
 			myid = node.id
 			sc = node.getSchedule()
 			schedule[myid] = sc
@@ -241,16 +226,8 @@ class OpenHEMSNetwork:
 		Add a node.
 		"""
 		elem.network = self
-		if isinstance(elem, InOutNode):
-			self.inout.append(elem)
-			if isinstance(elem, Battery):
-				self.battery.append(elem)
-			elif isinstance(elem, PublicPowerGrid):
-				self.publicpowergrid.append(elem)
-			elif isinstance(elem, SolarPanel):
-				self.solarpanel.append(elem)
-		else:
-			self.out.append(elem)
+		self.nodes.append(elem)
+		self._elemsCache = {}
 		return elem
 
 	def getCurrentPowerConsumption(self):
@@ -258,7 +235,7 @@ class OpenHEMSNetwork:
 		Get current power consumption by all network..
 		"""
 		globalPower = 0
-		for elem in self.inout:
+		for elem in self.getAll("inout"):
 			p = elem.getCurrentPower()
 			if isinstance(p, str):
 				logger.critical("power as string : '%s'", p)
@@ -283,9 +260,9 @@ class OpenHEMSNetwork:
 				}
 				elemFilter = filters.get(filterId, None)
 			if elemFilter is not None:
-				out = filter(elemFilter, self.inout)
+				out = list(filter(elemFilter, self.nodes))
 			elif filterId=="":
-				out = self.inout
+				out = self.nodes
 			else:
 				logger.error("Network.getAll() : unknown filterId '%s'",
 					 filterId)
@@ -315,14 +292,14 @@ class OpenHEMSNetwork:
 		Get current maximum power consumption possible.
 		"""
 		return self._sumNodesValues(filterId, "inout", (lambda x: x.getMaxPower()))
-		
+
 	def getMinPower(self, filterId=None):
 		"""
 		Get current minimum power consumption possible.
 		0 mean, we can't give back power to network grid.
 		"""
 		return self._sumNodesValues(filterId, "inout", (lambda x: x.getMinPower()))
-	def getMarginPower(self):
+	def getMarginPower(self, filterId=None):
 		"""
 		Return margin power
 		(Power to keep before considering extrem value)
@@ -339,7 +316,7 @@ class OpenHEMSNetwork:
 		marginPowerOn = maxPower-marginPower-currentPower
 		if marginPowerOn<0: # Need to switch off some elements
 			while marginPowerOn<0:
-				for elem in self.out:
+				for elem in self.getAll("out"):
 					if elem.isSwitchable() and elem.isOn():
 						power = elem.getCurrentPower()
 						if elem.switchOn(False):
@@ -356,7 +333,7 @@ class OpenHEMSNetwork:
 		marginPowerOff = (currentPower-marginPower)-minPower
 		if marginPowerOff<0: # Need to switch on some elements
 			while marginPowerOff<0:
-				for elem in self.out:
+				for elem in self.getAll("out"):
 					if elem.isSwitchable() and not elem.isOn():
 						if elem.switchOn(True):
 							marginPowerOff += elem.maxPower
@@ -380,7 +357,7 @@ class OpenHEMSNetwork:
 		# powerMargin = self.getCurrentPowerConsumption()
 		# self.print(logger.info)
 		ok = True
-		for elem in self.out:
+		for elem in self.getAll("out"):
 			if elem.isSwitchable and elem.switchOn(False):
 				logger.warning("Fail to switch off '%s'",elem.id)
 				ok = False
@@ -403,10 +380,11 @@ class OpenHEMSNetwork:
 		"""
 		Return a battery representing the sum of all battery.
 		"""
-		l = len(self.battery)
+		batteries = self.getAll("battery")
+		l = len(batteries)
 		if l<1:
-			return Battery(0, 0, 0, 0)
+			return Battery(0, 0)
 		if l==1:
-			return self.battery[0]
+			return batteries[0]
 		# TODO
-		return copy.copy(self.battery[0])
+		return copy.copy(batteries[0])
