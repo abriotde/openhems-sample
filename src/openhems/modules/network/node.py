@@ -6,6 +6,7 @@ import logging
 from collections import deque
 from typing import Final
 from openhems.modules.web import OpenHEMSSchedule
+from openhems.modules.contract import Contract
 from .feeder import Feeder
 
 CYCLE_HISTORY: Final[int] = 10 # Number of cycle we keep history
@@ -202,11 +203,20 @@ class PublicPowerGrid(InOutNode):
 	"""
 	This represent Public power grid. Just one should be possible.
 	"""
-	# def __init__(self, currentPower, maxPower, minPower, marginPower):
-	#	super().__init__(currentPower, maxPower, minPower, marginPower)
+	def __init__(self, currentPower, maxPower, minPower, marginPower, contract, networkUpdater):
+		super().__init__(currentPower, maxPower, minPower, marginPower)
+		self.contract = Contract.getContract(contract, networkUpdater.conf, networkUpdater)
+
 	def __str__(self):
 		return (f"PublicPowerGrid({self.currentPower}, maxPower={self.maxPower},"
 			f" minPower={self.minPower}, powerMargin={self.marginPower})")
+
+	def getContract(self):
+		"""
+		Return the contract. Usefull to get specificities witch can imply on strategy.
+		Like offpeak-hours, prices.
+		"""
+		return self.contract
 
 class SolarPanel(InOutNode):
 	"""
@@ -280,6 +290,5 @@ class Battery(InOutNode):
 			f" powerMargin={self.marginPower}, level={self.currentLevel},"
 			f" lowLevel={self.lowLevel}, hightLevel={self.hightLevel})")
 
-# class RTETempoContract(PublicPowerGrid):
 # class CarCharger(Switch):
 # class WaterHeater(InOutNode):

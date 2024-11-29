@@ -19,10 +19,8 @@ class OpenHEMSServer:
 		self.network = network
 		self.loopDelay = serverConf.get("server.loopDelay")
 		strategy = serverConf.get("server.strategy").lower()
-		strategyParams = serverConf.get("server.strategyParams")
 		if strategy=="offpeak":
-			params = [p.split("-") for p in strategyParams]
-			self.strategy = OffPeakStrategy(mylogger, self.network, params)
+			self.strategy = OffPeakStrategy(mylogger, self.network)
 		elif strategy=="emhass":
 			# pylint: disable=import-outside-toplevel
 			# Avoid to import EmhassStrategy and all it's dependances when no needs.

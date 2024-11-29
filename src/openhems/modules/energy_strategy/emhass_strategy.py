@@ -31,7 +31,7 @@ class EmhassStrategy(EnergyStrategy):
 		self.adapter = EmhassAdapter.createFromOpenHEMS(configuration, network)
 		self.logger.info("EmhassStrategy()")
 		self.network = network
-		freq = configuration.get("server.strategyParams.emhassEvalFrequenceInMinutes")
+		freq = configuration.get("emhass.freq")
 		self.emhassEvalFrequence = timedelta(minutes=freq)
 		self.timezone = pytz.timezone(configuration.get("timeZone"))
 		self.data = None
@@ -80,7 +80,7 @@ class EmhassStrategy(EnergyStrategy):
 		# print("EmhassStrategy.updateDeferables()")
 		update = False
 		self.deferables = {}
-		for node in self.network.out:
+		for node in self.network.getAll("out"):
 			nodeId = node.id
 			durationInSecs = node.getSchedule().duration
 			deferable = self.deferables.get(nodeId, None)

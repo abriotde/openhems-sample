@@ -93,20 +93,20 @@ class ConfigurationManager():
 		self._cache[key] = value
 		return value
 
-	def get(self, key, expectedType=None, deepSearch=False):
+	def get(self, key, expectedType=None, *, defaultValue=None, deepSearch=False):
 		"""
 		Return value for this key.
 		Return None if the key is unknown.
 		If deepSearch, we return a dict of all sub-keys.
 			NB: It would be better to return a sub-ConfigurationManager...
 		"""
-		val = self._conf.get(key, None)
+		val = self._conf.get(key, defaultValue)
 		if val is None and deepSearch:
 			val = self._getDict(key)
 			if len(val)==0:
 				val = None
 		elif val=="None" or val is None:
-			val = None
+			val = defaultValue
 		elif expectedType is not None:
 			val = CastUtililty.toType(expectedType, val)
 		return val

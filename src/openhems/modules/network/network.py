@@ -75,7 +75,9 @@ class HomeStateUpdater:
 		powerMargin = self._getFeeder(nodeConf, "powerMargin", "int")
 		maxPower = self._getFeeder(nodeConf, "maxPower", "int")
 		minPower = self._getFeeder(nodeConf, "minPower", "int")
-		node = PublicPowerGrid(currentPower, maxPower, minPower, powerMargin)
+		contract = self._getFeeder(nodeConf, "contract")
+		node = PublicPowerGrid(currentPower, maxPower, minPower, powerMargin,
+			contract, self)
 		# self.logger.info(node)
 		return node
 
@@ -177,8 +179,7 @@ class HomeStateUpdater:
 		"""
 		self.network = OpenHEMSNetwork(self)
 		self.initNetwork()
-		self._getNetwork(self.conf.get("network.in"))
-		self._getNetwork(self.conf.get("network.out"))
+		self._getNetwork(self.conf.get("network.nodes"))
 		self.network.print(self.logger.info)
 		return self.network
 
@@ -388,3 +389,12 @@ class OpenHEMSNetwork:
 			return batteries[0]
 		# TODO
 		return copy.copy(batteries[0])
+
+	def getOffPeakHoursRanges(self):
+		"""
+		Return a concatenation of all offpeak ours off sources.
+		"""
+		offpeakhours = []
+		for elem in self.getAll("publicpowergrid"):
+			offpeakhours = elem.getContract().getOffPeakHoursRanges()
+			return offpeakhours
