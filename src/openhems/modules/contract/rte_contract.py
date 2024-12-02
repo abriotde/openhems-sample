@@ -3,6 +3,7 @@ Module to manage RTE classic contracts. Feel automaticaly offpeak-hours and all 
 """
 
 import datetime
+from openhems.modules.network.feeder import Feeder
 from .generic_contract import GenericContract
 
 # pylint: disable=too-few-public-methods
@@ -15,8 +16,10 @@ class RTETempoContract(RTEContract):
 	"""
 	Contrat RTE avec option Tempo
 	"""
-	def __init__(self, color, offpeakprices, peakprices, offpeakHoursRanges):
+	def __init__(self, color, offpeakprices, peakprices, offpeakHoursRanges, feederProvider):
 		super().__init__(offpeakprices, peakprices, offpeakHoursRanges)
+		if not isinstance(color, Feeder):
+			color = feederProvider.getFeeder(color)
 		self.color = color
 		self.lastCall = ""
 		self.lastColor = ""
@@ -60,19 +63,19 @@ class RTETempoContract(RTEContract):
 	# pylint: disable=arguments-differ
 	@staticmethod
 	def fromdict(dictConf, configuration, networtUpdater):
-		keys = (dictConf, configuration, "rtetarifbleu")
-		color = GenericContract.get("color", keys, "float")
-		if color is None:
-			color = "bleu"
-		else:
-			color = networtUpdater.getFeeder(color)
-			if color is None:
-				color = "bleu"
 		keys = (dictConf, configuration, "rtetempo")
-		peakPrice = GenericContract.get("peakPrice", keys)
-		offpeakPrice = GenericContract.get("offpeakPrice", keys)
-		offpeakHoursRanges = GenericContract.get("offpeakHoursRanges", keys)
-		return RTETempoContract(color, peakPrice, offpeakPrice, offpeakHoursRanges)
+		colorFeeder = GenericContract.get("color", keys)
+		colors = ["bleu", "blanc", "rouge"]
+		peakPrice = {}
+		for c in colors:
+			price = GenericContract.get("peakprice."+c, keys)
+			peakPrice[c] = price
+		offpeakPrice = {}
+		for c in colors:
+			price = GenericContract.get("offpeakprice."+c, keys)
+			offpeakPrice[c] = price
+		offpeakHoursRanges = GenericContract.get("offpeakhoursranges", keys)
+		return RTETempoContract(colorFeeder, peakPrice, offpeakPrice, offpeakHoursRanges, networtUpdater)
 
 class RTEHeuresCreusesContract(RTEContract):
 	"""

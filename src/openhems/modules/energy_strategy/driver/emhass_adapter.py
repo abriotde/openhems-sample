@@ -149,6 +149,8 @@ class EmhassAdapter:
 		 (So possibly inconsistense and difficult error to resolv)
 		"""
 		url = configuration.get("api.url")
+		if url.endswith("/api"):
+			url = url[:-3]
 		token = configuration.get("api.long_lived_token")
 		tz = configuration.get("timeZone")
 		latitude = configuration.get("latitude")
@@ -162,9 +164,9 @@ class EmhassAdapter:
 hass_url: {url}
 long_lived_token: {token}
 time_zone: {tz}
-lat: {latitude}
-lon: {longitude}
-alt: {altitude}
+Latitude: {latitude}
+Longitude: {longitude}
+Altitude: {altitude}
 """)
 
 	@staticmethod
@@ -265,7 +267,7 @@ alt: {altitude}
 		 for configuring EMHASS
 		Return: Dict of varname=>String to felle configuration file.
 		"""
-		datas = configuration.get("emhass", None, True)
+		datas = configuration.get("emhass", deepSearch=True)
 		# P_from_grid_max / P_to_grid_max
 		datas['P_from_grid_max'] = network.getMaxPower("publicpowergrid")
 		datas['P_to_grid_max'] = network.getMinPower("publicpowergrid")

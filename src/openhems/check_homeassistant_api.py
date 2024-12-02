@@ -22,8 +22,8 @@ with yamlConfig.open('r', encoding="utf-8") as file:
 		"Authorization": "Bearer "+long_lived_token,
 		"content-type": "application/json",
 	}
-	# url='http://192.168.1.202:8123/api/history/period/'
-	#	'2024-11-10T20:00:51+00:00?filter_entity_id=sensor.lixee_zlinky_tic_puissance_apparente'
+	# url=('http://192.168.1.202:8123/api/history/period/2024-11-10T20:00:51+00:00?'
+	# 	'filter_entity_id=sensor.lixee_zlinky_tic_puissance_apparente')
 	print("GET "+url)
 	response = get(url, headers=headers, timeout=60)
 	if response.status_code==200:

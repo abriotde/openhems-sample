@@ -43,6 +43,8 @@ class Time:
 			self.time = self._fromDatetime(time)
 		elif isinstance(time, str):
 			self.time = self._fromStr(time)
+		elif isinstance(time, int):
+			self.time = time
 		else:
 			print("Error Time() from incompatible type")
 
@@ -84,7 +86,11 @@ class Time:
 		return wait
 
 	def __str__(self):
-		h, m, s = nowtime.toHourMinSec()
+		h, m, _ = self.toHourMinSec()
+		return str(h)+"h"+(str(m).rjust(2, "O"))
+
+	def __repr__(self):
+		h, m, _ = self.toHourMinSec()
 		return str(h)+"h"+(str(m).rjust(2, "O"))
 
 	@staticmethod
@@ -112,23 +118,23 @@ class Time:
 		now = Time(nowDatetime)
 		# print("OffPeakStrategy.checkRange(",now,")")
 		inOffpeakRange = False
-		nextTime = now+Time.MIDNIGHT
+		nextTime = now.time+Time.MIDNIGHT
 		# This has no real signification but it's usefull and the most simple way
 		time2NextTime = Time.MIDNIGHT
 		for hoursRange in hoursRanges:
 			begin, end = hoursRange
 			wait = now.getTimeToWait(begin)
 			if wait<time2NextTime:
-				nextTime = begin
+				nextTime = begin.time
 				time2NextTime = wait
 				inOffpeakRange = False
 			wait = now.getTimeToWait(end)
 			if wait<time2NextTime:
-				nextTime = end
+				nextTime = end.time
 				time2NextTime = wait
 				inOffpeakRange = True
 		assert nextTime<=240000
-		rangeEnd = nextTime.toDatetime(nowDatetime)
+		rangeEnd = Time(nextTime).toDatetime(nowDatetime)
 		# nbSecondsToNextRange = (self.rangeEnd - nowDatetime).total_seconds()
 		# logger.info("OffPeakStrategy.checkRange({now}) => %s, %d", \
 		# 	rangeEnd, nbSecondsToNextRange)

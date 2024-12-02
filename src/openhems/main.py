@@ -72,6 +72,7 @@ class OpenHEMSApplication:
 
 	def __init__(self, yamlConfFilepath, *, port=0, logfilepath='', inDocker=False):
 		# Temporary logger
+		print("Load YAML configuration from '",yamlConfFilepath,"'")
 		self.logger = logging.getLogger(__name__)
 		configurator = ConfigurationManager(self.logger)
 		configurator.addYamlConfig(Path(yamlConfFilepath))

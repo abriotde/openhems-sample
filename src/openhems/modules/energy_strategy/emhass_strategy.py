@@ -7,7 +7,6 @@ So this require some more Python packages.
 import math
 from datetime import datetime, timedelta
 import logging
-import copy
 import pytz
 import numpy as np
 from openhems.modules.network.network import OpenHEMSNetwork
@@ -170,7 +169,7 @@ class EmhassStrategy(EnergyStrategy):
 			self.network.switchOffAll()
 			return True
 		if rows[0] is None: # !!! But prevous row can be None !!!
-			rows[0] = copy.copy(rows[1]) # Do as Previous row confirm current row
+			rows = (rows[1], rows[1]) # Do as Previous row confirm current row
 			# (Rate = 100 before mid-hour)
 		# Evaluate rate of correctness of each row.
 		# If we are in the middle of current timestamp range keep it otherwise apply a rate

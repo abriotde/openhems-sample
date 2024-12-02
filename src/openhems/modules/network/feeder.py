@@ -6,6 +6,8 @@ the NetworkUpdater will really search to update the value.
 
 import random
 import logging
+from openhems.modules.util import CastUtililty
+
 logger = logging.getLogger(__name__)
 
 # pylint: disable=too-few-public-methods
@@ -58,7 +60,9 @@ class ConstFeeder(Feeder):
 	"""
 	This is for value wich are constant.
 	"""
-	def __init__(self, value, nameid=None):
+	def __init__(self, value, nameid=None, expectedType=None):
+		if expectedType is not None:
+			value = CastUtililty.toType(expectedType, value)
 		super().__init__(value)
 		if nameid is None:
 			nameid = str(value)
@@ -93,7 +97,7 @@ class RandomFeeder(Feeder):
 				self.min), self.max)
 		return self.value
 	def __str__(self):
-		return "RandomFeeder("+self.min+", "+self.max+")"
+		return "RandomFeeder("+str(self.min)+", "+str(self.max)+")"
 
 class RotationFeeder(Feeder):
 	"""

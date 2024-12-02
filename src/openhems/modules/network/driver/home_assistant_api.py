@@ -50,25 +50,24 @@ class HomeAssistantAPI(HomeStateUpdater):
 			# print(entityId, e['state'], e['attributes'])
 		# print("getHANodes() = ", self.haElements)
 
-	def getFeeder(self, conf, key, expectedType=None, defaultValue=None) -> Feeder:
+	def getFeeder(self, value, expectedType=None, defaultValue=None) -> Feeder:
 		"""
 		Return a feeder considering
 		 if the "key" can be a Home-Assistant element id.
 		 Otherwise, it consider it as constant.
 		"""
 		feeder = None
-		value = conf.get(key, None)
 		if value is not None:
 			if isinstance(value, str) and value in self.haElements:
 				self.logger.debug("SourceFeeder(%s)", value)
 				feeder = SourceFeeder(value, self, expectedType)
 			else:
-				self.logger.debug("ConstFeeder(%s)", value)
-				feeder = ConstFeeder(value)
-		elif defaultValue is None:
-			feeder = defaultValue
+				# self.logger.debug("ConstFeeder(%s)", value)
+				feeder = ConstFeeder(value, None, expectedType)
+		elif defaultValue is not None:
+			feeder = ConstFeeder(defaultValue, None, expectedType)
 		else:
-			feeder = ConstFeeder(defaultValue)
+			feeder = None
 		return feeder
 
 	def updateNetwork(self):

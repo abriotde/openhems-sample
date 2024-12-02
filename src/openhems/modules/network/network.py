@@ -9,7 +9,6 @@ import os
 import copy
 from openhems.modules.util.configuration_manager import ConfigurationManager, ConfigurationException
 from openhems.modules.util.notification_manager import NotificationManager
-from .feeder import ConstFeeder
 from .node import (
 	OpenHEMSNode, InOutNode, OutNode, PublicPowerGrid, SolarPanel, Battery
 )
@@ -59,12 +58,12 @@ class HomeStateUpdater:
 		"""
 
 	# pylint: disable=unused-argument
-	def getFeeder(self, conf, key, expectedType=None, defaultValue=None) -> Feeder:
+	def getFeeder(self, value, expectedType=None, defaultValue=None) -> Feeder:
 		"""
 		Return a feeder considering
 		 This function should be overiden by sub-class
 		"""
-		return SourceFeeder(key, self, expectedType)
+		return SourceFeeder(value, self, expectedType)
 
 	def getPublicPowerGrid(self, nameid, nodeConf):
 		"""
@@ -75,7 +74,7 @@ class HomeStateUpdater:
 		powerMargin = self._getFeeder(nodeConf, "powerMargin", "int")
 		maxPower = self._getFeeder(nodeConf, "maxPower", "int")
 		minPower = self._getFeeder(nodeConf, "minPower", "int")
-		contract = self._getFeeder(nodeConf, "contract")
+		contract = nodeConf.get("contract")
 		node = PublicPowerGrid(currentPower, maxPower, minPower, powerMargin,
 			contract, self)
 		# self.logger.info(node)
@@ -126,14 +125,14 @@ class HomeStateUpdater:
 		"""
 		Return a feeder, search in configuration for default value if not set. 
 		"""
-		feeder = self.getFeeder(conf, key, expectedType, None)
+		value = conf.get(key)
+		if value is None:
+			value = self.conf.get( "default.node."+self.tmp+"."+key)
+		feeder = self.getFeeder(value, expectedType)
 		if feeder is None:
-			value = self.conf.get("default.node."+self.tmp+"."+key, expectedType)
-			if value is None:
-				msg = "Argument '"+key+"' is required for node '"+self.tmp+"'"
-				self.logger.critical(msg)
-				raise ConfigurationException(msg)
-			feeder = ConstFeeder(value)
+			msg = "Argument '"+key+"' is required for node '"+self.tmp+"'"
+			self.logger.critical(msg)
+			raise ConfigurationException(msg)
 		return feeder
 
 	def _getNetwork(self, networkConf):
@@ -287,6 +286,7 @@ class OpenHEMSNetwork:
 		globalPower= 0
 		for elem in self._getAll(filterId):
 			globalPower += function(elem)
+		return globalPower
 
 	def getMaxPower(self, filterId=None):
 		"""
@@ -395,6 +395,10 @@ class OpenHEMSNetwork:
 		Return a concatenation of all offpeak ours off sources.
 		"""
 		offpeakhours = []
+		ok = False
 		for elem in self.getAll("publicpowergrid"):
+			ok = True
 			offpeakhours = elem.getContract().getOffPeakHoursRanges()
-			return offpeakhours
+		if not ok:
+			logger.warning("No PublicPowerGrid on the network.")
+		return offpeakhours

@@ -209,7 +209,7 @@ class PublicPowerGrid(InOutNode):
 
 	def __str__(self):
 		return (f"PublicPowerGrid({self.currentPower}, maxPower={self.maxPower},"
-			f" minPower={self.minPower}, powerMargin={self.marginPower})")
+			f" minPower={self.minPower}, powerMargin={self.marginPower}, contract={self.contract})")
 
 	def getContract(self):
 		"""

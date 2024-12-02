@@ -83,7 +83,9 @@ class CastUtililty:
 		 We need to manage some incorrect value due to errors.
 		"""
 		retValue = None
-		if destType=="int":
+		if destType is None:
+			retValue = value
+		elif destType=="int":
 			retValue = CastUtililty.toTypeInt(value)
 		elif destType=="bool":
 			retValue = CastUtililty.toTypeBool(value)
@@ -92,5 +94,5 @@ class CastUtililty:
 		elif destType=="float":
 			retValue = CastUtililty.toTypeFloat(value)
 		else:
-			raise CastException(".toType("+destType+","+value+") : Unknwon type", 0)
+			raise CastException(".toType("+str(destType)+","+str(value)+") : Unknwon type", 0)
 		return retValue

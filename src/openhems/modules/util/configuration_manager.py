@@ -101,11 +101,14 @@ class ConfigurationManager():
 			NB: It would be better to return a sub-ConfigurationManager...
 		"""
 		val = self._conf.get(key, defaultValue)
-		if val is None and deepSearch:
-			val = self._getDict(key)
-			if len(val)==0:
-				val = None
-		elif val=="None" or val is None:
+		if val is None:
+			if deepSearch:
+				val = self._getDict(key)
+				if len(val)==0:
+					val = None
+			else:
+				val = defaultValue
+		elif val is str and val=="None":
 			val = defaultValue
 		elif expectedType is not None:
 			val = CastUtililty.toType(expectedType, val)

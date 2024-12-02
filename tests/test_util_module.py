@@ -6,6 +6,7 @@ Check common functionnality
 
 import sys
 import unittest
+from datetime import datetime
 from pathlib import Path
 import logging
 import io
@@ -14,10 +15,13 @@ import contextlib
 # pylint: disable=import-error
 ROOT_PATH = Path(__file__).parents[1]
 sys.path.append(str(ROOT_PATH / "src"))
-from openhems.modules.util.configuration_manager import ConfigurationManager
-from openhems.modules.util.cast_utility import CastUtililty, CastException
 from openhems.modules.network.driver.fake_network import FakeNetwork
-from openhems.modules.util.notification_manager import NotificationManager, MessageHistory
+from openhems.modules.util import (
+	NotificationManager, MessageHistory,
+	Time,
+	CastUtililty,
+	CastException, ConfigurationManager
+)
 
 stdout_handler = logging.StreamHandler(stream=sys.stdout)
 logging.basicConfig(
@@ -78,6 +82,49 @@ class TestUtilModule(unittest.TestCase):
 		self.assertEqual(value, True)
 		value = CastUtililty.toType('bool', 0)
 		self.assertEqual(value, False)
+
+	# pylint: disable=invalid-name
+	def test_checkRange(self):
+		"""
+		Test range system.
+		Init from different kind off-peak range and test some off-peak hours.
+		"""
+		# print("test_checkRange")
+		# Check range contains midnight
+		offpeakRange = Time.getOffPeakHoursRanges([["22:00:00","06:00:00"]])
+		# Check for sensitive time for midnight
+		inOffpeakRange, _ = Time.checkRange(
+			offpeakRange, datetime(2024, 7, 11, 23, 00, 00)
+		)
+		self.assertTrue(inOffpeakRange)
+		# Check for not o'clock time
+		inOffpeakRange, rangeEnd = Time.checkRange(
+			offpeakRange, datetime(2024, 7, 11, 6, 30, 00)
+		)
+		self.assertFalse(inOffpeakRange)
+		self.assertEqual(rangeEnd.strftime("%H%M%S"), "220000")
+
+		# Check for 2 ranges
+		offpeakRange = Time.getOffPeakHoursRanges(
+			[["10:00:00","11:30:00"],["14:00:00","16:00:00"]]
+		)
+		inOffpeakRange, rangeEnd = Time.checkRange(
+			offpeakRange, datetime(2024, 7, 11, 15, 00, 00)
+		)
+		self.assertTrue(inOffpeakRange)
+		self.assertEqual(rangeEnd.strftime("%H%M%S"), "160000")
+		inOffpeakRange, rangeEnd = Time.checkRange(
+			offpeakRange, datetime(2024, 7, 11, 23, 00, 00)
+		)
+		self.assertFalse(inOffpeakRange)
+		self.assertEqual(rangeEnd.strftime("%H%M%S"), "100000")
+		# Check in middle of 2 range
+		inOffpeakRange, rangeEnd = Time.checkRange(
+			offpeakRange, datetime(2024, 7, 11, 12, 34, 56)
+		)
+		self.assertFalse(inOffpeakRange)
+		self.assertEqual(rangeEnd.strftime("%H%M%S"), "140000")
+
 
 	def test_notifyManager(self):
 		"""

@@ -24,32 +24,31 @@ class FakeNetwork(HomeStateUpdater):
 #		super().__init__(conf)
 
 	# pylint: disable=unused-argument
-	def getFeeder(self, conf, key, expectedType=None, defaultValue=None) -> Feeder:
+	def getFeeder(self, value, expectedType=None, defaultValue=None) -> Feeder:
 		"""
 		Return a feeder considering
 		 if the "key" can be a Home-Assistant element id.
 		 Otherwise, it consider it as constant.
 		"""
 		feeder = None
-		key = conf.get(key, None)
-		if isinstance(key, str):
-			key = key.strip().upper()
-			if REGEXP_RANDOM_FEEDER.match(key):
-				vals = REGEXP_RANDOM_FEEDER.match(key)
+		if isinstance(value, str):
+			value = value.strip().upper()
+			if REGEXP_RANDOM_FEEDER.match(value):
+				vals = REGEXP_RANDOM_FEEDER.match(value)
 				self.logger.debug("RandomFeeder(%s, %s, %s)", vals[1], vals[3], vals[5])
 				feeder = RandomFeeder(self, float(vals[1]), float(vals[3]), float(vals[5]))
 			else:
-				self.logger.debug("ConstFeeder(%s) - default str", key)
-				feeder = ConstFeeder(float(key))
-		elif isinstance(key, list):
-			self.logger.debug("RotationFeeder(%s)", key)
-			feeder = RotationFeeder(self, key)
+				self.logger.debug("ConstFeeder(%s) - default str", value)
+				feeder = ConstFeeder(float(value))
+		elif isinstance(value, list):
+			self.logger.debug("RotationFeeder(%s)", value)
+			feeder = RotationFeeder(self, value)
 		elif defaultValue is not None:
 			self.logger.debug("ConstFeeder(%s) - defaultValue", defaultValue)
 			feeder = ConstFeeder(defaultValue)
 		else:
-			self.logger.debug("ConstFeeder(%s) - default", key)
-			feeder = ConstFeeder(key)
+			self.logger.debug("ConstFeeder(%s) - default", value)
+			feeder = ConstFeeder(value)
 		return feeder
 
 	def getSwitch(self, nameid, nodeConf):

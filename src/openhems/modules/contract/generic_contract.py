@@ -4,7 +4,8 @@ Generic class to manage contracts when no more precise one is available
 
 import datetime
 import logging
-from openhems.modules.util.time import Time
+from openhems.modules.util import Time, CastUtililty
+
 
 class GenericContract:
 	"""
@@ -15,7 +16,7 @@ class GenericContract:
 	def __init__(self, peakPrice, offpeakPrice=None, offpeakHoursRanges=None):
 		self.peakPrice = peakPrice
 		if offpeakHoursRanges is None:
-			offpeakHoursRanges = []
+			self.offpeakHoursRanges = []
 			self.offpeakPrice = peakPrice
 		else:
 			self.logger.info("GenericContract(offpeakHoursRanges=%s)",
@@ -75,6 +76,11 @@ class GenericContract:
 			return self.getOffPeakPrice()
 		return self.getPeakPrice()
 
+	def __str__(self):
+		return ("GenericContract($"
+			+str(self.peakPrice)+" - "+str(self.offpeakPrice)+"/Kwh,"
+			+str(self.offpeakHoursRanges)+")")
+
 	def inOffpeakRange(self, now=None, useCache=True):
 		"""
 		Return: True if we are in off-peak range.
@@ -89,16 +95,25 @@ class GenericContract:
 		return self._inOffpeakRange
 
 	@staticmethod
-	def get(key, keys, defaultType=None, defaultValue=None):
+	def get(key, keys, defaultType=None):
 		"""
 		Function to get default value from configuration if not set in dict configuration
 		Equivalent of HomeStateUpdater._getFeeder()
 		"""
 		dictConf, configuration, classname = keys
-		value = dictConf.get(key, defaultType, defaultValue=defaultValue)
+		value = dictConf.get(key)
 		if value is None:
+			baseKey = "default.node.publicpowergrid.contract"
 			value = configuration.get(
-				"default.node.publicpowergrid.contract."+classname+"."+key,
+				baseKey+"."+classname+"."+key,
 				defaultType
 			)
+			if value is None:
+				GenericContract.logger.warning(
+					"No default value for '%s.%s.%s'. Availables are %s",
+					baseKey, classname, key,
+					configuration.get(baseKey, deepSearch=True)
+				)
+		elif defaultType is not None:
+			value = CastUtililty.toType(defaultType, value)
 		return value

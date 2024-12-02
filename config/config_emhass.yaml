@@ -1,7 +1,7 @@
 # Auto-generated file by openhems.EmhassAdapter.generateYamlConfig()# Configuration file for EMHASS
 
 retrieve_hass_conf:
-  freq: 180
+  freq: 1
   days_to_retrieve: 2 # We will retrieve data from now and up to days_to_retrieve days. Minimum is 2
   var_PV: sensor.emhass_photovoltaic_power_produced # Photovoltaic produced power sensor in Watts - Template Sensor auto-generated
   var_load: sensor.emhass_household_power_consumption # Household power consumption sensor in Watts (deferrable loads should be substracted) - Template Sensor auto-generated
@@ -49,8 +49,8 @@ optim_conf:
   weight_battery_charge: 0.0 # weight applied in cost function to battery usage for charge
 
 plant_conf:
-  P_from_grid_max: None # The maximum power that can be supplied by the utility grid in Watts
-  P_to_grid_max: None # The maximum power that can be supplied to the utility grid in Watts
+  P_from_grid_max: 6000 # The maximum power that can be supplied by the utility grid in Watts
+  P_to_grid_max: 0 # The maximum power that can be supplied to the utility grid in Watts
   module_model: 
   - CSUN_Eurasia_Energy_Systems_Industry_and_Trade_CSUN295_60M
   inverter_model: 
