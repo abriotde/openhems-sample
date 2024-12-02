@@ -26,7 +26,7 @@ optim_conf:
   weather_forecast_method: '{{weather_forecast_method}}' # options are 'scrapper', 'csv', 'list', 'solcast' and 'solar.forecast'
   load_forecast_method: 'naive' # options are 'csv' to load a custom load forecast from a CSV file or 'naive' for a persistance model
   load_cost_forecast_method: 'hp_hc_periods' # options are 'hp_hc_periods' for peak and non-peak hours contracts and 'csv' to load custom cost from CSV file 
-  list_hp_periods: [] # TODO list of different tariff periods (only needed if load_cost_forecast_method='hp_hc_periods')
+  list_hp_periods: {{list_hp_periods}} # list of different tariff periods (only needed if load_cost_forecast_method='hp_hc_periods')
   load_cost_hp: {{load_cost_hp}} # peak hours load cost in €/kWh (only needed if load_cost_forecast_method='hp_hc_periods')
   load_cost_hc: {{load_cost_hc}} # non-peak hours load cost in €/kWh (only needed if load_cost_forecast_method='hp_hc_periods')
   prod_price_forecast_method: 'constant' # options are 'constant' for constant fixed value or 'csv' to load custom price forecast from a CSV file

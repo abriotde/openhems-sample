@@ -34,14 +34,18 @@ class RTETempoContract(RTEContract):
 			now = datetime.datetime.now()
 		curCall = now.strftime("%Y%m%d%H")
 		if self.lastCall!=curCall:
-			self.lastColor=self.color.getValue()
+			self.lastColor = self.color.getValue().lower()
 			self.lastCall = curCall
+		# print("getColor() => ", self.lastColor)
 		return self.lastColor
 
 	def getOffPeakPrice(self, now=None):
+		print("getOffPeakPrice(:",self.color,")")
 		color = self.getColor(now)
+		print("Color0:", color)
 		price = self.offpeakPrice.get(color)
 		if price is None:
+			print("Color:", self.color)
 			# pylint: disable=broad-exception-raised
 			raise Exception(f"RTETempoContract : Invalid color : '{color}'")
 		return price

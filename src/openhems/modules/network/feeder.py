@@ -46,6 +46,9 @@ class SourceFeeder(Feeder):
 		"""
 		getValue from the "source" if source.id has been updated.
 		"""
+		if self.source.refreshId==0:
+			logger.warning("SourceFeeder() : Need to refresh Network...")
+			self.source.updateNetwork()
 		if self.sourceId<self.source.refreshId:
 			# Better to update sourceId before in case value is
 			# updated between the 2 next lines

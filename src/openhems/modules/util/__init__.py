@@ -6,5 +6,5 @@ HTTP web server to give UI to configure OpenHEMS server:
 
 from .cast_utility import CastUtililty, CastException
 from .configuration_manager import ConfigurationManager, ConfigurationException
-from .time import Time
+from .time import Time, HoursRanges
 from .notification_manager import NotificationManager, MessageHistory

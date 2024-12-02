@@ -4,7 +4,7 @@ Generic class to manage contracts when no more precise one is available
 
 import datetime
 import logging
-from openhems.modules.util import Time, CastUtililty
+from openhems.modules.util import HoursRanges, CastUtililty
 
 
 class GenericContract:
@@ -16,12 +16,12 @@ class GenericContract:
 	def __init__(self, peakPrice, offpeakPrice=None, offpeakHoursRanges=None):
 		self.peakPrice = peakPrice
 		if offpeakHoursRanges is None:
-			self.offpeakHoursRanges = []
+			self.offpeakHoursRanges = HoursRanges([])
 			self.offpeakPrice = peakPrice
 		else:
 			self.logger.info("GenericContract(offpeakHoursRanges=%s)",
 				str(offpeakHoursRanges))
-			self.offpeakHoursRanges = Time.getOffPeakHoursRanges(offpeakHoursRanges)
+			self.offpeakHoursRanges = HoursRanges(offpeakHoursRanges)
 			if offpeakPrice is None:
 				self.offpeakPrice = peakPrice/2
 			else:
@@ -54,7 +54,7 @@ class GenericContract:
 		"""
 		Return: off-peak price
 		"""
-		return self.offpeakHoursRanges
+		return self.offpeakPrice
 
 	def getPeakPrice(self):
 		"""
@@ -66,7 +66,7 @@ class GenericContract:
 		"""
 		Return: off-peak hours range : list of 2-tuple of Time
 		"""
-		return self.offpeakPrice
+		return self.offpeakHoursRanges
 
 	def getPrice(self, now=None):
 		"""
@@ -86,10 +86,10 @@ class GenericContract:
 		Return: True if we are in off-peak range.
 		"""
 		offpeakHoursRanges = self.getOffPeakHoursRanges()
-		if len(offpeakHoursRanges)<=0:
+		if offpeakHoursRanges.isEmpty():
 			return False
 		if not useCache or now>self.rangeEnd:
-			inOffpeakRange, rangeEnd = Time.checkRange(offpeakHoursRanges, now)
+			(inOffpeakRange, rangeEnd) = offpeakHoursRanges.checkRange(now)
 			self._inOffpeakRange = inOffpeakRange
 			self.rangeEnd = rangeEnd
 		return self._inOffpeakRange

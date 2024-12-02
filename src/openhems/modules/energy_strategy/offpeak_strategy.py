@@ -7,7 +7,7 @@ This is in case we just base on "off-peak" range hours to control output.
 from datetime import datetime
 import time
 from openhems.modules.network.network import OpenHEMSNetwork
-from openhems.modules.util import Time, ConfigurationException
+from openhems.modules.util import ConfigurationException
 from .energy_strategy import EnergyStrategy, LOOP_DELAY_VIRTUAL
 
 # Time to wait in seconds before considering to be in offpeak range
@@ -31,7 +31,7 @@ class OffPeakStrategy(EnergyStrategy):
 		self.network = network
 		self.offpeakHoursRanges = self.network.getOffPeakHoursRanges()
 		self.logger.info("OffPeakStrategy(%s)", str(self.offpeakHoursRanges))
-		if len(self.offpeakHoursRanges)==0:
+		if self.offpeakHoursRanges.isEmpty():
 			msg = "OffPeak-strategy is useless without offpeak hours. Check your configuration."
 			self.logger.critical(msg)
 			raise ConfigurationException(msg)
@@ -43,7 +43,7 @@ class OffPeakStrategy(EnergyStrategy):
 		 and set end time of this range
 		"""
 		self.offpeakHoursRanges = self.network.getOffPeakHoursRanges()
-		(self.inOffpeakRange, self.rangeEnd) = Time.checkRange(self.offpeakHoursRanges, nowDatetime)
+		self.inOffpeakRange, self.rangeEnd = self.offpeakHoursRanges.checkRange(nowDatetime)
 
 	def sleepUntillNextRange(self):
 		"""

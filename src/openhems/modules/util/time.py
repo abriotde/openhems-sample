@@ -87,14 +87,25 @@ class Time:
 
 	def __str__(self):
 		h, m, _ = self.toHourMinSec()
-		return str(h)+"h"+(str(m).rjust(2, "O"))
+		return str(h).rjust(2, "0")+"h"+(str(m).rjust(2, "0"))
 
 	def __repr__(self):
 		h, m, _ = self.toHourMinSec()
-		return str(h)+"h"+(str(m).rjust(2, "O"))
+		return str(h).rjust(2, "0")+":"+(str(m).rjust(2, "0"))
 
-	@staticmethod
-	def getOffPeakHoursRanges(offPeakHoursRanges):
+class HoursRanges:
+	"""
+	Class to represent and manipulate hours range:
+	- Sort and order => make it unique
+	- Reverse it
+	- Parse from strings
+	- Check if a datetime is in or out
+	"""
+	def __init__(self, offPeakHoursRanges:list):
+		self._index = 0
+		self.setOffPeakHoursRanges(offPeakHoursRanges)
+
+	def setOffPeakHoursRanges(self, offPeakHoursRanges):
 		"""
 		Parse a list of ranges (2-tuple or String) to convert it on Time
 		"""
@@ -102,13 +113,37 @@ class Time:
 		for offpeakHoursRange in offPeakHoursRanges:
 			if isinstance(offpeakHoursRange, str):
 				offpeakHoursRange = offpeakHoursRange.split("-")
-			begin = Time(offpeakHoursRange[0])
-			end = Time(offpeakHoursRange[1])
+			begin = offpeakHoursRange[0]
+			if not isinstance(begin, Time):
+				begin = Time(begin)
+			end = offpeakHoursRange[1]
+			if not isinstance(end, Time):
+				end = Time(end)
 			offpeaks.append([begin, end])
-		return offpeaks
+		self.ranges = offpeaks
 
-	@staticmethod
-	def checkRange(hoursRanges:list, nowDatetime: datetime=None):
+	def getReverse(self):
+		"""
+		Reverse the range : Usefull for Emhass which need peekHours.
+		(getPeakHoursRanges() is too confusing name)
+		Applying twice this function should give back the same.
+		"""
+		# TODO Sort/merge ?
+		reverse = []
+		first = None # Keep the first
+		start = None
+		for r in self.ranges:
+			if first is None:
+				first = r[0]
+			else:
+				# The previous start is now the end, and reverse
+				reverse.append([start, r[0]])
+			start = r[1]
+		if first is not None:
+			reverse.append([start, first])
+		return HoursRanges(reverse)
+
+	def checkRange(self, nowDatetime: datetime=None):
 		"""
 		Check if nowDatetime (Default now) is in off-peak range (offpeakHoursRange)
 		 and set end time of this range
@@ -121,7 +156,7 @@ class Time:
 		nextTime = now.time+Time.MIDNIGHT
 		# This has no real signification but it's usefull and the most simple way
 		time2NextTime = Time.MIDNIGHT
-		for hoursRange in hoursRanges:
+		for hoursRange in self.ranges:
 			begin, end = hoursRange
 			wait = now.getTimeToWait(begin)
 			if wait<time2NextTime:
@@ -139,3 +174,23 @@ class Time:
 		# logger.info("OffPeakStrategy.checkRange({now}) => %s, %d", \
 		# 	rangeEnd, nbSecondsToNextRange)
 		return (inOffpeakRange, rangeEnd)
+
+	def isEmpty(self):
+		"""
+		Return True if there is no range.
+		"""
+		return len(self.ranges)<=0
+
+	def __iter__(self):
+		self._index = 0
+		return self
+
+	def __next__(self):
+		if self._index<len(self.ranges):
+			r = self.ranges[self._index]
+			self._index += 1
+			return r
+		raise StopIteration
+
+	def __str__(self):
+		return str(self.ranges)

@@ -395,10 +395,10 @@ class OpenHEMSNetwork:
 		Return a concatenation of all offpeak ours off sources.
 		"""
 		offpeakhours = []
-		ok = False
+		nb = 0
 		for elem in self.getAll("publicpowergrid"):
-			ok = True
 			offpeakhours = elem.getContract().getOffPeakHoursRanges()
-		if not ok:
+			nb += 1
+		if nb==0:
 			logger.warning("No PublicPowerGrid on the network.")
 		return offpeakhours

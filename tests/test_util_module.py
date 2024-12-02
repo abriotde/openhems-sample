@@ -18,7 +18,7 @@ sys.path.append(str(ROOT_PATH / "src"))
 from openhems.modules.network.driver.fake_network import FakeNetwork
 from openhems.modules.util import (
 	NotificationManager, MessageHistory,
-	Time,
+	Time, HoursRanges,
 	CastUtililty,
 	CastException, ConfigurationManager
 )
@@ -91,36 +91,36 @@ class TestUtilModule(unittest.TestCase):
 		"""
 		# print("test_checkRange")
 		# Check range contains midnight
-		offpeakRange = Time.getOffPeakHoursRanges([["22:00:00","06:00:00"]])
+		offpeakRange = HoursRanges([["22:00:00","06:00:00"]])
 		# Check for sensitive time for midnight
-		inOffpeakRange, _ = Time.checkRange(
-			offpeakRange, datetime(2024, 7, 11, 23, 00, 00)
+		inOffpeakRange, _ = offpeakRange.checkRange(
+			datetime(2024, 7, 11, 23, 00, 00)
 		)
 		self.assertTrue(inOffpeakRange)
 		# Check for not o'clock time
-		inOffpeakRange, rangeEnd = Time.checkRange(
-			offpeakRange, datetime(2024, 7, 11, 6, 30, 00)
+		inOffpeakRange, rangeEnd = offpeakRange.checkRange(
+			datetime(2024, 7, 11, 6, 30, 00)
 		)
 		self.assertFalse(inOffpeakRange)
 		self.assertEqual(rangeEnd.strftime("%H%M%S"), "220000")
 
 		# Check for 2 ranges
-		offpeakRange = Time.getOffPeakHoursRanges(
+		offpeakRange = HoursRanges(
 			[["10:00:00","11:30:00"],["14:00:00","16:00:00"]]
 		)
-		inOffpeakRange, rangeEnd = Time.checkRange(
-			offpeakRange, datetime(2024, 7, 11, 15, 00, 00)
+		inOffpeakRange, rangeEnd = offpeakRange.checkRange(
+			datetime(2024, 7, 11, 15, 00, 00)
 		)
 		self.assertTrue(inOffpeakRange)
 		self.assertEqual(rangeEnd.strftime("%H%M%S"), "160000")
-		inOffpeakRange, rangeEnd = Time.checkRange(
-			offpeakRange, datetime(2024, 7, 11, 23, 00, 00)
+		inOffpeakRange, rangeEnd = offpeakRange.checkRange(
+			datetime(2024, 7, 11, 23, 00, 00)
 		)
 		self.assertFalse(inOffpeakRange)
 		self.assertEqual(rangeEnd.strftime("%H%M%S"), "100000")
 		# Check in middle of 2 range
-		inOffpeakRange, rangeEnd = Time.checkRange(
-			offpeakRange, datetime(2024, 7, 11, 12, 34, 56)
+		inOffpeakRange, rangeEnd = offpeakRange.checkRange(
+			datetime(2024, 7, 11, 12, 34, 56)
 		)
 		self.assertFalse(inOffpeakRange)
 		self.assertEqual(rangeEnd.strftime("%H%M%S"), "140000")

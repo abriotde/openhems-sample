@@ -38,5 +38,5 @@ class Contract:
 				contract = RTETarifBleuContract.fromdict(contractDict, genericConfiguration)
 		elif classname=="generic":
 			contract = GenericContract.fromdict(contractDict, genericConfiguration)
-		Contract.logger.info("Contract: %s", contract)
+		# Contract.logger.info("Contract: %s", contract)
 		return contract

@@ -101,7 +101,7 @@ class EmhassAdapter:
 		"""
 		:return:  # pandas.core.frame.DataFrame
 		"""
-		self.logger.info("EmhassAdapter.performOptim(%s, %s) for %s",
+		self.logger.debug("EmhassAdapter.performOptim(%s, %s) for %s",
 			actionName, costfun, str(self))
 		runtimeparams = None
 		params = self._params if isinstance(self._params, str) else json.dumps(self._params)
@@ -222,7 +222,33 @@ Altitude: {altitude}
 		return init+(init.join(elems))
 
 	@staticmethod
-	def getEmhassDatasBattery(network):
+	def getYamlConfOffpeakHours(network):
+		"""
+		Return YAML configuration for Emhass off-peak hours.
+		"""
+		datas = {}
+		for elem in network.getAll("publicpowergrid"):
+			contract = elem.getContract()
+			ranges = contract.getOffPeakHoursRanges().getReverse()
+			listHpPeriods = ""
+			i = 1
+			for r in ranges:
+				start = repr(r[0])
+				end = repr(r[1])
+				listHpPeriods += f"""\n  - period_hp_{i}:
+    - start: '{start}'
+    - end: '{end}'
+"""
+				i+=1
+			if listHpPeriods == "":
+				listHpPeriods = "[]"
+			datas["list_hp_periods"] = listHpPeriods
+			datas["load_cost_hp"] = contract.getPeakPrice()
+			datas["load_cost_hc"] = contract.getOffPeakPrice()
+		return datas
+
+	@staticmethod
+	def getYamlConfBattery(network):
 		"""
 		Extract usefull informations from openhems.yaml configuration
 		 for configuring EMHASS Battery fields
@@ -298,7 +324,9 @@ Altitude: {altitude}
 		datas['strings_per_inverter'] = EmhassAdapter.getYamlList(elems, lambda x:
 			x.stringsPerInverter)
 
-		datas = datas|EmhassAdapter.getEmhassDatasBattery(network)
+		datas = datas \
+			|EmhassAdapter.getYamlConfBattery(network) \
+			|EmhassAdapter.getYamlConfOffpeakHours(network)
 		# print("Datas:",datas)
 		return datas
 
@@ -350,6 +378,14 @@ Altitude: {altitude}
 					network,
 					configPath / "template.yaml"
 				)
+			else:
+				logger.warning(
+					"Can't generate EMHASS configuration due to missing network param."
+				)
+		else:
+			logger.warning(
+				"Can't generate EMHASS secrets due to missing configuration parma."
+			)
 		dataPath = Path("/tmp/emhass_data")
 		if not os.path.exists(dataPath):
 			os.mkdir(dataPath)
