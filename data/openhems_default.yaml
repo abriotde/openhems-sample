@@ -2,10 +2,12 @@ api:
   url: http://192.168.1.202:8123/api
   long_lived_token: ""
   ssl_certificate: /etc/letsencrypt/live/xxx/cert.pem
-latitude: 48.430883803968456
-longitude: -2.2153649964972693
-altitude: 100
-timeZone: Europe/Paris
+localization:
+  latitude: 48.430883803968456
+  longitude: -2.2153649964972693
+  altitude: 100
+  timeZone: Europe/Paris
+  language: "fr"
 server:
   htmlRoot: "/"
   inDocker: False

@@ -98,7 +98,8 @@ class OpenHEMSApplication:
 		root = configurator.get("server.htmlRoot")
 		inDocker = inDocker or configurator.get("server.inDocker", "bool")
 		self.webserver = OpenhemsHTTPServer(self.logger,
-			network.getSchedule(), port, root, inDocker)
+			network.getSchedule(), yamlConfFilepath, 
+			port=port, htmlRoot=root, inDocker=inDocker, configurator=configurator)
 		network.notify("Start OpenHEMS.")
 
 	def runManagementServer(self):
@@ -143,7 +144,7 @@ def main():
 	args = parser.parse_args()
 	app = OpenHEMSApplication(args.conf, port=args.port,
 		logfilepath=args.logfile, inDocker=args.docker)
-	app.run()
+	app.runWebServer()
 
 if __name__ == "__main__":
 	main()

@@ -7,6 +7,9 @@ HTTP web server to give UI to configure OpenHEMS server:
 """
 import time
 import json
+import yaml
+import re
+from pathlib import Path
 from json import JSONEncoder
 from wsgiref.simple_server import make_server
 from pyramid.config import Configurator
@@ -14,6 +17,7 @@ from pyramid.config import Configurator
 from pyramid.view import view_config
 from .driver_vpn import VpnDriverWireguard, VpnDriverIncronClient
 # from .schedule import OpenHEMSSchedule
+from openhems.modules.util.configuration_manager import ConfigurationManager
 
 # pylint: disable=unused-argument
 
@@ -46,8 +50,24 @@ def panel(request):
 )
 def params(request):
 	"""
-	Get all configurables params for params page and there value.
+	Web-page get all configurables params for params page and there value.
 	"""
+	return { "vpn": "up" if OPENHEMS_CONTEXT.vpnDriver.testVPN() else "down" }
+
+@view_config(
+	route_name='yamlparams',
+	renderer='templates/yamlparams.jinja2'
+)
+def yamlparams(request):
+	"""
+	Web-page get all configurables params for params page and there value.
+	"""
+	
+	yamlparams
+	
+	# Display current configuration
+	configurator = ConfigurationManager(self.logger)
+	configurator.addYamlConfig(Path(OPENHEMS_CONTEXT.yamlConfFilepath))
 	return { "vpn": "up" if OPENHEMS_CONTEXT.vpnDriver.testVPN() else "down" }
 
 @view_config(
@@ -77,7 +97,7 @@ def vpn(request):
 )
 def states(request):
 	"""
-	Web service to get scheduledd devices.
+	Web service to get scheduled devices.
 	"""
 	for i, node in request.POST.items():
 		datas = json.loads(i)
@@ -99,11 +119,19 @@ class OpenhemsHTTPServer():
 		"""
 		print("context", OPENHEMS_CONTEXT)
 
-	def __init__(self, mylogger, schedule, port=8000, htmlRoot="/", inDocker=False):
+	def __init__(self, mylogger, schedule, yamlConfFilepath, *, 
+			port=8000, htmlRoot="/", inDocker=False, configurator=None):
 		self.logger = mylogger
 		self.schedule = schedule
 		self.port = port
 		self.htmlRoot = htmlRoot
+		self.yamlConfFilepath = yamlConfFilepath
+		if configurator is None:
+			configurator = ConfigurationManager(self.logger)
+			configurator.addYamlConfig(Path(self.yamlConfFilepath))
+		self.configurator = configurator
+		lang = configurator.get("localization.language")
+		self.generateTemplateYamlParams(lang)
 		if inDocker:
 			vpnDriver = VpnDriverIncronClient(mylogger)
 		else:
@@ -114,6 +142,52 @@ class OpenhemsHTTPServer():
 		OPENHEMS_CONTEXT = self
 		OPENHEMS_CONTEXT.vpnDriver.testVPN()
 
+	def generateTemplateYamlParams(self, lang="en"):
+		rootPath = Path(__file__).parents[4]
+		templatesPath = Path(__file__).parents[0]/"templates"
+		tooltipPath = rootPath / ("data/openhems_tooltips_"+lang+".yaml")
+		configurator = ConfigurationManager(self.logger, defaultPath=tooltipPath)
+		keysPath = rootPath / ("data/keys_"+lang+".yaml")
+		keys = None
+		with keysPath.open("r", encoding="utf-8") as keyFile:
+			keys = yaml.load(keyFile, Loader=yaml.FullLoader)
+		
+		tooltips = configurator.get("", deepSearch=True)
+		inputNames = [c for c in tooltips.keys()]
+		oldBase = ""
+		oldgrade = 0
+		frameworkPath = templatesPath / "yamlparams.framework.jinja2"
+		with frameworkPath.open("r", encoding="utf-8") as infile:
+			datas = infile.read()
+		htmlHead, htmlQueue = datas.split("{%YAML_PARAMS%}")
+
+		yamlparamsPath = templatesPath / "yamlparams.jinja2"
+		with yamlparamsPath.open("w", encoding="utf-8") as outfile:
+			outfile.write(htmlHead)
+			for name in inputNames:
+				elems = name.split(".")
+				base = ".".join(elems[:-1])
+				grade = len(elems)-1
+				if base!=oldBase:
+					for g in range(grade, oldgrade+1):
+						outfile.write(f"</div>\n")
+					for g in range(oldgrade if oldgrade>0 else 1, grade+1):
+						headerLevel = g+2
+						header = elems[g-1].capitalize()
+						outfile.write(f"<div class='config_{g}'>\n"
+							f"<h{headerLevel}>{header}</h{headerLevel}>\n")
+					oldBase = base
+					oldgrade = grade
+				tooltip = tooltips[name]
+				label = re.sub(r'(?<!^)(?=[A-Z])', ' ',elems[grade]).capitalize()
+				outfile.write(f'<label for="{name}">{label}:</label>'
+					f'<input type="text" id="{name}" name="{name}" title="{tooltip}"'
+					' value="{{ '+name+' }}" /><br>\n')
+			for g in range(0, oldgrade+1):
+				outfile.write(f"</div>\n")
+			outfile.write(htmlQueue)
+		
+
 	def run(self):
 		"""
 		Launch the web server.
@@ -123,6 +197,7 @@ class OpenhemsHTTPServer():
 			config.add_route('panel', '/')
 			config.add_route('states', '/states')
 			config.add_route('params', '/params')
+			config.add_route('yamlparams', '/yamlparams')
 			config.add_route('vpn', '/vpn')
 			# config.add_route('favicon.ico', '/favicon.ico')
 			root = (self.htmlRoot+'/img').replace('//','/')

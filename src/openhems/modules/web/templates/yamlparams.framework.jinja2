@@ -15,6 +15,13 @@
 	<h1>Parameters</h1>
 	<div><img id="waitImg" src="{{request.static_url('openhems.modules.web:../../../../img/wait.gif')}}" style="display:none"></img><div>
 	<div>VPN is <b id="vpnStatus">{{ vpn }}</b>.<button id="vpnButton"></button></div>
+
+	<div id="yamlParams">
+		<form name="yamlParamsForm" action="/yamlparams">
+			{%YAML_PARAMS%}
+			<input id="submitYamlParams" type="submit" value="Submit" src="{{request.static_url('openhems.modules.web:../../../../img/correct_32.ico')}}">
+		</form>
+	</div>
 </div>
 <script>
 const vpn = {{ vpn|tojson }};
@@ -47,6 +54,11 @@ function connectedVPN(connect) {
 	}
 	vpnButton.innerHTML = connect?"Disconnect":"Connect";
 	vpnStatus.innerHTML = connect?"up":"down";
+}
+function changeSthg() {
+	// console.log("changeSthg()");
+		document.getElementById("submitYamlParams")
+			.src = "{{request.static_url('openhems.modules.web:../../../../img/save_32.ico')}}";
 }
 </script>
 </body>

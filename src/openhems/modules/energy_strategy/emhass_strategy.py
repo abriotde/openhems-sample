@@ -32,7 +32,7 @@ class EmhassStrategy(EnergyStrategy):
 		self.network = network
 		freq = configuration.get("emhass.freq")
 		self.emhassEvalFrequence = timedelta(minutes=freq)
-		self.timezone = pytz.timezone(configuration.get("timeZone"))
+		self.timezone = pytz.timezone(configuration.get("localization.timeZone"))
 		self.data = None
 		self.deferables = {}
 		self.deferablesKeys = []

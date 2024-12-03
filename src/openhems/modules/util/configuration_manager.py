@@ -83,13 +83,16 @@ class ConfigurationManager():
 		"""
 		if key in self._cache:
 			return self._cache[key]
-		keyStart = key+'.'
-		value = {}
-		l = len(keyStart)
-		for k, v in self._conf.items():
-			if k==key or k.startswith(keyStart):
-				newKey = k[l:]
-				value[newKey] = v
+		if key=="":
+			value = self._conf
+		else:
+			keyStart = key+'.'
+			value = {}
+			l = len(keyStart)
+			for k, v in self._conf.items():
+				if k==key or k.startswith(keyStart):
+					newKey = k[l:]
+					value[newKey] = v
 		self._cache[key] = value
 		return value
 
