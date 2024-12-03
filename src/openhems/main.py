@@ -72,6 +72,7 @@ class OpenHEMSApplication:
 
 	def __init__(self, yamlConfFilepath, *, port=0, logfilepath='', inDocker=False):
 		# Temporary logger
+		print("Load YAML configuration from '",yamlConfFilepath,"'")
 		self.logger = logging.getLogger(__name__)
 		configurator = ConfigurationManager(self.logger)
 		configurator.addYamlConfig(Path(yamlConfFilepath))
@@ -94,9 +95,10 @@ class OpenHEMSApplication:
 		network = networkUpdater.getNetwork()
 		self.server = OpenHEMSServer(self.logger, network, configurator)
 		port = port if port>0 else configurator.get("server.port")
+		root = configurator.get("server.htmlRoot")
 		inDocker = inDocker or configurator.get("server.inDocker", "bool")
 		self.webserver = OpenhemsHTTPServer(self.logger,
-			network.getSchedule(), port, inDocker)
+			network.getSchedule(), port, root, inDocker)
 		network.notify("Start OpenHEMS.")
 
 	def runManagementServer(self):

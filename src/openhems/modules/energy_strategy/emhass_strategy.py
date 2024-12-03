@@ -7,7 +7,6 @@ So this require some more Python packages.
 import math
 from datetime import datetime, timedelta
 import logging
-import copy
 import pytz
 import numpy as np
 from openhems.modules.network.network import OpenHEMSNetwork
@@ -28,10 +27,10 @@ class EmhassStrategy(EnergyStrategy):
 
 	def __init__(self, mylogger, network: OpenHEMSNetwork, configuration:ConfigurationManager):
 		super().__init__(mylogger)
-		self.adapter = EmhassAdapter.createForOpenHEMS()
+		self.adapter = EmhassAdapter.createFromOpenHEMS(configuration, network)
 		self.logger.info("EmhassStrategy()")
 		self.network = network
-		freq = configuration.get("server.strategyParams.emhassEvalFrequenceInMinutes")
+		freq = configuration.get("emhass.freq")
 		self.emhassEvalFrequence = timedelta(minutes=freq)
 		self.timezone = pytz.timezone(configuration.get("timeZone"))
 		self.data = None
@@ -80,7 +79,7 @@ class EmhassStrategy(EnergyStrategy):
 		# print("EmhassStrategy.updateDeferables()")
 		update = False
 		self.deferables = {}
-		for node in self.network.out:
+		for node in self.network.getAll("out"):
 			nodeId = node.id
 			durationInSecs = node.getSchedule().duration
 			deferable = self.deferables.get(nodeId, None)
@@ -170,7 +169,7 @@ class EmhassStrategy(EnergyStrategy):
 			self.network.switchOffAll()
 			return True
 		if rows[0] is None: # !!! But prevous row can be None !!!
-			rows[0] = copy.copy(rows[1]) # Do as Previous row confirm current row
+			rows = (rows[1], rows[1]) # Do as Previous row confirm current row
 			# (Rate = 100 before mid-hour)
 		# Evaluate rate of correctness of each row.
 		# If we are in the middle of current timestamp range keep it otherwise apply a rate

@@ -2,8 +2,6 @@
 Usefull function for standard usages
 """
 
-import os
-
 class CastException(Exception):
 	"""
 	Custom Home-Assitant excepton to be captured.
@@ -28,6 +26,8 @@ class CastUtililty:
 			if value=="unavailable":
 				raise CastException("WARNING : Unknown value for '"+value+"'", 0)
 			retValue = int(value)
+		else:
+			raise CastException("Impossible cast to int: Undefined algorythm : '"+type(value)+"'", 0)
 		return retValue
 	@staticmethod
 	def toTypeBool(value):
@@ -41,6 +41,8 @@ class CastUtililty:
 			retValue = value.lower() in ["on", "true", "1", "vrai"]
 		elif isinstance(value, bool):
 			retValue = value
+		else:
+			raise CastException("Impossible cast to bool: Undefined algorythm : '"+type(value)+"'", 0)
 		return retValue
 	@staticmethod
 	def toTypeStr(value):
@@ -54,6 +56,24 @@ class CastUtililty:
 		else:
 			retValue = str(value)
 		return retValue
+	@staticmethod
+	def toTypeFloat(value):
+		"""
+		Convert to type float
+		"""
+		retValue = None
+		if isinstance(value, (int, float)):
+			retValue = value
+		elif isinstance(value, str):
+			if value.isnumeric():
+				retValue = float(value)
+			elif value=="unavailable":
+				raise CastException("No value for '"+value+"'", 0)
+			else:
+				raise CastException("Incorect string value for  float: '"+value+"'", 0)
+		else:
+			raise CastException("Impossible cast to float: Undefined algorythm : '"+type(value)+"'", 0)
+		return retValue
 
 	@staticmethod
 	def toType(destType, value):
@@ -63,13 +83,16 @@ class CastUtililty:
 		 We need to manage some incorrect value due to errors.
 		"""
 		retValue = None
-		if destType=="int":
+		if destType is None:
+			retValue = value
+		elif destType=="int":
 			retValue = CastUtililty.toTypeInt(value)
 		elif destType=="bool":
 			retValue = CastUtililty.toTypeBool(value)
 		elif destType=="str":
 			retValue = CastUtililty.toTypeStr(value)
+		elif destType=="float":
+			retValue = CastUtililty.toTypeFloat(value)
 		else:
-			print(".toType(",destType,",",value,") : Unknwon type")
-			os._exit(1)
+			raise CastException(".toType("+str(destType)+","+str(value)+") : Unknwon type", 0)
 		return retValue

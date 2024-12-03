@@ -1,43 +1,46 @@
-# Configuration file for EMHASS
+# Auto-generated file by openhems.EmhassAdapter.generateYamlConfig()# Configuration file for EMHASS
 
 retrieve_hass_conf:
-  freq: 30 # The time step to resample retrieved data from hass in minutes
+  freq: 1
   days_to_retrieve: 2 # We will retrieve data from now and up to days_to_retrieve days. Minimum is 2
-  var_PV: 'sensor.tz3000_2putqrmw_ts011f_puissance_2' # Photovoltaic produced power sensor in Watts
-  var_load: 'sensor.lixee_zlinky_tic_puissance_apparente' # Household power consumption sensor in Watts (deferrable loads should be substracted)
+  var_PV: sensor.emhass_photovoltaic_power_produced # Photovoltaic produced power sensor in Watts - Template Sensor auto-generated
+  var_load: sensor.emhass_household_power_consumption # Household power consumption sensor in Watts (deferrable loads should be substracted) - Template Sensor auto-generated
   load_negative: False # Set to True if the retrived load variable is negative by convention
   set_zero_min: True # A special treatment for a minimum value saturation to zero. Values below zero are replaced by nans
-  var_replace_zero: # A list of retrived variables that we would want  to replace nans with zeros
-  var_interp: # A list of retrived variables that we would want to interpolate nan values using linear interpolation
-  - 'sensor.lixee_zlinky_tic_puissance_apparente'
-  method_ts_round: 'nearest' # Set the method for timestamp rounding, options are: first, last and nearest
+  var_replace_zero: 
+  - sensor.emhass_photovoltaic_power_produced
+  - sensor.emhass_household_power_consumption
+  - sensor.lixee_zlinky_tic_puissance_apparente
+  - sensor.tz3000_2putqrmw_ts011f_puissance_2 # A list of retrived variables that we would want  to replace nans with zeros
+  var_interp: 
+  - sensor.emhass_photovoltaic_power_produced
+  - sensor.tz3000_2putqrmw_ts011f_puissance_2 # A list of retrived variables that we would want to interpolate nan values using linear interpolation
+  method_ts_round: nearest # Set the method for timestamp rounding, options are: first, last and nearest
   continual_publish: False # Save published sensor data and check for state change every freq minutes
 
 optim_conf:
   set_use_battery: False # consider a battery storage
   delta_forecast: 1 # days
-  num_def_loads: 2
-  P_deferrable_nom: # Watts
-  def_total_hours: # hours
-  def_start_timestep: # timesteps
-  def_end_timestep: # timesteps
-  treat_def_as_semi_cont: # treat this variable as semi continuous 
-  set_def_constant: # set as a constant fixed value variable with just one startup for each 24h
-  def_start_penalty: # Set a penalty for each start up of a deferrable load
+  num_def_loads: 0 # Dynamicaly set by OpenHEMS
+  P_deferrable_nom: # Watts # Dynamicaly set by OpenHEMS
+  def_total_hours: # hours # Dynamicaly set by OpenHEMS
+  def_start_timestep: # timesteps # Dynamicaly set by OpenHEMS
+  def_end_timestep: # timesteps # Dynamicaly set by OpenHEMS
+  treat_def_as_semi_cont: # treat this variable as semi continuous # Dynamicaly set by OpenHEMS
+  set_def_constant: # set as a constant fixed value variable with just one startup for each 24h # Dynamicaly set by OpenHEMS
+  def_start_penalty: # Set a penalty for each start up of a deferrable load # Dynamicaly set by OpenHEMS
   weather_forecast_method: 'scrapper' # options are 'scrapper', 'csv', 'list', 'solcast' and 'solar.forecast'
   load_forecast_method: 'naive' # options are 'csv' to load a custom load forecast from a CSV file or 'naive' for a persistance model
   load_cost_forecast_method: 'hp_hc_periods' # options are 'hp_hc_periods' for peak and non-peak hours contracts and 'csv' to load custom cost from CSV file 
-  list_hp_periods: # list of different tariff periods (only needed if load_cost_forecast_method='hp_hc_periods')
+  list_hp_periods: 
   - period_hp_1:
-    - start: '02:54'
-    - end: '15:24'
-  - period_hp_2:
-    - start: '17:24'
-    - end: '20:24'
-  load_cost_hp: 0.1907 # peak hours load cost in €/kWh (only needed if load_cost_forecast_method='hp_hc_periods')
-  load_cost_hc: 0.1419 # non-peak hours load cost in €/kWh (only needed if load_cost_forecast_method='hp_hc_periods')
+    - start: '06:00'
+    - end: '06:00'
+ # list of different tariff periods (only needed if load_cost_forecast_method='hp_hc_periods')
+  load_cost_hp: 0.1609 # peak hours load cost in €/kWh (only needed if load_cost_forecast_method='hp_hc_periods')
+  load_cost_hc: 0.1296 # non-peak hours load cost in €/kWh (only needed if load_cost_forecast_method='hp_hc_periods')
   prod_price_forecast_method: 'constant' # options are 'constant' for constant fixed value or 'csv' to load custom price forecast from a CSV file
-  prod_sell_price: 0.065 # power production selling price in €/kWh (only needed if prod_price_forecast_method='constant')
+  prod_sell_price: 0.0 # power production selling price in €/kWh (only needed if prod_price_forecast_method='constant')
   set_total_pv_sell: False # consider that all PV power is injected to the grid (self-consumption with total sell)
   lp_solver: 'default' # set the name of the linear programming solver that will be used. Options are 'PULP_CBC_CMD', 'GLPK_CMD' and 'COIN_CMD'. 
   lp_solver_path: 'empty' # set the path to the LP solver, COIN_CMD default is /usr/bin/cbc
@@ -50,27 +53,27 @@ optim_conf:
   weight_battery_charge: 0.0 # weight applied in cost function to battery usage for charge
 
 plant_conf:
-  P_from_grid_max: 9000 # The maximum power that can be supplied by the utility grid in Watts
-  P_to_grid_max: 9000 # The maximum power that can be supplied to the utility grid in Watts
-  module_model: # The PV module model
-  - 'CSUN_Eurasia_Energy_Systems_Industry_and_Trade_CSUN295_60M'
-  inverter_model: # The PV inverter model
-  - 'Fronius_International_GmbH__Fronius_Primo_5_0_1_208_240__240V_'
-  surface_tilt: # The tilt angle of your solar panels
-  - 30
-  surface_azimuth: # The azimuth angle of your PV installation
-  - 205
-  modules_per_string: # The number of modules per string
-  - 16 
-  strings_per_inverter: # The number of used strings per inverter
+  P_from_grid_max: 6000 # The maximum power that can be supplied by the utility grid in Watts
+  P_to_grid_max: 0 # The maximum power that can be supplied to the utility grid in Watts
+  module_model: 
+  - CSUN_Eurasia_Energy_Systems_Industry_and_Trade_CSUN295_60M
+  inverter_model: 
+  - Fronius_International_GmbH__Fronius_Primo_5_0_1_208_240__240V_
+  surface_tilt: 
+  - 45
+  surface_azimuth: 
+  - 180
+  modules_per_string: 
+  - 1
+  strings_per_inverter: 
   - 1
   inverter_is_hybrid: False # Set if it is a hybrid inverter (PV+batteries) or not
   compute_curtailment: False # Compute a PV curtailment variable or not
-  Pd_max: 1000 # If your system has a battery (set_use_battery=True), the maximum discharge power in Watts
-  Pc_max: 1000 # If your system has a battery (set_use_battery=True), the maximum charge power in Watts
-  eta_disch: 0.95 # If your system has a battery (set_use_battery=True), the discharge efficiency
-  eta_ch: 0.95 # If your system has a battery (set_use_battery=True), the charge efficiency
-  Enom: 5000 # If your system has a battery (set_use_battery=True), the total capacity of the battery stack in Wh
-  SOCmin: 0.3 # If your system has a battery (set_use_battery=True), the minimun allowable battery state of charge
-  SOCmax: 0.9 # If your system has a battery (set_use_battery=True), the minimun allowable battery state of charge
-  SOCtarget: 0.6 # If your system has a battery (set_use_battery=True), the desired battery state of charge at the end of each optimization cycle
+  Pd_max:  # If your system has a battery (set_use_battery=True), the maximum discharge power in Watts
+  Pc_max:  # If your system has a battery (set_use_battery=True), the maximum charge power in Watts
+  eta_disch:  # If your system has a battery (set_use_battery=True), the discharge efficiency
+  eta_ch:  # If your system has a battery (set_use_battery=True), the charge efficiency
+  Enom:  # If your system has a battery (set_use_battery=True), the total capacity of the battery stack in Wh
+  SOCmin:  # If your system has a battery (set_use_battery=True), the minimun allowable battery state of charge
+  SOCmax:  # If your system has a battery (set_use_battery=True), the minimun allowable battery state of charge
+  SOCtarget:  # If your system has a battery (set_use_battery=True), the desired battery state of charge at the end of each optimization cycle

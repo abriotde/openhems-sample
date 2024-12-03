@@ -11,12 +11,13 @@ import dataclasses
 from pathlib import Path
 import importlib
 # from importlib.metadata import version
-import yaml
+import jinja2
+from jinja2 import Environment, FileSystemLoader
 # from packaging.version import Version
-
 PATH_ROOT = Path(__file__).parents[5]
 PATH_EMHASS = PATH_ROOT / 'lib/emhass/src/'
 emhassModuleSpec = importlib.util.find_spec('emhass')
+logger = logging.getLogger(__name__)
 
 # pylint: disable=condition-evals-to-constant
 if False and emhassModuleSpec is not None:
@@ -100,7 +101,7 @@ class EmhassAdapter:
 		"""
 		:return:  # pandas.core.frame.DataFrame
 		"""
-		self.logger.info("EmhassAdapter.performOptim(%s, %s) for %s",
+		self.logger.debug("EmhassAdapter.performOptim(%s, %s) for %s",
 			actionName, costfun, str(self))
 		runtimeparams = None
 		params = self._params if isinstance(self._params, str) else json.dumps(self._params)
@@ -141,46 +142,250 @@ class EmhassAdapter:
 		return emhassData
 
 	@staticmethod
-	def generateConfigFromOpenHEMS(path:Path):
+	def generateSecretConfig(configuration, emhassSecretsPath:Path):
 		"""
 		Generate configurations files from OpenHEMS configuration.
 		Avoid to maintain multiple files with duplicated informations
 		 (So possibly inconsistense and difficult error to resolv)
 		"""
-		openHEMSPath = path / "openhems.yaml"
-		emhassPath = path / "config_emhass.yaml"
-		emhassSecretsPath = path / "secrets_emhass.yaml"
-		with open(openHEMSPath, 'r', encoding="utf-8") as openHEMSFile:
-			openhemsConf = yaml.load(openHEMSFile, Loader=yaml.FullLoader)
-			apiConf = openhemsConf["api"]
-			url = apiConf["url"]
-			token = apiConf["long_lived_token"]
-			url = apiConf["url"]
-			latitude = openhemsConf["latitude"]
-			longitude = openhemsConf["longitude"]
-			altitude = openhemsConf["altitude"]
-			tz = openhemsConf["time_zone"]
-			with open(emhassSecretsPath, 'w', encoding="utf-8") as emhassSecretsFile:
-				emhassSecretsFile.write(f"""
-# Auto-generated file by openhems.EmhassAdapter.generateConfigFromOpenHEMS()
+		url = configuration.get("api.url")
+		if url.endswith("/api"):
+			url = url[:-3]
+		token = configuration.get("api.long_lived_token")
+		tz = configuration.get("timeZone")
+		latitude = configuration.get("latitude")
+		longitude = configuration.get("longitude")
+		altitude = configuration.get("altitude")
+		with emhassSecretsPath.open('w', encoding="utf-8") as emhassSecretsFile:
+			logger.info("Write EMHASS secret configuration on '%s'", emhassSecretsPath)
+			emhassSecretsFile.write(f"""
+# Auto-generated file by openhems.EmhassAdapter.generateSecretConfig()
 
 hass_url: {url}
 long_lived_token: {token}
 time_zone: {tz}
-lat: {latitude}
-lon: {longitude}
-alt: {altitude}
+Latitude: {latitude}
+Longitude: {longitude}
+Altitude: {altitude}
 """)
-			with open(emhassPath, 'w', encoding="utf-8") as emhassFile:
-				emhassFile.write("")
 
 	@staticmethod
-	def createForOpenHEMS():
+	def generateHomeAssistantTemplateConfig(network, templateYamlPath:Path):
+		"""
+		Return Home-Assistant template.yaml file
+		 fill according to openhems.yaml config.
+		"""
+		inout = ['(states("'+elem.currentPower.nameid+'") | float(0))'
+			for elem in network.getAll("inout")]
+		out = ['(states("'+elem.currentPower.nameid+'") | float(0))'
+			for elem in network.getAll("out")]
+		solarpanel = ['(states("'+elem.currentPower.nameid+'") | float(0))'
+			for elem in network.getAll("solarpanel")]
+		if len(inout)==0 or len(out)==0 or len(solarpanel)==0:
+			logger.error("Emhass optimization need %s configuration.",
+				"inout" if len(inout)==0 else
+				"out" if len(out)==0 else
+				"solarpanel" if len(solarpanel)==0 else "")
+			return False
+		varLoad = " + ".join(inout) + " - "+ " - ".join(out)
+		varPV = " + ".join(solarpanel)
+		with templateYamlPath.open('w', encoding="utf-8") as file:
+			logger.info("Write home-Assistant template configuration on '%s'", templateYamlPath)
+			file.write(f"""
+# Auto-generated file by openhems.EmhassAdapter.generateHomeAssistantTemplateConfig()
+  - sensor:
+    - unique_id: sensor.emhass_photovoltaic_power_produced
+      name: "EMHASS - Photovoltaic power-produced"
+      state: '{{ {varPV} }}'
+      unit_of_measurement: "Watt"
+      device_class: energy
+  - sensor:
+    - unique_id: sensor.emhass_household_power_consumption
+      name: "EMHASS - Household power consumption"
+      state: '{{ {varLoad} }}'
+      unit_of_measurement: "Watt"
+      device_class: energy
+""")
+			return True
+		return False
+
+	@staticmethod
+	def getYamlList(elems, caller=None, indent="  "):
+		"""
+		Convert a Python list to a YAML one
+		"""
+		if caller is not None:
+			elems = [str(caller(elem).getValue()) for elem in elems]
+		if len(elems)==0:
+			return ""
+		init = "\n"+indent+"- "
+		return init+(init.join(elems))
+
+	@staticmethod
+	def getYamlConfOffpeakHours(network):
+		"""
+		Return YAML configuration for Emhass off-peak hours.
+		"""
+		datas = {}
+		for elem in network.getAll("publicpowergrid"):
+			contract = elem.getContract()
+			ranges = contract.getOffPeakHoursRanges().getReverse()
+			listHpPeriods = ""
+			i = 1
+			for r in ranges:
+				start = repr(r[0])
+				end = repr(r[1])
+				listHpPeriods += f"""\n  - period_hp_{i}:
+    - start: '{start}'
+    - end: '{end}'
+"""
+				i+=1
+			if listHpPeriods == "":
+				listHpPeriods = "[]"
+			datas["list_hp_periods"] = listHpPeriods
+			datas["load_cost_hp"] = contract.getPeakPrice()
+			datas["load_cost_hc"] = contract.getOffPeakPrice()
+		return datas
+
+	@staticmethod
+	def getYamlConfBattery(network):
+		"""
+		Extract usefull informations from openhems.yaml configuration
+		 for configuring EMHASS Battery fields
+		Return: Dict of varname=>String to felle configuration file.
+		"""
+		datas = {}
+		# Feel battery fields
+		maxPowerOut = 0
+		maxPowerIn = 0
+		efficiencyIn = 0
+		efficiencyOut = 0
+		capacity = 0
+		lowLevel = 0
+		highLevel = 0
+		targetLevel = 0
+		for elem in network.getAll("battery"):
+			maxPowerOut += elem.getMaxPower()
+			maxPowerIn += elem.getMinPower()
+			capa += elem.capacity
+			efficiencyIn += elem.efficiencyIn * capa
+			efficiencyOut += elem.efficiencyOut * capa
+			capacity += capa
+			lowLevel += elem.lowLevel * capa
+			highLevel += elem.highLevel * capa
+			targetLevel += elem.targetLevel * capa
+		datas['set_use_battery'] = maxPowerOut>0 and capacity>0
+		if capacity>0:
+			datas['Pd_max'] = maxPowerOut
+			datas['Pc_max'] = maxPowerIn
+			datas['eta_disch'] = efficiencyIn / capacity
+			datas['eta_ch'] = efficiencyOut / capacity
+			datas['Enom'] = capacity
+			datas['SOCmin'] = lowLevel / capacity
+			datas['SOCmax'] = highLevel / capacity
+			datas['SOCtarget'] = targetLevel / capacity
+		return datas
+
+	@staticmethod
+	def getEmhassDatas(configuration, network):
+		"""
+		Extract usefull informations from openhems.yaml configuration
+		 for configuring EMHASS
+		Return: Dict of varname=>String to felle configuration file.
+		"""
+		datas = configuration.get("emhass", deepSearch=True)
+		# P_from_grid_max / P_to_grid_max
+		datas['P_from_grid_max'] = network.getMaxPower("publicpowergrid")
+		datas['P_to_grid_max'] = network.getMinPower("publicpowergrid")
+		elems = network.getAll("inout")
+		zeroRelacementVars = [
+			'sensor.emhass_photovoltaic_power_produced',
+			'sensor.emhass_household_power_consumption'
+		] + [elem.currentPower.nameid for elem in elems]
+		datas['var_replace_zero'] = EmhassAdapter.getYamlList(zeroRelacementVars)
+		elems = network.getAll("solarpanel")
+		interpretVars = [
+			'sensor.emhass_photovoltaic_power_produced'
+		] + [elem.currentPower.nameid for elem in elems]
+		datas['var_interp'] = EmhassAdapter.getYamlList(interpretVars)
+
+		# Feel solarpanel fields
+		elems = network.getAll("solarpanel")
+		datas['module_model'] = EmhassAdapter.getYamlList(elems, lambda x:
+			x.moduleModel)
+		datas['inverter_model'] = EmhassAdapter.getYamlList(elems, lambda x:
+			x.inverterModel)
+		datas['surface_tilt'] = EmhassAdapter.getYamlList(elems, lambda x:
+			x.tilt)
+		datas['surface_azimuth'] = EmhassAdapter.getYamlList(elems, lambda x:
+			x.azimuth)
+		datas['modules_per_string'] = EmhassAdapter.getYamlList(elems, lambda x:
+			x.modulesPerString)
+		datas['strings_per_inverter'] = EmhassAdapter.getYamlList(elems, lambda x:
+			x.stringsPerInverter)
+
+		datas = datas \
+			|EmhassAdapter.getYamlConfBattery(network) \
+			|EmhassAdapter.getYamlConfOffpeakHours(network)
+		# print("Datas:",datas)
+		return datas
+
+	@staticmethod
+	def generateYamlConfig(configuration, network, emhassConfigPath:Path):
+		"""
+		Generate Emhass YAML config file : config_emhass.yaml from openhems.yaml
+		"""
+		templateDirPath = str(Path(__file__).parents[0] / "data/")
+		templateName = "config_emhass.jinja2.yaml"
+		environment = Environment(loader=FileSystemLoader(templateDirPath))
+		datas = EmhassAdapter.getEmhassDatas(configuration, network)
+		try:
+			template = environment.get_template(templateName)
+			content = template.render(
+				datas,
+				max_score=100,
+				test_name="toto"
+			)
+			with emhassConfigPath.open('w', encoding="utf-8") as emhassFile:
+				logger.info("Write EMHASS configuration on '%s'", emhassConfigPath)
+				emhassFile.write("# Auto-generated file by openhems.EmhassAdapter.generateYamlConfig()")
+				emhassFile.write(content)
+				return True
+		except jinja2.exceptions.TemplateNotFound:
+			logger.error(
+				"Fail write EMHASS configuration on '%s : TemplateNotFound(%s/%s)",
+				emhassConfigPath, templateDirPath, templateName
+			)
+		return False
+
+	@staticmethod
+	def createFromOpenHEMS(configuration=None, network=None):
 		"""
 		Create EmhassAdapter with parameters for standard OpenHEMS installations
 		"""
 		configPath = PATH_ROOT / "config"
-		# self.generateConfigFromOpenHEMS()
+		if configuration is not None:
+			EmhassAdapter.generateSecretConfig(
+				configuration,
+				configPath / "secrets_emhass.yaml"
+			)
+			if network is not None:
+				EmhassAdapter.generateYamlConfig(
+					configuration, network,
+					configPath / "config_emhass.yaml"
+				)
+				EmhassAdapter.generateHomeAssistantTemplateConfig(
+					network,
+					configPath / "template.yaml"
+				)
+			else:
+				logger.warning(
+					"Can't generate EMHASS configuration due to missing network param."
+				)
+		else:
+			logger.warning(
+				"Can't generate EMHASS secrets due to missing configuration parma."
+			)
 		dataPath = Path("/tmp/emhass_data")
 		if not os.path.exists(dataPath):
 			os.mkdir(dataPath)
@@ -198,7 +403,8 @@ alt: {altitude}
 		return EmhassAdapter(rootPath, dataPath, rootPath)
 
 if __name__ == "__main__":
-	emhass = EmhassAdapter.createForOpenHEMS()
+	sys.path.append(str(PATH_ROOT/"src"))
+	emhass = EmhassAdapter.createFromOpenHEMS()
 	emhass.deferables = [
 		Deferrable(1000, 3),
 		Deferrable(300, 2),

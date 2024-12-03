@@ -7,6 +7,7 @@ longitude: -2.2153649964972693
 altitude: 100
 timeZone: Europe/Paris
 server:
+  htmlRoot: "/"
   inDocker: False
   port: 8000
   logformat: "%(levelname)s : %(asctime)s : %(message)s" # for custom configuration see https://docs.python.org/3/library/logging.html#logrecord-attributes
@@ -15,8 +16,82 @@ server:
   loopDelay: 30 # interval beetween 2 loop
   network: homeassistant # Define the type of network API used to control the home energy.
   strategy: offpeak # Define the algorithm used to control the  home energy.
-  strategyParams: [] # parameters witch depends of the strategy
-  strategyParams.emhassEvalFrequenceInMinutes: 30
 network:
-  in: [] # List the source of electric power
-  out: [] # List on source of electric consumption
+  nodes: [] # List the source of electric power / stockage
+# - class=publicpowergrid: currentPower, maxPower, minPower, powerMargin
+# - class=battery: currentPower, level (current_battery_level), maxPowerIn (max_discharge_power_watt), maxPowerOut (max_charge_power_watt), efficiencyIn (discharge_efficiency:0.95), efficiencyOut (charge_efficiency:0.95), capacity (watt), lowLevel (state_of_charge_min), highLevel (state_of_charge_max), targetLevel (state_of_charge_target)
+# - class=solarpanel: currentPower, maxPower (max_discharge_power_watt), moduleModel (CSUN_Eurasia_Energy_Systems_Industry_and_Trade_CSUN295_60M), inverterModel: (Fronius_International_GmbH__Fronius_Primo_5_0_1_208_240__240V_), tilt, azimuth, modules_per_string, strings_per_inverter
+# - class=switch: id, isOn, currentPower, maxPower
+# 
+emhass:
+  freq: 30
+  days_to_retrieve: 2
+  method_ts_round: nearest
+  delta_forecast: 1
+  weather_forecast_method: scrapper
+  load_cost_hp: 0.30
+  load_cost_hc: 0.15
+  prod_sell_price: 0.0
+  set_total_pv_sell: False
+  lp_solver: default
+  lp_solver_path: empty
+  set_nocharge_from_grid: False
+  set_nodischarge_to_grid: True
+  set_battery_dynamic: False
+  battery_dynamic_max: 0.9
+  battery_dynamic_min: -0.9
+# All default values.
+default:
+  node:
+    publicpowergrid:
+      currentPower: null
+      maxPower: 6000
+      minPower: 0
+      marginPower: 300
+      contract:
+        rtetempo:
+          color: null
+          offpeakhoursranges: ["22h - 6h"]
+          peakprice:
+            bleu: 0.1609
+            blanc: 0.1894
+            rouge: 0.7562
+          offpeakprice:
+            bleu: 0.1296
+            blanc: 0.1486
+            rouge: 0.1568
+          offpeakprice_rouge: 
+        rteheurescreuses:
+          offpeakhoursranges: ["22h - 6h"]
+          peakprice: 0.2700
+          offpeakprice: 0.2068
+        rtetarifbleu:
+          price: 0.2516
+        generic:
+          offpeakhoursranges: ["22h - 6h"]
+          peakprice: None
+          offpeakprice: None
+    solarpanel:
+      currentPower: None
+      maxPower: 500
+      moduleModel: CSUN_Eurasia_Energy_Systems_Industry_and_Trade_CSUN295_60M
+      inverterModel: Fronius_International_GmbH__Fronius_Primo_5_0_1_208_240__240V_
+      tilt: 45
+      azimuth: 180
+      modulesPerString: 1
+      stringsPerInverter: 1
+    battery:
+      currentPower: None
+      maxPowerIn: 2000
+      maxPowerOut: 2000
+      efficiencyIn: 0.95
+      efficiencyOut: 0.95
+      capacity: 10000
+      currentLevel: None
+      lowLevel: 0.20
+      highLevel: 0.80
+      targetLevel: 0.75
+    switch:
+      currentPower: None
+      maxPower: 2000
+      isOn: None

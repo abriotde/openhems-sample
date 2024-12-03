@@ -6,8 +6,8 @@ This is in case we just base on "off-peak" range hours to control output.
 
 from datetime import datetime
 import time
-import re
 from openhems.modules.network.network import OpenHEMSNetwork
+from openhems.modules.util import ConfigurationException
 from .energy_strategy import EnergyStrategy, LOOP_DELAY_VIRTUAL
 
 # Time to wait in seconds before considering to be in offpeak range
@@ -26,75 +26,24 @@ class OffPeakStrategy(EnergyStrategy):
 	rangeEnd = datetime.now()
 	network = None
 
-	def __init__(self, mylogger, network: OpenHEMSNetwork, offpeakHoursRanges=None):
+	def __init__(self, mylogger, network: OpenHEMSNetwork):
 		super().__init__(mylogger)
-		if offpeakHoursRanges is None:
-			offpeakHoursRanges = [["22:00:00","06:00:00"]]
-		self.logger.info("OffPeakStrategy(%s)", str(offpeakHoursRanges))
 		self.network = network
-		self.setOffPeakHoursRanges(offpeakHoursRanges)
+		self.offpeakHoursRanges = self.network.getOffPeakHoursRanges()
+		self.logger.info("OffPeakStrategy(%s)", str(self.offpeakHoursRanges))
+		if self.offpeakHoursRanges.isEmpty():
+			msg = "OffPeak-strategy is useless without offpeak hours. Check your configuration."
+			self.logger.critical(msg)
+			raise ConfigurationException(msg)
 		self.checkRange()
-
-	@staticmethod
-	def getTime(strTime:str):
-		"""
-		Convert different time configuration as srting to custom Mytime : "%H%M%S"
-		"""
-		strTime = strTime.strip()
-		if not re.match("^[0-9]+:[0-9]+:[0-9]+$", strTime) is None:
-			pattern = '%H:%M:%S'
-		elif not re.match("^[0-9]+:[0-9]+$", strTime) is None:
-			pattern = '%H:%M'
-		elif not re.match("^[0-9]+h?$", strTime) is None:
-			pattern = '%Hh'
-		elif not re.match("^[0-9]+h?[0-9]+$", strTime) is None:
-			pattern = '%Hh%M'
-		else:
-			raise Exception("Fail convert '{strTime}' to Time.")
-		return int(datetime.strptime(strTime, pattern).strftime("%H%M%S"))
-
-	def setOffPeakHoursRanges(self, offPeakHoursRanges):
-		"""
-		Convert the configuration array of offpeakHoursRanges
-		 to a usable array of 'object'.
-		"""
-		self.offpeakHoursRanges = []
-		for offpeakHoursRange in offPeakHoursRanges:
-			begin = self.getTime(offpeakHoursRange[0])
-			end = self.getTime(offpeakHoursRange[1])
-			self.offpeakHoursRanges.append([begin, end])
 
 	def checkRange(self, nowDatetime: datetime=None) -> int:
 		"""
 		Check if nowDatetime (Default now) is in off-peak range (offpeakHoursRange)
 		 and set end time of this range
 		"""
-		if nowDatetime is None:
-			nowDatetime = datetime.now()
-		now = self.datetime2Mytime(nowDatetime)
-		# print("OffPeakStrategy.checkRange(",now,")")
-		self.inOffpeakRange = False
-		nextTime = now+EnergyStrategy.MIDNIGHT
-		# This has no real signification but it's usefull and the most simple way
-		time2NextTime = EnergyStrategy.MIDNIGHT
-		for offpeakHoursRange in self.offpeakHoursRanges:
-			begin, end = offpeakHoursRange
-			wait = self.getTimeToWait(now, begin)
-			if wait<time2NextTime:
-				nextTime = begin
-				time2NextTime = wait
-				self.inOffpeakRange = False
-			wait = self.getTimeToWait(now, end)
-			if wait<time2NextTime:
-				nextTime = end
-				time2NextTime = wait
-				self.inOffpeakRange = True
-		assert nextTime<=240000
-		self.rangeEnd = self.mytime2datetime(nowDatetime, nextTime)
-		nbSecondsToNextRange = (self.rangeEnd - nowDatetime).total_seconds()
-		self.logger.info("OffPeakStrategy.checkRange({now}) => %s, %d", \
-			self.rangeEnd, nbSecondsToNextRange)
-		return nbSecondsToNextRange
+		self.offpeakHoursRanges = self.network.getOffPeakHoursRanges()
+		self.inOffpeakRange, self.rangeEnd = self.offpeakHoursRanges.checkRange(nowDatetime)
 
 	def sleepUntillNextRange(self):
 		"""
@@ -120,7 +69,7 @@ class OffPeakStrategy(EnergyStrategy):
 		doSwitchOn = True
 		if powerMargin<0:
 			return True
-		for elem in self.network.out:
+		for elem in self.network.getAll("out"):
 			if self.switchOn(elem, cycleDuration, doSwitchOn):
 				# Do just one at each loop to check Network constraint
 				doSwitchOn = False

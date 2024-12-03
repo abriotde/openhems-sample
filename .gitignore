@@ -3,6 +3,7 @@ src/__pycache__
 coverage.xml
 # Emhass config, auto generated
 config/secrets_emhass.yaml
+config/config_emhass.yaml
 # For pip PyPi
 dist/
 venv/

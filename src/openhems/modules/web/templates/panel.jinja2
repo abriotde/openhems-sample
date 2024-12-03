@@ -214,7 +214,7 @@ function onSave() {
         	var json = JSON.parse(xhr.responseText);
         	console.log("Response : ",json);
         	setDevicesProgramm(json);
-        	document.getElementById("valid").src="../../img/correct_32.ico";
+        	document.getElementById("valid").src="{{request.static_url('openhems.modules.web:../../../../img/correct_32.ico')}}";
     	}
 	};
 	xhr.send(JSON.stringify(nodes));

@@ -24,44 +24,42 @@ class FakeNetwork(HomeStateUpdater):
 #		super().__init__(conf)
 
 	# pylint: disable=unused-argument
-	def getFeeder(self, conf, key, expectedType=None, defaultValue=None) -> Feeder:
+	def getFeeder(self, value, expectedType=None, defaultValue=None) -> Feeder:
 		"""
 		Return a feeder considering
 		 if the "key" can be a Home-Assistant element id.
 		 Otherwise, it consider it as constant.
 		"""
 		feeder = None
-		key = conf.get(key, None)
-		if isinstance(key, str):
-			key = key.strip().upper()
-			if REGEXP_RANDOM_FEEDER.match(key):
-				vals = REGEXP_RANDOM_FEEDER.match(key)
-				self.logger.info("RandomFeeder(%s, %s, %s)", vals[1], vals[3], vals[5])
+		if isinstance(value, str):
+			value = value.strip().upper()
+			if REGEXP_RANDOM_FEEDER.match(value):
+				vals = REGEXP_RANDOM_FEEDER.match(value)
+				self.logger.debug("RandomFeeder(%s, %s, %s)", vals[1], vals[3], vals[5])
 				feeder = RandomFeeder(self, float(vals[1]), float(vals[3]), float(vals[5]))
 			else:
-				self.logger.info("ConstFeeder(%s) - default str", key)
-				feeder = ConstFeeder(float(key))
-		elif isinstance(key, list):
-			self.logger.info("RotationFeeder(%s)", key)
-			feeder = RotationFeeder(self, key)
+				self.logger.debug("ConstFeeder(%s) - default str", value)
+				feeder = ConstFeeder(float(value))
+		elif isinstance(value, list):
+			self.logger.debug("RotationFeeder(%s)", value)
+			feeder = RotationFeeder(self, value)
 		elif defaultValue is not None:
-			self.logger.info("ConstFeeder(%s) - defaultValue", defaultValue)
+			self.logger.debug("ConstFeeder(%s) - defaultValue", defaultValue)
 			feeder = ConstFeeder(defaultValue)
 		else:
-			self.logger.info("ConstFeeder(%s) - default", key)
-			feeder = ConstFeeder(key)
+			self.logger.debug("ConstFeeder(%s) - default", value)
+			feeder = ConstFeeder(value)
 		return feeder
 
 	def getSwitch(self, nameid, nodeConf):
 		currentPower = self.getFeeder(nodeConf, "currentPower")
 		_isOn = CastUtililty.toTypeBool(nodeConf.get('isOn', True))
-		self.logger.info("StateFeeder(%s)", str(_isOn))
+		self.logger.debug("StateFeeder(%s)", str(_isOn))
 		isOn = StateFeeder(_isOn)
 		maxPower = self.getFeeder(nodeConf, "maxPower", 2000)
 		currentPowerRealisttic = FakeSwitchFeeder(currentPower, isOn)
 		node = OutNode(nameid, currentPowerRealisttic, maxPower, isOn)
 		return node
-
 
 	def switchOn(self, isOn:bool, node):
 		"""
@@ -70,3 +68,11 @@ class FakeNetwork(HomeStateUpdater):
 		# pylint: disable=protected-access
 		node._isOn.setValue(isOn) # (Should do in an other way?)
 		return node.isOn()
+
+	def notify(self, message, printer=None):
+		"""
+		Test notify function
+		"""
+		if printer is None:
+			printer = print
+		printer(f"FakeNetwork.notify({message})")

@@ -99,10 +99,11 @@ class OpenhemsHTTPServer():
 		"""
 		print("context", OPENHEMS_CONTEXT)
 
-	def __init__(self, mylogger, schedule, port=8000, inDocker=False):
+	def __init__(self, mylogger, schedule, port=8000, htmlRoot="/", inDocker=False):
 		self.logger = mylogger
 		self.schedule = schedule
 		self.port = port
+		self.htmlRoot = htmlRoot
 		if inDocker:
 			vpnDriver = VpnDriverIncronClient(mylogger)
 		else:
@@ -124,7 +125,11 @@ class OpenhemsHTTPServer():
 			config.add_route('params', '/params')
 			config.add_route('vpn', '/vpn')
 			# config.add_route('favicon.ico', '/favicon.ico')
-			config.add_static_view(name='img', path='openhems.modules.web:../../../../img')
+			root = (self.htmlRoot+'/img').replace('//','/')
+			config.add_static_view(
+				name=root,
+				path='openhems.modules.web:../../../../img'
+			)
 			config.scan()
 			app = config.make_wsgi_app()
 		host = '0.0.0.0'

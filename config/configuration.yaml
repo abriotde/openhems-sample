@@ -15,6 +15,10 @@ lovelace:
       show_in_sidebar: true
       filename: dashboards.yaml
 
+# https://www.home-assistant.io/integrations/template/
+# For EMHASS
+template: !include template.yaml
+
 # Loads default set of integrations. Do not remove.
 default_config:
 

@@ -6,6 +6,8 @@ the NetworkUpdater will really search to update the value.
 
 import random
 import logging
+from openhems.modules.util import CastUtililty
+
 logger = logging.getLogger(__name__)
 
 # pylint: disable=too-few-public-methods
@@ -44,23 +46,32 @@ class SourceFeeder(Feeder):
 		"""
 		getValue from the "source" if source.id has been updated.
 		"""
+		if self.source.refreshId==0:
+			logger.warning("SourceFeeder() : Need to refresh Network...")
+			self.source.updateNetwork()
 		if self.sourceId<self.source.refreshId:
 			# Better to update sourceId before in case value is
 			# updated between the 2 next lines
 			self.sourceId = self.source.refreshId
 			self.value = self.source.cachedIds[self.nameid][0]
 		return self.value
+	def __str__(self):
+		return "SourceFeeder("+self.nameid+")"
 
 # pylint: disable=too-few-public-methods
 class ConstFeeder(Feeder):
 	"""
 	This is for value wich are constant.
 	"""
-	def __init__(self, value, nameid=None):
+	def __init__(self, value, nameid=None, expectedType=None):
+		if expectedType is not None:
+			value = CastUtililty.toType(expectedType, value)
 		super().__init__(value)
 		if nameid is None:
 			nameid = str(value)
 		self.nameid = nameid
+	def __str__(self):
+		return "'"+self.nameid+"'"
 
 class RandomFeeder(Feeder):
 	"""
@@ -88,6 +99,8 @@ class RandomFeeder(Feeder):
 					self.value + random.gauss(0, 2*self.avgStep),
 				self.min), self.max)
 		return self.value
+	def __str__(self):
+		return "RandomFeeder("+str(self.min)+", "+str(self.max)+")"
 
 class RotationFeeder(Feeder):
 	"""
@@ -113,6 +126,8 @@ class RotationFeeder(Feeder):
 		"""
 		i = self.source.refreshId % self.len
 		return self.values[i]
+	def __str__(self):
+		return "RotationFeeder("+str(self.values)+")"
 
 class StateFeeder(ConstFeeder):
 	"""
@@ -125,6 +140,8 @@ class StateFeeder(ConstFeeder):
 		Change the value to new one.
 		"""
 		self.value = value
+	def __str__(self):
+		return "StateFeeder("+str(self.value)+")"
 
 class FakeSwitchFeeder(Feeder):
 	"""
@@ -146,3 +163,5 @@ class FakeSwitchFeeder(Feeder):
 		if self.isOn.getValue():
 			return self.value.getValue()
 		return self.defaultValue
+	def __str__(self):
+		return "FakeSwitchFeeder()"

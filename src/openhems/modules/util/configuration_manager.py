@@ -5,7 +5,7 @@ Let allow get configuration by key, init with a default value.
 
 from pathlib import Path
 import yaml
-from .cast_utility import CastUtililty
+from openhems.modules.util.cast_utility import CastUtililty
 
 class ConfigurationException(Exception):
 	"""
@@ -34,6 +34,7 @@ class ConfigurationManager():
 		elif defaultPath is str:
 			defaultPath = Path(defaultPath)
 		self._conf = {}
+		self._cache = {}
 		self.addYamlConfig(defaultPath, True)
 
 	def _load(self, dictConfig, init=False, prekey=''):
@@ -43,22 +44,7 @@ class ConfigurationManager():
 		# print("_load(",dictConfig,")")
 		for key, value in dictConfig.items():
 			# print("> ",key," => ", value)
-			if isinstance(value, dict):
-				self._load(value, init, prekey+key+'.')
-			else:
-				k = prekey+key
-				ok = init
-				if not init:
-					if k in self._conf:
-						ok = True
-					else:
-						msg = "key='"+k+"' is not valid."
-						self.logger.error(msg)
-						raise ConfigurationException(msg)
-				if ok:
-					self.logger.debug("Configuration[%s] = %s", k, value)
-					# print("Configuration[",k,"] = ", value)
-					self._conf[k] = value
+			self.add(key, value, init, prekey)
 
 	def addYamlConfig(self, yamlConfig, init=False):
 		"""
@@ -71,20 +57,59 @@ class ConfigurationManager():
 			self.logger.info("Load YAML configuration from '%s'", yamlConfig)
 			dictConfig = yaml.load(yamlfile, Loader=yaml.FullLoader)
 			self._load(dictConfig, init)
+		self._cache = {}
 		# print(self._conf)
 
-	def add(self, key, value):
+	def add(self, key, value, init=False, prekey=''):
 		"""
 		Force a new value for a key.
 		"""
-		self._conf[key] = value
+		if isinstance(value, dict):
+			self._load(value, init, prekey+key+'.')
+		else:
+			k = prekey+key
+			if not init and not k in self._conf:
+				msg = "key='"+k+"' is not valid."
+				self.logger.error(msg)
+				raise ConfigurationException(msg)
+			self.logger.debug("Configuration[%s] = %s", k, value)
+			# print("Configuration[",k,"] = ", value)
+			self._conf[k] = value
+		self._cache = {}
 
-	def get(self, key, expectedType=None):
+	def _getDict(self, key):
+		"""
+		Return a dict of all sub-keys.
+		"""
+		if key in self._cache:
+			return self._cache[key]
+		keyStart = key+'.'
+		value = {}
+		l = len(keyStart)
+		for k, v in self._conf.items():
+			if k==key or k.startswith(keyStart):
+				newKey = k[l:]
+				value[newKey] = v
+		self._cache[key] = value
+		return value
+
+	def get(self, key, expectedType=None, *, defaultValue=None, deepSearch=False):
 		"""
 		Return value for this key.
-		Rturn None if the key is unknown.
+		Return None if the key is unknown.
+		If deepSearch, we return a dict of all sub-keys.
+			NB: It would be better to return a sub-ConfigurationManager...
 		"""
-		val = self._conf.get(key, None)
-		if expectedType is not None:
+		val = self._conf.get(key, defaultValue)
+		if val is None:
+			if deepSearch:
+				val = self._getDict(key)
+				if len(val)==0:
+					val = None
+			else:
+				val = defaultValue
+		elif val is str and val=="None":
+			val = defaultValue
+		elif expectedType is not None:
 			val = CastUtililty.toType(expectedType, val)
 		return val
