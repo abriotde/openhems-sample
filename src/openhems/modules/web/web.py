@@ -13,6 +13,7 @@ from pathlib import Path
 from json import JSONEncoder
 from wsgiref.simple_server import make_server
 from pyramid.config import Configurator
+from pyramid.httpexceptions import exception_response
 # from pyramid.response import Response
 from pyramid.view import view_config
 from .driver_vpn import VpnDriverWireguard, VpnDriverIncronClient
@@ -62,13 +63,35 @@ def yamlparams(request):
 	"""
 	Web-page get all configurables params for params page and there value.
 	"""
-	
-	yamlparams
-	
-	# Display current configuration
-	configurator = ConfigurationManager(self.logger)
+	configurator = ConfigurationManager(OPENHEMS_CONTEXT.logger)
 	configurator.addYamlConfig(Path(OPENHEMS_CONTEXT.yamlConfFilepath))
-	return { "vpn": "up" if OPENHEMS_CONTEXT.vpnDriver.testVPN() else "down" }
+	newValues = {}
+	change = False
+	for key, newValue in request.params.items():
+		currentValue = configurator.get(key)
+		if currentValue!=newValue:
+			try:
+				configurator.add(key, newValue)
+				change = True
+			except ConfigurationException as e:
+				# NB : The real value can be None...
+				OPENHEMS_CONTEXT.logger.warning(
+					"/yamlparams : Unexpected key %s' with config '%s'",
+					key, OPENHEMS_CONTEXT.yamlConfFilepath
+				)
+				raise exception_response(400) # HTTPBadRequest
+	if change:
+		configurator.save(OPENHEMS_CONTEXT.yamlConfFilepath)
+
+	# Display current configuration. Redo all for safety
+	configurator = ConfigurationManager(OPENHEMS_CONTEXT.logger)
+	configurator.addYamlConfig(Path(OPENHEMS_CONTEXT.yamlConfFilepath))
+	params0 = configurator.get("", deepSearch=True)
+	params = {}
+	for k,v  in params0.items():
+		params[k.replace(".","_")] = v
+	params["vpn"] = "up" if OPENHEMS_CONTEXT.vpnDriver.testVPN() else "down"
+	return params
 
 @view_config(
     route_name='vpn',
@@ -148,12 +171,12 @@ class OpenhemsHTTPServer():
 		tooltipPath = rootPath / ("data/openhems_tooltips_"+lang+".yaml")
 		configurator = ConfigurationManager(self.logger, defaultPath=tooltipPath)
 		keysPath = rootPath / ("data/keys_"+lang+".yaml")
-		keys = None
+		keys = {}
 		with keysPath.open("r", encoding="utf-8") as keyFile:
 			keys = yaml.load(keyFile, Loader=yaml.FullLoader)
+			descriptions = keys["htmlTitleDescriptions"]
 		
 		tooltips = configurator.get("", deepSearch=True)
-		inputNames = [c for c in tooltips.keys()]
 		oldBase = ""
 		oldgrade = 0
 		frameworkPath = templatesPath / "yamlparams.framework.jinja2"
@@ -164,7 +187,7 @@ class OpenhemsHTTPServer():
 		yamlparamsPath = templatesPath / "yamlparams.jinja2"
 		with yamlparamsPath.open("w", encoding="utf-8") as outfile:
 			outfile.write(htmlHead)
-			for name in inputNames:
+			for name, tooltip in tooltips.items():
 				elems = name.split(".")
 				base = ".".join(elems[:-1])
 				grade = len(elems)-1
@@ -176,13 +199,17 @@ class OpenhemsHTTPServer():
 						header = elems[g-1].capitalize()
 						outfile.write(f"<div class='config_{g}'>\n"
 							f"<h{headerLevel}>{header}</h{headerLevel}>\n")
+						if g==0:
+							paragraph = descriptions.get(header)
+							if paragraph is not None:
+								outfile.write(f"<p>{paragraph}</p>\n")
 					oldBase = base
 					oldgrade = grade
-				tooltip = tooltips[name]
+				jinja2Id = name.replace('.','_')
 				label = re.sub(r'(?<!^)(?=[A-Z])', ' ',elems[grade]).capitalize()
 				outfile.write(f'<label for="{name}">{label}:</label>'
 					f'<input type="text" id="{name}" name="{name}" title="{tooltip}"'
-					' value="{{ '+name+' }}" /><br>\n')
+					' value="{{ '+jinja2Id+' }}" /><br>\n')
 			for g in range(0, oldgrade+1):
 				outfile.write(f"</div>\n")
 			outfile.write(htmlQueue)

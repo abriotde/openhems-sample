@@ -11,6 +11,7 @@ from pathlib import Path
 import logging
 import io
 import contextlib
+import hashlib
 # pylint: disable=wrong-import-position
 # pylint: disable=import-error
 ROOT_PATH = Path(__file__).parents[1]
@@ -56,6 +57,18 @@ class TestUtilModule(unittest.TestCase):
 		configurator.addYamlConfig(ROOT_PATH / 'config/openhems.yaml')
 		value = configurator.get("server.logfile")
 		self.assertEqual(value, 'openhems.log')
+
+		curFolder = Path(__file__).parents[0]
+		savedFile = curFolder / 'data/openhems_test_save.test.yaml'
+		if savedFile.exists():
+			savedFile.unlink()
+		configurator.save(savedFile)
+		referenceFile = curFolder / 'data/openhems_test_save.yaml'
+		f1 = open(referenceFile)
+		f2 = open(savedFile)
+		self.assertListEqual( list(f1), list(f2) )
+		f1.close()
+		f2.close()
 
 		# Test Invalid key
 		value = configurator.get("toto")

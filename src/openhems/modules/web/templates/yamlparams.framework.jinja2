@@ -17,7 +17,7 @@
 	<div>VPN is <b id="vpnStatus">{{ vpn }}</b>.<button id="vpnButton"></button></div>
 
 	<div id="yamlParams">
-		<form name="yamlParamsForm" action="/yamlparams">
+		<form name="yamlParamsForm" action="/yamlparams" method="POST">
 			{%YAML_PARAMS%}
 			<input id="submitYamlParams" type="submit" value="Submit" src="{{request.static_url('openhems.modules.web:../../../../img/correct_32.ico')}}">
 		</form>
