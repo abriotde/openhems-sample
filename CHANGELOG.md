@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.4 - 2024-11-18
+### Improvement
+- ADD Auto-génération of Emhass yaml configuration => Avoid problems
+- ADD notion of Contract to manage peak-hours "dynamically".
+- MOD ConfigurationManager : get sub-dict of sub-configurations
+- UPDATE Emhass
+
+### Fix
+- FIX Install OpenHEMS as docker (And command VPN)
+- FIX Pipelines
+
 ## 0.1.3 - 2024-11-18
 ### Improvement
 - Aplication as a Docker

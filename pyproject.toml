@@ -1,6 +1,6 @@
 [project]
 name = "openhems"
-version = "0.1.3"
+version = "0.1.4"
 authors = [
 	{ name="OpenHomeSystem", email="contact@openhomesystem.com" },
 ]
