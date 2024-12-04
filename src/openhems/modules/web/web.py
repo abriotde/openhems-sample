@@ -7,18 +7,20 @@ HTTP web server to give UI to configure OpenHEMS server:
 """
 import time
 import json
-import yaml
-import re
 from pathlib import Path
 from json import JSONEncoder
+import yaml
+import re
 from wsgiref.simple_server import make_server
 from pyramid.config import Configurator
 from pyramid.httpexceptions import exception_response
 # from pyramid.response import Response
 from pyramid.view import view_config
+from openhems.modules.util.configuration_manager import (
+	ConfigurationManager, ConfigurationException
+)
 from .driver_vpn import VpnDriverWireguard, VpnDriverIncronClient
 # from .schedule import OpenHEMSSchedule
-from openhems.modules.util.configuration_manager import ConfigurationManager
 
 # pylint: disable=unused-argument
 
@@ -36,8 +38,8 @@ JSONEncoder.default = wrappedDefault
 OPENHEMS_CONTEXT = None
 
 @view_config(
-    route_name='panel',
-    renderer='templates/panel.jinja2'
+	route_name='panel',
+	renderer='templates/panel.jinja2'
 )
 def panel(request):
 	"""
@@ -87,11 +89,11 @@ def yamlparams(request):
 	configurator = ConfigurationManager(OPENHEMS_CONTEXT.logger)
 	configurator.addYamlConfig(Path(OPENHEMS_CONTEXT.yamlConfFilepath))
 	params0 = configurator.get("", deepSearch=True)
-	params = {}
+	params1 = {}
 	for k,v  in params0.items():
-		params[k.replace(".","_")] = v
-	params["vpn"] = "up" if OPENHEMS_CONTEXT.vpnDriver.testVPN() else "down"
-	return params
+		params1[k.replace(".","_")] = v
+	params1["vpn"] = "up" if OPENHEMS_CONTEXT.vpnDriver.testVPN() else "down"
+	return params1
 
 @view_config(
     route_name='vpn',
@@ -115,8 +117,8 @@ def vpn(request):
 	return { "connected": connected }
 
 @view_config(
-    route_name='states',
-    renderer='json'
+	route_name='states',
+	renderer='json'
 )
 def states(request):
 	"""
@@ -142,7 +144,7 @@ class OpenhemsHTTPServer():
 		"""
 		print("context", OPENHEMS_CONTEXT)
 
-	def __init__(self, mylogger, schedule, yamlConfFilepath, *, 
+	def __init__(self, mylogger, schedule, yamlConfFilepath, *,
 			port=8000, htmlRoot="/", inDocker=False, configurator=None):
 		self.logger = mylogger
 		self.schedule = schedule
@@ -165,6 +167,49 @@ class OpenhemsHTTPServer():
 		OPENHEMS_CONTEXT = self
 		OPENHEMS_CONTEXT.vpnDriver.testVPN()
 
+	def getTemplateYamlParamsBody(self, tooltips:dict, descriptions):
+		"""
+		represent YAML (tooltip) as HTML Form.
+		return: HTML code.
+		"""
+		htmlTabsMenu = ""
+		htmlTabsBody = ""
+		lastElems = []
+		oldBase = []
+		for name, tooltip in tooltips.items():
+			elems = name.split(".")
+			base = elems[:-1]
+			grade = len(elems)-1
+			if base!=oldBase:
+				for i,e in enumerate(oldBase):
+					if i>=len(base) or base[i]!=e:
+						htmlTabsBody += "</div>\n"
+				if len(lastElems)==0 or lastElems[0]!=elems[0]:
+					tabName = elems[0]
+					htmlTabsMenu+='<li><a href="#tabs-'+tabName+'">' \
+						+ tabName.capitalize() + '</a></li>\n'
+					htmlTabsBody+='<div id="tabs-'+tabName+'">\n'
+					paragraph = descriptions.get(tabName)
+					if paragraph is not None:
+						htmlTabsBody += (f"<p>{paragraph}</p>\n")
+				for i,e in enumerate(base[1:]):
+					j = i+1
+					if j>=len(oldBase) or lastElems[j]!=e:
+						headerLevel = j+1
+						header = e.capitalize()
+						htmlTabsBody += (f"<div class='config_{i}'>\n"
+							f"<h{headerLevel}>{header}</h{headerLevel}>\n")
+				oldBase = base
+			jinja2Id = name.replace('.','_')
+			label = re.sub(r'(?<!^)(?=[A-Z])', ' ',elems[grade]).capitalize()
+			htmlTabsBody += (f'<label for="{name}">{label}:</label>'
+				f'<input type="text" id="{name}" name="{name}" title="{tooltip}"'
+				' value="{{ '+jinja2Id+' }}" /><br>\n')
+			lastElems = elems
+		for i,e in enumerate(oldBase):
+			htmlTabsBody += "</div>\n"
+		return "<ul>"+htmlTabsMenu+"</ul>"+htmlTabsBody
+
 	def generateTemplateYamlParams(self, lang="en"):
 		rootPath = Path(__file__).parents[4]
 		templatesPath = Path(__file__).parents[0]/"templates"
@@ -175,43 +220,15 @@ class OpenhemsHTTPServer():
 		with keysPath.open("r", encoding="utf-8") as keyFile:
 			keys = yaml.load(keyFile, Loader=yaml.FullLoader)
 			descriptions = keys["htmlTitleDescriptions"]
-		
 		tooltips = configurator.get("", deepSearch=True)
-		oldBase = ""
-		oldgrade = 0
 		frameworkPath = templatesPath / "yamlparams.framework.jinja2"
 		with frameworkPath.open("r", encoding="utf-8") as infile:
 			datas = infile.read()
 		htmlHead, htmlQueue = datas.split("{%YAML_PARAMS%}")
-
 		yamlparamsPath = templatesPath / "yamlparams.jinja2"
 		with yamlparamsPath.open("w", encoding="utf-8") as outfile:
 			outfile.write(htmlHead)
-			for name, tooltip in tooltips.items():
-				elems = name.split(".")
-				base = ".".join(elems[:-1])
-				grade = len(elems)-1
-				if base!=oldBase:
-					for g in range(grade, oldgrade+1):
-						outfile.write(f"</div>\n")
-					for g in range(oldgrade if oldgrade>0 else 1, grade+1):
-						headerLevel = g+2
-						header = elems[g-1].capitalize()
-						outfile.write(f"<div class='config_{g}'>\n"
-							f"<h{headerLevel}>{header}</h{headerLevel}>\n")
-						if g==0:
-							paragraph = descriptions.get(header)
-							if paragraph is not None:
-								outfile.write(f"<p>{paragraph}</p>\n")
-					oldBase = base
-					oldgrade = grade
-				jinja2Id = name.replace('.','_')
-				label = re.sub(r'(?<!^)(?=[A-Z])', ' ',elems[grade]).capitalize()
-				outfile.write(f'<label for="{name}">{label}:</label>'
-					f'<input type="text" id="{name}" name="{name}" title="{tooltip}"'
-					' value="{{ '+jinja2Id+' }}" /><br>\n')
-			for g in range(0, oldgrade+1):
-				outfile.write(f"</div>\n")
+			outfile.write(self.getTemplateYamlParamsBody(tooltips, descriptions))
 			outfile.write(htmlQueue)
 		
 

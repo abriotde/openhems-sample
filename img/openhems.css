@@ -91,21 +91,27 @@ nav a:hover{
   margin: 0px 20px;
   height: 1500px;
 }
-#yamlParams div{
+#yamlParams .config_0 {
 	border: solid;
+	margin: 1em;
 }
 #yamlParams .config_1 {
+	border: solid;
 	margin: 1em;
 }
 #yamlParams .config_2 {
+	border: solid;
 	margin: 1em;
 }
 #yamlParams .config_3 {
+	border: solid;
 	margin: 1em;
 }
 #yamlParams .config_4 {
+	border: solid;
 	margin: 1em;
 }
 #yamlParams .config_5 {
+	border: solid;
 	margin: 1em;
 }
