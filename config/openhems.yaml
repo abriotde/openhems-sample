@@ -17,4 +17,4 @@ server:
 network:
   nodes:
     - {id: linky, currentPower: sensor.lixee_zlinky_tic_puissance_apparente, powerMargin: 1000, maxPower: 10000, minPower: 0, class: PublicPowerGrid, contract: {class: RTETempoContract, color: sensor.rte_tempo_couleur_actuelle} }
-    - {id: voiture, class: switch, isOn: switch.tz3000_2putqrmw_ts011f_commutateur_2, currentPower: sensor.tz3000_2putqrmw_ts011f_puissance_2, maxPower:2000}
+    - {id: voiture, class: switch, isOn: switch.tz3000_2putqrmw_ts011f_commutateur_2, currentPower: sensor.tz3000_2putqrmw_ts011f_puissance_2, maxPower: 2000}

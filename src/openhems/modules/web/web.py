@@ -202,9 +202,14 @@ class OpenhemsHTTPServer():
 				oldBase = base
 			jinja2Id = name.replace('.','_')
 			label = re.sub(r'(?<!^)(?=[A-Z])', ' ',elems[grade]).capitalize()
+			if name=="network.nodes":
+				tagAttributes = 'type="hidden"'
+				htmlTabsBody += ('<div id="nodes"></div>')
+			else:
+				tagAttributes = 'type="text"'
 			htmlTabsBody += (f'<label for="{name}">{label}:</label>'
-				f'<input type="text" id="{name}" name="{name}" title="{tooltip}"'
-				' value="{{ '+jinja2Id+' }}" /><br>\n')
+				'<input '+tagAttributes+f' id="{name}" name="{name}" title="{tooltip}"'
+					' value="{{ '+jinja2Id+' }}" /><br>\n')
 			lastElems = elems
 		for i,e in enumerate(oldBase):
 			htmlTabsBody += "</div>\n"
@@ -230,7 +235,6 @@ class OpenhemsHTTPServer():
 			outfile.write(htmlHead)
 			outfile.write(self.getTemplateYamlParamsBody(tooltips, descriptions))
 			outfile.write(htmlQueue)
-		
 
 	def run(self):
 		"""

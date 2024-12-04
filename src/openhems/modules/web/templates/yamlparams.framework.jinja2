@@ -6,12 +6,6 @@
 	<link rel="stylesheet" href="{{request.static_url('openhems.modules.web:../../../../img/openhems.css')}}">
 	<script src="https://code.jquery.com/jquery-3.7.1.js"></script>
 	<script src="https://code.jquery.com/ui/1.14.1/jquery-ui.js"></script>
-	<script>
-		$( function() {
-			console.log("Init yamlParams tabs")
-			$( "#yamlParams" ).tabs();
-		} );
-	</script>
 </head>
 <body>
 <nav class="menu">
@@ -25,7 +19,7 @@
 	<div><img id="waitImg" src="{{request.static_url('openhems.modules.web:../../../../img/wait.gif')}}" style="display:none" alt="Wait"></img><div>
 	<div>VPN is <b id="vpnStatus">{{ vpn }}</b>.<button id="vpnButton"></button></div>
 
-	<form name="yamlParamsForm" action="/yamlparams" method="POST">
+	<form name="yamlParamsForm" action="/yamlparams" method="POST" onsubmit="return setNetwork()">
 	<div id="yamlParams">
 		{%YAML_PARAMS%}
 	</div>
@@ -37,6 +31,7 @@ const vpn = {{ vpn|tojson }};
 const vpnButton = document.getElementById("vpnButton");
 const vpnStatus = document.getElementById("vpnStatus");
 const waitImg = document.getElementById("waitImg");
+var network = []
 if (vpn=="up") {
 	connectedVPN(true);
 } else {
@@ -69,6 +64,39 @@ function changeSthg() {
 		document.getElementById("submitYamlParams")
 			.src = "{{request.static_url('openhems.modules.web:../../../../img/save_32.ico')}}";
 }
+function getNetwork() {
+	val = document.getElementById('network.nodes').value.trim().replaceAll("'","\"");
+	console.log("Network0:",val);
+	network = JSON.parse(val);
+	console.log("Network:",network);
+}
+function setNetwork() {
+	document.getElementById('network.nodes').value = JSON.stringify(network);
+	return true;
+}
+function displayNode(index, node) {
+	div = document.createElement("div");
+	p = document.createElement("p");
+	p.innerHTML = "Type: <input type='text' readonly id='node-class-"+index+"' value='"+node.class+"'/>";
+	div.appendChild(p);
+	p = document.createElement("p");
+	p.innerHTML = "<label for='node-id-"+index+"'>Identifier</label>"
+		+"<input type='text' id='node-id-"+index+"' value='"+node.id+"'/>";
+	div.appendChild(p);
+	document.getElementById("nodes").appendChild(div);
+}
+function displayNetwork() {
+	for (n in network) {
+		node = network[n];
+		console.log("Node:", node);
+		displayNode(n, node);
+	}
+}
+$( function() {
+	$( "#yamlParams" ).tabs();
+	getNetwork();
+	displayNetwork();
+} );
 </script>
 </body>
 </html>
