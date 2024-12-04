@@ -1,74 +1,20 @@
 api:
-  long_lived_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJmOTM4ZTFmY2FjNTA0MWEyYWZkYjEyOGYyYTJlNGNmYiIsImlhdCI6MTcyNjU2NTU1NiwiZXhwIjoyMDQxOTI1NTU2fQ.3DdEXGsM3cg5NgMUKj2k5FsEG07p2AkRF_Ad-CljSTQ
+  url: http://192.168.1.202:8123/api
+  long_lived_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJmOTM4ZTFmY2FjNTA0MWEyYWZkYjEyOGYyYTJlNGNmYiIsImlhdCI6MTcyNjU2NTU1NiwiZXhwIjoyMDQxOTI1NTU2fQ.3DdEXGsM3cg5NgMUKj2k5FsEG07p2AkRF_Ad-CljSTQ"
   ssl_certificate: /etc/letsencrypt/live/openproduct.freeboxos.fr/cert.pem
-default:
-  node:
-    battery:
-      capacity: '10000'
-      efficiencyIn: '0.95'
-      efficiencyOut: '0.95'
-      highLevel: '0.8'
-      lowLevel: '0.2'
-      maxPowerIn: '2000'
-      maxPowerOut: '2000'
-      targetLevel: '0.75'
-    publicpowergrid:
-      contract:
-        generic:
-          offpeakhoursranges: '[''22h - 6h'']'
-        rteheurescreuses:
-          offpeakhoursranges: '[''22h - 6h'']'
-          offpeakprice: '0.2068'
-          peakprice: '0.27'
-        rtetarifbleu:
-          price: '0.2516'
-        rtetempo:
-          color: None
-          offpeakhoursranges: '[''22h - 6h'']'
-          offpeakprice:
-            blanc: '0.1486'
-            bleu: '0.1296'
-            rouge: None
-          offpeakprice_rouge: None
-          peakprice:
-            blanc: '0.1894'
-            bleu: '0.1609'
-            rouge: '0.7562'
-      currentPower: None
-      marginPower: '300'
-      maxPower: '6000'
-      minPower: '0'
-    solarpanel:
-      azimuth: '180'
-      maxPower: '500'
-      modulesPerString: '1'
-      stringsPerInverter: '1'
-      tilt: '45'
-    switch:
-      maxPower: '2000'
-emhass:
-  battery_dynamic_max: '0.9'
-  battery_dynamic_min: '-0.9'
-  days_to_retrieve: '2'
-  delta_forecast: '1'
-  freq: '30'
-  prod_sell_price: '0.0'
-  set_battery_dynamic: 'False'
-  set_nocharge_from_grid: 'False'
-  set_nodischarge_to_grid: 'True'
-  set_total_pv_sell: 'False'
 localization:
-  altitude: '100'
-  latitude: '48.430883803968456'
-  longitude: '-2.2153649964972693'
-network:
-  nodes: '[{''id'': ''linky'', ''currentPower'': ''sensor.lixee_zlinky_tic_puissance_apparente'',
-    ''powerMargin'': 1000, ''maxPower'': 10000, ''minPower'': 0, ''class'': ''PublicPowerGrid'',
-    ''contract'': {''class'': ''RTETempoContract'', ''color'': ''sensor.rte_tempo_couleur_actuelle''}},
-    {''id'': ''voiture'', ''class'': ''switch'', ''isOn'': ''switch.tz3000_2putqrmw_ts011f_commutateur_2'',
-    ''currentPower'': ''sensor.tz3000_2putqrmw_ts011f_puissance_2'', ''maxPower:2000'':
-    None}]'
+  latitude: 48.430883803968456
+  longitude: -2.2153649964972693
+  altitude: 100
+  timeZone: Europe/Paris
 server:
-  inDocker: 'False'
-  loopDelay: '30'
-  port: '8000'
+  # logformat: Optional default is "%(levelname)s : %(asctime)s : %(message)s", for custom configuration see https://docs.python.org/3/library/logging.html#logrecord-attributes
+  logfile: openhems.log # Optional, default is /var/log/openhems.log
+  # loglevel: Optional, default is info, availables are debug / info / warn / error / critical / no
+  loopDelay: 30 # interval beetween 2
+  network: homeassistant # Define the type of network API used to control the home energy.
+  strategy: offpeak # Define the algorithm used to control the  home energy.
+network:
+  nodes:
+    - {id: linky, currentPower: sensor.lixee_zlinky_tic_puissance_apparente, powerMargin: 1000, maxPower: 10000, minPower: 0, class: PublicPowerGrid, contract: {class: RTETempoContract, color: sensor.rte_tempo_couleur_actuelle} }
+    - {id: voiture, class: switch, isOn: switch.tz3000_2putqrmw_ts011f_commutateur_2, currentPower: sensor.tz3000_2putqrmw_ts011f_puissance_2, maxPower:2000}
