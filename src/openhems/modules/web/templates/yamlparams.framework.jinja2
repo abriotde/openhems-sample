@@ -74,16 +74,54 @@ function setNetwork() {
 	document.getElementById('network.nodes').value = JSON.stringify(network);
 	return true;
 }
+function getElement(index, attr, node, level=0) {
+	var currentElement = document.createElement("div");
+	if (level>0) {
+		currentElement.classList.add("col-75");
+	}
+	currentElement.classList.add(index);
+	var myindex = index+"-"+attr;
+	if (typeof(node)=="object") {
+		currentElement.id = myindex;
+		currentElement.classList.add("config_"+level);
+		for(var a in node){
+			var rowElement = document.createElement("div");
+			rowElement.classList.add("row");
+			var labelElement = document.createElement("div");
+			labelElement.classList.add("col-25");
+			if (a=="class") {
+				label = "Type";
+			} else if (a=="class") {
+				label = "Identifier";
+			} else {
+				label = a;
+			}
+			labelElement.innerHTML = "<label for='"+myindex+"-"+a+"'>"
+				+label+"</label>";
+			rowElement.appendChild(labelElement);
+			var attrElement = getElement(myindex, a, node[a], level+1);
+			rowElement.appendChild(attrElement);
+			currentElement.appendChild(rowElement);
+		}
+	} else {
+		custumInputAttr = ""
+		if (attr=="class") {
+			custumInputAttr = "readonly ";
+			attr = "Type";
+		} else if (attr=="class") {
+			attr = "Identifier";
+		}
+		currentElement.innerHTML = "<input type='text' id='"+myindex+"'"
+			+custumInputAttr+"value='"+node+"'/>";
+	}
+	return currentElement;
+}
+function addNode(index, node) {
+	alert("Add Node");
+}
 function displayNode(index, node) {
-	div = document.createElement("div");
-	p = document.createElement("p");
-	p.innerHTML = "Type: <input type='text' readonly id='node-class-"+index+"' value='"+node.class+"'/>";
-	div.appendChild(p);
-	p = document.createElement("p");
-	p.innerHTML = "<label for='node-id-"+index+"'>Identifier</label>"
-		+"<input type='text' id='node-id-"+index+"' value='"+node.id+"'/>";
-	div.appendChild(p);
-	document.getElementById("nodes").appendChild(div);
+	currentElement = getElement("node", index, node);
+	document.getElementById("nodes").appendChild(currentElement);
 }
 function displayNetwork() {
 	for (n in network) {

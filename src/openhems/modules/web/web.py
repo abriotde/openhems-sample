@@ -204,12 +204,19 @@ class OpenhemsHTTPServer():
 			label = re.sub(r'(?<!^)(?=[A-Z])', ' ',elems[grade]).capitalize()
 			if name=="network.nodes":
 				tagAttributes = 'type="hidden"'
-				htmlTabsBody += ('<div id="nodes"></div>')
+				htmlTabsElem += '<button type="button" onclick="addNode()">+</button>'
 			else:
+				htmlTabsElem = ''
 				tagAttributes = 'type="text"'
-			htmlTabsBody += (f'<label for="{name}">{label}:</label>'
-				'<input '+tagAttributes+f' id="{name}" name="{name}" title="{tooltip}"'
-					' value="{{ '+jinja2Id+' }}" /><br>\n')
+			htmlTabsBody += ('<div class="row"><div class="col-25">'
+				f'<label for="{name}">{label}:</label>'
+				'</div><div class="col-75">' + htmlTabsElem +
+				'<input '+tagAttributes+f' id="{name}" '
+					f'name="{name}" title="{tooltip}"'
+					' value="{{ '+jinja2Id+' }}" />'
+					'</div></div><br>\n')
+			if name=="network.nodes":
+				htmlTabsBody += '<div id="nodes"></div>\n'
 			lastElems = elems
 		for i,e in enumerate(oldBase):
 			htmlTabsBody += "</div>\n"
