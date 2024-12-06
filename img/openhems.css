@@ -205,3 +205,6 @@ input[type=submit] {
   from {opacity: 0;}
   to {opacity:1 ;}
 }
+.delNode {
+	float:right;
+}

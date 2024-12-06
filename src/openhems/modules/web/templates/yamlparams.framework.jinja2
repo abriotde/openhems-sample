@@ -87,6 +87,17 @@ function setNetwork() {
 	document.getElementById('network.nodes').value = JSON.stringify(network);
 	return true;
 }
+function deleteNode(index) {
+	var node = document.getElementById("node-"+index);
+	node.parentElement.removeChild(node);
+	network2 = []
+	for (node in network) {
+		if(node.id!=index) {
+			network2.push(node);
+		}
+	}
+	network = network2;
+}
 function getElement(index, attr, node, level=0) {
 	var currentElement = document.createElement("div");
 	if (level>0) {
@@ -96,6 +107,9 @@ function getElement(index, attr, node, level=0) {
 	var myindex = index+"-"+attr;
 	if (node instanceof Object) {
 		currentElement.id = myindex;
+		if (level==0) {
+			currentElement.innerHTML = '<img class="delNode" src="{{request.static_url('openhems.modules.web:../../../../img/delete-20px.png')}}" onclick="deleteNode(\''+attr+'\');" alt="Delete"></img>';
+		}
 		currentElement.classList.add("config_"+level);
 		for(var a in node){
 			var rowElement = document.createElement("div");
@@ -141,6 +155,7 @@ function newNodeAddObject(elementId, element, object) {
 		var elem = document.createElement("div");
 		elem.classList.add("row");
 		elem.classList.add(caract);
+		
 		var sElementId = elementId+"-"+caract;
 		if (defaultValue instanceof Array) {
 			console.log("defaultValue array =",defaultValue);
@@ -151,7 +166,7 @@ function newNodeAddObject(elementId, element, object) {
 			elem.innerHTML = '<div class="col-25">'
 				+'<label for="'+sElementId+'">'+caract+'</label>'
 				+'</div><div class="col-75" id="'+sElementId+'"></div>';
-			element.append(elem);
+			element.appendChild(elem);
 			elem2 = document.getElementById(sElementId);
 			if (noSelectObjects.includes(sElementId)) {
 				newNodeAddObject(sElementId, elem2, defaultValue);
@@ -165,7 +180,7 @@ function newNodeAddObject(elementId, element, object) {
 				+'</div><div class="col-75">'
 				+'<input type="text" id="'+sElementId+'-value"'
 					+' value="" /></div>';
-			element.append(elem);
+			element.appendChild(elem);
 			 // To avoid encode problems.
 			document.getElementById(sElementId+'-value').value = defaultValue;
 		}
@@ -180,6 +195,9 @@ function newNodeSelectChange(selectElementId) {
 	// Warning : Should be better to remove sub-select from selectList but difficult 
 	//   We choice to let that memory-leak
 	nodeConfig = objectList[select.value];
+	if(selectElementId=="newnode") {
+		nodeConfig["id"] = "id-"+Object.keys(network).length
+	}
 	addNodeSelecForm = document.getElementById(selectElementId+"-form");
 	addNodeSelecForm.innerHTML = "";
 	newNodeAddObject(selectElementId, addNodeSelecForm, nodeConfig);
@@ -205,8 +223,49 @@ function displaySelectElement(elementId, selectDiv, objectList) {
 	form.id = elementId+'-form';
 	selectDiv.appendChild(form);
 }
-function addNode(index, node) {
-	alert("Add Node");
+function populateNode(id, node, model, keyvalues) {
+	console.log("populateNode(",id,", ",node,", ",model,", ",keyvalues,")");
+	model["id"] = "X";
+	for (caract in model) {
+		modelValue = model[caract];
+		if (modelValue instanceof Object) {
+			key = id+"-"+caract;
+			snode = {};
+			value = populateNode(key, snode, modelValue, keyvalues);
+			node[caract] = value;
+		} else {
+			key = id+"-"+caract+"-value";
+			value = keyvalues[key];
+			if (value !== undefined) {
+				node[caract] = value;
+			}
+		}
+	}
+	console.log("populateNode() => ", node);
+	return node;
+}
+function addNode(submitBtn) {
+	var keyvalues = {};
+	var addNodePopup = document.getElementById("addNodePopup");
+	var inputs = addNodePopup.querySelectorAll('input');
+	for (i in inputs) {
+		input = inputs[i]
+		keyvalues[input.id] = input.value;
+	}
+	selects = addNodePopup.querySelectorAll('select');
+	for (i in selects) {
+		select = selects[i]
+		keyvalues[select.id] = select.value;
+	}
+	console.log("addNode() : ",keyvalues, inputs, selects);
+	var id = "newnode"
+	var value = keyvalues[id+"-select"];
+	var node = {"class":value};
+	var model = availableNodes[value];
+	node = populateNode(id, node, model, keyvalues);
+	network.push(node);
+	displayNode(node);
+	hideAddNodePopup();
 }
 var initAddNodePopup = false
 function displayAddNodePopup() {
@@ -222,20 +281,20 @@ function displayAddNodePopup() {
 	popup.style.visibility = "visible";
 }
 function hideAddNodePopup() {
-  // console.log("hideAddNodePopup()")
-  var popup = document.getElementById("addNodePopup");
-  popup.classList.remove("show");
-  popup.style.visibility = "hidden";
+	// console.log("hideAddNodePopup()")
+	var popup = document.getElementById("addNodePopup");
+	popup.classList.remove("show");
+	popup.style.visibility = "hidden";
 }
-function displayNode(index, node) {
-	currentElement = getElement("node", index, node);
+function displayNode(node) {
+	currentElement = getElement("node", node.id, node);
 	document.getElementById("nodes").appendChild(currentElement);
 }
 function displayNetwork() {
 	for (n in network) {
 		node = network[n];
 		console.log("Node:", node);
-		displayNode(n, node);
+		displayNode(node);
 	}
 }
 $( function() {
