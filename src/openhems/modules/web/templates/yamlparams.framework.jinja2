@@ -6,6 +6,8 @@
 	<link rel="stylesheet" href="{{request.static_url('openhems.modules.web:../../../../img/openhems.css')}}">
 	<script src="https://code.jquery.com/jquery-3.7.1.js"></script>
 	<script src="https://code.jquery.com/ui/1.14.1/jquery-ui.js"></script>
+	<link rel="stylesheet" href="//code.jquery.com/mobile/1.5.0-alpha.1/jquery.mobile-1.5.0-alpha.1.min.css">
+	<script src="//code.jquery.com/mobile/1.5.0-alpha.1/jquery.mobile-1.5.0-alpha.1.min.js"></script>
 </head>
 <body>
 <nav class="menu">
@@ -26,8 +28,19 @@
 	<input id="submitYamlParams" type="submit" value="Submit" src="{{request.static_url('openhems.modules.web:../../../../img/correct_32.ico')}}">
 	</form>
 </div>
+<div id="addNodePopup" style="visibility: hidden;" class="">
+	<div id="newnode-class">
+	</div>
+	<div id="newnode-class-form">
+	</div>
+
+	<button type="button" data-theme="b" onclick="hideAddNodePopup()">Cancel</button>
+	<button type="button" data-theme="b" onclick="addNode()">Add</button>
+</div>
 <script>
 const vpn = {{ vpn|tojson }};
+const availableNodes = {{ availableNodes|tojson }};
+var objectLists = {}
 const vpnButton = document.getElementById("vpnButton");
 const vpnStatus = document.getElementById("vpnStatus");
 const waitImg = document.getElementById("waitImg");
@@ -62,7 +75,7 @@ function connectedVPN(connect) {
 function changeSthg() {
 	// console.log("changeSthg()");
 		document.getElementById("submitYamlParams")
-			.src = "{{request.static_url('openhems.modules.web:../../../../img/save_32.ico')}}";
+			.src = "http://localhost:8000/img/save_32.ico";
 }
 function getNetwork() {
 	val = document.getElementById('network.nodes').value.trim().replaceAll("'","\"");
@@ -81,7 +94,7 @@ function getElement(index, attr, node, level=0) {
 	}
 	currentElement.classList.add(index);
 	var myindex = index+"-"+attr;
-	if (typeof(node)=="object") {
+	if (node instanceof Object) {
 		currentElement.id = myindex;
 		currentElement.classList.add("config_"+level);
 		for(var a in node){
@@ -116,8 +129,103 @@ function getElement(index, attr, node, level=0) {
 	}
 	return currentElement;
 }
+const noSelectObjects = [
+	"newnode-contract-peakprice",
+	"newnode-contract-offpeakprice"
+];
+function newNodeAddObject(elementId, element, object) {
+	console.log("newNodeAddObject(",elementId, element, object,")");
+	for (caract in object) {
+		defaultValue = object[caract]
+		console.log("newNodeSelectChange() : ",caract," : ",defaultValue)
+		var elem = document.createElement("div");
+		elem.classList.add("row");
+		elem.classList.add(caract);
+		var sElementId = elementId+"-"+caract;
+		if (defaultValue instanceof Array) {
+			console.log("defaultValue array =",defaultValue);
+			defaultValue = JSON.stringify(defaultValue);
+			console.log("defaultValue array => ",defaultValue);
+		}
+		if (defaultValue instanceof Object) {
+			elem.innerHTML = '<div class="col-25">'
+				+'<label for="'+sElementId+'">'+caract+'</label>'
+				+'</div><div class="col-75" id="'+sElementId+'"></div>';
+			element.append(elem);
+			elem2 = document.getElementById(sElementId);
+			if (noSelectObjects.includes(sElementId)) {
+				newNodeAddObject(sElementId, elem2, defaultValue);
+			} else {
+				displaySelectElement(sElementId, elem2, defaultValue);
+			}
+		} else {
+			elem.id = sElementId;
+			elem.innerHTML = '<div class="col-25">'
+				+'<label for="newNode-'+caract+'">'+caract+'</label>'
+				+'</div><div class="col-75">'
+				+'<input type="text" id="'+sElementId+'-value"'
+					+' value="" /></div>';
+			element.append(elem);
+			 // To avoid encode problems.
+			document.getElementById(sElementId+'-value').value = defaultValue;
+		}
+	}
+}
+/*
+*/
+function newNodeSelectChange(selectElementId) {
+	var select = document.getElementById(selectElementId+"-select");
+	console.log("newNodeSelectChange(",selectElementId,") => ", select.value);
+	objectList = objectLists[selectElementId];
+	// Warning : Should be better to remove sub-select from selectList but difficult 
+	//   We choice to let that memory-leak
+	nodeConfig = objectList[select.value];
+	addNodeSelecForm = document.getElementById(selectElementId+"-form");
+	addNodeSelecForm.innerHTML = "";
+	newNodeAddObject(selectElementId, addNodeSelecForm, nodeConfig);
+}
+function displaySelectElement(elementId, selectDiv, objectList) {
+	var selectElement = document.createElement("select");
+	selectElement.id = elementId+"-select";
+	objectLists[elementId] = objectList;
+	selectElement.onchange = function() {
+		newNodeSelectChange(elementId);
+	};
+	var optionElement = document.createElement("option");
+	optionElement.value = "";
+	optionElement.innerHTML = " - Please select - ";
+	selectElement.appendChild(optionElement);
+	for (attr in objectList) {
+		var optionElement = document.createElement("option");
+		optionElement.innerHTML = attr;
+		selectElement.appendChild(optionElement);
+	}
+	selectDiv.appendChild(selectElement);
+	var form = document.createElement("div");
+	form.id = elementId+'-form';
+	selectDiv.appendChild(form);
+}
 function addNode(index, node) {
 	alert("Add Node");
+}
+var initAddNodePopup = false
+function displayAddNodePopup() {
+	console.log("displayAddNodePopup()")
+	if (!initAddNodePopup) {
+		var selectDiv = document.getElementById("newnode-class");
+		console.log("displayAddNodePopup() : initAddNodePopup", selectDiv);
+		displaySelectElement("newnode", selectDiv, availableNodes);
+		initAddNodePopup = true;
+	}
+	var popup = document.getElementById("addNodePopup");
+	popup.classList.add("show");
+	popup.style.visibility = "visible";
+}
+function hideAddNodePopup() {
+  // console.log("hideAddNodePopup()")
+  var popup = document.getElementById("addNodePopup");
+  popup.classList.remove("show");
+  popup.style.visibility = "hidden";
 }
 function displayNode(index, node) {
 	currentElement = getElement("node", index, node);
@@ -132,6 +240,7 @@ function displayNetwork() {
 }
 $( function() {
 	$( "#yamlParams" ).tabs();
+	// $("#addNodePopup").popup();
 	getNetwork();
 	displayNetwork();
 } );

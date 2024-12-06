@@ -34,14 +34,13 @@ class ConfigurationManager():
 	def __init__(self, logger, defaultPath=None):
 		# print("ConfigurationManager()")
 		self.logger = logger
-		if defaultPath  is None:
-			defaultPath = DEFAULT_PATH
-			# print("defaultPath:",defaultPath)
-		elif defaultPath is str:
-			defaultPath = Path(DEFAULT_PATH)
 		self._conf = {}
 		self._cache = {}
-		self.addYamlConfig(defaultPath, True)
+		if defaultPath  is None:
+			self.defaultPath = DEFAULT_PATH
+		else:
+			self.defaultPath = defaultPath
+		self.addYamlConfig(self.defaultPath, True)
 
 	def _load(self, dictConfig, init=False, prekey=''):
 		"""
@@ -57,12 +56,8 @@ class ConfigurationManager():
 		Add configuration from yaml file path.
 		"""
 		# print("addYamlConfig(",yamlConfig,")")
-		if yamlConfig is str:
-			yamlConfig = Path(yamlConfig)
-		with yamlConfig.open('r', encoding="utf-8") as yamlfile:
-			self.logger.info("Load YAML configuration from '%s'", yamlConfig)
-			dictConfig = yaml.load(yamlfile, Loader=yaml.FullLoader)
-			self._load(dictConfig, init)
+		dictConfig = self.getRawYamlConfig(yamlConfig)
+		self._load(dictConfig, init)
 		self._cache = {}
 		# print(self._conf)
 
@@ -123,15 +118,23 @@ class ConfigurationManager():
 			val = CastUtililty.toType(expectedType, val)
 		return val
 
+	def getRawYamlConfig(self, path=None):
+		if path is None:
+			path = self.defaultPath
+		if path is str:
+			path = Path(path)
+		with path.open('r', encoding="utf-8") as yamlfile:
+			return yaml.load(yamlfile, Loader=yaml.FullLoader)
+
 	def retrieveYamlConfig(self):
-		defaultConfig = {}
+		defaultConfig = self.getRawYamlConfig()
 		yamlConfig = {}
-		with open(DEFAULT_PATH, 'r', encoding="utf-8") as yamlfile:
-			defaultConfig = yaml.load(yamlfile, Loader=yaml.FullLoader)
 		it = iter(defaultConfig.keys())
-		iterators = [it]
-		keys = []
-		dicts = [defaultConfig]
+		iterators = [it] # List of current dictionnary'iterators examined
+		# Iterate over a tree
+		keys = [] # List of current "path"
+		dicts = [defaultConfig] # List of current dictionnary examined
+		# NB: (If we lost dicts, we lost iterators)
 		more = True
 		while len(iterators)>0:
 			depth = len(iterators)-1

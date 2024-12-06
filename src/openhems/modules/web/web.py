@@ -93,6 +93,7 @@ def yamlparams(request):
 	for k,v  in params0.items():
 		params1[k.replace(".","_")] = v
 	params1["vpn"] = "up" if OPENHEMS_CONTEXT.vpnDriver.testVPN() else "down"
+	params1["availableNodes"] = configurator.getRawYamlConfig()['default']['node']
 	return params1
 
 @view_config(
@@ -204,7 +205,8 @@ class OpenhemsHTTPServer():
 			label = re.sub(r'(?<!^)(?=[A-Z])', ' ',elems[grade]).capitalize()
 			if name=="network.nodes":
 				tagAttributes = 'type="hidden"'
-				htmlTabsElem += '<button type="button" onclick="addNode()">+</button>'
+				htmlTabsElem += ('<button type="button" '
+					' onclick="displayAddNodePopup()">+</button>')
 			else:
 				htmlTabsElem = ''
 				tagAttributes = 'type="text"'
