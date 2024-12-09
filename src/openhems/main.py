@@ -99,7 +99,7 @@ class OpenHEMSApplication:
 		root = configurator.get("server.htmlRoot")
 		inDocker = inDocker or configurator.get("server.inDocker", "bool")
 		self.webserver = OpenhemsHTTPServer(self.logger,
-			network.getSchedule(), yamlConfFilepath, 
+			network.getSchedule(), yamlConfFilepath,
 			port=port, htmlRoot=root, inDocker=inDocker, configurator=configurator)
 		network.notify("Start OpenHEMS.")
 

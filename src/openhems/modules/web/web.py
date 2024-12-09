@@ -9,9 +9,9 @@ import time
 import json
 from pathlib import Path
 from json import JSONEncoder
-import yaml
 import re
 from wsgiref.simple_server import make_server
+import yaml
 from pyramid.config import Configurator
 from pyramid.httpexceptions import exception_response
 # from pyramid.response import Response
@@ -37,6 +37,8 @@ JSONEncoder.default = wrappedDefault
 
 OPENHEMS_CONTEXT = None
 
+ROOT_PATH = Path(__file__).parents[4]
+
 @view_config(
 	route_name='panel',
 	renderer='templates/panel.jinja2'
@@ -57,7 +59,6 @@ def params(request):
 	"""
 	configurator = ConfigurationManager(OPENHEMS_CONTEXT.logger)
 	configurator.addYamlConfig(Path(OPENHEMS_CONTEXT.yamlConfFilepath))
-	newValues = {}
 	change = False
 	for key, newValue in request.params.items():
 		currentValue = configurator.get(key)
@@ -66,7 +67,7 @@ def params(request):
 				newValue = newValue.replace("'",'"')
 				try:
 					newValue = json.loads(newValue)
-				except Exception as e:
+				except ValueError:
 					OPENHEMS_CONTEXT.logger.error(
 						"Fail load list '%s' for key '%s'", newValue, key
 					)
@@ -83,7 +84,7 @@ def params(request):
 					"/params : Unexpected key %s' with config '%s'",
 					key, OPENHEMS_CONTEXT.yamlConfFilepath
 				)
-				raise exception_response(400) # HTTPBadRequest
+				raise exception_response(400) from e # HTTPBadRequest
 	if change:
 		configurator.save(OPENHEMS_CONTEXT.yamlConfFilepath)
 
@@ -159,6 +160,10 @@ class OpenhemsHTTPServer():
 			configurator.addYamlConfig(Path(self.yamlConfFilepath))
 		self.configurator = configurator
 		lang = configurator.get("localization.language")
+		self.translations = {}
+		translationsPath = ROOT_PATH / ("data/keys_"+lang+".yaml")
+		with translationsPath.open("r", encoding="utf-8") as keyFile:
+			self.translations = yaml.load(keyFile, Loader=yaml.FullLoader)
 		self.generateTemplateYamlParams(lang)
 		if inDocker:
 			vpnDriver = VpnDriverIncronClient(mylogger)
@@ -170,7 +175,37 @@ class OpenhemsHTTPServer():
 		OPENHEMS_CONTEXT = self
 		OPENHEMS_CONTEXT.vpnDriver.testVPN()
 
-	def getTemplateYamlParamsBody(self, tooltips:dict, descriptions):
+	def getTemplateYamlParamsBodyHeaders(self, lastElems, elems):
+		"""
+		represent YAML (tooltip) as HTML Form.
+		return: HTML code.
+		"""
+		htmlTabsMenu = ""
+		htmlTabsBody = ""
+		base = elems[:-1]
+		oldBase = lastElems[:-1]
+		if base!=oldBase:
+			for i,e in enumerate(oldBase):
+				if i>=len(base) or base[i]!=e:
+					htmlTabsBody += "</div>\n"
+			if len(lastElems)==0 or lastElems[0]!=elems[0]:
+				tabName = elems[0]
+				htmlTabsMenu+='<li><a href="#tabs-'+tabName+'">' \
+					+ tabName.capitalize() + '</a></li>\n'
+				htmlTabsBody+='<div id="tabs-'+tabName+'">\n'
+				paragraph = self.translations["htmlTitleDescriptions"].get(tabName)
+				if paragraph is not None:
+					htmlTabsBody += (f"<p>{paragraph}</p>\n")
+			for i,e in enumerate(base[1:]):
+				j = i+1
+				if j>=len(oldBase) or lastElems[j]!=e:
+					headerLevel = j+1
+					header = e.capitalize()
+					htmlTabsBody += (f"<div class='config_{i}'>\n"
+						f"<h{headerLevel}>{header}</h{headerLevel}>\n")
+		return (htmlTabsMenu, htmlTabsBody)
+
+	def getTemplateYamlParamsBody(self, tooltips:dict):
 		"""
 		represent YAML (tooltip) as HTML Form.
 		return: HTML code.
@@ -178,31 +213,12 @@ class OpenhemsHTTPServer():
 		htmlTabsMenu = ""
 		htmlTabsBody = ""
 		lastElems = []
-		oldBase = []
 		for name, tooltip in tooltips.items():
 			elems = name.split(".")
-			base = elems[:-1]
 			grade = len(elems)-1
-			if base!=oldBase:
-				for i,e in enumerate(oldBase):
-					if i>=len(base) or base[i]!=e:
-						htmlTabsBody += "</div>\n"
-				if len(lastElems)==0 or lastElems[0]!=elems[0]:
-					tabName = elems[0]
-					htmlTabsMenu+='<li><a href="#tabs-'+tabName+'">' \
-						+ tabName.capitalize() + '</a></li>\n'
-					htmlTabsBody+='<div id="tabs-'+tabName+'">\n'
-					paragraph = descriptions.get(tabName)
-					if paragraph is not None:
-						htmlTabsBody += (f"<p>{paragraph}</p>\n")
-				for i,e in enumerate(base[1:]):
-					j = i+1
-					if j>=len(oldBase) or lastElems[j]!=e:
-						headerLevel = j+1
-						header = e.capitalize()
-						htmlTabsBody += (f"<div class='config_{i}'>\n"
-							f"<h{headerLevel}>{header}</h{headerLevel}>\n")
-				oldBase = base
+			m, b = self.getTemplateYamlParamsBodyHeaders(lastElems, elems)
+			htmlTabsMenu += m
+			htmlTabsBody += b
 			jinja2Id = name.replace('.','_')
 			label = re.sub(r'(?<!^)(?=[A-Z])', ' ',elems[grade]).capitalize()
 			if name=="network.nodes":
@@ -222,20 +238,16 @@ class OpenhemsHTTPServer():
 			if name=="network.nodes":
 				htmlTabsBody += '<div id="nodes"></div>\n'
 			lastElems = elems
-		for i,e in enumerate(oldBase):
-			htmlTabsBody += "</div>\n"
+		htmlTabsBody += ("</div>\n"*(len(lastElems)-1))
 		return "<ul>"+htmlTabsMenu+"</ul>"+htmlTabsBody
 
 	def generateTemplateYamlParams(self, lang="en"):
-		rootPath = Path(__file__).parents[4]
+		"""
+		Generate the template file for /params page based on YAML configuration file.
+		"""
 		templatesPath = Path(__file__).parents[0]/"templates"
-		tooltipPath = rootPath / ("data/openhems_tooltips_"+lang+".yaml")
+		tooltipPath = ROOT_PATH / ("data/openhems_tooltips_"+lang+".yaml")
 		configurator = ConfigurationManager(self.logger, defaultPath=tooltipPath)
-		keysPath = rootPath / ("data/keys_"+lang+".yaml")
-		keys = {}
-		with keysPath.open("r", encoding="utf-8") as keyFile:
-			keys = yaml.load(keyFile, Loader=yaml.FullLoader)
-			descriptions = keys["htmlTitleDescriptions"]
 		tooltips = configurator.get("", deepSearch=True)
 		frameworkPath = templatesPath / "params.framework.jinja2"
 		with frameworkPath.open("r", encoding="utf-8") as infile:
@@ -244,7 +256,7 @@ class OpenhemsHTTPServer():
 		yamlparamsPath = templatesPath / "params.jinja2"
 		with yamlparamsPath.open("w", encoding="utf-8") as outfile:
 			outfile.write(htmlHead)
-			outfile.write(self.getTemplateYamlParamsBody(tooltips, descriptions))
+			outfile.write(self.getTemplateYamlParamsBody(tooltips))
 			outfile.write(htmlQueue)
 
 	def run(self):

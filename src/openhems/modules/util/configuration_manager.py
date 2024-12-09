@@ -5,10 +5,10 @@ Let allow get configuration by key, init with a default value.
 
 import os
 from pathlib import Path
-import yaml
 import datetime
 import shutil
 import traceback
+import yaml
 from openhems.modules.util.cast_utility import CastUtililty
 
 rootPath = Path(__file__).parents[4]
@@ -70,7 +70,7 @@ class ConfigurationManager():
 		else:
 			k = prekey+key
 			if not init and not k in self._conf:
-				msg = "key='"+k+"' is not valid."
+				msg = "key='"+k+"' is not valid in "+str(self._conf)+"."
 				self.logger.error(msg)
 				raise ConfigurationException(msg)
 			self.logger.debug("Configuration[%s] = %s", k, value)
@@ -119,6 +119,10 @@ class ConfigurationManager():
 		return val
 
 	def getRawYamlConfig(self, path=None):
+		"""
+		Function to get Raw (Configuration as dict of dict, instead of simple keys)
+		 YAML default configuration. 
+		"""
 		if path is None:
 			path = self.defaultPath
 		if path is str:
@@ -126,7 +130,30 @@ class ConfigurationManager():
 		with path.open('r', encoding="utf-8") as yamlfile:
 			return yaml.load(yamlfile, Loader=yaml.FullLoader)
 
+	@staticmethod
+	def setYamlConfigKey(yamlConfig, keys, myValue):
+		"""
+		Set 
+		"""
+		print("setYamlConfigKey(",yamlConfig,", ",keys,", ",myValue,")")
+		elem = yamlConfig
+		l = len(keys)-1
+		for i,k in enumerate(keys):
+			if i==l:
+				elem[k] = myValue
+			else:
+				v = elem.get(k)
+				if v is None:
+					v = {}
+					elem[k] = v
+				elem = v
+		return yamlConfig
+
 	def retrieveYamlConfig(self):
+		"""
+		Retrieve what should be the YAML config to get that configuration.
+		Substract values to default Values from self.defaultPath.
+		"""
 		defaultConfig = self.getRawYamlConfig()
 		yamlConfig = {}
 		it = iter(defaultConfig.keys())
@@ -135,7 +162,6 @@ class ConfigurationManager():
 		keys = [] # List of current "path"
 		dicts = [defaultConfig] # List of current dictionnary examined
 		# NB: (If we lost dicts, we lost iterators)
-		more = True
 		while len(iterators)>0:
 			depth = len(iterators)-1
 			it = iterators[depth]
@@ -150,18 +176,13 @@ class ConfigurationManager():
 					dicts.append(value)
 				else:
 					myValue = self.get(globalkey)
-					# print("globalkey:", globalkey, "; DefaultValue:", 
+					# print("globalkey:", globalkey, "; DefaultValue:",
 					# 	value, "; MyValue:", myValue)
 					if myValue!=value:
-						elem = yamlConfig
-						for i,k in enumerate(keys):
-							v = elem.get(k)
-							if v is None:
-								v = {}
-								elem[k] = v
-							elem = v
-						elem[key] = myValue
-			except StopIteration as s:
+						keys.append(key)
+						yamlConfig = self.setYamlConfigKey(yamlConfig, keys, myValue)
+						keys.pop()
+			except StopIteration:
 				iterators.pop()
 				if len(keys)>0:
 					keys.pop()
@@ -170,6 +191,9 @@ class ConfigurationManager():
 		return yamlConfig
 
 	def save(self, yamlConfFilepath):
+		"""
+		Save the current configuration in a Yaml file.
+		"""
 		dictValues = self.retrieveYamlConfig()
 		if dictValues is None:
 			return
@@ -180,9 +204,9 @@ class ConfigurationManager():
 			backupFile = str(yamlConfFilepath) + ("."+now.strftime("%Y%m%d%H%M%S"))
 			os.rename(yamlConfFilepath, backupFile)
 		try:
-			with open(yamlConfFilepath, 'w') as outfile:
+			with open(yamlConfFilepath, 'w', encoding="utf-8") as outfile:
 				yaml.dump(dictValues, outfile, default_flow_style=False)
-		except Exception as e:
+		except (OSError, yaml.YAMLError):
 			self.logger.error(
 				"Fail write new version YAML configuration, backup is of '%s'",
 				backupFile

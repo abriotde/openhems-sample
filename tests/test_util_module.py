@@ -11,7 +11,6 @@ from pathlib import Path
 import logging
 import io
 import contextlib
-import hashlib
 # pylint: disable=wrong-import-position
 # pylint: disable=import-error
 ROOT_PATH = Path(__file__).parents[1]
@@ -19,7 +18,7 @@ sys.path.append(str(ROOT_PATH / "src"))
 from openhems.modules.network.driver.fake_network import FakeNetwork
 from openhems.modules.util import (
 	NotificationManager, MessageHistory,
-	Time, HoursRanges,
+	HoursRanges,
 	CastUtililty,
 	CastException, ConfigurationManager
 )
@@ -64,11 +63,9 @@ class TestUtilModule(unittest.TestCase):
 			savedFile.unlink()
 		configurator.save(savedFile)
 		referenceFile = curFolder / 'data/openhems_test_save.yaml'
-		f1 = open(referenceFile)
-		f2 = open(savedFile)
-		self.assertListEqual( list(f1), list(f2) )
-		f1.close()
-		f2.close()
+		with open(referenceFile, encoding="utf-8") as f1, \
+				open(savedFile, encoding="utf-8") as f2:
+			self.assertListEqual( list(f1), list(f2) )
 
 		# Test Invalid key
 		value = configurator.get("toto")

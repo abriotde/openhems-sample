@@ -81,8 +81,9 @@ function setNetwork() {
 function deleteNode(index) {
 	var node = document.getElementById("node-"+index);
 	node.parentElement.removeChild(node);
-	network2 = []
-	for (node in network) {
+	network2 = [];
+	for (n in network) {
+		node = network[n];
 		if(node.id!=index) {
 			network2.push(node);
 		}
@@ -95,11 +96,12 @@ function getElement(index, attr, node, level=0) {
 		currentElement.classList.add("col-75");
 	}
 	currentElement.classList.add(index);
-	var myindex = index+"-"+attr;
+	attrId = attr.replaceAll("-","_")
+	var myindex = index+"-"+attrId;
 	if (node instanceof Object) {
 		currentElement.id = myindex;
 		if (level==0) {
-			currentElement.innerHTML = '<img class="delNode" src="'+URL_IMG_DELETE+'" onclick="deleteNode(\''+attr+'\');" alt="Delete"></img>';
+			currentElement.innerHTML = '<img class="delNode" src="'+URL_IMG_DELETE+'" onclick="deleteNode(\''+attrId+'\');" alt="Delete"></img>';
 		}
 		currentElement.classList.add("config_"+level);
 		for(var a in node){
@@ -187,7 +189,7 @@ function newNodeSelectChange(selectElementId) {
 	//   We choice to let that memory-leak
 	nodeConfig = objectList[select.value];
 	if(selectElementId=="newnode") {
-		nodeConfig["id"] = "id-"+Object.keys(network).length
+		nodeConfig["id"] = "id"+Object.keys(network).length
 	}
 	addNodeSelecForm = document.getElementById(selectElementId+"-form");
 	addNodeSelecForm.innerHTML = "";
@@ -218,21 +220,22 @@ function populateNode(id, node, model, keyvalues) {
 	console.log("populateNode(",id,", ",node,", ",model,", ",keyvalues,")");
 	model["id"] = "X";
 	for (caract in model) {
-		modelValue = model[caract];
+		caractId = caract.replaceAll("-","_"); // By security as "-" is our key separator
+		modelValue = model[caractId];
 		if (modelValue instanceof Object) {
-			key = id+"-"+caract;
+			key = id+"-"+caractId;
 			snode = {};
 			value = populateNode(key, snode, modelValue, keyvalues);
-			node[caract] = value;
+			node[caractId] = value;
 		} else {
-			key = id+"-"+caract+"-value";
+			key = id+"-"+caractId+"-value";
 			value = keyvalues[key];
 			if (value !== undefined) {
-				node[caract] = value;
+				node[caractId] = value;
 			}
 		}
 	}
-	console.log("populateNode() => ", node);
+	// console.log("populateNode() => ", node);
 	return node;
 }
 function addNode(submitBtn) {
