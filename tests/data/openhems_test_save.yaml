@@ -16,4 +16,4 @@ network:
     currentPower: sensor.tz3000_2putqrmw_ts011f_puissance_2
     id: voiture
     isOn: switch.tz3000_2putqrmw_ts011f_commutateur_2
-    maxPower:2000: null
+    maxPower: 2000

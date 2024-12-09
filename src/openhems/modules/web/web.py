@@ -61,7 +61,19 @@ def params(request):
 	change = False
 	for key, newValue in request.params.items():
 		currentValue = configurator.get(key)
+		if isinstance(currentValue, list):
+			if isinstance(newValue, str):
+				newValue = newValue.replace("'",'"')
+				try:
+					newValue = json.loads(newValue)
+				except Exception as e:
+					OPENHEMS_CONTEXT.logger.error(
+						"Fail load list '%s' for key '%s'", newValue, key
+					)
+		else:
+			currentValue = str(currentValue)
 		if currentValue!=newValue:
+			print(currentValue, type(currentValue), " != ", newValue, type(newValue), " for key = ", key)
 			try:
 				configurator.add(key, newValue)
 				change = True

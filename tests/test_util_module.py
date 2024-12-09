@@ -59,7 +59,7 @@ class TestUtilModule(unittest.TestCase):
 		self.assertEqual(value, 'openhems.log')
 
 		curFolder = Path(__file__).parents[0]
-		savedFile = curFolder / 'data/openhems_test_save.test.yaml'
+		savedFile = curFolder / 'data/openhems_test_save.tmp.yaml'
 		if savedFile.exists():
 			savedFile.unlink()
 		configurator.save(savedFile)
