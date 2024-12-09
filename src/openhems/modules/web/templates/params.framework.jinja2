@@ -8,7 +8,7 @@
 	<script src="https://code.jquery.com/ui/1.14.1/jquery-ui.js"></script>
 	<link rel="stylesheet" href="//code.jquery.com/mobile/1.5.0-alpha.1/jquery.mobile-1.5.0-alpha.1.min.css">
 	<script src="//code.jquery.com/mobile/1.5.0-alpha.1/jquery.mobile-1.5.0-alpha.1.min.js"></script>
-	<script src="{{request.static_url('openhems.modules.web:../../../../img/yamlparams.js')}}"></script>
+	<script src="{{request.static_url('openhems.modules.web:../../../../img/params.js')}}"></script>
 </head>
 <body>
 <nav class="menu">
@@ -22,7 +22,7 @@
 	<div><img id="waitImg" src="{{request.static_url('openhems.modules.web:../../../../img/wait.gif')}}" style="display:none" alt="Wait"></img><div>
 	<div>VPN is <b id="vpnStatus">{{ vpn }}</b>.<button id="vpnButton"></button></div>
 
-	<form name="yamlParamsForm" action="/yamlparams" method="POST" onsubmit="return setNetwork()">
+	<form name="yamlParamsForm" action="/params" method="POST" onsubmit="return setNetwork()">
 	<div id="yamlParams">
 		{%YAML_PARAMS%}
 	</div>

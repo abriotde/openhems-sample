@@ -38,17 +38,44 @@ function getNetwork() {
 	console.log("Network:",network);
 }
 function setNetwork() {
-	var nodes = document.getElementsById("nodes").children;
-	var myNetwork = [];
+	console.log("setNetwork()");
+	var nodes = document.getElementById("nodes").children;
+	var networkById = {};
+	// As id can be changed, search orginals ids
+	for (n in network) {
+		node = network[n]
+		networkById[node.id] = node;
+	}
+	var refs = [networkById];
 	for (i in nodes) {
 		nodeElement = nodes[i];
-		inputs = nodeElement.querySelectorAll('input');
-		id = inputs[0].split(' ');"";
-		var model = availableNodes[value];
-		var node = populateNode(id, node, model, keyvalues);
-		myNetwork.push(node);
+		if (typeof nodeElement === 'object') {
+			inputs = nodeElement.querySelectorAll('input');
+			for (i in inputs) {
+				input = inputs[i];
+				if (typeof input === 'object') {
+					ids = input.id.split('-');
+					refs.length = 1;
+					for (j=1; j<ids.length; j++) {
+						refs[j] = refs[j-1][ids[j]];
+					}
+					if (refs[ids.length-1]!=input.value) {
+						console.log(refs[ids.length-1] , " VS ", input.value);
+						refs[ids.length-1] = input.value;
+						for (j=ids.length-1; j>0; j--) {
+							refs[j-1][ids[j]] = refs[j];
+						}
+					}
+				}
+			}
+		}
+	}
+	myNetwork = [];
+	for (i in refs[0]) {
+		myNetwork.push(networkById[i]);
 	}
 	document.getElementById('network.nodes').value = JSON.stringify(myNetwork);
+	console.log("setNetwork() => ", myNetwork);
 	return true;
 }
 function deleteNode(index) {

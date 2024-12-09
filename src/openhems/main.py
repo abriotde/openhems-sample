@@ -19,7 +19,7 @@ sys.path.append(str(openhemsPath))
 from openhems.modules.network.driver.home_assistant_api import HomeAssistantAPI
 from openhems.modules.network.driver.fake_network import FakeNetwork
 from openhems.modules.web import OpenhemsHTTPServer
-from openhems.modules.util.configuration_manager import ConfigurationManager
+from openhems.modules.util import ConfigurationManager, CastUtililty
 from openhems.server import OpenHEMSServer
 
 class OpenHEMSApplication:
@@ -95,6 +95,7 @@ class OpenHEMSApplication:
 		network = networkUpdater.getNetwork()
 		self.server = OpenHEMSServer(self.logger, network, configurator)
 		port = port if port>0 else configurator.get("server.port")
+		port = CastUtililty.toTypeInt(port)
 		root = configurator.get("server.htmlRoot")
 		inDocker = inDocker or configurator.get("server.inDocker", "bool")
 		self.webserver = OpenhemsHTTPServer(self.logger,

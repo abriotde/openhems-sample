@@ -55,16 +55,6 @@ def params(request):
 	"""
 	Web-page get all configurables params for params page and there value.
 	"""
-	return { "vpn": "up" if OPENHEMS_CONTEXT.vpnDriver.testVPN() else "down" }
-
-@view_config(
-	route_name='yamlparams',
-	renderer='templates/yamlparams.jinja2'
-)
-def yamlparams(request):
-	"""
-	Web-page get all configurables params for params page and there value.
-	"""
 	configurator = ConfigurationManager(OPENHEMS_CONTEXT.logger)
 	configurator.addYamlConfig(Path(OPENHEMS_CONTEXT.yamlConfFilepath))
 	newValues = {}
@@ -78,7 +68,7 @@ def yamlparams(request):
 			except ConfigurationException as e:
 				# NB : The real value can be None...
 				OPENHEMS_CONTEXT.logger.warning(
-					"/yamlparams : Unexpected key %s' with config '%s'",
+					"/params : Unexpected key %s' with config '%s'",
 					key, OPENHEMS_CONTEXT.yamlConfFilepath
 				)
 				raise exception_response(400) # HTTPBadRequest
@@ -235,11 +225,11 @@ class OpenhemsHTTPServer():
 			keys = yaml.load(keyFile, Loader=yaml.FullLoader)
 			descriptions = keys["htmlTitleDescriptions"]
 		tooltips = configurator.get("", deepSearch=True)
-		frameworkPath = templatesPath / "yamlparams.framework.jinja2"
+		frameworkPath = templatesPath / "params.framework.jinja2"
 		with frameworkPath.open("r", encoding="utf-8") as infile:
 			datas = infile.read()
 		htmlHead, htmlQueue = datas.split("{%YAML_PARAMS%}")
-		yamlparamsPath = templatesPath / "yamlparams.jinja2"
+		yamlparamsPath = templatesPath / "params.jinja2"
 		with yamlparamsPath.open("w", encoding="utf-8") as outfile:
 			outfile.write(htmlHead)
 			outfile.write(self.getTemplateYamlParamsBody(tooltips, descriptions))
@@ -254,7 +244,6 @@ class OpenhemsHTTPServer():
 			config.add_route('panel', '/')
 			config.add_route('states', '/states')
 			config.add_route('params', '/params')
-			config.add_route('yamlparams', '/yamlparams')
 			config.add_route('vpn', '/vpn')
 			# config.add_route('favicon.ico', '/favicon.ico')
 			root = (self.htmlRoot+'/img').replace('//','/')
