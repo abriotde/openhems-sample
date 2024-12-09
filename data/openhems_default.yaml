@@ -62,7 +62,6 @@ default:
             bleu: 0.1296
             blanc: 0.1486
             rouge: 0.1568
-          offpeakprice_rouge: 
         rteheurescreuses:
           offpeakhoursranges: ["22h - 6h"]
           peakprice: 0.2700

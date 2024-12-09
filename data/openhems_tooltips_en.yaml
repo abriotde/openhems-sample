@@ -55,7 +55,6 @@ default:
             bleu: ""
             blanc: ""
             rouge: ""
-          offpeakprice_rouge: 
         rteheurescreuses:
           offpeakhoursranges: "["22h - 6h"]"
           peakprice: ""
