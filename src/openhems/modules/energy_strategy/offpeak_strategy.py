@@ -31,7 +31,7 @@ class OffPeakStrategy(EnergyStrategy):
 		self.network = network
 		self.offpeakHoursRanges = self.network.getOffPeakHoursRanges()
 		self.logger.info("OffPeakStrategy(%s)", str(self.offpeakHoursRanges))
-		if self.offpeakHoursRanges.isEmpty():
+		if not self.offpeakHoursRanges:
 			msg = "OffPeak-strategy is useless without offpeak hours. Check your configuration."
 			self.logger.critical(msg)
 			raise ConfigurationException(msg)

@@ -5,6 +5,7 @@ This is the server thread witch aim to centralize information and take right dec
 import os
 import time
 from openhems.modules.energy_strategy import OffPeakStrategy
+from openhems.modules.network import HomeStateUpdaterException
 from openhems.modules.util.configuration_manager import ConfigurationManager
 
 
@@ -50,7 +51,12 @@ class OpenHEMSServer:
 			loopDelay = self.loopDelay
 		nextloop = time.time() + loopDelay
 		while True:
-			self.loop(loopDelay)
+			try:
+				self.loop(loopDelay)
+			except HomeStateUpdaterException as e:
+				msg = ("Fail update network. Maybe Home-Assistant is down"
+					" or long_lived_token expired. "+str(e))
+				self.logger.error(msg)
 			t = time.time()
 			if t<nextloop:
 				self.logger.debug("OpenHEMSServer.run() : sleep(%f min)", (nextloop-t)/60)

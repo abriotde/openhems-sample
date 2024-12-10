@@ -9,6 +9,7 @@ import datetime
 import shutil
 import traceback
 import yaml
+from yaml.scanner import ScannerError
 from openhems.modules.util.cast_utility import CastUtililty
 
 rootPath = Path(__file__).parents[4]
@@ -41,6 +42,7 @@ class ConfigurationManager():
 		else:
 			self.defaultPath = defaultPath
 		self.addYamlConfig(self.defaultPath, True)
+		self.lastYamlConfFilepath = self.defaultPath
 
 	def _load(self, dictConfig, init=False, prekey=''):
 		"""
@@ -51,14 +53,27 @@ class ConfigurationManager():
 			# print("> ",key," => ", value)
 			self.add(key, value, init, prekey)
 
+	def getLastYamlConfFilepath(self):
+		"""
+		Return the last YAML configuration file path. We consder it as the "main".
+		"""
+		return self.lastYamlConfFilepath
+
 	def addYamlConfig(self, yamlConfig, init=False):
 		"""
 		Add configuration from yaml file path.
 		"""
 		# print("addYamlConfig(",yamlConfig,")")
-		dictConfig = self.getRawYamlConfig(yamlConfig)
+		try:
+			dictConfig = self.getRawYamlConfig(yamlConfig)
+		except ScannerError as e:
+			msg = (f"Parsing error on '{yamlConfig}' impossible to load."
+				" Ignore it witch have big consequences on behaviour. "+str(e))
+			self.logger.error(msg)
+			raise ConfigurationException(msg) from e
 		self._load(dictConfig, init)
 		self._cache = {}
+		self.lastYamlConfFilepath = yamlConfig
 		# print(self._conf)
 
 	def add(self, key, value, init=False, prekey=''):

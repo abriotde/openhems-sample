@@ -148,16 +148,21 @@ class OpenhemsHTTPServer():
 		"""
 		print("context", OPENHEMS_CONTEXT)
 
-	def __init__(self, mylogger, schedule, yamlConfFilepath, *,
+	def __init__(self, mylogger, schedule, warningMessages, *,
 			port=8000, htmlRoot="/", inDocker=False, configurator=None):
 		self.logger = mylogger
 		self.schedule = schedule
+		self.warningMessages = warningMessages
 		self.port = port
 		self.htmlRoot = htmlRoot
-		self.yamlConfFilepath = yamlConfFilepath
 		if configurator is None:
 			configurator = ConfigurationManager(self.logger)
+		if isinstance(configurator, str):
+			self.yamlConfFilepath = configurator
+			configurator = ConfigurationManager(self.logger)
 			configurator.addYamlConfig(Path(self.yamlConfFilepath))
+		else:
+			self.yamlConfFilepath = configurator.getLastYamlConfFilepath()
 		self.configurator = configurator
 		lang = configurator.get("localization.language")
 		self.translations = {}
