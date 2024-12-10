@@ -76,7 +76,8 @@ class OpenHEMSApplication:
 		self.logger = logging.getLogger(__name__)
 		configurator = ConfigurationManager(self.logger)
 		warnings = []
-		network = {}
+		network = None
+		schedule = []
 		try:
 			print("Load YAML configuration from '",yamlConfFilepath,"'")
 			configurator.addYamlConfig(Path(yamlConfFilepath))
@@ -89,20 +90,21 @@ class OpenHEMSApplication:
 		self.server = None
 		try:
 			network = OpenHEMSNetworkHelper.getFromConfiguration(self.logger, configurator)
+			warnings = warnings + network.getWarningMessages()
+			schedule = network.getSchedule()
 			self.server = OpenHEMSServer(self.logger, network, configurator)
 		except ConfigurationException as e:
 			warnings.append(str(e))
 		for warning in warnings:
 			self.logger.error(warning)
-		warnings = warnings + network.getWarningMessages()
 		port = port if port>0 else configurator.get("server.port")
 		port = CastUtililty.toTypeInt(port)
 		root = configurator.get("server.htmlRoot")
 		inDocker = inDocker or configurator.get("server.inDocker", "bool")
-		self.webserver = OpenhemsHTTPServer(self.logger,
-			network.getSchedule(), warnings,
+		self.webserver = OpenhemsHTTPServer(self.logger, schedule, warnings,
 			port=port, htmlRoot=root, inDocker=inDocker, configurator=configurator)
-		network.notify("Start OpenHEMS.")
+		if network is not None:
+			network.notify("Start OpenHEMS.")
 
 	def runManagementServer(self):
 		"""

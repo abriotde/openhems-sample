@@ -208,3 +208,10 @@ input[type=submit] {
 .delNode {
 	float:right;
 }
+/* For warningMessages */
+div.alert {
+	color: red;
+	/* font-weight: bold; */
+	border: medium double red;
+	margin: 1em;
+}

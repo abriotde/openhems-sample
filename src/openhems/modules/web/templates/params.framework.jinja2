@@ -19,6 +19,7 @@
 </nav>
 <div class="page">
 	<h1>Parameters</h1>
+	<div id="warningBox" class="alert"></div>
 	<div><img id="waitImg" src="{{request.static_url('openhems.modules.web:../../../../img/wait.gif')}}" style="display:none" alt="Wait"></img><div>
 	<div>VPN is <b id="vpnStatus">{{ vpn }}</b>.<button id="vpnButton"></button></div>
 
@@ -45,6 +46,8 @@ URL_IMG_DELETE = "{{request.static_url('openhems.modules.web:../../../../img/del
 $( function() {
 	$( "#yamlParams" ).tabs();
 	// $("#addNodePopup").popup();
+	warningMessages = {{ warningMessages|tojson }};
+	displayWarningMessages(warningMessages);
 	getNetwork();
 	displayNetwork();
 	connectedVPN(vpn=="up");

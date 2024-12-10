@@ -2,11 +2,11 @@
 Class to create a OpenHEMSNetwork using drivers
 """
 
-from .driver.home_assistant_api import HomeAssistantAPI
-from .driver.fake_network import FakeNetwork
 from openhems.modules.util import (
 	ConfigurationManager, ConfigurationException
 )
+from .driver.home_assistant_api import HomeAssistantAPI
+from .driver.fake_network import FakeNetwork
 
 class OpenHEMSNetworkHelper:
 	"""

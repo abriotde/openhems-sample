@@ -11,7 +11,7 @@ from openhems.modules.network.network import (
 )
 from openhems.modules.network.feeder import Feeder, SourceFeeder, ConstFeeder
 from openhems.modules.util.cast_utility import CastUtililty, CastException
-from openhems.modules.util.configuration_manager import ConfigurationManager
+from openhems.modules.util.configuration_manager import ConfigurationManager, ConfigurationException
 
 class HATypeExcetion(Exception):
 	"""
@@ -201,6 +201,11 @@ class HomeAssistantAPI(HomeStateUpdater):
 				# To avoid infinite loop : It's url for notify()
 				self.notify(f"Error callAPI() : \
 					status_code={response.status_code} : {errMsg}")
+			if url=="/states":
+				raise ConfigurationException(
+					"Fail get states of Home-Assistant. "
+					"Check the Home-Assistant server is up and check 'Api' tab's parameters."
+				)
 		else:
 			if self.sleepDurationOnerror>2:
 				self.sleepDurationOnerror /= 2

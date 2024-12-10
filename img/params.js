@@ -291,3 +291,15 @@ function displayNetwork() {
 		displayNode(node);
 	}
 }
+function displayWarningMessages(warningMessages) {
+	if (warningMessages.length>0) {
+		warningBox = document.getElementById("warningBox");
+		warningBox.innerHTML = "There is problems in configurations witch compromisea good behaviour. Please fix those points in configuration, save it and restart OpenHEMS server."
+		for (m in warningMessages) {
+			msg = warningMessages[m];
+			elem = document.createElement("div");
+			elem.innerHTML = "• "+msg;
+			warningBox.appendChild(elem);
+		}
+	}
+}

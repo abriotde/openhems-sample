@@ -97,6 +97,7 @@ def params(request):
 		params1[k.replace(".","_")] = v
 	params1["vpn"] = "up" if OPENHEMS_CONTEXT.vpnDriver.testVPN() else "down"
 	params1["availableNodes"] = configurator.getRawYamlConfig()['default']['node']
+	params1["warningMessages"] = OPENHEMS_CONTEXT.warningMessages
 	return params1
 
 @view_config(

@@ -6,7 +6,7 @@ import os
 import time
 from openhems.modules.energy_strategy import OffPeakStrategy
 from openhems.modules.network import HomeStateUpdaterException
-from openhems.modules.util.configuration_manager import ConfigurationManager
+from openhems.modules.util.configuration_manager import ConfigurationManager, ConfigurationException
 
 
 class OpenHEMSServer:
@@ -53,7 +53,7 @@ class OpenHEMSServer:
 		while True:
 			try:
 				self.loop(loopDelay)
-			except HomeStateUpdaterException as e:
+			except (HomeStateUpdaterException, ConfigurationException) as e:
 				msg = ("Fail update network. Maybe Home-Assistant is down"
 					" or long_lived_token expired. "+str(e))
 				self.logger.error(msg)
