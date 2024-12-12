@@ -22,5 +22,6 @@ Contents
 .. toctree::
 
    installation
+   installation_from_scratch
    configure
 

@@ -15,7 +15,14 @@ from .node import (
 from .feeder import Feeder, SourceFeeder
 
 POWER_MARGIN: Final[int] = 10 # Margin of power consumption for security
-logger = logging.getLogger(__name__)
+
+class HomeStateUpdaterException(Exception):
+	"""
+	Custom Configuration exception.
+	"""
+	def __init__(self, message, defaultValue=''):
+		self.message = message
+		self.defaultValue = defaultValue
 
 class HomeStateUpdater:
 	"""
@@ -30,6 +37,7 @@ class HomeStateUpdater:
 		self.network = None
 		self.conf = conf
 		self.tmp = None # Used to avoid method argument repeated.
+		self.warningMessages = []
 
 	def updateNetwork(self):
 		"""
@@ -128,7 +136,14 @@ class HomeStateUpdater:
 		value = conf.get(key)
 		if value is None:
 			value = self.conf.get( "default.node."+self.tmp+"."+key)
-		feeder = self.getFeeder(value, expectedType)
+		try:
+			feeder = self.getFeeder(value, expectedType)
+		except ValueError as e:
+			raise ConfigurationException(
+				"Impossible to convert "+key+" = '"+value
+				+"' to type "+expectedType
+				+" for node '"+self.tmp+"'", 0
+			) from e
 		if feeder is None:
 			msg = "Argument '"+key+"' is required for node '"+self.tmp+"'"
 			self.logger.critical(msg)
@@ -137,27 +152,32 @@ class HomeStateUpdater:
 
 	def _getNetwork(self, networkConf):
 		"""
-		Initialyze "in" network part.
+		Initialyze network according to it's configuration.
 		"""
 		i = 0
 		for e in networkConf:
-			classname = e["class"].lower()
-			node = None
-			nameid = e.get("id", f"node_{i}")
-			i += 1
-			if classname == "switch":
-				node = node = self.getSwitch(nameid, e)
-			elif classname == "publicpowergrid":
-				node = self.getPublicPowerGrid(nameid, e)
-			elif classname == "solarpanel":
-				node = self.getSolarPanel(nameid, e)
-			elif classname == "battery":
-				node = self.getBattery(nameid, e)
-			else:
-				msg = f"HomeAssistantAPI.getNetwork : Unknown classname '{classname}'"
-				self.logger.critical(msg)
-				raise ConfigurationException(msg)
-			self.network.addNode(node)
+			try:
+				classname = e.get("class", "unspecified").lower()
+				node = None
+				nameid = e.get("id", f"node_{i}")
+				i += 1
+				if classname == "switch":
+					node = node = self.getSwitch(nameid, e)
+				elif classname == "publicpowergrid":
+					node = self.getPublicPowerGrid(nameid, e)
+				elif classname == "solarpanel":
+					node = self.getSolarPanel(nameid, e)
+				elif classname == "battery":
+					node = self.getBattery(nameid, e)
+				else:
+					msg = f"HomeAssistantAPI.getNetwork : Unknown classname '{classname}'"
+					self.logger.critical(msg)
+					raise ConfigurationException(msg)
+				self.network.addNode(node)
+			except ConfigurationException as e:
+				msg = f"Impossible to load {classname}({nameid}) due to "+str(e)
+				self.logger.error(msg)
+				self.warningMessages.append(msg)
 
 	def getSwitch(self, nameid, nodeConf):
 		"""
@@ -172,11 +192,11 @@ class HomeStateUpdater:
 		# self.logger.info(node)
 		return node
 
-	def getNetwork(self): # -> OpenHEMSNetwork:
+	def getNetwork(self, logger): # -> OpenHEMSNetwork:
 		"""
 		Explore the home device network available with Home-Assistant.
 		"""
-		self.network = OpenHEMSNetwork(self)
+		self.network = OpenHEMSNetwork(self, logger)
 		self.initNetwork()
 		self._getNetwork(self.conf.get("network.nodes"))
 		self.network.print(self.logger.info)
@@ -204,11 +224,18 @@ class OpenHEMSNetwork:
 			printer("  - "+str(elem))
 		printer(")")
 
-	def __init__(self, networkUpdater: HomeStateUpdater):
+	def __init__(self, networkUpdater: HomeStateUpdater, logger):
 		self.networkUpdater = networkUpdater
 		self.nodes = []
 		self.notificationManager = NotificationManager(self.networkUpdater)
 		self._elemsCache = {}
+		self.logger = logger
+
+	def getWarningMessages(self):
+		"""
+		Return a list of important problems during initializing Network.
+		"""
+		return self.networkUpdater.warningMessages
 
 	def getSchedule(self):
 		"""
@@ -238,7 +265,7 @@ class OpenHEMSNetwork:
 		for elem in self.getAll("inout"):
 			p = elem.getCurrentPower()
 			if isinstance(p, str):
-				logger.critical("power as string : '%s'", p)
+				self.logger.critical("power as string : '%s'", p)
 				os._exit(1)
 			globalPower += p
 		return globalPower
@@ -264,7 +291,7 @@ class OpenHEMSNetwork:
 			elif filterId=="":
 				out = self.nodes
 			else:
-				logger.error("Network.getAll() : unknown filterId '%s'",
+				self.logger.error("Network.getAll() : unknown filterId '%s'",
 					 filterId)
 				out = None
 			self._elemsCache[filterId] = out
@@ -353,14 +380,14 @@ class OpenHEMSNetwork:
 		"""
 		Switch of all connected devices.
 		"""
-		logger.info("Network.switchOffAll()")
+		self.logger.info("Network.switchOffAll()")
 		# self.print(logger.info)
 		# powerMargin = self.getCurrentPowerConsumption()
 		# self.print(logger.info)
 		ok = True
 		for elem in self.getAll("out"):
 			if elem.isSwitchable and elem.switchOn(False):
-				logger.warning("Fail to switch off '%s'",elem.id)
+				self.logger.warning("Fail to switch off '%s'",elem.id)
 				ok = False
 		return ok
 
@@ -400,5 +427,5 @@ class OpenHEMSNetwork:
 			offpeakhours = elem.getContract().getOffPeakHoursRanges()
 			nb += 1
 		if nb==0:
-			logger.warning("No PublicPowerGrid on the network.")
+			self.logger.warning("No PublicPowerGrid on the network.")
 		return offpeakhours

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.5 - 2024-12-10
+### Improvement
+- ADD IHM for editing YAML configuration
+- ADD resilience on error: Start anyway Web server and display errors and configuration screen to fix them.
+- UPDATE documentation
+- ADD some translation system.
+- MOD configuration : Create localization "header" for place/hours/language.
+
 ## 0.1.4 - 2024-11-18
 ### Improvement
 - ADD Auto-génération of Emhass yaml configuration => Avoid problems

@@ -4,6 +4,10 @@ http:
   trusted_proxies:
     - 127.0.0.1
     - 192.168.1.0/24
+  ip_ban_whitelist:
+    - 192.168.0.0/16
+    - 10.0.0.0/8
+    - 172.16.0.0/12
 
 lovelace:
   mode: storage

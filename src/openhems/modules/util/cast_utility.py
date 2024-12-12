@@ -24,7 +24,7 @@ class CastUtililty:
 			retValue = value
 		elif isinstance(value, str):
 			if value=="unavailable":
-				raise CastException("WARNING : Unknown value for '"+value+"'", 0)
+				raise CastException("Unavailable value for '"+value+"'", 0)
 			retValue = int(value)
 		else:
 			raise CastException("Impossible cast to int: Undefined algorythm : '"+type(value)+"'", 0)

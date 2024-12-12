@@ -16,12 +16,13 @@ from pathlib import Path
 openhemsPath = Path(__file__).parents[1]
 sys.path.append(str(openhemsPath))
 # pylint: disable=wrong-import-position
-from openhems.modules.network.driver.home_assistant_api import HomeAssistantAPI
-from openhems.modules.network.driver.fake_network import FakeNetwork
+from openhems.modules.network.network_helper import OpenHEMSNetworkHelper
 from openhems.modules.web import OpenhemsHTTPServer
-from openhems.modules.util.configuration_manager import ConfigurationManager
+from openhems.modules.util import (
+	ConfigurationManager, ConfigurationException,
+	CastUtililty
+)
 from openhems.server import OpenHEMSServer
-
 class OpenHEMSApplication:
 	"""
 	This class is the main class to manage OpenHEMS as independant application.
@@ -72,40 +73,45 @@ class OpenHEMSApplication:
 
 	def __init__(self, yamlConfFilepath, *, port=0, logfilepath='', inDocker=False):
 		# Temporary logger
-		print("Load YAML configuration from '",yamlConfFilepath,"'")
 		self.logger = logging.getLogger(__name__)
 		configurator = ConfigurationManager(self.logger)
-		configurator.addYamlConfig(Path(yamlConfFilepath))
+		warnings = []
+		network = None
+		schedule = []
+		try:
+			print("Load YAML configuration from '",yamlConfFilepath,"'")
+			configurator.addYamlConfig(Path(yamlConfFilepath))
+		except ConfigurationException as e:
+			warnings.append(str(e))
 		loglevel = configurator.get("server.loglevel")
 		logformat = configurator.get("server.logformat")
 		logfile = logfilepath if logfilepath!='' else configurator.get("server.logfile")
 		self.setLogger(loglevel, logformat, logfile)
-		networkUpdater = None
-		networkSource = configurator.get("server.network")
-		if networkSource=="homeassistant":
-			self.logger.info("Network: HomeAssistantAPI")
-			networkUpdater = HomeAssistantAPI(configurator)
-		elif networkSource=="fake":
-			self.logger.info("Network: FakeNetwork")
-			networkUpdater = FakeNetwork(configurator)
-		else:
-			self.logger.critical("OpenHEMSServer() : Unknown network source type '%s'",
-				networkSource)
-			sys.exit(1)
-		network = networkUpdater.getNetwork()
-		self.server = OpenHEMSServer(self.logger, network, configurator)
+		self.server = None
+		try:
+			network = OpenHEMSNetworkHelper.getFromConfiguration(self.logger, configurator)
+			warnings = warnings + network.getWarningMessages()
+			schedule = network.getSchedule()
+			self.server = OpenHEMSServer(self.logger, network, configurator)
+		except ConfigurationException as e:
+			warnings.append(str(e))
+		for warning in warnings:
+			self.logger.error(warning)
 		port = port if port>0 else configurator.get("server.port")
+		port = CastUtililty.toTypeInt(port)
 		root = configurator.get("server.htmlRoot")
 		inDocker = inDocker or configurator.get("server.inDocker", "bool")
-		self.webserver = OpenhemsHTTPServer(self.logger,
-			network.getSchedule(), port, root, inDocker)
-		network.notify("Start OpenHEMS.")
+		self.webserver = OpenhemsHTTPServer(self.logger, schedule, warnings,
+			port=port, htmlRoot=root, inDocker=inDocker, configurator=configurator)
+		if network is not None:
+			network.notify("Start OpenHEMS.")
 
 	def runManagementServer(self):
 		"""
 		Run core server (Smart part) without the webserver part. 
 		"""
-		self.server.run()
+		if self.server is not None:
+			self.server.run()
 
 	def runWebServer(self):
 		"""

@@ -18,7 +18,7 @@ sys.path.append(str(ROOT_PATH / "src"))
 from openhems.modules.network.driver.fake_network import FakeNetwork
 from openhems.modules.util import (
 	NotificationManager, MessageHistory,
-	Time, HoursRanges,
+	HoursRanges,
 	CastUtililty,
 	CastException, ConfigurationManager
 )
@@ -56,6 +56,16 @@ class TestUtilModule(unittest.TestCase):
 		configurator.addYamlConfig(ROOT_PATH / 'config/openhems.yaml')
 		value = configurator.get("server.logfile")
 		self.assertEqual(value, 'openhems.log')
+
+		curFolder = Path(__file__).parents[0]
+		savedFile = curFolder / 'data/openhems_test_save.tmp.yaml'
+		if savedFile.exists():
+			savedFile.unlink()
+		configurator.save(savedFile)
+		referenceFile = curFolder / 'data/openhems_test_save.yaml'
+		with open(referenceFile, encoding="utf-8") as f1, \
+				open(savedFile, encoding="utf-8") as f2:
+			self.assertListEqual( list(f1), list(f2) )
 
 		# Test Invalid key
 		value = configurator.get("toto")
