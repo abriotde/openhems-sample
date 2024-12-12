@@ -1,13 +1,13 @@
 api:
-  url: http://192.168.1.202:8123/api
-  long_lived_token: ""
-  ssl_certificate: /etc/letsencrypt/live/xxx/cert.pem
+  url: "HTTP url for Home-Assistant API. usually it should be http://127.0.0.1:8123/api"
+  long_lived_token: "It's a Home-Assistant token (a long password) to generate on Home-Assistant web pagei : Home-Assistant => User profile / Security / long lived token / Create token."
+  ssl_certificate: "A file path to the SSL certificate. For the moment it's not corectly managed"
 localization:
   latitude: "The home lattitude (usefull for solar-panel and wether predictions)"
   longitude: "The home longitude (usefull for solar-panel and wether predictions)"
   altitude: "The home altitude (usefull for solar-panel)"
   timeZone: "Time-Zone : "Your TZ identifier in https://en.wikipedia.org/wiki/List_of_tz_database_time_zones#List"
-  language: "Language"
+  language: "Language abbreviation ('fr' for french, 'en' to english)"
 server:
   htmlRoot: "Root location of web server."
   inDocker: "True if OpenHEMS run in docker."
