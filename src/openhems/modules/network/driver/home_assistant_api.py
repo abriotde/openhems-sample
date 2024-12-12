@@ -4,13 +4,14 @@ This HomeStateUpdater is based on home-Assistant software.
 It access to this by the API using URL and long_lived_token
 """
 
-import os
 import time
 import requests
-from openhems.modules.network.network import HomeStateUpdater
+from openhems.modules.network.network import (
+	HomeStateUpdater, HomeStateUpdaterException
+)
 from openhems.modules.network.feeder import Feeder, SourceFeeder, ConstFeeder
 from openhems.modules.util.cast_utility import CastUtililty, CastException
-from openhems.modules.util.configuration_manager import ConfigurationManager
+from openhems.modules.util.configuration_manager import ConfigurationManager, ConfigurationException
 
 class HATypeExcetion(Exception):
 	"""
@@ -171,9 +172,10 @@ class HomeAssistantAPI(HomeStateUpdater):
 					# verify='/etc/letsencrypt/live/openproduct.freeboxos.fr/cert.pem'
 				)
 		except Exception as error:
-			self.logger.critical("Unable to access Home Assistance instance, check URL : %s", error)
+			msg = "Unable to access Home Assistance instance, check URL : %s"+str(error)
+			self.logger.error(msg)
 			self.logger.critical("HomeAssistantAPI.callAPI(%s, %s)", url, str(data))
-			os._exit(1)
+			raise HomeStateUpdaterException(msg) from error
 		errMsg = ""
 		errCodeMsg = {
 			500 : ("Unable to access Home Assistance due to error, "
@@ -193,12 +195,17 @@ class HomeAssistantAPI(HomeStateUpdater):
 			# overwise it's better to slow down to avoid useless
 			# infinite loop on errors.
 			self.sleepDurationOnerror = min(self.sleepDurationOnerror*2, 64)
-			errMsg = errMsg.format_map(locals())+" ("+url+", "+str(data)+")"
+			errMsg = errMsg.format_map(locals())+" ("+self.apiUrl+url+", "+str(data)+")"
 			self.logger.error(errMsg)
 			if url!="/services/notify/persistent_notification":
 				# To avoid infinite loop : It's url for notify()
 				self.notify(f"Error callAPI() : \
 					status_code={response.status_code} : {errMsg}")
+			if url=="/states":
+				raise ConfigurationException(
+					"Fail get states of Home-Assistant. "
+					"Check the Home-Assistant server is up and check 'Api' tab's parameters."
+				)
 		else:
 			if self.sleepDurationOnerror>2:
 				self.sleepDurationOnerror /= 2

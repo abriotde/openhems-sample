@@ -1,0 +1,7 @@
+htmlTitleDescriptions:
+  api: "Cette section est utilisé pour configurer l'access à l'API Home-Assistant. C'est très important de les remplir correctement."
+  localization: "Cette section contiens des informations sensibles. Nous vous suggérons d'y remplir des informations approximatives (Une précision de quelques kilomètres devraient sufire)."
+  server: "Ces informations concerne  la configuration du comportement du server OpenHEMS. Elles sont vraiment très techniques. Laissez les vides ou n'y touchez pas si vous ne savez pas quoi y mettre."
+  network: "Ici, vous configurez votre réseau. C'est très important que vous le mettiez a jour dès qu'il y a des modifications chez vous."
+  emhass: "Ces informations sont assez techniques. Vous devriez pouvoir les laisser auxvaleurs par défaut."
+  default: "Ces informations sont les configurations par defaut des appareils du réseau. Il n'y a pas vraiment de nécéssité a les remplir mais cela peut vous éviter de les mettre pour tous."

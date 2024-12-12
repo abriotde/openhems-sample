@@ -3,9 +3,17 @@ Usefull generic configuration manager.
 Let allow get configuration by key, init with a default value.
 """
 
+import os
 from pathlib import Path
+import datetime
+import shutil
+import traceback
 import yaml
+from yaml.scanner import ScannerError
 from openhems.modules.util.cast_utility import CastUtililty
+
+rootPath = Path(__file__).parents[4]
+DEFAULT_PATH = rootPath / "data/openhems_default.yaml"
 
 class ConfigurationException(Exception):
 	"""
@@ -27,15 +35,14 @@ class ConfigurationManager():
 	def __init__(self, logger, defaultPath=None):
 		# print("ConfigurationManager()")
 		self.logger = logger
-		if defaultPath  is None:
-			rootPath = Path(__file__).parents[4]
-			defaultPath = rootPath / "data/openhems_default.yaml"
-			# print("defaultPath:",defaultPath)
-		elif defaultPath is str:
-			defaultPath = Path(defaultPath)
 		self._conf = {}
 		self._cache = {}
-		self.addYamlConfig(defaultPath, True)
+		if defaultPath  is None:
+			self.defaultPath = DEFAULT_PATH
+		else:
+			self.defaultPath = defaultPath
+		self.addYamlConfig(self.defaultPath, True)
+		self.lastYamlConfFilepath = self.defaultPath
 
 	def _load(self, dictConfig, init=False, prekey=''):
 		"""
@@ -46,18 +53,27 @@ class ConfigurationManager():
 			# print("> ",key," => ", value)
 			self.add(key, value, init, prekey)
 
+	def getLastYamlConfFilepath(self):
+		"""
+		Return the last YAML configuration file path. We consder it as the "main".
+		"""
+		return self.lastYamlConfFilepath
+
 	def addYamlConfig(self, yamlConfig, init=False):
 		"""
 		Add configuration from yaml file path.
 		"""
 		# print("addYamlConfig(",yamlConfig,")")
-		if yamlConfig is str:
-			yamlConfig = Path(yamlConfig)
-		with yamlConfig.open('r', encoding="utf-8") as yamlfile:
-			self.logger.info("Load YAML configuration from '%s'", yamlConfig)
-			dictConfig = yaml.load(yamlfile, Loader=yaml.FullLoader)
-			self._load(dictConfig, init)
+		try:
+			dictConfig = self.getRawYamlConfig(yamlConfig)
+		except ScannerError as e:
+			msg = (f"Parsing error on '{yamlConfig}' impossible to load."
+				" Ignore it witch have big consequences on behaviour. "+str(e))
+			self.logger.error(msg)
+			raise ConfigurationException(msg) from e
+		self._load(dictConfig, init)
 		self._cache = {}
+		self.lastYamlConfFilepath = yamlConfig
 		# print(self._conf)
 
 	def add(self, key, value, init=False, prekey=''):
@@ -69,7 +85,7 @@ class ConfigurationManager():
 		else:
 			k = prekey+key
 			if not init and not k in self._conf:
-				msg = "key='"+k+"' is not valid."
+				msg = "key='"+k+"' is not valid in "+str(self._conf)+"."
 				self.logger.error(msg)
 				raise ConfigurationException(msg)
 			self.logger.debug("Configuration[%s] = %s", k, value)
@@ -83,13 +99,16 @@ class ConfigurationManager():
 		"""
 		if key in self._cache:
 			return self._cache[key]
-		keyStart = key+'.'
-		value = {}
-		l = len(keyStart)
-		for k, v in self._conf.items():
-			if k==key or k.startswith(keyStart):
-				newKey = k[l:]
-				value[newKey] = v
+		if key=="":
+			value = self._conf
+		else:
+			keyStart = key+'.'
+			value = {}
+			l = len(keyStart)
+			for k, v in self._conf.items():
+				if k==key or k.startswith(keyStart):
+					newKey = k[l:]
+					value[newKey] = v
 		self._cache[key] = value
 		return value
 
@@ -113,3 +132,99 @@ class ConfigurationManager():
 		elif expectedType is not None:
 			val = CastUtililty.toType(expectedType, val)
 		return val
+
+	def getRawYamlConfig(self, path=None):
+		"""
+		Function to get Raw (Configuration as dict of dict, instead of simple keys)
+		 YAML default configuration. 
+		"""
+		if path is None:
+			path = self.defaultPath
+		if path is str:
+			path = Path(path)
+		with path.open('r', encoding="utf-8") as yamlfile:
+			return yaml.load(yamlfile, Loader=yaml.FullLoader)
+
+	@staticmethod
+	def setYamlConfigKey(yamlConfig, keys, myValue):
+		"""
+		Set 
+		"""
+		print("setYamlConfigKey(",yamlConfig,", ",keys,", ",myValue,")")
+		elem = yamlConfig
+		l = len(keys)-1
+		for i,k in enumerate(keys):
+			if i==l:
+				elem[k] = myValue
+			else:
+				v = elem.get(k)
+				if v is None:
+					v = {}
+					elem[k] = v
+				elem = v
+		return yamlConfig
+
+	def retrieveYamlConfig(self):
+		"""
+		Retrieve what should be the YAML config to get that configuration.
+		Substract values to default Values from self.defaultPath.
+		"""
+		defaultConfig = self.getRawYamlConfig()
+		yamlConfig = {}
+		it = iter(defaultConfig.keys())
+		iterators = [it] # List of current dictionnary'iterators examined
+		# Iterate over a tree
+		keys = [] # List of current "path"
+		dicts = [defaultConfig] # List of current dictionnary examined
+		# NB: (If we lost dicts, we lost iterators)
+		while len(iterators)>0:
+			depth = len(iterators)-1
+			it = iterators[depth]
+			try:
+				key = next(it)
+				dictio = dicts[depth]
+				globalkey = ((".".join(keys))+"." if len(keys)>0 else  "") + key
+				value = dictio[key]
+				if isinstance(value, dict):
+					keys.append(key)
+					iterators.append(iter(value.keys()))
+					dicts.append(value)
+				else:
+					myValue = self.get(globalkey)
+					# print("globalkey:", globalkey, "; DefaultValue:",
+					# 	value, "; MyValue:", myValue)
+					if myValue!=value:
+						keys.append(key)
+						yamlConfig = self.setYamlConfigKey(yamlConfig, keys, myValue)
+						keys.pop()
+			except StopIteration:
+				iterators.pop()
+				if len(keys)>0:
+					keys.pop()
+				dicts.pop()
+		# print("Config: ", yamlConfig)
+		return yamlConfig
+
+	def save(self, yamlConfFilepath):
+		"""
+		Save the current configuration in a Yaml file.
+		"""
+		dictValues = self.retrieveYamlConfig()
+		if dictValues is None:
+			return
+		now = datetime.datetime.now()
+		if isinstance(yamlConfFilepath, str):
+			yamlConfFilepath = Path(yamlConfFilepath)
+		if yamlConfFilepath.exists():
+			backupFile = str(yamlConfFilepath) + ("."+now.strftime("%Y%m%d%H%M%S"))
+			os.rename(yamlConfFilepath, backupFile)
+		try:
+			with open(yamlConfFilepath, 'w', encoding="utf-8") as outfile:
+				yaml.dump(dictValues, outfile, default_flow_style=False)
+		except (OSError, yaml.YAMLError):
+			self.logger.error(
+				"Fail write new version YAML configuration, backup is of '%s'",
+				backupFile
+			)
+			self.logger.error(traceback.format_exc())
+			shutil.copyfile(backupFile, yamlConfFilepath)

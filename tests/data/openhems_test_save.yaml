@@ -1,0 +1,19 @@
+api:
+  long_lived_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJmOTM4ZTFmY2FjNTA0MWEyYWZkYjEyOGYyYTJlNGNmYiIsImlhdCI6MTcyNjU2NTU1NiwiZXhwIjoyMDQxOTI1NTU2fQ.3DdEXGsM3cg5NgMUKj2k5FsEG07p2AkRF_Ad-CljSTQ
+  ssl_certificate: /etc/letsencrypt/live/openproduct.freeboxos.fr/cert.pem
+network:
+  nodes:
+  - class: PublicPowerGrid
+    contract:
+      class: RTETempoContract
+      color: sensor.rte_tempo_couleur_actuelle
+    currentPower: sensor.lixee_zlinky_tic_puissance_apparente
+    id: linky
+    maxPower: 10000
+    minPower: 0
+    powerMargin: 1000
+  - class: switch
+    currentPower: sensor.tz3000_2putqrmw_ts011f_puissance_2
+    id: voiture
+    isOn: switch.tz3000_2putqrmw_ts011f_commutateur_2
+    maxPower: 2000

@@ -1,0 +1,7 @@
+htmlTitleDescriptions:
+  api: "This section is used to configure access to Home-Assistant API. It's is very important to feel-in it correctly."
+  localization: "This section contains sensitive informations. We suggest you to set apprioximative informations (Few miles margin should be enough)."
+  server: "This informations are very technical. Let it empty if you don't know what to set. Default should be good enough for most."
+  network: "Here you set your network. This is very important you  update it when you have new devices."
+  emhass: "This informations are quite technical."
+  default: "This informations are for default configuration of network nodes. Ther is no need to fill it. But maybe you think it's easier to feel it here for all."

@@ -152,10 +152,10 @@ class EmhassAdapter:
 		if url.endswith("/api"):
 			url = url[:-3]
 		token = configuration.get("api.long_lived_token")
-		tz = configuration.get("timeZone")
-		latitude = configuration.get("latitude")
-		longitude = configuration.get("longitude")
-		altitude = configuration.get("altitude")
+		tz = configuration.get("localization.timeZone")
+		latitude = configuration.get("localization.latitude")
+		longitude = configuration.get("localization.longitude")
+		altitude = configuration.get("localization.altitude")
 		with emhassSecretsPath.open('w', encoding="utf-8") as emhassSecretsFile:
 			logger.info("Write EMHASS secret configuration on '%s'", emhassSecretsPath)
 			emhassSecretsFile.write(f"""

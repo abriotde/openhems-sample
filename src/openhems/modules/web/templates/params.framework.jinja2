@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>OpenHEMS</title>
+	<link rel="stylesheet" href="https://code.jquery.com/ui/1.14.1/themes/base/jquery-ui.css">
+	<link rel="stylesheet" href="{{request.static_url('openhems.modules.web:../../../../img/openhems.css')}}">
+	<script src="https://code.jquery.com/jquery-3.7.1.js"></script>
+	<script src="https://code.jquery.com/ui/1.14.1/jquery-ui.js"></script>
+	<link rel="stylesheet" href="//code.jquery.com/mobile/1.5.0-alpha.1/jquery.mobile-1.5.0-alpha.1.min.css">
+	<script src="//code.jquery.com/mobile/1.5.0-alpha.1/jquery.mobile-1.5.0-alpha.1.min.js"></script>
+	<script src="{{request.static_url('openhems.modules.web:../../../../img/params.js')}}"></script>
+</head>
+<body>
+<nav class="menu">
+  <ul>
+    <li><a href="/">Devices program</a></li>
+    <li><a href="https://github.com/abriotde/openhems-sample/tree/main">More</a></li>
+  </ul>
+</nav>
+<div class="page">
+	<h1>Parameters</h1>
+	<div id="warningBox" class="alert"></div>
+	<div><img id="waitImg" src="{{request.static_url('openhems.modules.web:../../../../img/wait.gif')}}" style="display:none" alt="Wait"></img><div>
+	<div>VPN is <b id="vpnStatus">{{ vpn }}</b>.<button id="vpnButton"></button></div>
+
+	<form name="yamlParamsForm" action="/params" method="POST" onsubmit="return setNetwork()">
+	<div id="yamlParams">
+		{%YAML_PARAMS%}
+	</div>
+	<input id="submitYamlParams" type="submit" value="Submit" src="{{request.static_url('openhems.modules.web:../../../../img/correct_32.ico')}}">
+	</form>
+</div>
+<div id="addNodePopup" style="visibility: hidden;" class="">
+	<div id="newnode-class">
+	</div>
+	<div id="newnode-class-form">
+	</div>
+
+	<button type="button" data-theme="b" onclick="hideAddNodePopup()">Cancel</button>
+	<button type="button" data-theme="b" onclick="addNode()">Add</button>
+</div>
+<script>
+vpn = {{ vpn|tojson }};
+availableNodes = {{ availableNodes|tojson }};
+URL_IMG_DELETE = "{{request.static_url('openhems.modules.web:../../../../img/delete-20px.png')}}";
+$( function() {
+	$( "#yamlParams" ).tabs();
+	// $("#addNodePopup").popup();
+	warningMessages = {{ warningMessages|tojson }};
+	displayWarningMessages(warningMessages);
+	getNetwork();
+	displayNetwork();
+	connectedVPN(vpn=="up");
+} );
+</script>
+</body>
+</html>
