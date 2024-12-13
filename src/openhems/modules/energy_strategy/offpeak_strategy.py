@@ -65,9 +65,9 @@ class OffPeakStrategy(EnergyStrategy):
 		"""
 		self.logger.info("OffPeakStrategy.switchOnMax()")
 		done = 0
-		powerMargin = self.network.getMarginPowerOn()
+		marginPower = self.network.getMarginPowerOn()
 		doSwitchOn = True
-		if powerMargin<0:
+		if marginPower<0:
 			return True
 		for elem in self.network.getAll("out"):
 			if self.switchOn(elem, cycleDuration, doSwitchOn):

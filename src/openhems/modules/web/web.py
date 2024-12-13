@@ -49,6 +49,68 @@ def panel(request):
 	"""
 	return { "nodes": OPENHEMS_CONTEXT.schedule }
 
+def getNode(node, model):
+	"""
+	Implement on server side configuration checker.
+	Something like populateNode() on params.js
+	"""
+	newNode = None
+	if isinstance(model, dict):
+		if not isinstance(node, dict):
+			raise ConfigurationException(f"Expecting a dict {node}")
+		newNode = {}
+		className = node.get("class")
+		if className is not None: # Check the className exists as key in the model (We have a choice)
+			model = model.get(className.lower())
+			if model is None:
+				raise ConfigurationException(f"Unexpected class '{className}'")
+			newNode["class"] = className
+		for k,smodel in model.items(): # Check we have all the field of the model
+			snode = node.get(k)
+			if snode is None:
+				raise ConfigurationException(f"No field '{k}' in {node}")
+			newNode[k] = getNode(snode, smodel)
+	elif isinstance(model, list):
+		if isinstance(node, str):
+			newValue = node.replace("'",'"')
+			try:
+				newValue = json.loads(newValue)
+				if not isinstance(newValue, list):
+					raise ConfigurationException(f"Expecting a list {newValue}")
+				if len(model)>0:
+					newNode = []
+					smodel = model[0]
+					for snode in newValue:
+						newNode.append(getNode(snode, smodel))
+				else:
+					newNode = newValue
+			except ValueError as e:
+				raise ConfigurationException(f"ValueError parsing '{node}''") from e
+	else: # None, Str, Int... (!!! Maybe is it a Home-Assistant ident)
+		newNode = node
+	return newNode
+
+def updateConfigurator(fields):
+	"""
+	Update configurator with form fields	
+	"""
+	configurator = ConfigurationManager(OPENHEMS_CONTEXT.logger)
+	configurator.addYamlConfig(Path(OPENHEMS_CONTEXT.yamlConfFilepath))
+	change = False
+	for key, newValue in fields.items():
+		currentValue = configurator.get(key)
+		if isinstance(currentValue, list) and isinstance(newValue, str) \
+				 and key == "network.nodes":
+			model = [configurator.get("default.node", deepSearch=True)]
+			newValue = getNode(newValue, model)
+		else:
+			currentValue = str(currentValue)
+		if currentValue!=newValue:
+			print(currentValue, type(currentValue), " != ", newValue, type(newValue), " for key = ", key)
+			configurator.add(key, newValue)
+			change = True
+	return change, configurator
+
 @view_config(
 	route_name='params',
 	renderer='templates/params.jinja2'
@@ -57,36 +119,17 @@ def params(request):
 	"""
 	Web-page get all configurables params for params page and there value.
 	"""
-	configurator = ConfigurationManager(OPENHEMS_CONTEXT.logger)
-	configurator.addYamlConfig(Path(OPENHEMS_CONTEXT.yamlConfFilepath))
-	change = False
-	for key, newValue in request.params.items():
-		currentValue = configurator.get(key)
-		if isinstance(currentValue, list):
-			if isinstance(newValue, str):
-				newValue = newValue.replace("'",'"')
-				try:
-					newValue = json.loads(newValue)
-				except ValueError:
-					OPENHEMS_CONTEXT.logger.error(
-						"Fail load list '%s' for key '%s'", newValue, key
-					)
-		else:
-			currentValue = str(currentValue)
-		if currentValue!=newValue:
-			print(currentValue, type(currentValue), " != ", newValue, type(newValue), " for key = ", key)
-			try:
-				configurator.add(key, newValue)
-				change = True
-			except ConfigurationException as e:
-				# NB : The real value can be None...
-				OPENHEMS_CONTEXT.logger.warning(
-					"/params : Unexpected key %s' with config '%s'",
-					key, OPENHEMS_CONTEXT.yamlConfFilepath
-				)
-				raise exception_response(400) from e # HTTPBadRequest
-	if change:
-		configurator.save(OPENHEMS_CONTEXT.yamlConfFilepath)
+	try:
+		change, configurator = updateConfigurator(request.params)
+		if change:
+			configurator.save(OPENHEMS_CONTEXT.yamlConfFilepath)
+	except ConfigurationException as e:
+		# NB : The real value can be None...
+		OPENHEMS_CONTEXT.logger.warning(
+			"/params : Unexpected error parsing parameters : ",
+			e.message
+		)
+		raise exception_response(400) from e # HTTPBadRequest
 
 	# Display current configuration. Redo all for safety
 	configurator = ConfigurationManager(OPENHEMS_CONTEXT.logger)

@@ -48,10 +48,11 @@ class ConfigurationManager():
 		"""
 		Add configuration from recursive dictionary.
 		"""
-		# print("_load(",dictConfig,")")
-		for key, value in dictConfig.items():
-			# print("> ",key," => ", value)
-			self.add(key, value, init, prekey)
+		if dictConfig is not None:
+			# print("_load(",dictConfig,")")
+			for key, value in dictConfig.items():
+				# print("> ",key," => ", value)
+				self.add(key, value, init, prekey)
 
 	def getLastYamlConfFilepath(self):
 		"""
@@ -71,7 +72,8 @@ class ConfigurationManager():
 				" Ignore it witch have big consequences on behaviour. "+str(e))
 			self.logger.error(msg)
 			raise ConfigurationException(msg) from e
-		self._load(dictConfig, init)
+		if dictConfig is not None:
+			self._load(dictConfig, init)
 		self._cache = {}
 		self.lastYamlConfFilepath = yamlConfig
 		# print(self._conf)

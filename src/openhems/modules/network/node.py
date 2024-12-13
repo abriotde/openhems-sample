@@ -209,7 +209,7 @@ class PublicPowerGrid(InOutNode):
 
 	def __str__(self):
 		return (f"PublicPowerGrid({self.currentPower}, maxPower={self.maxPower},"
-			f" minPower={self.minPower}, powerMargin={self.marginPower}, contract={self.contract})")
+			f" minPower={self.minPower}, marginPower={self.marginPower}, contract={self.contract})")
 
 	def getContract(self):
 		"""
@@ -287,7 +287,7 @@ class Battery(InOutNode):
 	def __str__(self):
 		return (f"Battery(capacity={self.capacity}, currentPower={self.currentPower},"
 			f" maxPowerIn={self.maxPower}, maxPowerOut={self.minPower},"
-			f" powerMargin={self.marginPower}, level={self.currentLevel},"
+			f" marginPower={self.marginPower}, level={self.currentLevel},"
 			f" lowLevel={self.lowLevel}, hightLevel={self.hightLevel})")
 
 # class CarCharger(Switch):
