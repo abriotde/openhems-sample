@@ -1,0 +1,5 @@
+web:
+  description: HTTP Web UI for OpenHEMS
+core:
+  description: OpenHEMS Core
+
