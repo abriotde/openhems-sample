@@ -145,7 +145,7 @@ def main():
 		help='File path to YAML configuration file.')
 	parser.add_argument('-p', '--port', type=int, default=0,
 		help='HTTP web server port.')
-	parser.add_argument('-d', '--docker', type=bool, default=False,
+	parser.add_argument('-d', '--docker', default=False, action='store_true',
 		help="""If this option is set, run as it run on docker container.
 			If not set, consider it is not in docker
 			except if configuration key server.inDocker = True """)
