@@ -16,8 +16,8 @@ from pyramid.config import Configurator
 from pyramid.httpexceptions import exception_response
 # from pyramid.response import Response
 from pyramid.view import view_config
-from openhems.modules.util.configuration_manager import (
-	ConfigurationManager, ConfigurationException
+from openhems.modules.util import (
+	ConfigurationManager, ConfigurationException, CastUtililty, CastException
 )
 from .driver_vpn import VpnDriverWireguard, VpnDriverIncronClient
 # from .schedule import OpenHEMSSchedule
@@ -49,11 +49,13 @@ def panel(request):
 	"""
 	return { "nodes": OPENHEMS_CONTEXT.schedule }
 
+# pytlint: disable=too-many-branches
 def getNode(node, model):
 	"""
 	Implement on server side configuration checker.
 	Something like populateNode() on params.js
 	"""
+	OPENHEMS_CONTEXT.logger.info(f"getNode({node}, {model})")
 	newNode = None
 	if isinstance(model, dict):
 		if not isinstance(node, dict):
@@ -71,21 +73,18 @@ def getNode(node, model):
 				raise ConfigurationException(f"No field '{k}' in {node}")
 			newNode[k] = getNode(snode, smodel)
 	elif isinstance(model, list):
-		if isinstance(node, str):
-			newValue = node.replace("'",'"')
+		if not isinstance(node, list):
 			try:
-				newValue = json.loads(newValue)
-				if not isinstance(newValue, list):
-					raise ConfigurationException(f"Expecting a list {newValue}")
-				if len(model)>0:
-					newNode = []
-					smodel = model[0]
-					for snode in newValue:
-						newNode.append(getNode(snode, smodel))
-				else:
-					newNode = newValue
-			except ValueError as e:
-				raise ConfigurationException(f"ValueError parsing '{node}''") from e
+				node = CastUtililty.toTypeList(node)
+			except CastException as e:
+				raise ConfigurationException(f"Expecting a list {node}") from e
+		if len(model)>0:
+			newNode = []
+			smodel = model[0]
+			for snode in node:
+				newNode.append(getNode(snode, smodel))
+		else:
+			newNode = node
 	else: # None, Str, Int... (!!! Maybe is it a Home-Assistant ident)
 		newNode = node
 	return newNode
@@ -101,7 +100,8 @@ def updateConfigurator(fields):
 		currentValue = configurator.get(key)
 		if isinstance(currentValue, list) and isinstance(newValue, str) \
 				 and key == "network.nodes":
-			model = [configurator.get("default.node", deepSearch=True)]
+			val = configurator.get("default.node", deepSearch=True)
+			model = [ConfigurationManager.toTree(val)]
 			newValue = getNode(newValue, model)
 		else:
 			currentValue = str(currentValue)
@@ -126,7 +126,7 @@ def params(request):
 	except ConfigurationException as e:
 		# NB : The real value can be None...
 		OPENHEMS_CONTEXT.logger.warning(
-			"/params : Unexpected error parsing parameters : ",
+			"/params : Unexpected error parsing parameters : %s",
 			e.message
 		)
 		raise exception_response(400) from e # HTTPBadRequest

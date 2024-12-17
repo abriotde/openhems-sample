@@ -71,6 +71,15 @@ class TestUtilModule(unittest.TestCase):
 		value = configurator.get("toto")
 		self.assertIsNone(value)
 
+		# Test ConfigurationManager.toTree()
+		conf = {
+			"key0.toto":"alpha",
+			"key0.key1":123,
+			"al":[1,2,3]
+		}
+		newDict = ConfigurationManager.toTree(conf)
+		self.assertEqual("{'al': [1, 2, 3], 'key0': {'key1': 123, 'toto': 'alpha'}}",str(newDict))
+
 	def test_castUtility(self):
 		"""
 		Test Cast

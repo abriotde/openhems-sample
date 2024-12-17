@@ -47,7 +47,7 @@ class GenericContract:
 		keys = (dictConf, configuration, "generic")
 		peakPrice = GenericContract.get("peakPrice", keys, "float")
 		offpeakPrice = GenericContract.get("offpeakPrice", keys, "float")
-		offpeakHoursRanges = GenericContract.get("offpeakHoursRanges", keys)
+		offpeakHoursRanges = GenericContract.get("offpeakHoursRanges", keys, "list")
 		return (peakPrice, offpeakPrice, offpeakHoursRanges)
 
 	def getOffPeakPrice(self):

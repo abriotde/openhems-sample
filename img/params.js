@@ -91,6 +91,7 @@ function deleteNode(index) {
 	network = network2;
 }
 function getElement(index, attr, node, level=0) {
+	// console.log("getElement(",index,", ",attr,", ",node,", ",level,")")
 	var currentElement = document.createElement("div");
 	if (level>0) {
 		currentElement.classList.add("col-75");
@@ -289,7 +290,12 @@ function hideAddNodePopup() {
 	popup.classList.remove("show");
 	popup.style.visibility = "hidden";
 }
+var defaultId = 0;
 function displayNode(node) {
+	if (node.id===undefined) {
+		node.id = "id"+defaultId;
+		defaultId+=1;
+	}
 	currentElement = getElement("node", node.id, node);
 	document.getElementById("nodes").appendChild(currentElement);
 }

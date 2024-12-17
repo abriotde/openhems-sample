@@ -2,6 +2,8 @@
 Usefull function for standard usages
 """
 
+import json
+
 class CastException(Exception):
 	"""
 	Custom Home-Assitant excepton to be captured.
@@ -76,6 +78,26 @@ class CastUtililty:
 		return retValue
 
 	@staticmethod
+	def toTypeList(value):
+		"""
+		Convert to type list, raise CastException if it's impossible
+		"""
+		retValue = None
+		if isinstance(value, list):
+			retValue = value
+		elif isinstance(value, str):
+			if value[0] == "[":
+				try:
+					retValue = json.loads(value)
+				except ValueError:
+					retValue = [value]
+			else:
+				raise CastException("Incorect string value for  float: '"+value+"'", 0)
+		else:
+			raise CastException("Impossible cast to list: Undefined algorythm : '"+type(value)+"'", 0)
+		return retValue
+
+	@staticmethod
 	def toType(destType, value):
 		"""
 		With Home-Assitant API we get all as string.
@@ -93,6 +115,8 @@ class CastUtililty:
 			retValue = CastUtililty.toTypeStr(value)
 		elif destType=="float":
 			retValue = CastUtililty.toTypeFloat(value)
+		elif destType=="list":
+			retValue = CastUtililty.toTypeList(value)
 		else:
 			raise CastException(".toType("+str(destType)+","+str(value)+") : Unknwon type", 0)
 		return retValue

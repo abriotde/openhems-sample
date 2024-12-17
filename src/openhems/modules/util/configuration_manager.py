@@ -95,26 +95,58 @@ class ConfigurationManager():
 			self._conf[k] = value
 		self._cache = {}
 
-	def _getDict(self, key):
+	@staticmethod
+	def toTree(aDict):
+		"""
+		Convert a flat dict {"key0.key1": "val"} to a tree dict (with sub-dict : {"key0":{"key1":"val"}}
+		"""
+		sortedList = sorted(aDict.items())
+		retValue = {}
+		prevKeys = []
+		prevDicts = [retValue]
+		for longKey, myValue in (sortedList):
+			myKeys = longKey.split(".")
+			for i,k in enumerate(myKeys):
+				if i>=len(prevKeys):
+					prevKeys.append(k)
+				elif prevKeys[i]!=k:
+					prevKeys[i] = k
+				mySDict = prevDicts[i].get(k, {})
+				if i+1>=len(prevDicts):
+					prevDicts.append(mySDict)
+				else:
+					prevDicts[i+1] = mySDict
+			i = len(myKeys)-1
+			value = myValue
+			for k in reversed(myKeys):
+				prevDicts[i][k] = value
+				value = prevDicts[i]
+				i -= 1
+		return retValue
+
+	def _getDict(self, key, asTree):
 		"""
 		Return a dict of all sub-keys.
 		"""
 		if key in self._cache:
-			return self._cache[key]
-		if key=="":
-			value = self._conf
+			value = self._cache[key]
 		else:
-			keyStart = key+'.'
-			value = {}
-			l = len(keyStart)
-			for k, v in self._conf.items():
-				if k==key or k.startswith(keyStart):
-					newKey = k[l:]
-					value[newKey] = v
-		self._cache[key] = value
+			if key=="":
+				value = self._conf
+			else:
+				keyStart = key+'.'
+				value = {}
+				l = len(keyStart)
+				for k, v in self._conf.items():
+					if k==key or k.startswith(keyStart):
+						newKey = k[l:]
+						value[newKey] = v
+			self._cache[key] = value
+		if asTree:
+			value = self.toTree(value)
 		return value
 
-	def get(self, key, expectedType=None, *, defaultValue=None, deepSearch=False):
+	def get(self, key, expectedType=None, *, defaultValue=None, deepSearch=False, asTree=False):
 		"""
 		Return value for this key.
 		Return None if the key is unknown.
@@ -124,7 +156,7 @@ class ConfigurationManager():
 		val = self._conf.get(key, defaultValue)
 		if val is None:
 			if deepSearch:
-				val = self._getDict(key)
+				val = self._getDict(key, asTree)
 				if len(val)==0:
 					val = None
 			else:
@@ -166,7 +198,7 @@ class ConfigurationManager():
 				elem = v
 		return yamlConfig
 
-	def retrieveYamlConfig(self):
+	def retrieveYamlConfig(self, full=False):
 		"""
 		Retrieve what should be the YAML config to get that configuration.
 		Substract values to default Values from self.defaultPath.
@@ -195,7 +227,7 @@ class ConfigurationManager():
 					myValue = self.get(globalkey)
 					# print("globalkey:", globalkey, "; DefaultValue:",
 					# 	value, "; MyValue:", myValue)
-					if myValue!=value:
+					if full or myValue!=value:
 						keys.append(key)
 						yamlConfig = self.setYamlConfigKey(yamlConfig, keys, myValue)
 						keys.pop()
