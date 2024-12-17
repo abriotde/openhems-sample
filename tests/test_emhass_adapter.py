@@ -45,7 +45,7 @@ class TestEmhassAdapter(unittest.TestCase):
 				# print("> ",timestamp.to_pydatetime(), " [",index,"] => ", val)
 				self.assertTrue(val is not None)
 
-	def tst_setDeferrables(self):
+	def test_setDeferrables(self):
 		"""
 		Test if we can use EmhassAdapter and change on live deferables
 		"""

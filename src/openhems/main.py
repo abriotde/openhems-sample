@@ -36,7 +36,7 @@ class OpenHEMSApplication:
 		now = datetime.now()
 		return 'openhems.'+now.strftime("%Y-%m-%d")+'.log'
 
-	def setLogger(self, loglevel, logformat, logfile):
+	def setLogger(self, loglevel, logformat, logfile, inDocker=False):
 		"""
 		Configure a logger for all the Application.
 		"""
@@ -50,16 +50,21 @@ class OpenHEMSApplication:
 			level=logging.CRITICAL
 		else: # if loglevel=="info":
 			level=logging.INFO
-		rotatingFileHandler = handlers.TimedRotatingFileHandler(filename=logfile,
-        	when='D',
-        	interval=1,
-        	backupCount=5)
-		rotatingFileHandler.rotation_filename = OpenHEMSApplication.filer
+		myHandlers = []
+		rotatingFileHandler = None
 		formatter = logging.Formatter(logformat)
-		rotatingFileHandler.setFormatter(formatter)
-		logging.basicConfig(level=level, format=logformat, handlers=[rotatingFileHandler])
+		if not inDocker:
+			rotatingFileHandler = handlers.TimedRotatingFileHandler(filename=logfile,
+	        	when='D',
+	        	interval=1,
+	        	backupCount=5)
+			rotatingFileHandler.rotation_filename = OpenHEMSApplication.filer
+			myHandlers.append(rotatingFileHandler)
+			rotatingFileHandler.setFormatter(formatter)
+		logging.basicConfig(level=level, format=logformat, handlers=myHandlers)
 		self.logger = logging.getLogger(__name__)
-		self.logger.addHandler(rotatingFileHandler)
+		if not inDocker:
+			self.logger.addHandler(rotatingFileHandler)
 		self.logger.addHandler(logging.StreamHandler())
 		# watched_file_handler = logging.handlers.WatchedFileHandler(logfile)
 		# self.logger.addHandler(watched_file_handler)
@@ -86,7 +91,7 @@ class OpenHEMSApplication:
 		loglevel = configurator.get("server.loglevel")
 		logformat = configurator.get("server.logformat")
 		logfile = logfilepath if logfilepath!='' else configurator.get("server.logfile")
-		self.setLogger(loglevel, logformat, logfile)
+		self.setLogger(loglevel, logformat, logfile, inDocker)
 		self.server = None
 		try:
 			network = network_helper.getNetworkFromConfiguration(self.logger, configurator)
