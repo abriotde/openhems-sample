@@ -132,7 +132,7 @@ VOLUME /app/config
 # build OpenHEMS
 # RUN pip3 install --no-cache-dir --break-system-packages --no-deps --force-reinstall  .
 # ENTRYPOINT [ "python3", "-m", "openhems.main"]
-ENTRYPOINT ["/app/src/openhems/main.py", "-l", "/log/openhems.log"]
+ENTRYPOINT ["/app/src/openhems/main.py", "-l", "/log/openhems.log", "--docker"]
 
 # for running Unittest
 #COPY tests/ /app/tests

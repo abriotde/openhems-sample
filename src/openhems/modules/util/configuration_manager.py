@@ -90,8 +90,7 @@ class ConfigurationManager():
 				msg = "key='"+k+"' is not valid in "+str(self._conf)+"."
 				self.logger.error(msg)
 				raise ConfigurationException(msg)
-			self.logger.debug("Configuration[%s] = %s", k, value)
-			# print("Configuration[",k,"] = ", value)
+			# self.logger.debug("Configuration[%s] = %s", k, value)
 			self._conf[k] = value
 		self._cache = {}
 
