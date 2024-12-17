@@ -49,7 +49,7 @@ def panel(request):
 	"""
 	return { "nodes": OPENHEMS_CONTEXT.schedule }
 
-# pytlint: disable=too-many-branches
+# pylint: disable=too-many-branches
 def getNode(node, model):
 	"""
 	Implement on server side configuration checker.
