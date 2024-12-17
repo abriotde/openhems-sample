@@ -91,6 +91,7 @@ function deleteNode(index) {
 	network = network2;
 }
 function getElement(index, attr, node, level=0) {
+	// console.log("getElement(",index,", ",attr,", ",node,", ",level,")")
 	var currentElement = document.createElement("div");
 	if (level>0) {
 		currentElement.classList.add("col-75");
@@ -98,6 +99,9 @@ function getElement(index, attr, node, level=0) {
 	currentElement.classList.add(index);
 	attrId = attr.replaceAll("-","_")
 	var myindex = index+"-"+attrId;
+	if (node instanceof Array) {
+		node = JSON.stringify(node);
+	}
 	if (node instanceof Object) {
 		currentElement.id = myindex;
 		if (level==0) {
@@ -151,9 +155,7 @@ function newNodeAddObject(elementId, element, object) {
 		
 		var sElementId = elementId+"-"+caract;
 		if (defaultValue instanceof Array) {
-			console.log("defaultValue array =",defaultValue);
 			defaultValue = JSON.stringify(defaultValue);
-			console.log("defaultValue array => ",defaultValue);
 		}
 		if (defaultValue instanceof Object) {
 			elem.innerHTML = '<div class="col-25">'
@@ -217,25 +219,33 @@ function displaySelectElement(elementId, selectDiv, objectList) {
 	selectDiv.appendChild(form);
 }
 function populateNode(id, node, model, keyvalues) {
-	console.log("populateNode(",id,", ",node,", ",model,", ",keyvalues,")");
+	// console.log("populateNode(",id,", ",node,", ",model,", ",keyvalues,")");
 	model["id"] = "X";
 	for (caract in model) {
-		caractId = caract.replaceAll("-","_"); // By security as "-" is our key separator
-		modelValue = model[caractId];
-		if (modelValue instanceof Object) {
-			key = id+"-"+caractId;
-			snode = {};
-			value = populateNode(key, snode, modelValue, keyvalues);
+		var caractId = caract;
+		var modelValue = model[caractId];
+		if (modelValue instanceof Object && !(modelValue instanceof Array) ) {
+			var key = id+"-"+caractId;
+			var key2 = key+"-select";
+			if (key2 in keyvalues) {
+				var val = keyvalues[key2];
+				snode = {"class":val};
+				modelValue = modelValue[val];
+			} else {
+				snode = {};
+			}
+			var value = populateNode(key, snode, modelValue, keyvalues);
+			// console.log(id," for node[",caractId,"] = ", value);
 			node[caractId] = value;
 		} else {
-			key = id+"-"+caractId+"-value";
-			value = keyvalues[key];
+			var key = id+"-"+caractId+"-value";
+			var value = keyvalues[key];
 			if (value !== undefined) {
 				node[caractId] = value;
 			}
 		}
 	}
-	// console.log("populateNode() => ", node);
+	console.log("populateNode(",id,") => ", node);
 	return node;
 }
 function addNode(submitBtn) {
@@ -251,7 +261,7 @@ function addNode(submitBtn) {
 		select = selects[i]
 		keyvalues[select.id] = select.value;
 	}
-	console.log("addNode() : ",keyvalues, inputs, selects);
+	console.log("addNode() : ",keyvalues);
 	var id = "newnode"
 	var value = keyvalues[id+"-select"];
 	var node = {"class":value};
@@ -280,7 +290,12 @@ function hideAddNodePopup() {
 	popup.classList.remove("show");
 	popup.style.visibility = "hidden";
 }
+var defaultId = 0;
 function displayNode(node) {
+	if (node.id===undefined) {
+		node.id = "id"+defaultId;
+		defaultId+=1;
+	}
 	currentElement = getElement("node", node.id, node);
 	document.getElementById("nodes").appendChild(currentElement);
 }
@@ -292,14 +307,17 @@ function displayNetwork() {
 	}
 }
 function displayWarningMessages(warningMessages) {
+	warningBox = document.getElementById("warningBox");
 	if (warningMessages.length>0) {
-		warningBox = document.getElementById("warningBox");
-		warningBox.innerHTML = "There is problems in configurations witch compromisea good behaviour. Please fix those points in configuration, save it and restart OpenHEMS server."
+		warningBox.innerHTML = "There is problems in configurations witch compromise a good behaviour. Please fix those points in configuration, save it and restart OpenHEMS server."
 		for (m in warningMessages) {
 			msg = warningMessages[m];
 			elem = document.createElement("div");
 			elem.innerHTML = "• "+msg;
 			warningBox.appendChild(elem);
 		}
+		warningBox.style.display = "block";
+	} else {
+		warningBox.style.display = "none";
 	}
 }

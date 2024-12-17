@@ -16,7 +16,7 @@ from pathlib import Path
 openhemsPath = Path(__file__).parents[1]
 sys.path.append(str(openhemsPath))
 # pylint: disable=wrong-import-position
-from openhems.modules.network.network_helper import OpenHEMSNetworkHelper
+from openhems.modules.network import network_helper
 from openhems.modules.web import OpenhemsHTTPServer
 from openhems.modules.util import (
 	ConfigurationManager, ConfigurationException,
@@ -89,7 +89,7 @@ class OpenHEMSApplication:
 		self.setLogger(loglevel, logformat, logfile)
 		self.server = None
 		try:
-			network = OpenHEMSNetworkHelper.getFromConfiguration(self.logger, configurator)
+			network = network_helper.getNetworkFromConfiguration(self.logger, configurator)
 			warnings = warnings + network.getWarningMessages()
 			schedule = network.getSchedule()
 			self.server = OpenHEMSServer(self.logger, network, configurator)

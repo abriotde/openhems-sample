@@ -79,11 +79,11 @@ class HomeStateUpdater:
 		"""
 		self.tmp = "publicpowergrid"
 		currentPower = self._getFeeder(nodeConf, "currentPower", "int")
-		powerMargin = self._getFeeder(nodeConf, "powerMargin", "int")
+		marginPower = self._getFeeder(nodeConf, "marginPower", "int")
 		maxPower = self._getFeeder(nodeConf, "maxPower", "int")
 		minPower = self._getFeeder(nodeConf, "minPower", "int")
 		contract = nodeConf.get("contract")
-		node = PublicPowerGrid(currentPower, maxPower, minPower, powerMargin,
+		node = PublicPowerGrid(currentPower, maxPower, minPower, marginPower,
 			contract, self)
 		# self.logger.info(node)
 		return node
@@ -382,7 +382,7 @@ class OpenHEMSNetwork:
 		"""
 		self.logger.info("Network.switchOffAll()")
 		# self.print(logger.info)
-		# powerMargin = self.getCurrentPowerConsumption()
+		# marginPower = self.getCurrentPowerConsumption()
 		# self.print(logger.info)
 		ok = True
 		for elem in self.getAll("out"):

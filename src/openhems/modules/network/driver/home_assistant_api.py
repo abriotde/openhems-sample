@@ -5,6 +5,7 @@ It access to this by the API using URL and long_lived_token
 """
 
 import time
+import json
 import requests
 from openhems.modules.network.network import (
 	HomeStateUpdater, HomeStateUpdaterException
@@ -150,6 +151,7 @@ class HomeAssistantAPI(HomeStateUpdater):
 		}
 		self.callAPI("/services/notify/persistent_notification", data=data)
 
+	# pylint: disable=too-many-branches
 	def callAPI(self, url: str, data=None):
 		"""
 		Call Home-Assistant API.
@@ -159,7 +161,6 @@ class HomeAssistantAPI(HomeStateUpdater):
 			"content-type": "application/json",
 		}
 		response = None
-		# pylint: disable=broad-exception-caught
 		try:
 			if data is None:
 				response = requests.get(self.apiUrl+url,
@@ -171,7 +172,7 @@ class HomeAssistantAPI(HomeStateUpdater):
 					headers=headers, json=data, timeout=5
 					# verify='/etc/letsencrypt/live/openproduct.freeboxos.fr/cert.pem'
 				)
-		except Exception as error:
+		except requests.exceptions.HTTPError as error:
 			msg = "Unable to access Home Assistance instance, check URL : %s"+str(error)
 			self.logger.error(msg)
 			self.logger.critical("HomeAssistantAPI.callAPI(%s, %s)", url, str(data))
@@ -179,17 +180,17 @@ class HomeAssistantAPI(HomeStateUpdater):
 		errMsg = ""
 		errCodeMsg = {
 			500 : ("Unable to access Home Assistance due to error, "
-					"check devices are up ({url}, {data})"),
+					f"check devices are up ({url}, {data})"),
 			401 : ("Unable to access Home Assistance instance, "
-					"(url={url}, token={self.token}, {data})"
+					f"(url={url}, token={self.token}, {data})"
 					"If using addon, try setting url and token to 'empty'"),
-			404 : "Invalid URL {self.apiUrl}{url}"
+			404 : f"Invalid URL {self.apiUrl}{url}"
 		}
-		if response.status_code in errCodeMsg:
-			errMsg = errCodeMsg[response.status_code]
-		elif response.status_code > 299:
-			errMsg = "Request Get Error: {response.status_code}"
-		if errMsg!="":
+		if response.status_code!=200:
+			if response.status_code in errCodeMsg:
+				errMsg = errCodeMsg[response.status_code]
+			elif response.status_code > 299:
+				errMsg = "Request Get Error: {response.status_code}"
 			time.sleep(self.sleepDurationOnerror)
 			# Maybe is the server overload,
 			# overwise it's better to slow down to avoid useless
@@ -207,11 +208,10 @@ class HomeAssistantAPI(HomeStateUpdater):
 					"Check the Home-Assistant server is up and check 'Api' tab's parameters."
 				)
 		else:
-			if self.sleepDurationOnerror>2:
-				self.sleepDurationOnerror /= 2
+			self.sleepDurationOnerror = max(self.sleepDurationOnerror/2, 1)
 		try:  # Sometimes when there are connection problems we need to catch empty retrieved json
 			return response.json()
-		except Exception:
+		except json.decoder.JSONDecodeError:
 			if errMsg=="":
 				self.logger.error("Fail parse response '%s'",response)
 			return {}

@@ -78,7 +78,7 @@ class RTETempoContract(RTEContract):
 		for c in colors:
 			price = GenericContract.get("offpeakprice."+c, keys)
 			offpeakPrice[c] = price
-		offpeakHoursRanges = GenericContract.get("offpeakhoursranges", keys)
+		offpeakHoursRanges = GenericContract.get("offpeakhoursranges", keys, "list")
 		return RTETempoContract(colorFeeder, peakPrice, offpeakPrice, offpeakHoursRanges, networtUpdater)
 
 class RTEHeuresCreusesContract(RTEContract):
@@ -91,7 +91,7 @@ class RTEHeuresCreusesContract(RTEContract):
 		keys = (dictConf, configuration, "rteheurescreuses")
 		peakPrice = GenericContract.get("peakPrice", keys, "float")
 		offpeakPrice = GenericContract.get("offpeakPrice", keys, "float")
-		offpeakHoursRanges = GenericContract.get("offpeakHoursRanges", keys)
+		offpeakHoursRanges = GenericContract.get("offpeakHoursRanges", keys, "list")
 		return RTEHeuresCreusesContract(peakPrice, offpeakPrice, offpeakHoursRanges)
 
 class RTETarifBleuContract(RTEContract):

@@ -2,7 +2,7 @@
 Main and Generic classes to manage contracts
 """
 import logging
-from openhems.modules.util import ConfigurationException
+from openhems.modules.util import ConfigurationException, CastException
 from .rte_contract import (
 	RTETempoContract, RTEHeuresCreusesContract, RTETarifBleuContract
 )
@@ -25,18 +25,21 @@ class Contract:
 		if classname is None:
 			msg = "Missing mandatory 'class' atribute for contract."
 			raise ConfigurationException(msg)
-		classname = classname.lower()
-		contract = None
-		if classname.endswith("contract"):
-			classname  = classname[:-8]
-		if classname.startswith("rte"):
-			if classname=="rtetempo":
-				contract = RTETempoContract.fromdict(contractDict, genericConfiguration, networkUpdater)
-			elif classname=="rteheurescreuses":
-				contract = RTEHeuresCreusesContract.fromdict(contractDict, genericConfiguration)
-			elif classname=="rtetarifbleu":
-				contract = RTETarifBleuContract.fromdict(contractDict, genericConfiguration)
-		elif classname=="generic":
-			contract = GenericContract.fromdict(contractDict, genericConfiguration)
-		# Contract.logger.info("Contract: %s", contract)
-		return contract
+		try:
+			classname = classname.lower()
+			contract = None
+			if classname.endswith("contract"):
+				classname  = classname[:-8]
+			if classname.startswith("rte"):
+				if classname=="rtetempo":
+					contract = RTETempoContract.fromdict(contractDict, genericConfiguration, networkUpdater)
+				elif classname=="rteheurescreuses":
+					contract = RTEHeuresCreusesContract.fromdict(contractDict, genericConfiguration)
+				elif classname=="rtetarifbleu":
+					contract = RTETarifBleuContract.fromdict(contractDict, genericConfiguration)
+			elif classname=="generic":
+				contract = GenericContract.fromdict(contractDict, genericConfiguration)
+			# Contract.logger.info("Contract: %s", contract)
+			return contract
+		except CastException as e:
+			raise ConfigurationException(e.message) from e
