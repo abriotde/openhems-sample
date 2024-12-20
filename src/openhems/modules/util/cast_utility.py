@@ -27,7 +27,7 @@ class CastUtililty:
 		elif isinstance(value, str):
 			if value=="unavailable":
 				raise CastException("Unavailable value for '"+value+"'", 0)
-			retValue = int(value)
+			retValue = int(float(value)) # int("0.0") crash while float("0") don't...
 		else:
 			raise CastException("Impossible cast to int: Undefined algorythm : '"+type(value)+"'", 0)
 		return retValue

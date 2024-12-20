@@ -172,7 +172,7 @@ class HomeAssistantAPI(HomeStateUpdater):
 					headers=headers, json=data, timeout=5
 					# verify='/etc/letsencrypt/live/openproduct.freeboxos.fr/cert.pem'
 				)
-		except requests.exceptions.HTTPError as error:
+		except (requests.exceptions.HTTPError, requests.exceptions.ReadTimeout) as error:
 			msg = "Unable to access Home Assistance instance, check URL : %s"+str(error)
 			self.logger.error(msg)
 			self.logger.critical("HomeAssistantAPI.callAPI(%s, %s)", url, str(data))
