@@ -3,17 +3,23 @@ Super class for all EnergyStrategy modules
 """
 
 import logging
-# from openhems.modules.network.network import OpenHEMSNetwork
+from openhems.modules.network.network import OpenHEMSNetwork
+
 LOOP_DELAY_VIRTUAL = 0
 
 class EnergyStrategy:
 	"""
 	Super class for all EnergyStrategy modules
 	"""
-	def  __init__(self, logger=None):
+	def  __init__(self, strategyId:str, network:OpenHEMSNetwork, logger=None):
 		if logger is None:
 			logger = logging.getLogger(__name__)
 		self.logger = logger
+		self.strategyId = strategyId
+		self.network = network
+
+	def getNodes(self):
+		return self.network.getNodesForStrategy(self.strategyId)
 
 	# pylint: disable=unused-argument
 	def updateNetwork(self, cycleDuration):

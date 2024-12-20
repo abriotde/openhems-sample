@@ -7,30 +7,34 @@ This is in case we just base on "off-peak" range hours to control output.
 from datetime import datetime
 import time
 from openhems.modules.network.network import OpenHEMSNetwork
-from openhems.modules.util import ConfigurationException
+from openhems.modules.util import ConfigurationException, HoursRanges
 from .energy_strategy import EnergyStrategy, LOOP_DELAY_VIRTUAL
 
 # Time to wait in seconds before considering to be in offpeak range
 TIME_MARGIN_IN_S = 1
 
 # pylint: disable=broad-exception-raised
-class OffPeakStrategy(EnergyStrategy):
+class SwitchOffStrategy(EnergyStrategy):
 	"""
 	This is in case we just base on "off-peak" range hours to control output.
 	 Classic use-case is some grid contract (Like Tempo on EDF).
 	The strategy is to switch on electric devices only on "off-peak" hours
 	 with check to not exceed authorized max consumption
 	"""
-	offpeakHoursRanges = []
+	offHoursRanges = []
 	inOffpeakRange = False
 	rangeEnd = datetime.now()
 	network = None
 
-	def __init__(self, mylogger, network: OpenHEMSNetwork, strategyId:str):
-		super().__init__(strategyId, network, mylogger)
-		self.offpeakHoursRanges = self.network.getOffPeakHoursRanges()
-		self.logger.info("OffPeakStrategy(%s)", str(self.offpeakHoursRanges))
-		if not self.offpeakHoursRanges:
+	def __init__(self, mylogger, network: OpenHEMSNetwork, strategyId:str, 
+		     offHoursRanges, reverse=False):
+		super().__init__(strategyId, mylogger)
+		self.network = network
+		self.offHoursRanges = HoursRange(offHoursRanges)
+		if reverse:
+			self.offHoursRanges.getReverse()
+		self.logger.info("SwitchOffStrategy(%s)", str(self.offHoursRanges))
+		if not self.offHoursRanges:
 			msg = "OffPeak-strategy is useless without offpeak hours. Check your configuration."
 			self.logger.critical(msg)
 			raise ConfigurationException(msg)
@@ -41,8 +45,7 @@ class OffPeakStrategy(EnergyStrategy):
 		Check if nowDatetime (Default now) is in off-peak range (offpeakHoursRange)
 		 and set end time of this range
 		"""
-		self.offpeakHoursRanges = self.network.getOffPeakHoursRanges()
-		self.inOffpeakRange, self.rangeEnd = self.offpeakHoursRanges.checkRange(nowDatetime)
+		self.inOffpeakRange, self.rangeEnd = self.offHoursRanges.checkRange(nowDatetime)
 
 	def sleepUntillNextRange(self):
 		"""
@@ -56,7 +59,7 @@ class OffPeakStrategy(EnergyStrategy):
 			round((time2wait+TIME_MARGIN_IN_S)/60), str(self.rangeEnd))
 		time.sleep(time2wait+TIME_MARGIN_IN_S)
 
-	def switchOnMax(self, cycleDuration):
+	def switchOnAll(self, cycleDuration):
 		"""
 		Switch on nodes, but 
 		 - If there is no margin to switch on, do nothing.
@@ -75,7 +78,7 @@ class OffPeakStrategy(EnergyStrategy):
 				done += 1
 		return done == 0
 
-	def updateNetwork(self, cycleDuration):
+	def updateNetwork(self, cycleDuration:int, allowSleep:bool):
 		"""
 		Decide what to do during the cycle:
 		 IF off-peak : switch on all
@@ -83,13 +86,9 @@ class OffPeakStrategy(EnergyStrategy):
 		"""
 		if datetime.now()>self.rangeEnd:
 			self.checkRange()
-		if self.inOffpeakRange:
-			# We are in off-peak range hours : switch on all
-			self.switchOnMax(cycleDuration)
-		else: # Sleep untill end.
-			if self.network.switchOffAll():
-				if cycleDuration>LOOP_DELAY_VIRTUAL:
-					self.sleepUntillNextRange()
-					self.checkRange() # To update self.rangeEnd (and should change self.inOffpeakRange)
-			else:
-				print("Warning : Fail to swnitch off all. We will try again on next loop.")
+		if self.network.switchOffAll(self.inOffpeakRange):
+			if cycleDuration>LOOP_DELAY_VIRTUAL and allowSleep:
+				self.sleepUntillNextRange()
+				self.checkRange() # To update self.rangeEnd (and should change self.inOffpeakRange)
+		else:
+			print("Warning : Fail to swnitch off all. We will try again on next loop.")

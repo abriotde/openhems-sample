@@ -125,19 +125,28 @@ class OutNode(OpenHEMSNode):
 	"""
 	Electricity consumer (like washing-machine, water-heater).
 	"""
-	def __init__(self, nameId, currentPower, maxPower, isOnFeeder=None):
+	def __init__(self, nameId, strategyId, currentPower, maxPower, isOnFeeder=None):
 		super().__init__(currentPower, maxPower, isOnFeeder)
 		self.setId(nameId)
 		self.name = nameId
 		self.schedule = OpenHEMSSchedule(self.id, nameId)
+		self.strategyId = strategyId
 
 	def getSchedule(self):
 		"""
 		Return schedule
 		"""
 		return self.schedule
+
+	def getStrategyId(self):
+		"""
+		Return StrategyId
+		"""
+		return self.strategyId
+
 	def __str__(self):
-		return (f"OutNode(name={self.name}, currentPower={self.currentPower},"
+		return (f"OutNode(name={self.name}, strategy={strategyId},"
+			f" currentPower={self.currentPower},"
 			f"maxPower={self.maxPower}, isOn={self._isOn})")
 
 class InOutNode(OpenHEMSNode):
