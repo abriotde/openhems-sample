@@ -54,18 +54,18 @@ class OpenHEMSApplication:
 		rotatingFileHandler = None
 		formatter = logging.Formatter(logformat)
 		if not inDocker:
-			rotatingFileHandler = handlers.TimedRotatingFileHandler(filename=logfile,
+			fileHandler = handlers.TimedRotatingFileHandler(filename=logfile,
 	        	when='D',
 	        	interval=1,
 	        	backupCount=5)
-			rotatingFileHandler.rotation_filename = OpenHEMSApplication.filer
-			myHandlers.append(rotatingFileHandler)
-			rotatingFileHandler.setFormatter(formatter)
+			fileHandler.rotation_filename = OpenHEMSApplication.filer
+		else:
+			fileHandler = logging.StreamHandler(sys.stdout)
+		fileHandler.setFormatter(formatter)
+		myHandlers.append(fileHandler)
 		logging.basicConfig(level=level, format=logformat, handlers=myHandlers)
 		self.logger = logging.getLogger(__name__)
-		if not inDocker:
-			self.logger.addHandler(rotatingFileHandler)
-		self.logger.addHandler(logging.StreamHandler())
+		# self.logger.addHandler(rotatingFileHandler)
 		# watched_file_handler = logging.handlers.WatchedFileHandler(logfile)
 		# self.logger.addHandler(watched_file_handler)
 		return self.logger

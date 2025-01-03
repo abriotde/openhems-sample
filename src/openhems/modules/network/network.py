@@ -142,6 +142,7 @@ class OpenHEMSNetwork:
 		0 mean, we can't give back power to network grid.
 		"""
 		return self._sumNodesValues(filterId, "inout", (lambda x: x.getMinPower()))
+
 	def getMarginPower(self, filterId=None):
 		"""
 		Return margin power
@@ -158,11 +159,14 @@ class OpenHEMSNetwork:
 		marginPower = self.getMarginPower()
 		marginPowerOn = maxPower-marginPower-currentPower
 		if marginPowerOn<0: # Need to switch off some elements
+			self.logger.warning("Margin power On is negativ (%f): Need to wsitch off devices.", marginPowerOn)
 			while marginPowerOn<0:
 				for elem in self.getAll("out"):
 					if elem.isSwitchable() and elem.isOn():
 						power = elem.getCurrentPower()
+						self.info("Switch off '%s' due to missing power margin.", elem.id)
 						if elem.switchOn(False):
+							self.error("Fail switch off '%s' due to missing power margin.", elem.id)
 							marginPowerOn += power
 			return 0
 		return maxPower-(currentPower+marginPower)

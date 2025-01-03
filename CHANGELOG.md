@@ -1,5 +1,14 @@
 # Changelog
 
+
+## 0.1.6 - 2024-01-03
+### Improvement
+- MOD log for docker on stdout
+- MOD : some more log.
+
+### Fix
+- FIX cast_utility.toTypeInt("0.0") crash
+
 ## 0.1.5 - 2024-12-10
 ### Improvement
 - ADD IHM for editing YAML configuration
