@@ -51,7 +51,7 @@ class OpenHEMSApplication:
 		else: # if loglevel=="info":
 			level=logging.INFO
 		myHandlers = []
-		rotatingFileHandler = None
+		fileHandler = None
 		formatter = logging.Formatter(logformat)
 		if not inDocker:
 			fileHandler = handlers.TimedRotatingFileHandler(filename=logfile,
@@ -65,7 +65,7 @@ class OpenHEMSApplication:
 		myHandlers.append(fileHandler)
 		logging.basicConfig(level=level, format=logformat, handlers=myHandlers)
 		self.logger = logging.getLogger(__name__)
-		# self.logger.addHandler(rotatingFileHandler)
+		# self.logger.addHandler(fileHandler)
 		# watched_file_handler = logging.handlers.WatchedFileHandler(logfile)
 		# self.logger.addHandler(watched_file_handler)
 		return self.logger
