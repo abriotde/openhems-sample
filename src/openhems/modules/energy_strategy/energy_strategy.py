@@ -19,6 +19,9 @@ class EnergyStrategy:
 		self.network = network
 
 	def getNodes(self):
+		"""
+		Return nodes concerned by a defined strategy
+		"""
 		return self.network.getNodesForStrategy(self.strategyId)
 
 	# pylint: disable=unused-argument
