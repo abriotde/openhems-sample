@@ -28,9 +28,9 @@ class SolarBasedStrategy(OffPeakStrategy):
 	"""
 	Super class for all solar-based strategy
 	"""
-	def  __init__(self, network: OpenHEMSNetwork, geoposition:GeoPosition,
-			offpeakHoursRanges=None):
-		super().__init__(network, offpeakHoursRanges)
+	def  __init__(self, network: OpenHEMSNetwork, geoposition:GeoPosition):
+		logger = logging.getLogger("SolarBasedStrategy")
+		super().__init__(logger, network, "solarbased")
 		self._nightime = False
 		self.isDayTime()
 		self.timezone = datetime.datetime.now(datetime.timezone.utc)\
@@ -44,12 +44,11 @@ class SolarBasedStrategy(OffPeakStrategy):
 		self._sunrise = datetime.datetime.now() # TODO
 		self._sunset = datetime.datetime.now() # TODO
 
-	def updateNetwork(self, cycleDuration):
+	def updateNetwork(self, cycleDuration:int, allowSleep:bool, now=None):
 		"""
 		Update the OpenHEMSNetwork.
 		"""
-		logging.getLogger("SolarBasedStrategy")\
-			.error("SolarBasedStrategy.updateNetwork() : \
+		self.logger.error("SolarBasedStrategy.updateNetwork() : \
 				To implement in sub-class")
 
 	def getAutonomousRatio(self):
@@ -62,8 +61,8 @@ class SolarBasedStrategy(OffPeakStrategy):
 
 	def isDayTime(self):
 		"""
-			Return True if it's daytime, else return false if it's nighttime
-			usefull for solar production management
+		Return True if it's daytime, else return false if it's nighttime
+		usefull for solar production management
 		"""
 		now = datetime.datetime.now()
 		if self._nightime:

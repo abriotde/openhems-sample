@@ -11,10 +11,8 @@ class OffGridStrategy(SolarBasedStrategy):
 	Case off-grid: minimize battery solicitation
 	"""
 
-	# pylint: disable=unused-argument
-	# pylint: disable=unused-variable
 	def __init__(self, network: OpenHEMSNetwork, geoposition: GeoPosition, config):
-		super().__init__(network, geoposition, offpeakHoursRanges=[])
+		super().__init__(network, geoposition)
 		self.logger = logging.getLogger(__name__)
 		self.logger.info("OffGridStrategy()")
 		self.network = network
@@ -24,7 +22,9 @@ class OffGridStrategy(SolarBasedStrategy):
 		self.lowBatteryLevel = config.get("lowBattery", 20)
 		self.minBatteryLevel = config.get("minBattery", 5)
 
-	def updateNetwork(self, cycleDuration):
-		batteryLevel = self.network.getBatteryLevel()
-		solarProduction = self.network.getSolarProduction()
+	def updateNetwork(self, cycleDuration:int, allowSleep:bool, now=None):
+		del cycleDuration, allowSleep, now
+		# batteryLevel = self.network.getBatteryLevel()
+		# solarProduction = self.network.getSolarProduction()
+		# TODO
 		return True

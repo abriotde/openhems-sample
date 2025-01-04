@@ -7,7 +7,7 @@ It access to this by the API using URL and long_lived_token
 import time
 import json
 import requests
-from openhems.modules.network.network import (
+from openhems.modules.network import (
 	HomeStateUpdater, HomeStateUpdaterException
 )
 from openhems.modules.network.feeder import Feeder, SourceFeeder, ConstFeeder
@@ -39,7 +39,7 @@ class HomeAssistantAPI(HomeStateUpdater):
 		self.network = None
 		self.haElements = None
 
-	def initNetwork(self):
+	def initNetwork(self, network):
 		"""
 		Get all nodes according to Home-Assistants
 		"""
@@ -50,6 +50,8 @@ class HomeAssistantAPI(HomeStateUpdater):
 			entityId = e['entity_id']
 			self.haElements[entityId] = e
 			# print(entityId, e['state'], e['attributes'])
+		self.network = network
+		self._getNetwork(self.conf.get("network.nodes"))
 		# print("getHANodes() = ", self.haElements)
 
 	def getFeeder(self, value, expectedType=None, defaultValue=None) -> Feeder:

@@ -23,13 +23,13 @@ class FakeNetwork(HomeStateUpdater):
 #	def __init__(self, conf) -> None:
 #		super().__init__(conf)
 
-	# pylint: disable=unused-argument
 	def getFeeder(self, value, expectedType=None, defaultValue=None) -> Feeder:
 		"""
 		Return a feeder considering
 		 if the "key" can be a Home-Assistant element id.
 		 Otherwise, it consider it as constant.
 		"""
+		del expectedType
 		feeder = None
 		if isinstance(value, str):
 			value = value.strip().upper()

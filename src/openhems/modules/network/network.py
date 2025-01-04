@@ -4,15 +4,12 @@ It is used to know devices and to switch on/off them.
 """
 
 from typing import Final
-import logging
 import os
 import copy
-from openhems.modules.util.configuration_manager import ConfigurationManager, ConfigurationException
 from openhems.modules.util.notification_manager import NotificationManager
 from .node import (
 	OpenHEMSNode, InOutNode, OutNode, PublicPowerGrid, SolarPanel, Battery
 )
-from .feeder import Feeder, SourceFeeder
 from .homestate_updater import HomeStateUpdater
 
 POWER_MARGIN: Final[int] = 10 # Margin of power consumption for security
@@ -39,12 +36,20 @@ class OpenHEMSNetwork:
 			printer("  - "+str(elem))
 		printer(")")
 
-	def __init__(self, networkUpdater: HomeStateUpdater, logger):
-		self.networkUpdater = networkUpdater
+	def __init__(self, logger):
+		self.networkUpdater = None
 		self.nodes = []
 		self.notificationManager = NotificationManager(self.networkUpdater)
 		self._elemsCache = {}
 		self.logger = logger
+
+	def addNetworkUpdater(self, networkUpdater: HomeStateUpdater):
+		"""
+		Add a networkUpdater (HomeStateUpdater) with is required.
+		"""
+		networkUpdater.initNetwork(self)
+		self.networkUpdater = networkUpdater
+		self.print(self.logger.info)
 
 	def getWarningMessages(self):
 		"""
@@ -231,11 +236,13 @@ class OpenHEMSNetwork:
 		batteries = self.getAll("battery")
 		l = len(batteries)
 		if l<1:
-			return Battery(0, 0)
+			return Battery("fakeBattery", 0, 0)
 		if l==1:
 			return batteries[0]
 		# TODO
-		return copy.copy(batteries[0])
+		bat = copy.copy(batteries[0])
+		bat.setId(batteries[0].id + "_sum")
+		return bat
 
 	def getNodesForStrategy(self, strategyId):
 		"""

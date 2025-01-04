@@ -23,8 +23,9 @@ class OpenHEMSNode:
 		"""
 		self.id = haId.strip().replace(" ", "_")
 
-	def __init__(self, currentPower, maxPower, isOnFeeder=None):
+	def __init__(self, nameId, currentPower, maxPower, isOnFeeder=None):
 		self.id = ""
+		self.setId(nameId)
 		self.params = ""
 		self.network = None
 		self._isSwitchable = False
@@ -126,8 +127,7 @@ class OutNode(OpenHEMSNode):
 	Electricity consumer (like washing-machine, water-heater).
 	"""
 	def __init__(self, nameId, strategyId, currentPower, maxPower, isOnFeeder=None):
-		super().__init__(currentPower, maxPower, isOnFeeder)
-		self.setId(nameId)
+		super().__init__(nameId, currentPower, maxPower, isOnFeeder)
 		self.name = nameId
 		self.schedule = OpenHEMSSchedule(self.id, nameId)
 		self.strategyId = strategyId
@@ -145,7 +145,7 @@ class OutNode(OpenHEMSNode):
 		return self.strategyId
 
 	def __str__(self):
-		return (f"OutNode(name={self.name}, strategy={strategyId},"
+		return (f"OutNode(name={self.name}, strategy={self.strategyId},"
 			f" currentPower={self.currentPower},"
 			f"maxPower={self.maxPower}, isOn={self._isOn})")
 
@@ -156,9 +156,9 @@ class InOutNode(OpenHEMSNode):
 	param maxPower: positive value, max power we can consume at a time.
 	param minPower: negative value if we can sell or ther is battery, 0 overwise.
 	"""
-	def __init__(self, currentPower, maxPower, minPower, marginPower) -> None:
+	def __init__(self, nameid, currentPower, maxPower, minPower, marginPower) -> None:
 		# isAutoAdatative: bool, isControlable: bool, isModulable: bool, isCyclic: bool
-		super().__init__(currentPower, maxPower)
+		super().__init__(nameid, currentPower, maxPower)
 		self.currentPower = currentPower
 		self.marginPower = marginPower
 		self.minPower = minPower
@@ -212,8 +212,9 @@ class PublicPowerGrid(InOutNode):
 	"""
 	This represent Public power grid. Just one should be possible.
 	"""
-	def __init__(self, currentPower, maxPower, minPower, marginPower, contract, networkUpdater):
-		super().__init__(currentPower, maxPower, minPower, marginPower)
+	def __init__(self, nameid, currentPower, maxPower, minPower, marginPower,
+	             contract, networkUpdater):
+		super().__init__(nameid, currentPower, maxPower, minPower, marginPower)
 		self.contract = Contract.getContract(contract, networkUpdater.conf, networkUpdater)
 
 	def __str__(self):
@@ -234,10 +235,10 @@ class SolarPanel(InOutNode):
 	It depends of sensors number.
 	"""
 	# pylint: disable=too-many-arguments
-	def __init__(self, currentPower, maxPower, *,
+	def __init__(self, nameid, currentPower, maxPower, *,
 			moduleModel=None, inverterModel=None, tilt=45, azimuth=180,
 			modulesPerString=1, stringsPerInverter=1):
-		super().__init__(currentPower, maxPower, 0, 0)
+		super().__init__(nameid, currentPower, maxPower, 0, 0)
 		self.moduleModel = moduleModel
 		self.inverterModel = inverterModel
 		self.tilt = tilt
@@ -261,7 +262,7 @@ class Battery(InOutNode):
 	This represent battery.
 	"""
 	# pylint: disable=too-many-arguments
-	def __init__(self, capacity, currentPower, *, maxPowerIn=None,
+	def __init__(self, nameid, capacity, currentPower, *, maxPowerIn=None,
 			maxPowerOut=None, marginPower=None,
 			currentLevel=None, lowLevel=None, hightLevel=None):
 		if maxPowerIn is None:
@@ -274,7 +275,7 @@ class Battery(InOutNode):
 			hightLevel = 0.8*capacity
 		if marginPower is None:
 			marginPower = capacity*0.1
-		super().__init__(currentPower, maxPowerIn, maxPowerOut, marginPower)
+		super().__init__(nameid, currentPower, maxPowerIn, maxPowerOut, marginPower)
 		self.isControlable = True
 		self.isModulable = False
 		self.capacity = capacity

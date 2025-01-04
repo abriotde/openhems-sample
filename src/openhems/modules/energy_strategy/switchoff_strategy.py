@@ -5,13 +5,10 @@ This is in case we just base on "off-peak" range hours to control output.
 """
 
 from datetime import datetime
-import time
 from openhems.modules.network.network import OpenHEMSNetwork
 from openhems.modules.util import ConfigurationException, HoursRanges
 from .energy_strategy import EnergyStrategy, LOOP_DELAY_VIRTUAL
 
-# Time to wait in seconds before considering to be in offpeak range
-TIME_MARGIN_IN_S = 1
 
 # pylint: disable=broad-exception-raised
 class SwitchOffStrategy(EnergyStrategy):
@@ -21,16 +18,16 @@ class SwitchOffStrategy(EnergyStrategy):
 	The strategy is to switch on electric devices only on "off-peak" hours
 	 with check to not exceed authorized max consumption
 	"""
-	offHoursRanges = []
-	inOffpeakRange = False
-	rangeEnd = datetime.now()
-	network = None
 
-	def __init__(self, mylogger, network: OpenHEMSNetwork, strategyId:str, 
+	def __init__(self, mylogger, network: OpenHEMSNetwork, strategyId:str,
 		     offHoursRanges, reverse=False):
 		super().__init__(strategyId, mylogger)
 		self.network = network
-		self.offHoursRanges = HoursRange(offHoursRanges)
+		self.offHoursRanges = HoursRanges(offHoursRanges)
+		self.inOffRange = False
+		self._rangeEnd = datetime.now()
+		self._rangeChangeDone = False
+		self._todo = self.getNodes()
 		if reverse:
 			self.offHoursRanges.getReverse()
 		self.logger.info("SwitchOffStrategy(%s)", str(self.offHoursRanges))
@@ -45,50 +42,71 @@ class SwitchOffStrategy(EnergyStrategy):
 		Check if nowDatetime (Default now) is in off-peak range (offpeakHoursRange)
 		 and set end time of this range
 		"""
-		self.inOffpeakRange, self.rangeEnd = self.offHoursRanges.checkRange(nowDatetime)
+		inOff = self.inOffRange
+		self.inOffRange, self._rangeEnd = self.offHoursRanges.checkRange(nowDatetime)
+		if inOff!=self.inOffRange:
+			self._rangeChangeDone = False
+			self._todo = self.getNodes()
 
-	def sleepUntillNextRange(self):
+	def switchOn(self, node, cycleDuration, doSwitchOn:bool=True):
 		"""
-		Set application to sleep until off-peak (or inverse) range end
-		TIME_MARGIN_IN_S: margin to wait more to be sure to change range... 
-		useless, not scientist?
+		Switch on/off the node depending on doSwitchOn.
+		IF the node is ever on:
+		 - decrement his time to be on from cycleDuration
+		 - Switch off the node if time to be on elapsed
+		    or strategy choice is to switch off
+		ELSE IF doSwitchOn=True: Switch on the node
 		"""
-		time2wait = (self.rangeEnd - datetime.now()).total_seconds()
-		self.logger.info("OffPeakStrategy.sleepUntillNextRange() : "
-			"sleep(%d min, until %s)",\
-			round((time2wait+TIME_MARGIN_IN_S)/60), str(self.rangeEnd))
-		time.sleep(time2wait+TIME_MARGIN_IN_S)
+		del cycleDuration
+		if node.isSwitchable:
+			isOn = node.isOn()
+			isOnStr = "on" if isOn else "off"
+			if doSwitchOn ^ isOn: # If we need to toogle switch (isOn!=doSwitchOn)
+				switchStr = "on" if doSwitchOn else "off"
+				if node.switchOn(doSwitchOn):
+					self.logger.warning("Fail switch %s '%s'.", switchStr, node.id)
+				else:
+					self.logger.info("Switch %s '%s' successfully", \
+						switchStr, node.id)
+			else:
+				self.logger.debug("Let node '%s' %s", node.id, isOnStr)
+		else:
+			self.logger.debug("Not switchable node : '%s'.", node.id)
+		return True
 
-	def switchOnAll(self, cycleDuration):
+	def switchOnAll(self, switchOn=True):
 		"""
 		Switch on nodes, but 
 		 - If there is no margin to switch on, do nothing.
 		 - Only one (To be sure to not switch on to much devices)
 		"""
-		self.logger.info("OffPeakStrategy.switchOnMax()")
-		done = 0
+		self.logger.info("%s.switchOnAll(%s)", self.strategyId, switchOn)
 		marginPower = self.network.getMarginPowerOn()
-		doSwitchOn = True
 		if marginPower<0:
-			return True
-		for elem in self.getNodes():
-			if self.switchOn(elem, cycleDuration, doSwitchOn):
-				# Do just one at each loop to check Network constraint
-				doSwitchOn = False
-				done += 1
-		return done == 0
+			self.logger.info("Can't switch on devices: not enough power margin : %s", marginPower)
+			return False
+		todo = []
+		for elem in self._todo:
+			if not self.switchOn(elem, 0, switchOn):
+				todo.append(elem)
+		self._todo = todo
+		return len(self._todo)>0
 
-	def updateNetwork(self, cycleDuration:int, allowSleep:bool):
+	def updateNetwork(self, cycleDuration:int, allowSleep:bool, now=None):
 		"""
 		Decide what to do during the cycle:
 		 IF off-peak : switch on all
 		 ELSE : Switch off all AND Sleep until off-peak
 		"""
-		if datetime.now()>self.rangeEnd:
+		if now is None:
+			now = datetime.now()
+		if now>self._rangeEnd:
 			self.checkRange()
-		if self.network.switchOffAll(self.inOffpeakRange):
-			if cycleDuration>LOOP_DELAY_VIRTUAL and allowSleep:
-				self.sleepUntillNextRange()
-				self.checkRange() # To update self.rangeEnd (and should change self.inOffpeakRange)
-		else:
-			print("Warning : Fail to swnitch off all. We will try again on next loop.")
+		if not self._rangeChangeDone:
+			if self.switchOnAll(not self.inOffRange):
+				self._rangeChangeDone = True
+				if cycleDuration>LOOP_DELAY_VIRTUAL and allowSleep:
+					self.offHoursRanges.sleepUntillNextRange(now)
+					self.checkRange() # To update self._rangeEnd (and should change self.inOffRange)
+			else:
+				self.logger.warning("Fail to switch all. We will try again on next loop.")

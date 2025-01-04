@@ -7,6 +7,7 @@ from openhems.modules.util import (
 )
 from .driver.home_assistant_api import HomeAssistantAPI
 from .driver.fake_network import FakeNetwork
+from .network import OpenHEMSNetwork
 
 def getNetworkFromConfiguration(logger, configurator:ConfigurationManager):
 	"""
@@ -21,5 +22,6 @@ def getNetworkFromConfiguration(logger, configurator:ConfigurationManager):
 		networkUpdater = FakeNetwork(configurator)
 	else:
 		raise ConfigurationException(f"Invalid server.network configuration '{networkSource}'")
-	network = networkUpdater.getNetwork(logger)
+	network = OpenHEMSNetwork(logger)
+	network.addNetworkUpdater(networkUpdater)
 	return network

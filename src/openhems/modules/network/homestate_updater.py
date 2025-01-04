@@ -5,12 +5,9 @@ It is used to know devices and to switch on/off them.
 
 from typing import Final
 import logging
-import os
-import copy
 from openhems.modules.util.configuration_manager import ConfigurationManager, ConfigurationException
-from openhems.modules.util.notification_manager import NotificationManager
 from .node import (
-	OpenHEMSNode, InOutNode, OutNode, PublicPowerGrid, SolarPanel, Battery
+	OutNode, PublicPowerGrid, SolarPanel, Battery
 )
 from .feeder import Feeder, SourceFeeder
 
@@ -59,18 +56,18 @@ class HomeStateUpdater:
 		"""
 		self.logger.info(message)
 
-	def initNetwork(self):
+	def initNetwork(self, network):
 		"""
 		Can be overiden by sub-class if neeeded.
 		This function is called to initialyze network.
 		"""
 
-	# pylint: disable=unused-argument
 	def getFeeder(self, value, expectedType=None, defaultValue=None) -> Feeder:
 		"""
 		Return a feeder considering
 		 This function should be overiden by sub-class
 		"""
+		del defaultValue
 		return SourceFeeder(value, self, expectedType)
 
 	def getPublicPowerGrid(self, nameid, nodeConf):
@@ -82,8 +79,9 @@ class HomeStateUpdater:
 		marginPower = self._getFeeder(nodeConf, "marginPower", "int")
 		maxPower = self._getFeeder(nodeConf, "maxPower", "int")
 		minPower = self._getFeeder(nodeConf, "minPower", "int")
+		# nameid = self._getFeeder(nodeConf, "id", "str", "publicpowergrid")
 		contract = nodeConf.get("contract")
-		node = PublicPowerGrid(currentPower, maxPower, minPower, marginPower,
+		node = PublicPowerGrid(nameid, currentPower, maxPower, minPower, marginPower,
 			contract, self)
 		# self.logger.info(node)
 		return node
@@ -101,7 +99,7 @@ class HomeStateUpdater:
 		azimuth = self._getFeeder(nodeConf, "azimuth", "int")
 		modulesPerString = self._getFeeder(nodeConf, "modulesPerString", "int")
 		stringsPerInverter = self._getFeeder(nodeConf, "stringsPerInverter", "int")
-		node = SolarPanel(currentPower, maxPower,
+		node = SolarPanel(nameid, currentPower, maxPower,
 			moduleModel=moduleModel, inverterModel=inverterModel,
 			tilt=tilt, azimuth=azimuth,
 			modulesPerString=modulesPerString,
@@ -122,13 +120,12 @@ class HomeStateUpdater:
 		currentLevel = self._getFeeder(nodeConf, "currentLevel", "float")
 		lowLevel = self._getFeeder(nodeConf, "lowLevel", "float")
 		hightLevel = self._getFeeder(nodeConf, "hightLevel", "float")
-		node = Battery(capacity, currentPower, maxPowerIn=maxPowerIn,
+		node = Battery(nameid, capacity, currentPower, maxPowerIn=maxPowerIn,
 			maxPowerOut=maxPowerOut, marginPower=marginPower,
 			currentLevel=currentLevel, lowLevel=lowLevel, hightLevel=hightLevel)
 		# self.logger.info(node)
 		return node
 
-	# pylint: disable=unused-argument
 	def _getFeeder(self, conf, key, expectedType=None) -> Feeder:
 		"""
 		Return a feeder, search in configuration for default value if not set. 
@@ -192,13 +189,3 @@ class HomeStateUpdater:
 		node = OutNode(nameid, strategyId, currentPower, maxPower, isOn)
 		# self.logger.info(node)
 		return node
-
-	def getNetwork(self, logger): # -> OpenHEMSNetwork:
-		"""
-		Explore the home device network available with Home-Assistant.
-		"""
-		self.network = OpenHEMSNetwork(self, logger)
-		self.initNetwork()
-		self._getNetwork(self.conf.get("network.nodes"))
-		self.network.print(self.logger.info)
-		return self.network

@@ -21,13 +21,14 @@ class SolarNoSellStrategy(SolarBasedStrategy):
 	Disadvantages : 
 	"""
 
-	# pylint: disable=unused-argument
 	def __init__(self, network: OpenHEMSNetwork,
 			config, geoPosition: GeoPosition, offpeakHoursRanges):
+		del offpeakHoursRanges, config
 		self.logger = logging.getLogger(__name__)
-		super().__init__(network, geoPosition, offpeakHoursRanges)
+		super().__init__(network, geoPosition)
 		self.logger.info("SolarNoSellStrategy()")
 		self.network = network
 
-	def updateNetwork(self, cycleDuration):
+	def updateNetwork(self, cycleDuration:int, allowSleep:bool, now=None):
+		# TODO
 		return True

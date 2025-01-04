@@ -24,15 +24,14 @@ class EnergyStrategy:
 		"""
 		return self.network.getNodesForStrategy(self.strategyId)
 
-	# pylint: disable=unused-argument
-	def updateNetwork(self, cycleDuration):
+	def updateNetwork(self, cycleDuration:int, allowSleep:bool, now=None):
 		"""
 		Function to update OpenHEMSNetwork. To implement in sub-class
 		"""
-		logging.getLogger("EnergyStrategy")\
-			.error("EnergyStrategy.updateNetwork() : To implement in sub-class")
+		del cycleDuration, allowSleep, now
+		self.logger.error("EnergyStrategy.updateNetwork() : To implement in sub-class")
 
-	def switchOn(self, node, cycleDuration, doSwitchOn):
+	def switchOnSchedulable(self, node, cycleDuration, doSwitchOn):
 		"""
 		Switch on/off the node depending on doSwitchOn.
 		IF the node is ever on:
@@ -64,3 +63,18 @@ class EnergyStrategy:
 		else:
 			self.logger.debug("switchOn() : Node is not switchable : %s.", node.id)
 		return False
+
+	def switchOffAll(self):
+		"""
+		Switch of all connected devices with this strategy.
+		"""
+		self.logger.info("Network.switchOffAll()")
+		# self.print(logger.info)
+		# marginPower = self.getCurrentPowerConsumption()
+		# self.print(logger.info)
+		ok = True
+		for elem in self.getNodes():
+			if elem.isSwitchable and elem.switchOn(False):
+				self.logger.warning("Fail to switch off '%s'",elem.id)
+				ok = False
+		return ok
