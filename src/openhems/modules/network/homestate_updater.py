@@ -61,6 +61,7 @@ class HomeStateUpdater:
 		Can be overiden by sub-class if neeeded.
 		This function is called to initialyze network.
 		"""
+		self.network = network
 
 	def getFeeder(self, value, expectedType=None, defaultValue=None) -> Feeder:
 		"""
@@ -147,12 +148,14 @@ class HomeStateUpdater:
 			raise ConfigurationException(msg)
 		return feeder
 
-	def _getNetwork(self, networkConf):
+	def getNetwork(self, networkConf):
 		"""
 		Initialyze network according to it's configuration.
 		"""
+		# print("HomestateUpdater._getNetwork()")
 		i = 0
 		for e in networkConf:
+			# print("Node: ",e)
 			try:
 				classname = e.get("class", "unspecified").lower()
 				node = None

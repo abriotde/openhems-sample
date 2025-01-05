@@ -59,8 +59,9 @@ class OpenHEMSApplication:
 	        	interval=1,
 	        	backupCount=5)
 			fileHandler.rotation_filename = OpenHEMSApplication.filer
-		else:
-			fileHandler = logging.StreamHandler(sys.stdout)
+			fileHandler.setFormatter(formatter)
+			myHandlers.append(fileHandler)
+		fileHandler = logging.StreamHandler(sys.stdout)
 		fileHandler.setFormatter(formatter)
 		myHandlers.append(fileHandler)
 		logging.basicConfig(level=level, format=logformat, handlers=myHandlers)
@@ -92,6 +93,7 @@ class OpenHEMSApplication:
 		logformat = configurator.get("server.logformat")
 		logfile = logfilepath if logfilepath!='' else configurator.get("server.logfile")
 		self.setLogger(loglevel, logformat, logfile, inDocker)
+		self.logger.info("Load YAML configuration from '%s'.",yamlConfFilepath)
 		self.server = None
 		try:
 			network = network_helper.getNetworkFromConfiguration(self.logger, configurator)
@@ -109,6 +111,7 @@ class OpenHEMSApplication:
 		self.webserver = OpenhemsHTTPServer(self.logger, schedule, warnings,
 			port=port, htmlRoot=root, inDocker=inDocker, configurator=configurator)
 		if network is not None:
+			self.logger.info("OpenHEMS loaded.")
 			network.notify("Start OpenHEMS.")
 
 	def runManagementServer(self):

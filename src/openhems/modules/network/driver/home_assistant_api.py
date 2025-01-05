@@ -43,6 +43,7 @@ class HomeAssistantAPI(HomeStateUpdater):
 		"""
 		Get all nodes according to Home-Assistants
 		"""
+		# print("HomeAssistant.initNetwork()")
 		response = self.callAPI("/states")
 		self.haElements = {}
 		for e in response:
@@ -51,7 +52,6 @@ class HomeAssistantAPI(HomeStateUpdater):
 			self.haElements[entityId] = e
 			# print(entityId, e['state'], e['attributes'])
 		self.network = network
-		self._getNetwork(self.conf.get("network.nodes"))
 		# print("getHANodes() = ", self.haElements)
 
 	def getFeeder(self, value, expectedType=None, defaultValue=None) -> Feeder:

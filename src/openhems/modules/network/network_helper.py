@@ -22,6 +22,5 @@ def getNetworkFromConfiguration(logger, configurator:ConfigurationManager):
 		networkUpdater = FakeNetwork(configurator)
 	else:
 		raise ConfigurationException(f"Invalid server.network configuration '{networkSource}'")
-	network = OpenHEMSNetwork(logger)
-	network.addNetworkUpdater(networkUpdater)
+	network = OpenHEMSNetwork(logger, networkUpdater, configurator.get("network.nodes"))
 	return network

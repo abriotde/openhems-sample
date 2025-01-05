@@ -18,13 +18,11 @@ class OffPeakStrategy(EnergyStrategy):
 	The strategy is to switch on electric devices only on "off-peak" hours
 	 with check to not exceed authorized max consumption
 	"""
-	offpeakHoursRanges = []
-	inOffpeakRange = False
-	rangeEnd = datetime.now()
-	network = None
 
 	def __init__(self, mylogger, network: OpenHEMSNetwork, strategyId:str):
 		super().__init__(strategyId, network, mylogger)
+		self.inOffpeakRange = False
+		self.rangeEnd = datetime.now()
 		self.offpeakHoursRanges = self.network.getOffPeakHoursRanges()
 		self.logger.info("OffPeakStrategy(%s)", str(self.offpeakHoursRanges))
 		if not self.offpeakHoursRanges:
@@ -68,7 +66,7 @@ class OffPeakStrategy(EnergyStrategy):
 		 ELSE : Switch off all AND Sleep until off-peak
 		"""
 		if now is None:
-			now = datetime.now
+			now = datetime.now()
 		if now>self.rangeEnd:
 			self.checkRange()
 		if self.inOffpeakRange:

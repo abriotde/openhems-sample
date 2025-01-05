@@ -36,19 +36,23 @@ class OpenHEMSNetwork:
 			printer("  - "+str(elem))
 		printer(")")
 
-	def __init__(self, logger):
+	def __init__(self, logger, networkUpdater, nodesConf):
 		self.networkUpdater = None
 		self.nodes = []
-		self.notificationManager = NotificationManager(self.networkUpdater)
+		self.notificationManager = None
 		self._elemsCache = {}
 		self.logger = logger
+		self.addNetworkUpdater(networkUpdater, nodesConf)
 
-	def addNetworkUpdater(self, networkUpdater: HomeStateUpdater):
+	def addNetworkUpdater(self, networkUpdater: HomeStateUpdater, nodesConf):
 		"""
 		Add a networkUpdater (HomeStateUpdater) with is required.
 		"""
+		# print("addNetworkUpdater()")
 		networkUpdater.initNetwork(self)
+		networkUpdater.getNetwork(nodesConf)
 		self.networkUpdater = networkUpdater
+		self.notificationManager = NotificationManager(self.networkUpdater)
 		self.print(self.logger.info)
 
 	def getWarningMessages(self):
@@ -253,7 +257,7 @@ class OpenHEMSNetwork:
 		if nodes is None:
 			nodes = []
 			for node in self.getAll("out"):
-				if node.getStrategy()==strategyId:
+				if node.getStrategyId()==strategyId:
 					nodes.append(node)
 			self._elemsCache[key] = nodes
 		return nodes
