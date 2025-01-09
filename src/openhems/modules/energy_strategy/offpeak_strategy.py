@@ -63,7 +63,7 @@ class OffPeakStrategy(EnergyStrategy):
 				done += 1
 		return done == 0
 
-	def updateNetwork(self, cycleDuration:int, allowSleep:bool, now=None):
+	def updateNetwork(self, cycleDuration:int, allowSleep:bool, now=None) -> int:
 		"""
 		Decide what to do during the cycle:
 		 IF off-peak : switch on all
@@ -85,5 +85,7 @@ class OffPeakStrategy(EnergyStrategy):
 						self.checkRange() # To update self.rangeEnd (and should change self.inOffpeakRange)
 					else:
 						self._rangeChangeDone = True
+						return self.offpeakHoursRanges.getTime2NextRange(now)
 				else:
 					self.logger.warning("Fail to switch off all. We will try again on next loop.")
+		return 0

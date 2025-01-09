@@ -188,13 +188,19 @@ class HoursRanges:
 		"""
 		return len(self.ranges)<=0
 
+	def getTime2NextRange(self, now) -> int:
+		"""
+		Return: time to wait in seconds untils next range
+		"""
+		return (self.rangeEnd - now).total_seconds()
+
 	def sleepUntillNextRange(self, now):
 		"""
 		Set application to sleep until off-peak (or inverse) range end
 		TIME_MARGIN_IN_S: margin to wait more to be sure to change range... 
 		useless, not scientist?
 		"""
-		time2wait = (self.rangeEnd - now).total_seconds()
+		time2wait = self.getTime2NextRange()
 		logger.info("sleepUntillNextRange() : sleep(%d min, until %s)",\
 			round((time2wait+TIME_MARGIN_IN_S)/60), str(self.rangeEnd))
 		time.sleep(time2wait+TIME_MARGIN_IN_S)

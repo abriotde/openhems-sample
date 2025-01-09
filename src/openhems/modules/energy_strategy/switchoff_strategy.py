@@ -30,7 +30,8 @@ class SwitchoffStrategy(EnergyStrategy):
 		self._todo = self.getNodes()
 		self._backupStates = {}
 		self.reverse = reverse
-		self.logger.info("SwitchOffStrategy(%s) on %s", str(self.offHoursRanges), str(self._todo))
+		self.logger.info("Switch%sStrategy(%s) on %s", "On" if reverse else "Off",
+		                 str(self.offHoursRanges), str(self._todo))
 		if not self.offHoursRanges:
 			msg = "OffPeak-strategy is useless without offpeak hours. Check your configuration."
 			self.logger.critical(msg)
@@ -89,23 +90,32 @@ class SwitchoffStrategy(EnergyStrategy):
 			return False
 		todo = []
 		for elem in self._todo:
-			do = True
 			if (not switchOn) ^ self.reverse: # Start of period : remember states
 				isOn = elem.isOn()
 				self._backupStates[elem.id] = isOn
-				do = isOn!=switchOn
-				_switchOn = switchOn
-				if not do:
-					self.logger.debug('Nothing to do for %s, node is ever %s.', 
-					                  node.id, "on" if switchOn else "off")
+				if isOn==switchOn:
+					_switchOn = None
+					msg = "Node is ever "+("on" if switchOn else "off")+". NB : It will be let as is at the end period."
+				else:
+					_switchOn = switchOn
 			else: # End of period : restore states
-				_switchOn = self._backupStates.get(elem.id, switchOn)
-			if do and not self.switchOn(elem, 0, _switchOn):
-				todo.append(elem)
+				_switchOn = self._backupStates.get(elem.id, None)
+				msg = ""
+				if (not _switchOn) ^ self.reverse:
+					# We should expect switch on at end of switchOff period,
+					# but as we restore as the start, we switch off
+					# (and the opposite on reverse case)
+					self.logger.info("Restore the state : %s for %s", ("on" if _switchOn else "off"), elem.id)
+			if _switchOn is None:
+				self.logger.info("SwitchoffStrategy(%s) : Nothing to do for '%s'. %s",
+				                  self.strategyId, elem.id, msg)
+			else:
+				if not self.switchOn(elem, 0, _switchOn):
+					todo.append(elem)
 		self._todo = todo
 		return len(self._todo)==0
 
-	def updateNetwork(self, cycleDuration:int, allowSleep:bool, now=None):
+	def updateNetwork(self, cycleDuration:int, allowSleep:bool, now=None) -> int:
 		"""
 		Decide what to do during the cycle:
 		 IF off-peak : switch on all
@@ -116,11 +126,13 @@ class SwitchoffStrategy(EnergyStrategy):
 		if now>=self._rangeEnd:
 			self.checkRange()
 		if not self._rangeChangeDone:
-			if self.switchOnAll(not self.inOffRange):
+			if self.switchOnAll(not(self.inOffRange ^ self.reverse)):
 				if cycleDuration>LOOP_DELAY_VIRTUAL and allowSleep:
 					self.offHoursRanges.sleepUntillNextRange(now)
 					self.checkRange() # To update self._rangeEnd (and should change self.inOffRange)
 				else:
 					self._rangeChangeDone = True
+					return self.offHoursRanges.getTime2NextRange(now)
 			else:
 				self.logger.warning("Fail to switch all. We will try again on next loop.")
+		return 0

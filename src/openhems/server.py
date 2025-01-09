@@ -56,8 +56,13 @@ class OpenHEMSServer:
 			now = datetime.datetime.now()
 		self.logger.debug("OpenHEMSServer.loop()")
 		self.network.updateStates()
+		time2wait = 86400
 		for strategy in self.strategies:
-			strategy.updateNetwork(loopDelay, self.allowSleep, now)
+			t = strategy.updateNetwork(loopDelay, self.allowSleep, now)
+			time2wait = min(t, time2wait)
+		if time2wait > 0:
+			self.logger.info("Loop sleep(%d min)", round(time2wait/60))
+			time.sleep(time2wait)
 
 	def run(self, loopDelay=0):
 		"""

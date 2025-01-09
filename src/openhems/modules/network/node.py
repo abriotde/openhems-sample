@@ -149,6 +149,8 @@ class OutNode(OpenHEMSNode):
 		return (f"OutNode(name={self.name}, strategy={self.strategyId},"
 			f" currentPower={self.currentPower},"
 			f"maxPower={self.maxPower}, isOn={self._isOn})")
+	def __repr__(self):
+		return str(self)
 
 class InOutNode(OpenHEMSNode):
 	"""
@@ -251,12 +253,15 @@ class SolarPanel(InOutNode):
 		get current maximum power.
 		"""
 		return self.currentPower.getValue()
+
 	def __str__(self):
 		return (f"SolarPanel({self.currentPower}, {self.maxPower},"
 		f" moduleModel={self.moduleModel}, inverterModel={self.inverterModel},"
 		f" tilt={self.tilt}, azimuth={self.azimuth},"
 		f" modulesPerString={self.modulesPerString},"
 		f"stringsPerInverter={self.stringsPerInverter})")
+	def __repr__(self):
+		return str(self)
 
 class Battery(InOutNode):
 	"""
@@ -295,11 +300,14 @@ class Battery(InOutNode):
 		Get battery level.
 		"""
 		return self.currentLevel.getValue()
+
 	def __str__(self):
 		return (f"Battery(capacity={self.capacity}, currentPower={self.currentPower},"
 			f" maxPowerIn={self.maxPower}, maxPowerOut={self.minPower},"
 			f" marginPower={self.marginPower}, level={self.currentLevel},"
 			f" lowLevel={self.lowLevel}, hightLevel={self.hightLevel})")
 
+	def __repr__(self):
+		return str(self)
 # class CarCharger(Switch):
 # class WaterHeater(InOutNode):
