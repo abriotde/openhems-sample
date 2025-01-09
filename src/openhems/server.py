@@ -4,6 +4,7 @@ This is the server thread witch aim to centralize information and take right dec
 """
 import os
 import time
+import datetime
 from openhems.modules.energy_strategy import OffPeakStrategy, SwitchoffStrategy
 from openhems.modules.network import HomeStateUpdaterException
 from openhems.modules.util import CastUtililty
@@ -22,6 +23,7 @@ class OpenHEMSServer:
 		self.loopDelay = serverConf.get("server.loopDelay")
 		strategies = serverConf.get("server.strategies")
 		self.strategies = []
+		throwErr = None
 		for strategyParams in strategies:
 			strategy = strategyParams.get("class", "")
 			strategyId = strategyParams.get("id", strategy)
@@ -30,26 +32,32 @@ class OpenHEMSServer:
 			elif strategy=="switchoff":
 				offhoursrange = strategyParams.get('offrange', "[22h-6h]")
 				reverse = CastUtililty.toTypeBool(strategyParams.get('reverse', False))
-				self.strategies.append(SwitchoffStrategy(mylogger, self.network, strategyId, 
-				                                         offhoursrange, reverse))
+				strategyObj = SwitchoffStrategy(mylogger, self.network, strategyId, offhoursrange, reverse)
+				self.strategies.append(strategyObj)
 			elif strategy=="emhass":
 				# pylint: disable=import-outside-toplevel
 				# Avoid to import EmhassStrategy and all it's dependances when no needs.
 				from openhems.modules.energy_strategy.emhass_strategy import EmhassStrategy
 				self.strategies.append(EmhassStrategy(mylogger, self.network, serverConf, strategyId))
 			else:
-				self.logger.critical("OpenHEMSServer() : Unknown strategy '%s'", strategy)
-				os._exit(1)
+				msg = f"OpenHEMSServer() : Unknown strategy '{strategy}'"
+				self.logger.critical(msg)
+				throwErr = msg
+		if throwErr is not None:
+			raise ConfigurationException(throwErr)
+		self.allowSleep = len(self.strategies)==1
 
-	def loop(self, loopDelay):
+	def loop(self, loopDelay, now=None):
 		"""
 		It's the content of each loop.
 		If loop delay=0, we consider that we never sleep (For test or reactivity).
 		"""
+		if now is None:
+			now = datetime.datetime.now()
 		self.logger.debug("OpenHEMSServer.loop()")
 		self.network.updateStates()
 		for strategy in self.strategies:
-				strategy.updateNetwork(loopDelay, True)
+			strategy.updateNetwork(loopDelay, self.allowSleep, now)
 
 	def run(self, loopDelay=0):
 		"""

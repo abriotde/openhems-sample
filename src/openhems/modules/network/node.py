@@ -111,6 +111,7 @@ class OpenHEMSNode:
 		if self._isSwitchable:
 			return self._isOn.getValue()
 		return True
+
 	def switchOn(self, connect: bool) -> bool:
 		"""
 		May not work if it is impossible (No relay) or if it failed.
@@ -119,7 +120,7 @@ class OpenHEMSNode:
 		"""
 		if self._isSwitchable:
 			return self.network.networkUpdater.switchOn(connect, self)
-		print("Warning : try to switchOn/Off a not switchable device : ",self.id)
+		logger.warning("Try to switchOn/Off a not switchable device : ",self.id)
 		return connect # Consider node is always on network
 
 class OutNode(OpenHEMSNode):

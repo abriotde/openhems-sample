@@ -24,11 +24,12 @@ class OffPeakStrategy(EnergyStrategy):
 		self.inOffpeakRange = False
 		self.rangeEnd = datetime.now()
 		self.offpeakHoursRanges = self.network.getOffPeakHoursRanges()
-		self.logger.info("OffPeakStrategy(%s)", str(self.offpeakHoursRanges))
+		self.logger.info("OffPeakStrategy(%s) on %s", str(self.offpeakHoursRanges), str(self.getNodes()))
 		if not self.offpeakHoursRanges:
 			msg = "OffPeak-strategy is useless without offpeak hours. Check your configuration."
 			self.logger.critical(msg)
 			raise ConfigurationException(msg)
+		self._rangeChangeDone = False
 		self.checkRange()
 
 	def checkRange(self, nowDatetime: datetime=None) -> int:
@@ -37,7 +38,10 @@ class OffPeakStrategy(EnergyStrategy):
 		 and set end time of this range
 		"""
 		self.offpeakHoursRanges = self.network.getOffPeakHoursRanges()
+		inoffpeak = self.inOffpeakRange
 		self.inOffpeakRange, self.rangeEnd = self.offpeakHoursRanges.checkRange(nowDatetime)
+		if inoffpeak!=self.inOffpeakRange:
+			self._rangeChangeDone = False
 
 	def switchOnMax(self, cycleDuration):
 		"""
@@ -73,9 +77,13 @@ class OffPeakStrategy(EnergyStrategy):
 			# We are in off-peak range hours : switch on all
 			self.switchOnMax(cycleDuration)
 		else: # Sleep untill end.
-			if self.switchOffAll():
-				if cycleDuration>LOOP_DELAY_VIRTUAL and allowSleep:
-					self.offpeakHoursRanges.sleepUntillNextRange(now)
-					self.checkRange() # To update self.rangeEnd (and should change self.inOffpeakRange)
-			else:
-				print("Warning : Fail to swnitch off all. We will try again on next loop.")
+			if not self._rangeChangeDone:
+				self.logger.debug("OffpeakStrategy : not offpeak, switchOffAll()")
+				if self.switchOffAll():
+					if cycleDuration>LOOP_DELAY_VIRTUAL and allowSleep:
+						self.offpeakHoursRanges.sleepUntillNextRange(now)
+						self.checkRange() # To update self.rangeEnd (and should change self.inOffpeakRange)
+					else:
+						self._rangeChangeDone = True
+				else:
+					self.logger.warning("Fail to switch off all. We will try again on next loop.")

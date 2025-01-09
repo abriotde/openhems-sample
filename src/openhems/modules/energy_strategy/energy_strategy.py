@@ -68,7 +68,6 @@ class EnergyStrategy:
 		"""
 		Switch of all connected devices with this strategy.
 		"""
-		self.logger.info("Network.switchOffAll()")
 		# self.print(logger.info)
 		# marginPower = self.getCurrentPowerConsumption()
 		# self.print(logger.info)

@@ -257,9 +257,11 @@ class OpenHEMSNetwork:
 		if nodes is None:
 			nodes = []
 			for node in self.getAll("out"):
-				if node.getStrategyId()==strategyId:
+				strategy = node.getStrategyId()
+				if strategy==strategyId:
 					nodes.append(node)
 			self._elemsCache[key] = nodes
+			self.logger.debug("getNodesForStrategy(%s) = %s", strategyId, nodes)
 		return nodes
 
 	def getOffPeakHoursRanges(self):
