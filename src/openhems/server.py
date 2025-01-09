@@ -4,8 +4,9 @@ This is the server thread witch aim to centralize information and take right dec
 """
 import os
 import time
-from openhems.modules.energy_strategy import OffPeakStrategy
+from openhems.modules.energy_strategy import OffPeakStrategy, SwitchoffStrategy
 from openhems.modules.network import HomeStateUpdaterException
+from openhems.modules.util import CastUtililty
 from openhems.modules.util.configuration_manager import ConfigurationManager, ConfigurationException
 
 
@@ -19,18 +20,26 @@ class OpenHEMSServer:
 		self.logger = mylogger
 		self.network = network
 		self.loopDelay = serverConf.get("server.loopDelay")
-		strategy = serverConf.get("server.strategy").lower()
-		strategyId = "strategyId"
-		if strategy=="offpeak":
-			self.strategy = OffPeakStrategy(mylogger, self.network, strategyId)
-		elif strategy=="emhass":
-			# pylint: disable=import-outside-toplevel
-			# Avoid to import EmhassStrategy and all it's dependances when no needs.
-			from openhems.modules.energy_strategy.emhass_strategy import EmhassStrategy
-			self.strategy = EmhassStrategy(mylogger, self.network, serverConf)
-		else:
-			self.logger.critical("OpenHEMSServer() : Unknown strategy '%s'", strategy)
-			os._exit(1)
+		strategies = serverConf.get("server.strategies")
+		self.strategies = []
+		for strategyParams in strategies:
+			strategy = strategyParams.get("class", "")
+			strategyId = strategyParams.get("id", strategy)
+			if strategy=="offpeak":
+				self.strategies.append(OffPeakStrategy(mylogger, self.network, strategyId))
+			elif strategy=="switchoff":
+				offhoursrange = strategyParams.get('offrange', "[22h-6h]")
+				reverse = CastUtililty.toTypeBool(strategyParams.get('reverse', False))
+				self.strategies.append(SwitchoffStrategy(mylogger, self.network, strategyId, 
+				                                         offhoursrange, reverse))
+			elif strategy=="emhass":
+				# pylint: disable=import-outside-toplevel
+				# Avoid to import EmhassStrategy and all it's dependances when no needs.
+				from openhems.modules.energy_strategy.emhass_strategy import EmhassStrategy
+				self.strategies.append(EmhassStrategy(mylogger, self.network, serverConf, strategyId))
+			else:
+				self.logger.critical("OpenHEMSServer() : Unknown strategy '%s'", strategy)
+				os._exit(1)
 
 	def loop(self, loopDelay):
 		"""
@@ -39,7 +48,8 @@ class OpenHEMSServer:
 		"""
 		self.logger.debug("OpenHEMSServer.loop()")
 		self.network.updateStates()
-		self.strategy.updateNetwork(loopDelay, True)
+		for strategy in self.strategies:
+				strategy.updateNetwork(loopDelay, True)
 
 	def run(self, loopDelay=0):
 		"""

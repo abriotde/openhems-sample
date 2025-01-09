@@ -11,7 +11,7 @@ from .energy_strategy import EnergyStrategy, LOOP_DELAY_VIRTUAL
 
 
 # pylint: disable=broad-exception-raised
-class SwitchOffStrategy(EnergyStrategy):
+class SwitchoffStrategy(EnergyStrategy):
 	"""
 	This is in case we just base on "off-peak" range hours to control output.
 	 Classic use-case is some grid contract (Like Tempo on EDF).

@@ -25,8 +25,9 @@ class EmhassStrategy(EnergyStrategy):
 	So this require some more Python packages.
 	"""
 
-	def __init__(self, mylogger, network: OpenHEMSNetwork, configuration:ConfigurationManager):
-		super().__init__("emhass", network, mylogger)
+	def __init__(self, mylogger, network: OpenHEMSNetwork, configuration:ConfigurationManager,
+	             strategyId:str="emhass"):
+		super().__init__(strategyId, network, mylogger)
 		self.adapter = EmhassAdapter.createFromOpenHEMS(configuration, network)
 		self.logger.info("EmhassStrategy()")
 		self.network = network

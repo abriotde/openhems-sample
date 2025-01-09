@@ -20,7 +20,7 @@ from openhems.modules.energy_strategy.driver.emhass_adapter import (
 from openhems.main import OpenHEMSApplication
 from openhems.modules.energy_strategy import LOOP_DELAY_VIRTUAL
 
-EMHASS_CONFIG_FILE = ROOT_PATH / "config/openhems_test_emhass.yaml"
+EMHASS_CONFIG_FILE = ROOT_PATH / "tests/data/openhems_test_emhass.yaml"
 logger = logging.getLogger(__name__)
 
 class TestEmhassAdapter(unittest.TestCase):

@@ -17,9 +17,8 @@ server:
   loglevel: info # Optional, default is info, availables are debug / info / warn / error / critical / no
   loopDelay: 30 # interval beetween 2 loop
   network: homeassistant # Define the type of network API used to control the home energy.
-  strategy: offpeak # Define the algorithm used to control the  home energy.
-network:
   strategies: []
+network:
   nodes: [] # List the source of electric power / stockage
 # - class=publicpowergrid: currentPower, maxPower, minPower, powerMargin
 # - class=battery: currentPower, level (current_battery_level), maxPowerIn (max_discharge_power_watt), maxPowerOut (max_charge_power_watt), efficiencyIn (discharge_efficiency:0.95), efficiencyOut (charge_efficiency:0.95), capacity (watt), lowLevel (state_of_charge_min), highLevel (state_of_charge_max), targetLevel (state_of_charge_target)
@@ -104,3 +103,5 @@ default:
       currentPower: None
       maxPower: 2000
       isOn: None
+      strategy: None
+
