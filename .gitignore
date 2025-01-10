@@ -12,3 +12,4 @@ docs/build/
 src/OpenHEMS.egg-info/
 .coverage
 src/openhems/modules/web/templates/params.jinja2
+config/openhems.secret.yaml

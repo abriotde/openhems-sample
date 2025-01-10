@@ -198,12 +198,16 @@ class HomeAssistantAPI(HomeStateUpdater):
 			# overwise it's better to slow down to avoid useless
 			# infinite loop on errors.
 			self.sleepDurationOnerror = min(self.sleepDurationOnerror*2, 64)
-			errMsg = errMsg.format_map(locals())+" ("+self.apiUrl+url+", "+str(data)+")"
+			try:
+				errMsg = errMsg.format_map(locals())+" ("+self.apiUrl+url+", "+str(data)+")"
+			except KeyError:
+				pass
 			self.logger.error(errMsg)
+			self.logger.debug("With token '%s'", self.token)
 			if url!="/services/notify/persistent_notification":
 				# To avoid infinite loop : It's url for notify()
-				self.notify(f"Error callAPI() : \
-					status_code={response.status_code} : {errMsg}")
+				self.notify("Error callAPI() : "
+					f"status_code={response.status_code} : {errMsg}")
 			if url=="/states":
 				raise ConfigurationException(
 					"Fail get states of Home-Assistant. "
@@ -213,7 +217,7 @@ class HomeAssistantAPI(HomeStateUpdater):
 			self.sleepDurationOnerror = max(self.sleepDurationOnerror/2, 1)
 		try:  # Sometimes when there are connection problems we need to catch empty retrieved json
 			return response.json()
-		except json.decoder.JSONDecodeError:
+		except (json.decoder.JSONDecodeError, requests.exceptions.JSONDecodeError):
 			if errMsg=="":
 				self.logger.error("Fail parse response '%s'",response)
 			return {}

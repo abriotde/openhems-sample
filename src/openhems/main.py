@@ -77,7 +77,7 @@ class OpenHEMSApplication:
 		"""
 		return self.logger
 
-	def __init__(self, yamlConfFilepath, *, port=0, logfilepath='', inDocker=False):
+	def __init__(self, yamlConfFilepath:str, *, port=0, logfilepath='', inDocker=False):
 		# Temporary logger
 		self.logger = logging.getLogger(__name__)
 		configurator = ConfigurationManager(self.logger)
@@ -86,7 +86,18 @@ class OpenHEMSApplication:
 		schedule = []
 		try:
 			print("Load YAML configuration from '",yamlConfFilepath,"'")
-			configurator.addYamlConfig(Path(yamlConfFilepath))
+			path = Path(yamlConfFilepath)
+			configurator.addYamlConfig(path)
+			if path.suffix!="":
+				print("Suffix:", path.suffix)
+				secretPath = yamlConfFilepath.replace(path.suffix, ".secret"+path.suffix)
+				path = Path(secretPath)
+				path.suffix
+				if path.is_file():
+					print("Over load YAML configuration with '",str(path),"'")
+					configurator.addYamlConfig(path)
+				else:
+					print("No '",str(path),"'")
 		except ConfigurationException as e:
 			warnings.append(str(e))
 		loglevel = configurator.get("server.loglevel")
