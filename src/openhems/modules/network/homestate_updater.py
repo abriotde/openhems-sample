@@ -187,6 +187,8 @@ class HomeStateUpdater:
 		self.tmp = "switch"
 		currentPower = self._getFeeder(nodeConf, "currentPower", "int")
 		strategyId = nodeConf.get("strategy", None)
+		if strategyId is None:
+			strategyId = self.network.getDefaultStrategy().id
 		maxPower = self._getFeeder(nodeConf, "maxPower", "int")
 		isOn = self._getFeeder(nodeConf, "isOn", "bool")
 		node = OutNode(nameid, strategyId, currentPower, maxPower, isOn)

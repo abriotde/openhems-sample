@@ -4,7 +4,7 @@ This is the server thread witch aim to centralize information and take right dec
 """
 import time
 import datetime
-from openhems.modules.energy_strategy import OffPeakStrategy, SwitchoffStrategy
+from openhems.modules.energy_strategy import OffPeakStrategy, SwitchoffStrategy, LOOP_DELAY_VIRTUAL
 from openhems.modules.network import HomeStateUpdaterException
 from openhems.modules.util import CastUtililty
 from openhems.modules.util.configuration_manager import ConfigurationManager, ConfigurationException
@@ -56,12 +56,21 @@ class OpenHEMSServer:
 		self.logger.debug("OpenHEMSServer.loop()")
 		self.network.updateStates()
 		time2wait = 86400
+		allowSleep = self.allowSleep and loopDelay>LOOP_DELAY_VIRTUAL
 		for strategy in self.strategies:
-			t = strategy.updateNetwork(loopDelay, self.allowSleep, now)
+			t = strategy.updateNetwork(loopDelay, allowSleep, now)
 			time2wait = min(t, time2wait)
-		if time2wait > 0:
+		if allowSleep and time2wait > 0:
 			self.logger.info("Loop sleep(%d min)", round(time2wait/60))
 			time.sleep(time2wait)
+
+	def getDefaultStrategy(self):
+		"""
+		Return the default strategy.
+		"""
+		if len(self.strategies)==0:
+			return None
+		return self.strategies[0]
 
 	def run(self, loopDelay=0):
 		"""

@@ -77,18 +77,17 @@ class OpenHEMSApplication:
 		"""
 		return self.logger
 
-	def loadYamlConfiguration(self, yamlConfFilepath:str):
+	def loadYamlConfiguration(self, configurator:ConfigurationManager, yamlConfFilepath:str):
 		"""
 		Load YAML configuration, over load it with a secret file if exists.
 		Return a "Configurator"
 		"""
-		configurator = ConfigurationManager(self.logger)
 		print("Load YAML configuration from '",yamlConfFilepath,"'")
 		path = Path(yamlConfFilepath)
 		configurator.addYamlConfig(path)
 		if path.suffix!="":
-			print("Suffix:", path.suffix)
-			secretPath = yamlConfFilepath.replace(path.suffix, ".secret"+path.suffix)
+			# print("Suffix:", path.suffix)
+			secretPath = str(yamlConfFilepath).replace(path.suffix, ".secret"+path.suffix)
 			path = Path(secretPath)
 			if path.is_file():
 				print("Over load YAML configuration with '",str(path),"'")
@@ -103,8 +102,9 @@ class OpenHEMSApplication:
 		warnings = []
 		network = None
 		schedule = []
+		configurator = ConfigurationManager(self.logger)
 		try:
-			configurator = self.loadYamlConfiguration(yamlConfFilepath)
+			configurator = self.loadYamlConfiguration(configurator, yamlConfFilepath)
 		except ConfigurationException as e:
 			warnings.append(str(e))
 		loglevel = configurator.get("server.loglevel")

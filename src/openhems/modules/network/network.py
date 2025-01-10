@@ -258,7 +258,7 @@ class OpenHEMSNetwork:
 			nodes = []
 			for node in self.getAll("out"):
 				strategy = node.getStrategyId()
-				if strategy==strategyId:
+				if strategy is None or strategy==strategyId:
 					nodes.append(node)
 			self._elemsCache[key] = nodes
 			# self.logger.debug("getNodesForStrategy(%s) = %s", strategyId, nodes)
