@@ -2,7 +2,6 @@
 """
 This is the server thread witch aim to centralize information and take right deccisions
 """
-import os
 import time
 import datetime
 from openhems.modules.energy_strategy import OffPeakStrategy, SwitchoffStrategy

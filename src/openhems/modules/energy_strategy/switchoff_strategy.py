@@ -68,9 +68,7 @@ class SwitchoffStrategy(EnergyStrategy):
 				if node.switchOn(doSwitchOn):
 					self.logger.warning("Fail switch %s '%s'.", switchStr, node.id)
 					return False
-				else:
-					self.logger.info("Switch %s '%s' successfully", \
-						switchStr, node.id)
+				self.logger.info("Switch %s '%s' successfully", switchStr, node.id)
 			else:
 				self.logger.debug("Let node '%s' %s", node.id, isOnStr)
 		else:
@@ -95,7 +93,7 @@ class SwitchoffStrategy(EnergyStrategy):
 				self._backupStates[elem.id] = isOn
 				if isOn==switchOn:
 					_switchOn = None
-					msg = "Node is ever "+("on" if switchOn else "off")+". NB : It will be let as is at the end period."
+					msg = "Start of period : Node is ever "+("on" if switchOn else "off")
 				else:
 					_switchOn = switchOn
 			else: # End of period : restore states
@@ -126,7 +124,7 @@ class SwitchoffStrategy(EnergyStrategy):
 		if now>=self._rangeEnd:
 			self.checkRange()
 		if not self._rangeChangeDone:
-			if self.switchOnAll(not(self.inOffRange ^ self.reverse)):
+			if self.switchOnAll(not self.inOffRange ^ self.reverse):
 				if cycleDuration>LOOP_DELAY_VIRTUAL and allowSleep:
 					self.offHoursRanges.sleepUntillNextRange(now)
 					self.checkRange() # To update self._rangeEnd (and should change self.inOffRange)

@@ -120,7 +120,7 @@ class OpenHEMSNode:
 		"""
 		if self._isSwitchable:
 			return self.network.networkUpdater.switchOn(connect, self)
-		logger.warning("Try to switchOn/Off a not switchable device : ",self.id)
+		logger.warning("Try to switchOn/Off a not switchable device : %s", self.id)
 		return connect # Consider node is always on network
 
 class OutNode(OpenHEMSNode):

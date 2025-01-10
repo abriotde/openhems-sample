@@ -200,7 +200,7 @@ class HoursRanges:
 		TIME_MARGIN_IN_S: margin to wait more to be sure to change range... 
 		useless, not scientist?
 		"""
-		time2wait = self.getTime2NextRange()
+		time2wait = self.getTime2NextRange(now)
 		logger.info("sleepUntillNextRange() : sleep(%d min, until %s)",\
 			round((time2wait+TIME_MARGIN_IN_S)/60), str(self.rangeEnd))
 		time.sleep(time2wait+TIME_MARGIN_IN_S)
