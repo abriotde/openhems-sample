@@ -30,8 +30,9 @@ class OpenHEMSServer:
 				self.strategies.append(OffPeakStrategy(mylogger, self.network, strategyId))
 			elif strategy=="switchoff":
 				offhoursrange = strategyParams.get('offrange', "[22h-6h]")
+				condition = strategyParams.get('condition', True)
 				reverse = CastUtililty.toTypeBool(strategyParams.get('reverse', False))
-				strategyObj = SwitchoffStrategy(mylogger, self.network, strategyId, offhoursrange, reverse)
+				strategyObj = SwitchoffStrategy(mylogger, self.network, strategyId, offhoursrange, reverse, condition)
 				self.strategies.append(strategyObj)
 			elif strategy=="emhass":
 				# pylint: disable=import-outside-toplevel
@@ -45,6 +46,20 @@ class OpenHEMSServer:
 		if throwErr is not None:
 			raise ConfigurationException(throwErr)
 		self.allowSleep = len(self.strategies)==1
+
+	def getSchedule(self):
+		"""
+		Return scheduled planning.
+		"""
+		schedule = {}
+		for strategy in self.strategies:
+			nodes = strategy.getSchedulableNodes()
+			for node in nodes:
+				myid = node.id
+				sc = node.getSchedule()
+				if sc is not None:
+					schedule[myid] = sc
+		return schedule
 
 	def loop(self, loopDelay, now=None):
 		"""
@@ -63,14 +78,6 @@ class OpenHEMSServer:
 		if allowSleep and time2wait > 0:
 			self.logger.info("Loop sleep(%d min)", round(time2wait/60))
 			time.sleep(time2wait)
-
-	def getDefaultStrategy(self):
-		"""
-		Return the default strategy.
-		"""
-		if len(self.strategies)==0:
-			return None
-		return self.strategies[0]
 
 	def run(self, loopDelay=0):
 		"""

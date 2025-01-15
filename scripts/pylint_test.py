@@ -5,6 +5,7 @@ Script used to test pylint compliance of this project and correct it.
 import os
 import re
 import json
+from pathlib import Path
 
 pattern_line = re.compile(r"^(.*):([0-9]+):([0-9]+): ([A-Z][0-9][0-9][0-9][0-9]): (.*)")
 snake_case_descr = re.compile(r'.*name "(.*)".* conform to snake_case naming style.*')
@@ -48,7 +49,7 @@ def analyzeFolder(folder):
 	"""
 	Analyze with "pylint" all python gited files
 	"""
-	stream = os.popen('pylint $(git ls-files \''+folder+'*.py\')')
+	stream = os.popen('pylint $(git ls-files \''+str(folder)+'*.py\')')
 	for line in stream.readlines():
 		print(line)
 		# pylint: disable=pointless-string-statement
@@ -105,6 +106,7 @@ def finalyze():
 
 # snake_case_conversion = initSnakeCaseConversion()
 
-analyzeFolder("./src/openhems")
-analyzeFolder("./scripts")
-analyzeFolder("./tests")
+ROOT_PATH = Path(__file__).parents[1]
+analyzeFolder(ROOT_PATH / "src/openhems")
+analyzeFolder(ROOT_PATH/"scripts")
+analyzeFolder(ROOT_PATH/"tests")

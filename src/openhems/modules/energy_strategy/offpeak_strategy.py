@@ -20,7 +20,7 @@ class OffPeakStrategy(EnergyStrategy):
 	"""
 
 	def __init__(self, mylogger, network: OpenHEMSNetwork, strategyId:str):
-		super().__init__(strategyId, network, mylogger)
+		super().__init__(strategyId, network, mylogger, True)
 		self.inOffpeakRange = False
 		self.rangeEnd = datetime.now()
 		self.offpeakHoursRanges = self.network.getOffPeakHoursRanges()

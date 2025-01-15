@@ -3,7 +3,6 @@ This is in case we just base on "off-peak" range hours to control output.
 	 Classic use-case is some grid contract (Like Tempo on EDF).
 	The strategy is to switch on electric devices only on "off-peak" hours
 """
-
 from datetime import datetime
 from openhems.modules.network.network import OpenHEMSNetwork
 from openhems.modules.util import ConfigurationException, HoursRanges
@@ -20,7 +19,7 @@ class SwitchoffStrategy(EnergyStrategy):
 	"""
 
 	def __init__(self, mylogger, network: OpenHEMSNetwork, strategyId:str,
-		     offHoursRanges, reverse=False):
+		     offHoursRanges, reverse=False, condition=True):
 		super().__init__(strategyId, mylogger)
 		self.network = network
 		self.offHoursRanges = HoursRanges(offHoursRanges)
@@ -30,6 +29,7 @@ class SwitchoffStrategy(EnergyStrategy):
 		self._todo = self.getNodes()
 		self._backupStates = {}
 		self.reverse = reverse
+		self.condition = condition # Optional additional condition to enter switoff period
 		self.logger.info("Switch%sStrategy(%s) on %s", "On" if reverse else "Off",
 		                 str(self.offHoursRanges), str(self._todo))
 		if not self.offHoursRanges:
@@ -87,8 +87,11 @@ class SwitchoffStrategy(EnergyStrategy):
 			self.logger.info("Can't switch on devices: not enough power margin : %s", marginPower)
 			return False
 		todo = []
+		isPeriodStart = (not switchOn) ^ self.reverse # Start of period : remember states
+		if isPeriodStart and not self.testCondition(): # Cancel if condition is not satisfied
+			return True
 		for elem in self._todo:
-			if (not switchOn) ^ self.reverse: # Start of period : remember states
+			if isPeriodStart: # Start of period : remember states
 				isOn = elem.isOn()
 				self._backupStates[elem.id] = isOn
 				if isOn==switchOn:
@@ -134,3 +137,43 @@ class SwitchoffStrategy(EnergyStrategy):
 			else:
 				self.logger.warning("Fail to switch all. We will try again on next loop.")
 		return 0
+
+	def getVal(self, key:str):
+		"""
+		Function for eval in self.testCondition to get Home-Assistant entity value.
+		"""
+		self.logger.debug("SwitchOffStrategy.getVal(%s)",key)
+		val = self.network.networkUpdater.getValue(key)
+		self.logger.debug("SwitchOffStrategy.getVal(%s) = %s", key, val)
+		return val
+
+	def testCondition(self):
+		"""
+		Test optional additional condition to enter switoff period.
+		It use Python eval. It should be better to use more secure
+		 (And portable standard) way like 
+		 * Lua language but it will need to reimplement Home-Assistant API call
+		  ( + Parsing YAML files to get token)
+		 * Restricted Python function : https://stackoverflow.com/questions/3513292/python-make-eval-safe.
+		"""
+		if not isinstance(self.condition, str):
+			return True
+		# env = {
+		# 	"locals": locals(),
+		# 	"globals" : None,
+		# 	"__name__" :  None,
+		# 	"__file__" :  None,
+		# 	"__builtins__" :  None
+		# }
+		# print(locals())
+		# pylint: disable=eval-used
+		try:
+			a = eval(self.condition) # , env)
+		except NameError as e:
+			self.logger.error("testCondition(%s) = ERROR : %s : Ignore this condition.",
+			                  self.condition, str(e))
+			return True
+		self.logger.debug("SwitchOffStrategy.testCondition(%s) = %s", self.condition, a)
+		if not isinstance(a, bool):
+			raise ConfigurationException(f"SwitchoffCondition is not valid : not boolean : {self.condition}")
+		return a

@@ -11,12 +11,14 @@ class EnergyStrategy:
 	"""
 	Super class for all EnergyStrategy modules
 	"""
-	def  __init__(self, strategyId:str, network:OpenHEMSNetwork, logger=None):
+	def  __init__(self, strategyId:str, network:OpenHEMSNetwork,
+	              logger=None, useSchedulable:bool=False):
 		if logger is None:
 			logger = logging.getLogger(__name__)
 		self.logger = logger
 		self.strategyId = strategyId
 		self.network = network
+		self.useSchedulable = useSchedulable
 
 	def getNodes(self):
 		"""
@@ -77,3 +79,12 @@ class EnergyStrategy:
 				self.logger.warning("Fail to switch off '%s'",elem.id)
 				ok = False
 		return ok
+
+	def getSchedulableNodes(self):
+		"""
+		Return the list of nodes that should be scheduled by the user, using the HTTP UI
+		 to start (or stop) the device
+		"""
+		if not self.useSchedulable:
+			return []
+		return self.getNodes()

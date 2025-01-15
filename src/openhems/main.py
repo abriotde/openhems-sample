@@ -116,8 +116,8 @@ class OpenHEMSApplication:
 		try:
 			network = network_helper.getNetworkFromConfiguration(self.logger, configurator)
 			warnings = warnings + network.getWarningMessages()
-			schedule = network.getSchedule()
 			self.server = OpenHEMSServer(self.logger, network, configurator)
+			schedule = self.server.getSchedule()
 		except ConfigurationException as e:
 			warnings.append(str(e))
 		for warning in warnings:

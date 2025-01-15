@@ -153,6 +153,16 @@ class HomeAssistantAPI(HomeStateUpdater):
 		}
 		self.callAPI("/services/notify/persistent_notification", data=data)
 
+	def getValue(self, entityId, key="state"):
+		"""
+		Return a entity value from its Id (Without cache and not limited to a pre-selected elements)
+		"""
+		response = self.callAPI("/states/"+entityId)
+		if response is not None:
+			val = response.get(key, None)
+			return val
+		return None
+
 	# pylint: disable=too-many-branches
 	def callAPI(self, url: str, data=None):
 		"""
