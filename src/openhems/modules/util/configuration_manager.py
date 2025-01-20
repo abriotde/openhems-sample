@@ -181,9 +181,11 @@ class ConfigurationManager():
 	@staticmethod
 	def setYamlConfigKey(yamlConfig, keys, myValue):
 		"""
-		Set 
+		Set a value for a key in a YAML config with:
+		yamlConfig: YAML config as a recursiv dict.
+		keys: a list of keys : "a.b.c" = ["key","subkey","subsubkey"] wich is a ConfigurationManager key
 		"""
-		print("setYamlConfigKey(",yamlConfig,", ",keys,", ",myValue,")")
+		# print("setYamlConfigKey(",yamlConfig,", ",keys,", ",myValue,")")
 		elem = yamlConfig
 		l = len(keys)-1
 		for i,k in enumerate(keys):

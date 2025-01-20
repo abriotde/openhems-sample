@@ -22,13 +22,14 @@ network:
     currentPower: sensor.tz3000_2putqrmw_ts011f_puissance
     id: box
     isOn: switch.tz3000_2putqrmw_ts011f_commutateur
-    strategy: day
+    strategy: redDay
 server:
   loglevel: debug
   strategies:
   - class: offpeak
     id: offpeak
   - class: switchoff
-    id: day
+    condition: self.getVal('sensor.rte_tempo_couleur_actuelle')=='Rouge'
+    id: redDay
     offrange:
-    - 22h-6h
+    - 6h-22h
