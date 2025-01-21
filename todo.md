@@ -6,11 +6,9 @@
 - funding/crowd : kickstarter
 - promote : LinuxFR
 - prod/mvp : Minimum Valuable Product
-- dev/strategy : use timout to stay alife
-- dev/strategy/reddays : manage scenarii for Tempo red day
+- dev/strategy : use timeout to stay alife
 - dev/general : Improve resilience : When fail get global status at init time wait and retry
 - dev/ihm : Improve edit Yaml configuration whith HTML : Check pb openhems.yaml.20241226: save without diff for nodes + node_id
-- dev/strategy : switch off/on after delay : Multi strategy
 - dev/admin : Run openhems as user 'openhems' instead root, use 
 - dev/updater : Add HomeStateUpdater from openhab_api.py
 - dev/strategy : Add solar panel without internet, use Python skyfield module or pvlib module
