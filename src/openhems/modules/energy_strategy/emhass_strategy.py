@@ -25,8 +25,9 @@ class EmhassStrategy(EnergyStrategy):
 	So this require some more Python packages.
 	"""
 
-	def __init__(self, mylogger, network: OpenHEMSNetwork, configuration:ConfigurationManager):
-		super().__init__(mylogger)
+	def __init__(self, mylogger, network: OpenHEMSNetwork, configuration:ConfigurationManager,
+	             strategyId:str="emhass"):
+		super().__init__(strategyId, network, mylogger, True)
 		self.adapter = EmhassAdapter.createFromOpenHEMS(configuration, network)
 		self.logger.info("EmhassStrategy()")
 		self.network = network
@@ -189,10 +190,10 @@ class EmhassStrategy(EnergyStrategy):
 				switchOnRate = 100 * ( np.dot(vals, rates) ) / value
 			deferable = self.deferables[deferableName]
 			doSwitchOn = self.evaluatePertinenceSwitchOn(switchOnRate, deferable.node)
-			self.switchOn(deferable.node, cycleDuration, doSwitchOn)
+			self.switchOnSchedulable(deferable.node, cycleDuration, doSwitchOn)
 		return True
 
-	def updateNetwork(self, cycleDuration, now=None):
+	def updateNetwork(self, cycleDuration, allowSleep:bool, now=None):
 		"""
 		Decide what to do during the cycle:
 		 IF off-peak : switch on all

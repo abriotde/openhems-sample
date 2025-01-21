@@ -4,203 +4,15 @@ It is used to know devices and to switch on/off them.
 """
 
 from typing import Final
-import logging
 import os
 import copy
-from openhems.modules.util.configuration_manager import ConfigurationManager, ConfigurationException
 from openhems.modules.util.notification_manager import NotificationManager
 from .node import (
 	OpenHEMSNode, InOutNode, OutNode, PublicPowerGrid, SolarPanel, Battery
 )
-from .feeder import Feeder, SourceFeeder
+from .homestate_updater import HomeStateUpdater
 
 POWER_MARGIN: Final[int] = 10 # Margin of power consumption for security
-
-class HomeStateUpdaterException(Exception):
-	"""
-	Custom Configuration exception.
-	"""
-	def __init__(self, message, defaultValue=''):
-		self.message = message
-		self.defaultValue = defaultValue
-
-class HomeStateUpdater:
-	"""
-	This is an abstract class to update OpenHEMSNetwork
-	 ignoring the real source of the update.
-	Today only Home-Assistant updater is implemented (HomeAssistantAPI).
-	"""
-	def __init__(self, conf:ConfigurationManager) -> None:
-		self.cachedIds = {}
-		self.refreshId = 0
-		self.logger = logging.getLogger(__name__)
-		self.network = None
-		self.conf = conf
-		self.tmp = None # Used to avoid method argument repeated.
-		self.warningMessages = []
-
-	def updateNetwork(self):
-		"""
-		A function witch update home network and return OpenHEMSNetwork.
-		"""
-		self.refreshId += 1
-
-	def switchOn(self, isOn, _):
-		"""
-		return: True if the switch is on after, False else
-		"""
-		self.logger.error("switchOn() should be implemented in sub-class.")
-		return not isOn
-
-	def notify(self, message):
-		"""
-		A function witch notify the Network,
-		 this should be seen easily by the end user.
-		"""
-		self.logger.info(message)
-
-	def initNetwork(self):
-		"""
-		Can be overiden by sub-class if neeeded.
-		This function is called to initialyze network.
-		"""
-
-	# pylint: disable=unused-argument
-	def getFeeder(self, value, expectedType=None, defaultValue=None) -> Feeder:
-		"""
-		Return a feeder considering
-		 This function should be overiden by sub-class
-		"""
-		return SourceFeeder(value, self, expectedType)
-
-	def getPublicPowerGrid(self, nameid, nodeConf):
-		"""
-		Return a PublicPowerGrid according nodeConf 
-		"""
-		self.tmp = "publicpowergrid"
-		currentPower = self._getFeeder(nodeConf, "currentPower", "int")
-		marginPower = self._getFeeder(nodeConf, "marginPower", "int")
-		maxPower = self._getFeeder(nodeConf, "maxPower", "int")
-		minPower = self._getFeeder(nodeConf, "minPower", "int")
-		contract = nodeConf.get("contract")
-		node = PublicPowerGrid(currentPower, maxPower, minPower, marginPower,
-			contract, self)
-		# self.logger.info(node)
-		return node
-
-	def getSolarPanel(self, nameid, nodeConf):
-		"""
-		Return a SolarPanel according nodeConf 
-		"""
-		self.tmp = "solarpanel"
-		currentPower = self._getFeeder(nodeConf, "currentPower", "int")
-		maxPower = self._getFeeder(nodeConf, "maxPower", "int")
-		moduleModel = self._getFeeder(nodeConf, "moduleModel", "str")
-		inverterModel = self._getFeeder(nodeConf, "inverterModel", "str")
-		tilt = self._getFeeder(nodeConf, "tilt", "float")
-		azimuth = self._getFeeder(nodeConf, "azimuth", "int")
-		modulesPerString = self._getFeeder(nodeConf, "modulesPerString", "int")
-		stringsPerInverter = self._getFeeder(nodeConf, "stringsPerInverter", "int")
-		node = SolarPanel(currentPower, maxPower,
-			moduleModel=moduleModel, inverterModel=inverterModel,
-			tilt=tilt, azimuth=azimuth,
-			modulesPerString=modulesPerString,
-			stringsPerInverter=stringsPerInverter)
-		# self.logger.info(str(node))
-		return node
-
-	def getBattery(self, nameid, nodeConf):
-		"""
-		Return a Battery according nodeConf 
-		"""
-		self.tmp = "battery"
-		currentPower = self._getFeeder(nodeConf, "currentPower", "int")
-		capacity = self._getFeeder(nodeConf, "capacity", "int")
-		maxPowerIn = self._getFeeder(nodeConf, "maxPowerIn", "int")
-		maxPowerOut = self._getFeeder(nodeConf, "maxPowerOut", "int")
-		marginPower = self._getFeeder(nodeConf, "marginPower", "int")
-		currentLevel = self._getFeeder(nodeConf, "currentLevel", "float")
-		lowLevel = self._getFeeder(nodeConf, "lowLevel", "float")
-		hightLevel = self._getFeeder(nodeConf, "hightLevel", "float")
-		node = Battery(capacity, currentPower, maxPowerIn=maxPowerIn,
-			maxPowerOut=maxPowerOut, marginPower=marginPower,
-			currentLevel=currentLevel, lowLevel=lowLevel, hightLevel=hightLevel)
-		# self.logger.info(node)
-		return node
-
-	# pylint: disable=unused-argument
-	def _getFeeder(self, conf, key, expectedType=None) -> Feeder:
-		"""
-		Return a feeder, search in configuration for default value if not set. 
-		"""
-		value = conf.get(key)
-		if value is None:
-			value = self.conf.get( "default.node."+self.tmp+"."+key)
-		try:
-			feeder = self.getFeeder(value, expectedType)
-		except ValueError as e:
-			raise ConfigurationException(
-				"Impossible to convert "+key+" = '"+value
-				+"' to type "+expectedType
-				+" for node '"+self.tmp+"'", 0
-			) from e
-		if feeder is None:
-			msg = "Argument '"+key+"' is required for node '"+self.tmp+"'"
-			self.logger.critical(msg)
-			raise ConfigurationException(msg)
-		return feeder
-
-	def _getNetwork(self, networkConf):
-		"""
-		Initialyze network according to it's configuration.
-		"""
-		i = 0
-		for e in networkConf:
-			try:
-				classname = e.get("class", "unspecified").lower()
-				node = None
-				nameid = e.get("id", f"node_{i}")
-				i += 1
-				if classname == "switch":
-					node = node = self.getSwitch(nameid, e)
-				elif classname == "publicpowergrid":
-					node = self.getPublicPowerGrid(nameid, e)
-				elif classname == "solarpanel":
-					node = self.getSolarPanel(nameid, e)
-				elif classname == "battery":
-					node = self.getBattery(nameid, e)
-				else:
-					msg = f"HomeAssistantAPI.getNetwork : Unknown classname '{classname}'"
-					self.logger.critical(msg)
-					raise ConfigurationException(msg)
-				self.network.addNode(node)
-			except ConfigurationException as e:
-				msg = f"Impossible to load {classname}({nameid}) due to "+str(e)
-				self.logger.error(msg)
-				self.warningMessages.append(msg)
-
-	def getSwitch(self, nameid, nodeConf):
-		"""
-		Return a OpenHEMSNode representing a switch
-		 according to it's YAML configuration.
-		"""
-		self.tmp = "switch"
-		currentPower = self._getFeeder(nodeConf, "currentPower", "int")
-		maxPower = self._getFeeder(nodeConf, "maxPower", "int")
-		isOn = self._getFeeder(nodeConf, "isOn", "bool")
-		node = OutNode(nameid, currentPower, maxPower, isOn)
-		# self.logger.info(node)
-		return node
-
-	def getNetwork(self, logger): # -> OpenHEMSNetwork:
-		"""
-		Explore the home device network available with Home-Assistant.
-		"""
-		self.network = OpenHEMSNetwork(self, logger)
-		self.initNetwork()
-		self._getNetwork(self.conf.get("network.nodes"))
-		self.network.print(self.logger.info)
-		return self.network
 
 class OpenHEMSNetwork:
 	"""
@@ -224,12 +36,24 @@ class OpenHEMSNetwork:
 			printer("  - "+str(elem))
 		printer(")")
 
-	def __init__(self, networkUpdater: HomeStateUpdater, logger):
-		self.networkUpdater = networkUpdater
+	def __init__(self, logger, networkUpdater, nodesConf):
+		self.networkUpdater = None
 		self.nodes = []
-		self.notificationManager = NotificationManager(self.networkUpdater)
+		self.notificationManager = None
 		self._elemsCache = {}
 		self.logger = logger
+		self.addNetworkUpdater(networkUpdater, nodesConf)
+
+	def addNetworkUpdater(self, networkUpdater: HomeStateUpdater, nodesConf):
+		"""
+		Add a networkUpdater (HomeStateUpdater) with is required.
+		"""
+		# print("addNetworkUpdater()")
+		networkUpdater.initNetwork(self)
+		networkUpdater.getNetwork(nodesConf)
+		self.networkUpdater = networkUpdater
+		self.notificationManager = NotificationManager(self.networkUpdater)
+		self.print(self.logger.info)
 
 	def getWarningMessages(self):
 		"""
@@ -416,11 +240,29 @@ class OpenHEMSNetwork:
 		batteries = self.getAll("battery")
 		l = len(batteries)
 		if l<1:
-			return Battery(0, 0)
+			return Battery("fakeBattery", 0, 0)
 		if l==1:
 			return batteries[0]
 		# TODO
-		return copy.copy(batteries[0])
+		bat = copy.copy(batteries[0])
+		bat.setId(batteries[0].id + "_sum")
+		return bat
+
+	def getNodesForStrategy(self, strategyId):
+		"""
+		Return list of nodes for a strategy
+		"""
+		key = "strategy_"+strategyId
+		nodes = self._elemsCache.get(key, None)
+		if nodes is None:
+			nodes = []
+			for node in self.getAll("out"):
+				strategy = node.getStrategyId()
+				if strategy is None or strategy==strategyId:
+					nodes.append(node)
+			self._elemsCache[key] = nodes
+			# self.logger.debug("getNodesForStrategy(%s) = %s", strategyId, nodes)
+		return nodes
 
 	def getOffPeakHoursRanges(self):
 		"""

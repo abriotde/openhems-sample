@@ -55,11 +55,11 @@ class OpenHEMSSchedule:
 		self.duration = max(self.duration-duration, 0)
 		return self.duration
 
-	# pylint: disable=unused-argument
 	def __json__(self, request=None):
 		"""
 		Export as JSON.
 		"""
+		del request
 		return {"name":self.name,
 			"duration":self.duration,
 			"timeout":self.timeout}

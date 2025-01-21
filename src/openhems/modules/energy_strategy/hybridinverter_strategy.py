@@ -24,11 +24,13 @@ class HybridInverterStrategy(SolarBasedStrategy):
 	"""
 
 	def __init__(self, network: OpenHEMSNetwork, geoposition: GeoPosition, offpeakHoursRanges=None):
-		super().__init__(network, geoposition, offpeakHoursRanges)
+		del offpeakHoursRanges
+		super().__init__(network, geoposition)
 		logging.getLogger("HybridInverterStrategy")\
 			.error("SolarOnlyProductionStrategy() : TODO")
 		# TODO
-	def updateNetwork(self, cycleDuration):
+
+	def updateNetwork(self, cycleDuration:int, allowSleep:bool, now=None):
 		logging.getLogger("HybridInverterStrategy")\
 			.error("SolarOnlyProductionStrategy.updateNetwork() : TODO")
 		# TODO

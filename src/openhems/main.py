@@ -59,8 +59,9 @@ class OpenHEMSApplication:
 	        	interval=1,
 	        	backupCount=5)
 			fileHandler.rotation_filename = OpenHEMSApplication.filer
-		else:
-			fileHandler = logging.StreamHandler(sys.stdout)
+			fileHandler.setFormatter(formatter)
+			myHandlers.append(fileHandler)
+		fileHandler = logging.StreamHandler(sys.stdout)
 		fileHandler.setFormatter(formatter)
 		myHandlers.append(fileHandler)
 		logging.basicConfig(level=level, format=logformat, handlers=myHandlers)
@@ -76,28 +77,47 @@ class OpenHEMSApplication:
 		"""
 		return self.logger
 
-	def __init__(self, yamlConfFilepath, *, port=0, logfilepath='', inDocker=False):
+	def loadYamlConfiguration(self, configurator:ConfigurationManager, yamlConfFilepath:str):
+		"""
+		Load YAML configuration, over load it with a secret file if exists.
+		Return a "Configurator"
+		"""
+		print("Load YAML configuration from '",yamlConfFilepath,"'")
+		path = Path(yamlConfFilepath)
+		configurator.addYamlConfig(path)
+		if path.suffix!="":
+			# print("Suffix:", path.suffix)
+			secretPath = str(yamlConfFilepath).replace(path.suffix, ".secret"+path.suffix)
+			path = Path(secretPath)
+			if path.is_file():
+				print("Over load YAML configuration with '",str(path),"'")
+				configurator.addYamlConfig(path)
+			else:
+				print("No '",str(path),"'")
+		return configurator
+
+	def __init__(self, yamlConfFilepath:str, *, port=0, logfilepath='', inDocker=False):
 		# Temporary logger
 		self.logger = logging.getLogger(__name__)
-		configurator = ConfigurationManager(self.logger)
 		warnings = []
 		network = None
 		schedule = []
+		configurator = ConfigurationManager(self.logger)
 		try:
-			print("Load YAML configuration from '",yamlConfFilepath,"'")
-			configurator.addYamlConfig(Path(yamlConfFilepath))
+			configurator = self.loadYamlConfiguration(configurator, yamlConfFilepath)
 		except ConfigurationException as e:
 			warnings.append(str(e))
 		loglevel = configurator.get("server.loglevel")
 		logformat = configurator.get("server.logformat")
 		logfile = logfilepath if logfilepath!='' else configurator.get("server.logfile")
 		self.setLogger(loglevel, logformat, logfile, inDocker)
+		self.logger.info("Load YAML configuration from '%s'.",yamlConfFilepath)
 		self.server = None
 		try:
 			network = network_helper.getNetworkFromConfiguration(self.logger, configurator)
 			warnings = warnings + network.getWarningMessages()
-			schedule = network.getSchedule()
 			self.server = OpenHEMSServer(self.logger, network, configurator)
+			schedule = self.server.getSchedule()
 		except ConfigurationException as e:
 			warnings.append(str(e))
 		for warning in warnings:
@@ -109,6 +129,7 @@ class OpenHEMSApplication:
 		self.webserver = OpenhemsHTTPServer(self.logger, schedule, warnings,
 			port=port, htmlRoot=root, inDocker=inDocker, configurator=configurator)
 		if network is not None:
+			self.logger.info("OpenHEMS loaded.")
 			network.notify("Start OpenHEMS.")
 
 	def runManagementServer(self):

@@ -1,6 +1,17 @@
 # Changelog
 
 
+## 0.1.7 - 2024-01-03
+### Improvement
+- MOD : Multi-strategy
+- MOD : Add SwitchOffStrategy with extra conditions.
+
+### Fix
+- Improve logs with Docker
+
+### TODO
+- Update UI YAML edition
+
 ## 0.1.6 - 2024-01-03
 ### Improvement
 - MOD log for docker on stdout

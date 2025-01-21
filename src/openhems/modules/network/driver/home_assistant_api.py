@@ -7,7 +7,7 @@ It access to this by the API using URL and long_lived_token
 import time
 import json
 import requests
-from openhems.modules.network.network import (
+from openhems.modules.network import (
 	HomeStateUpdater, HomeStateUpdaterException
 )
 from openhems.modules.network.feeder import Feeder, SourceFeeder, ConstFeeder
@@ -39,10 +39,11 @@ class HomeAssistantAPI(HomeStateUpdater):
 		self.network = None
 		self.haElements = None
 
-	def initNetwork(self):
+	def initNetwork(self, network):
 		"""
 		Get all nodes according to Home-Assistants
 		"""
+		# print("HomeAssistant.initNetwork()")
 		response = self.callAPI("/states")
 		self.haElements = {}
 		for e in response:
@@ -50,6 +51,7 @@ class HomeAssistantAPI(HomeStateUpdater):
 			entityId = e['entity_id']
 			self.haElements[entityId] = e
 			# print(entityId, e['state'], e['attributes'])
+		self.network = network
 		# print("getHANodes() = ", self.haElements)
 
 	def getFeeder(self, value, expectedType=None, defaultValue=None) -> Feeder:
@@ -151,6 +153,16 @@ class HomeAssistantAPI(HomeStateUpdater):
 		}
 		self.callAPI("/services/notify/persistent_notification", data=data)
 
+	def getValue(self, entityId, key="state"):
+		"""
+		Return a entity value from its Id (Without cache and not limited to a pre-selected elements)
+		"""
+		response = self.callAPI("/states/"+entityId)
+		if response is not None:
+			val = response.get(key, None)
+			return val
+		return None
+
 	# pylint: disable=too-many-branches
 	def callAPI(self, url: str, data=None):
 		"""
@@ -196,12 +208,16 @@ class HomeAssistantAPI(HomeStateUpdater):
 			# overwise it's better to slow down to avoid useless
 			# infinite loop on errors.
 			self.sleepDurationOnerror = min(self.sleepDurationOnerror*2, 64)
-			errMsg = errMsg.format_map(locals())+" ("+self.apiUrl+url+", "+str(data)+")"
+			try:
+				errMsg = errMsg.format_map(locals())+" ("+self.apiUrl+url+", "+str(data)+")"
+			except KeyError:
+				pass
 			self.logger.error(errMsg)
+			self.logger.debug("With token '%s'", self.token)
 			if url!="/services/notify/persistent_notification":
 				# To avoid infinite loop : It's url for notify()
-				self.notify(f"Error callAPI() : \
-					status_code={response.status_code} : {errMsg}")
+				self.notify("Error callAPI() : "
+					f"status_code={response.status_code} : {errMsg}")
 			if url=="/states":
 				raise ConfigurationException(
 					"Fail get states of Home-Assistant. "
@@ -211,7 +227,7 @@ class HomeAssistantAPI(HomeStateUpdater):
 			self.sleepDurationOnerror = max(self.sleepDurationOnerror/2, 1)
 		try:  # Sometimes when there are connection problems we need to catch empty retrieved json
 			return response.json()
-		except json.decoder.JSONDecodeError:
+		except (json.decoder.JSONDecodeError, requests.exceptions.JSONDecodeError):
 			if errMsg=="":
 				self.logger.error("Fail parse response '%s'",response)
 			return {}

@@ -27,21 +27,21 @@ class SourceInverterStrategy(SolarBasedStrategy):
 	 if there is- not so much solar production
 	"""
 
-	def __init__(self, network: OpenHEMSNetwork, geoPosition: GeoPosition,
-			config, offpeakHoursRanges=None):
+	def __init__(self, network: OpenHEMSNetwork, geoPosition: GeoPosition, config):
 		self.logger = logging.getLogger(__name__)
 		self.logger.info("SourceInverterStrategy({config})")
-		super().__init__(network, geoPosition, offpeakHoursRanges)
+		super().__init__(network, geoPosition)
 		self.inverterId = config.get("inverterId", "")
 
-	# pylint: disable=unused-argument
 	def switch2solarProduction(self, switch2solarProduction:bool= True):
 		"""
 		Switch to solar production if switch2solarProduction=True
 		Else switch to grid production, all solar production will go to battery
 		"""
+		del switch2solarProduction
 		# TODO
 		return True
+
 	def updateNetworkUsingPublicGridSource(self, cycleDuration):
 		"""
 		When we use public grid source
@@ -91,7 +91,7 @@ class SourceInverterStrategy(SolarBasedStrategy):
 				elif solarProduction>powerConsumption+POWER_MARGIN:
 					self.network.switchOn(solarProduction-powerConsumption)
 
-	def updateNetwork(self, cycleDuration):
+	def updateNetwork(self, cycleDuration:int, allowSleep:bool, now=None):
 		"""
 		Update the OpenHEMSNetwork
 		"""

@@ -17,33 +17,40 @@ server:
   loglevel: info # Optional, default is info, availables are debug / info / warn / error / critical / no
   loopDelay: 30 # interval beetween 2 loop
   network: homeassistant # Define the type of network API used to control the home energy.
-  strategy: offpeak # Define the algorithm used to control the  home energy.
+  strategies: []
 network:
   nodes: [] # List the source of electric power / stockage
 # - class=publicpowergrid: currentPower, maxPower, minPower, powerMargin
 # - class=battery: currentPower, level (current_battery_level), maxPowerIn (max_discharge_power_watt), maxPowerOut (max_charge_power_watt), efficiencyIn (discharge_efficiency:0.95), efficiencyOut (charge_efficiency:0.95), capacity (watt), lowLevel (state_of_charge_min), highLevel (state_of_charge_max), targetLevel (state_of_charge_target)
 # - class=solarpanel: currentPower, maxPower (max_discharge_power_watt), moduleModel (CSUN_Eurasia_Energy_Systems_Industry_and_Trade_CSUN295_60M), inverterModel: (Fronius_International_GmbH__Fronius_Primo_5_0_1_208_240__240V_), tilt, azimuth, modules_per_string, strings_per_inverter
 # - class=switch: id, isOn, currentPower, maxPower
-# 
-emhass:
-  freq: 30
-  days_to_retrieve: 2
-  method_ts_round: nearest
-  delta_forecast: 1
-  weather_forecast_method: scrapper
-  load_cost_hp: 0.30
-  load_cost_hc: 0.15
-  prod_sell_price: 0.0
-  set_total_pv_sell: False
-  lp_solver: default
-  lp_solver_path: empty
-  set_nocharge_from_grid: False
-  set_nodischarge_to_grid: True
-  set_battery_dynamic: False
-  battery_dynamic_max: 0.9
-  battery_dynamic_min: -0.9
+
 # All default values.
 default:
+  strategy:
+    emhass:
+      freq: 30
+      days_to_retrieve: 2
+      method_ts_round: nearest
+      delta_forecast: 1
+      weather_forecast_method: scrapper
+      load_cost_hp: 0.30
+      load_cost_hc: 0.15
+      prod_sell_price: 0.0
+      set_total_pv_sell: False
+      lp_solver: default
+      lp_solver_path: empty
+      set_nocharge_from_grid: False
+      set_nodischarge_to_grid: True
+      set_battery_dynamic: False
+      battery_dynamic_max: 0.9
+      battery_dynamic_min: -0.9
+    offpeak:
+      offpeakhours: None
+    switchoff:
+      reverse: False
+      offhours: []
+      offconditions: False
   node:
     publicpowergrid:
       currentPower: null
@@ -96,3 +103,5 @@ default:
       currentPower: None
       maxPower: 2000
       isOn: None
+      strategy: None
+

@@ -22,9 +22,8 @@ from openhems.modules.util import (
 from .driver_vpn import VpnDriverWireguard, VpnDriverIncronClient
 # from .schedule import OpenHEMSSchedule
 
-# pylint: disable=unused-argument
-
 # Patch for jsonEncoder
+# pylint: disable=unused-argument
 def wrappedDefault(self, obj):
 	"""
 	Patch for jsonEncoder
@@ -47,6 +46,7 @@ def panel(request):
 	"""
 	Web-service to get schedled devices.
 	"""
+	del request
 	return { "nodes": OPENHEMS_CONTEXT.schedule }
 
 # pylint: disable=too-many-branches

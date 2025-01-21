@@ -3,27 +3,37 @@ Super class for all EnergyStrategy modules
 """
 
 import logging
-# from openhems.modules.network.network import OpenHEMSNetwork
+from openhems.modules.network.network import OpenHEMSNetwork
+
 LOOP_DELAY_VIRTUAL = 0
 
 class EnergyStrategy:
 	"""
 	Super class for all EnergyStrategy modules
 	"""
-	def  __init__(self, logger=None):
+	def  __init__(self, strategyId:str, network:OpenHEMSNetwork,
+	              logger=None, useSchedulable:bool=False):
 		if logger is None:
 			logger = logging.getLogger(__name__)
 		self.logger = logger
+		self.strategyId = strategyId
+		self.network = network
+		self.useSchedulable = useSchedulable
 
-	# pylint: disable=unused-argument
-	def updateNetwork(self, cycleDuration):
+	def getNodes(self):
+		"""
+		Return nodes concerned by a defined strategy
+		"""
+		return self.network.getNodesForStrategy(self.strategyId)
+
+	def updateNetwork(self, cycleDuration:int, allowSleep:bool, now=None):
 		"""
 		Function to update OpenHEMSNetwork. To implement in sub-class
 		"""
-		logging.getLogger("EnergyStrategy")\
-			.error("EnergyStrategy.updateNetwork() : To implement in sub-class")
+		del cycleDuration, allowSleep, now
+		self.logger.error("EnergyStrategy.updateNetwork() : To implement in sub-class")
 
-	def switchOn(self, node, cycleDuration, doSwitchOn):
+	def switchOnSchedulable(self, node, cycleDuration, doSwitchOn):
 		"""
 		Switch on/off the node depending on doSwitchOn.
 		IF the node is ever on:
@@ -55,3 +65,26 @@ class EnergyStrategy:
 		else:
 			self.logger.debug("switchOn() : Node is not switchable : %s.", node.id)
 		return False
+
+	def switchOffAll(self):
+		"""
+		Switch of all connected devices with this strategy.
+		"""
+		# self.print(logger.info)
+		# marginPower = self.getCurrentPowerConsumption()
+		# self.print(logger.info)
+		ok = True
+		for elem in self.getNodes():
+			if elem.isSwitchable and elem.switchOn(False):
+				self.logger.warning("Fail to switch off '%s'",elem.id)
+				ok = False
+		return ok
+
+	def getSchedulableNodes(self):
+		"""
+		Return the list of nodes that should be scheduled by the user, using the HTTP UI
+		 to start (or stop) the device
+		"""
+		if not self.useSchedulable:
+			return []
+		return self.getNodes()

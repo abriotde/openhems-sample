@@ -3,9 +3,15 @@ Custom and specific time management for OpenHEMS
 """
 
 import re
+import time
+import logging
 from datetime import datetime, timedelta
 from .cast_utility import CastException
 # from openhems.modules.util.cast_utility import CastException
+logger = logging.getLogger(__name__)
+
+# Time to wait in seconds before considering to be in offpeak range
+TIME_MARGIN_IN_S = 1
 
 class Time:
 	"""
@@ -38,15 +44,15 @@ class Time:
 			raise CastException(f"Fail convert '{strTime}' to Time.", "")
 		return int(datetime.strptime(strTime, pattern).strftime("%H%M%S"))
 
-	def __init__(self, time):
-		if isinstance(time, datetime):
-			self.time = self._fromDatetime(time)
-		elif isinstance(time, str):
-			self.time = self._fromStr(time)
-		elif isinstance(time, int):
-			self.time = time
+	def __init__(self, atime):
+		if isinstance(atime, datetime):
+			self.time = self._fromDatetime(atime)
+		elif isinstance(atime, str):
+			self.time = self._fromStr(atime)
+		elif isinstance(atime, int):
+			self.time = atime
 		else:
-			print("Error Time() from incompatible type")
+			logger.error("Error Time() from incompatible type")
 
 	def toHourMinSec(self):
 		"""
@@ -104,6 +110,7 @@ class HoursRanges:
 	def __init__(self, offPeakHoursRanges:list):
 		self._index = 0
 		self.setOffPeakHoursRanges(offPeakHoursRanges)
+		self.rangeEnd = datetime.now()
 
 	def setOffPeakHoursRanges(self, offPeakHoursRanges):
 		"""
@@ -169,17 +176,34 @@ class HoursRanges:
 				time2NextTime = wait
 				inOffpeakRange = True
 		assert nextTime<=240000
-		rangeEnd = Time(nextTime).toDatetime(nowDatetime)
+		self.rangeEnd = Time(nextTime).toDatetime(nowDatetime)
 		# nbSecondsToNextRange = (self.rangeEnd - nowDatetime).total_seconds()
 		# logger.info("OffPeakStrategy.checkRange({now}) => %s, %d", \
 		# 	rangeEnd, nbSecondsToNextRange)
-		return (inOffpeakRange, rangeEnd)
+		return (inOffpeakRange, self.rangeEnd)
 
 	def isEmpty(self):
 		"""
 		Return True if there is no range.
 		"""
 		return len(self.ranges)<=0
+
+	def getTime2NextRange(self, now) -> int:
+		"""
+		Return: time to wait in seconds untils next range
+		"""
+		return (self.rangeEnd - now).total_seconds()
+
+	def sleepUntillNextRange(self, now):
+		"""
+		Set application to sleep until off-peak (or inverse) range end
+		TIME_MARGIN_IN_S: margin to wait more to be sure to change range... 
+		useless, not scientist?
+		"""
+		time2wait = self.getTime2NextRange(now)
+		logger.info("sleepUntillNextRange() : sleep(%d min, until %s)",\
+			round((time2wait+TIME_MARGIN_IN_S)/60), str(self.rangeEnd))
+		time.sleep(time2wait+TIME_MARGIN_IN_S)
 
 	def __iter__(self):
 		self._index = 0

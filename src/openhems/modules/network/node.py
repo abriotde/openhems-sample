@@ -23,8 +23,9 @@ class OpenHEMSNode:
 		"""
 		self.id = haId.strip().replace(" ", "_")
 
-	def __init__(self, currentPower, maxPower, isOnFeeder=None):
+	def __init__(self, nameId, currentPower, maxPower, isOnFeeder=None):
 		self.id = ""
+		self.setId(nameId)
 		self.params = ""
 		self.network = None
 		self._isSwitchable = False
@@ -110,6 +111,7 @@ class OpenHEMSNode:
 		if self._isSwitchable:
 			return self._isOn.getValue()
 		return True
+
 	def switchOn(self, connect: bool) -> bool:
 		"""
 		May not work if it is impossible (No relay) or if it failed.
@@ -118,27 +120,37 @@ class OpenHEMSNode:
 		"""
 		if self._isSwitchable:
 			return self.network.networkUpdater.switchOn(connect, self)
-		print("Warning : try to switchOn/Off a not switchable device : ",self.id)
+		logger.warning("Try to switchOn/Off a not switchable device : %s", self.id)
 		return connect # Consider node is always on network
 
 class OutNode(OpenHEMSNode):
 	"""
 	Electricity consumer (like washing-machine, water-heater).
 	"""
-	def __init__(self, nameId, currentPower, maxPower, isOnFeeder=None):
-		super().__init__(currentPower, maxPower, isOnFeeder)
-		self.setId(nameId)
+	def __init__(self, nameId, strategyId, currentPower, maxPower, isOnFeeder=None):
+		super().__init__(nameId, currentPower, maxPower, isOnFeeder)
 		self.name = nameId
 		self.schedule = OpenHEMSSchedule(self.id, nameId)
+		self.strategyId = strategyId
 
 	def getSchedule(self):
 		"""
 		Return schedule
 		"""
 		return self.schedule
+
+	def getStrategyId(self):
+		"""
+		Return StrategyId
+		"""
+		return self.strategyId
+
 	def __str__(self):
-		return (f"OutNode(name={self.name}, currentPower={self.currentPower},"
+		return (f"OutNode(name={self.name}, strategy={self.strategyId},"
+			f" currentPower={self.currentPower},"
 			f"maxPower={self.maxPower}, isOn={self._isOn})")
+	def __repr__(self):
+		return str(self)
 
 class InOutNode(OpenHEMSNode):
 	"""
@@ -147,9 +159,9 @@ class InOutNode(OpenHEMSNode):
 	param maxPower: positive value, max power we can consume at a time.
 	param minPower: negative value if we can sell or ther is battery, 0 overwise.
 	"""
-	def __init__(self, currentPower, maxPower, minPower, marginPower) -> None:
+	def __init__(self, nameid, currentPower, maxPower, minPower, marginPower) -> None:
 		# isAutoAdatative: bool, isControlable: bool, isModulable: bool, isCyclic: bool
-		super().__init__(currentPower, maxPower)
+		super().__init__(nameid, currentPower, maxPower)
 		self.currentPower = currentPower
 		self.marginPower = marginPower
 		self.minPower = minPower
@@ -203,8 +215,9 @@ class PublicPowerGrid(InOutNode):
 	"""
 	This represent Public power grid. Just one should be possible.
 	"""
-	def __init__(self, currentPower, maxPower, minPower, marginPower, contract, networkUpdater):
-		super().__init__(currentPower, maxPower, minPower, marginPower)
+	def __init__(self, nameid, currentPower, maxPower, minPower, marginPower,
+	             contract, networkUpdater):
+		super().__init__(nameid, currentPower, maxPower, minPower, marginPower)
 		self.contract = Contract.getContract(contract, networkUpdater.conf, networkUpdater)
 
 	def __str__(self):
@@ -225,10 +238,10 @@ class SolarPanel(InOutNode):
 	It depends of sensors number.
 	"""
 	# pylint: disable=too-many-arguments
-	def __init__(self, currentPower, maxPower, *,
+	def __init__(self, nameid, currentPower, maxPower, *,
 			moduleModel=None, inverterModel=None, tilt=45, azimuth=180,
 			modulesPerString=1, stringsPerInverter=1):
-		super().__init__(currentPower, maxPower, 0, 0)
+		super().__init__(nameid, currentPower, maxPower, 0, 0)
 		self.moduleModel = moduleModel
 		self.inverterModel = inverterModel
 		self.tilt = tilt
@@ -240,19 +253,22 @@ class SolarPanel(InOutNode):
 		get current maximum power.
 		"""
 		return self.currentPower.getValue()
+
 	def __str__(self):
 		return (f"SolarPanel({self.currentPower}, {self.maxPower},"
 		f" moduleModel={self.moduleModel}, inverterModel={self.inverterModel},"
 		f" tilt={self.tilt}, azimuth={self.azimuth},"
 		f" modulesPerString={self.modulesPerString},"
 		f"stringsPerInverter={self.stringsPerInverter})")
+	def __repr__(self):
+		return str(self)
 
 class Battery(InOutNode):
 	"""
 	This represent battery.
 	"""
 	# pylint: disable=too-many-arguments
-	def __init__(self, capacity, currentPower, *, maxPowerIn=None,
+	def __init__(self, nameid, capacity, currentPower, *, maxPowerIn=None,
 			maxPowerOut=None, marginPower=None,
 			currentLevel=None, lowLevel=None, hightLevel=None):
 		if maxPowerIn is None:
@@ -265,7 +281,7 @@ class Battery(InOutNode):
 			hightLevel = 0.8*capacity
 		if marginPower is None:
 			marginPower = capacity*0.1
-		super().__init__(currentPower, maxPowerIn, maxPowerOut, marginPower)
+		super().__init__(nameid, currentPower, maxPowerIn, maxPowerOut, marginPower)
 		self.isControlable = True
 		self.isModulable = False
 		self.capacity = capacity
@@ -284,11 +300,14 @@ class Battery(InOutNode):
 		Get battery level.
 		"""
 		return self.currentLevel.getValue()
+
 	def __str__(self):
 		return (f"Battery(capacity={self.capacity}, currentPower={self.currentPower},"
 			f" maxPowerIn={self.maxPower}, maxPowerOut={self.minPower},"
 			f" marginPower={self.marginPower}, level={self.currentLevel},"
 			f" lowLevel={self.lowLevel}, hightLevel={self.hightLevel})")
 
+	def __repr__(self):
+		return str(self)
 # class CarCharger(Switch):
 # class WaterHeater(InOutNode):
