@@ -276,3 +276,14 @@ class OpenHEMSNetwork:
 		if nb==0:
 			self.logger.warning("No PublicPowerGrid on the network.")
 		return offpeakhours
+
+	def estimateKwhCost(self, time=None):
+		"""
+		Estimate what should be the electricity cost at a Time.
+		If time is None, set to now
+		return : float: cost
+		 (should be allways the same so never mind for comparaison)
+		"""
+		for elem in self.getAll("publicpowergrid"):
+			cost = elem.getContract().getElectricityCost()
+			return cost

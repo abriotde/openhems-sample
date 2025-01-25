@@ -61,6 +61,12 @@ class RTETempoContract(RTEContract):
 			raise Exception(f"RTETempoContract : Invalid color : '{color}'")
 		return price
 
+	def getElectricityCost(self):
+		"""
+		Return the electrycity cost. Should be overload	
+		"""
+		return 1
+
 	def getOffPeakHoursRanges(self):
 		return self.offpeakHoursRanges
 

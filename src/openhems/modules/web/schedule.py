@@ -3,6 +3,7 @@ This class aim to comunicate what devices user want to schedule to the OpenHEMS 
 The web server is the UI used to that.
 """
 import logging
+from openhems.modules.util import Time
 
 
 class OpenHEMSSchedule:
@@ -18,6 +19,7 @@ class OpenHEMSSchedule:
 		self.timeout = timeout
 		self.duration = duration
 		self.logger = logging.getLogger(__name__)
+		self.strategyCache = {}
 
 	def schedule(self, timeout, duration):
 		"""
@@ -39,14 +41,29 @@ class OpenHEMSSchedule:
 		"""
 		Set duration for device to be on.
 		"""
+		if not isinstance(timeout, Time):
+			timeout = Time(timeout)
 		msg = ("OpenHEMSSchedule.setSchedule("
-			"{duration} seconds, timeout={timeout})")
+			f"{duration} seconds, timeout={timeout})")
 		if duration!=self.duration or self.timeout!=timeout:
 			self.logger.info(msg)
 		else:
 			self.logger.debug(msg)
 		self.duration = duration
 		self.timeout = timeout
+		self.strategyCache = {}
+
+	def getStrategyCache(self, strategyId):
+		"""
+		Return cache used by a strategyId ()
+		"""
+		return self.strategyCache.get(strategyId, None)
+
+	def setStrategyCache(self, strategyId, value):
+		"""
+		Set cache for a strategyId	
+		"""
+		self.strategyCache[strategyId] = value
 
 	def decreaseTime(self, duration):
 		"""

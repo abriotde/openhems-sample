@@ -99,6 +99,9 @@ class Time:
 		h, m, _ = self.toHourMinSec()
 		return str(h).rjust(2, "0")+":"+(str(m).rjust(2, "0"))
 
+	def __eq__(self, other):
+		return self.time == other.time
+
 class HoursRanges:
 	"""
 	Class to represent and manipulate hours range:
