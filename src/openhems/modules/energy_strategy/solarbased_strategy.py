@@ -48,6 +48,7 @@ class SolarBasedStrategy(OffPeakStrategy):
 		"""
 		Update the OpenHEMSNetwork.
 		"""
+		del cycleDuration, allowSleep, now
 		self.logger.error("SolarBasedStrategy.updateNetwork() : \
 				To implement in sub-class")
 

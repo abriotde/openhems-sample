@@ -44,9 +44,10 @@ class Contract:
 		except CastException as e:
 			raise ConfigurationException(e.message) from e
 
-	def getElectricityCost(self):
+	def getPrice(self, now=None):
 		"""
 		Return the electrycity cost. Should be overload	
 		"""
+		del now
 		self.logger.warning("Function getElectricityCost() should be overload")
 		return 1

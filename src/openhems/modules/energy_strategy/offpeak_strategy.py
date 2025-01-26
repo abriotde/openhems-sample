@@ -49,8 +49,8 @@ class OffPeakStrategy(EnergyStrategy):
 			self.nextRanges = []
 		else:
 			# use cache
-			for range in self.nextRanges:
-				inoffpeak, rangeEnd = range
+			for myRange in self.nextRanges:
+				inoffpeak, rangeEnd = myRange
 				if rangeEnd>nowDatetime:
 					self.inOffpeakRange = inoffpeak
 					self.rangeEnd = rangeEnd
@@ -101,6 +101,7 @@ class OffPeakStrategy(EnergyStrategy):
 			# We are in off-peak range hours : switch on all
 			self.switchOnMax(cycleDuration)
 		else: # Sleep untill end.
+			time2Wait = 0
 			if not self._rangeChangeDone:
 				self.logger.debug("OffpeakStrategy : not offpeak, switchOffAll()")
 				if self.switchOffAll():
@@ -109,10 +110,12 @@ class OffPeakStrategy(EnergyStrategy):
 						self.checkRange() # To update self.rangeEnd (and should change self.inOffpeakRange)
 					else:
 						self._rangeChangeDone = True
-						return self.offpeakHoursRanges.getTime2NextRange(now)
+						time2Wait = self.offpeakHoursRanges.getTime2NextRange(now)
 				else:
 					self.logger.warning("Fail to switch off all. We will try again on next loop.")
+			# TODO : check time2Wait
 			self.check4MissingOffeakTime(now, cycleDuration)
+		return time2Wait
 
 	def getMissingTime(self, schedule, now):
 		"""
@@ -122,25 +125,24 @@ class OffPeakStrategy(EnergyStrategy):
 		missingTime = 0
 		if schedule.duration>0 and schedule.timeout is not None:
 			i = 0
- 			nbPeakPeriods = 0
 			previousRangeEnd = now
 			times = (0, 0, previousRangeEnd) # Tuple of time in seconds during offpeak
 			while previousRangeEnd is not None and schedule.timeout>previousRangeEnd:
 				if i>len(self.nextRanges):
-					range = self.offpeakHoursRanges.checkRange(previousRangeEnd)
-					self.nextRanges.append(range)
+					myrange = self.offpeakHoursRanges.checkRange(previousRangeEnd)
+					self.nextRanges.append(myrange)
 				else:
-					range = self.nextRanges[i]
+					myrange = self.nextRanges[i]
 				i += 1
-				times = self.updateTimes(schedule, range, times)
+				times = self.updateTimes(schedule, myrange, times)
 				offpeakTime, peakTime, previousRangeEnd = times
-			missingTime = schedule.duration*1.1 - offpeakTime 
-			# Marge of 10% for duration for safety, 
+			missingTime = schedule.duration*1.1 - offpeakTime
+			# Marge of 10% for duration for safety,
 			# for case of electricity overload and need to stop devices.
 			# TODO: set this margin in configuration
 			if missingTime>peakTime:
-				self.logger.warning("Missing %d minutes to respect timeout.", 
-					                    round((missingTime-peakTime)/60), 2)
+				self.logger.warning("Missing %d minutes to respect timeout.",
+					                    round((missingTime-peakTime)/60, 2))
 		return missingTime
 
 	def check4MissingOffeakTime(self, now, cycleDuration):
@@ -151,13 +153,13 @@ class OffPeakStrategy(EnergyStrategy):
 		# TODO : A better solution should be to not iterate over all nodes and ask getStrategyCache()
 		# Maybe a way to remove OffPeakStrategy cache directly... a callback?
 		for elem in self.getNodes():
-			schedule = node.getSchedule()
- 			onPeriods = schedule.getStrategyCache(self.strategyId)
- 			if onPeriods is None:
+			schedule = elem.getSchedule()
+			onPeriods = schedule.getStrategyCache(self.strategyId)
+			if onPeriods is None:
 				onPeriods = self.getOnPeriods(now, schedule)
 				schedule.setStrategyCache(self.strategyId, onPeriods)
 			for onPeriod in onPeriods:
-				start, end = onPeriods[0]
+				start, end = onPeriod
 				if now>start:
 					if end>now:
 						if self.switchOnSchedulable(elem, cycleDuration, True):
@@ -167,14 +169,14 @@ class OffPeakStrategy(EnergyStrategy):
 						# TODO : remove past periods : useless anymore
 						schedule.setStrategyCache(self.strategyId, onPeriods)
 
- 	def getOnPeriods(self, now, schedule)
- 		"""
+	def getOnPeriods(self, now, schedule):
+		"""
 		Check a schedule wich must be switch on during peak-time
 		due to missing time during offpeak period to respect timeout
 		return: List of periods to switch on device during peaktime.
- 		"""
-		missingTime = self.getMissingTime(now, schedule)
-		if 0>=missingTime:
+		"""
+		missingTime = self.getMissingTime(schedule, now)
+		if missingTime<=0:
 			return []
 		# Determine when there is peakperiods and theire cost
 		peakPeriods = []
@@ -188,31 +190,39 @@ class OffPeakStrategy(EnergyStrategy):
 				rangeEnd = schedule.timeout
 			if not inoffpeak:
 				availableTime = rangeEnd - previousRangeEnd
-				cost = self.network.estimateKwhCost(rangeEnd - (availableTime/2))
+				cost = self.network.getPrice(now, rangeEnd - (availableTime/2))
 				peakPeriods.append([previousRangeEnd, availableTime, rangeEnd, cost])
 			previousRangeEnd = rangeEnd
-			i++
+			i += 1
 		# Choice when to start/stop: So choice the best periods
 		onPeriods = []
-		peakPeriods = peakPeriods.sort(key=lambda x:x[3]) # Sort by cost
+		peakPeriods.sort(key=lambda x:x[3]) # Sort by cost
 		i = 0
 		while missingTime>0:
-			start, duration, end, cost = peakPeriod[i]
+			start, duration, end, cost = peakPeriods[i]
 			if duration>missingTime:
 				missingTime = 0
 				end = start + missingTime
 			else:
-				missingTime -= peakPeriod[1]
+				missingTime -= duration
 			onPeriods.append([start, end]) # Sort by start time
 			i += 1
-		onPeriods = onPeriods.sort(key=lambda x:x[0])
-		schedule.setStrategyCache(onPëriods)
+		onPeriods.sort(key=lambda x:x[0])
+		schedule.setStrategyCache(onPeriods)
 		return onPeriods
 
-	def updateTimes(self, schedule, range, times:tuple):
+	def updateTimes(self, schedule, myrange, times:tuple):
+		"""
+		While searching if there is missing time (check getMissingTime() to know more about it)
+		 on a schedule, on a range (offpeak or not) update usefull times used
+		 to determined if there is misssing times:
+		 - offpeakTime : how long in seconds there is on offpeak time before scheduled timeout
+		 - peakTime : how long in seconds ther is on peak time before ischeduled timeout
+		 - datetime of range end
+		"""
 		(offpeakTime, peakTime, previousRangeEnd) = times
 		if schedule.timeout>previousRangeEnd:
-			inoffpeak, rangeEnd = range
+			inoffpeak, rangeEnd = myrange
 			if schedule.timeout>rangeEnd:
 				additionalTime = rangeEnd - previousRangeEnd
 			else:
@@ -224,4 +234,3 @@ class OffPeakStrategy(EnergyStrategy):
 			previousRangeEnd = rangeEnd
 			return (offpeakTime, peakTime, previousRangeEnd)
 		return (offpeakTime, peakTime, None)
-
