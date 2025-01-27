@@ -3,6 +3,11 @@ Usefull function for standard usages
 """
 
 import json
+from datetime import datetime, timedelta
+import re
+
+REGEXP_TIME = re.compile("^([0-9]{1,2})(h|:)([0-9]{1,2})((m|:)[0-9]{2}(s?))?")
+
 
 class CastException(Exception):
 	"""
@@ -16,6 +21,7 @@ class CastUtililty:
 	"""
 	Usefull function to do something like a cast : Convertion of types
 	"""
+	
 	@staticmethod
 	def toTypeInt(value):
 		"""
@@ -77,6 +83,32 @@ class CastUtililty:
 			raise CastException("Impossible cast to float: Undefined algorythm : '"+type(value)+"'", 0)
 		return retValue
 
+
+	@staticmethod
+	def toTypeDatetime(value, nowtime:datetime=None):
+		"""
+		Convert to type string
+		"""
+		if isinstance(value, datetime):
+			retValue = value
+		elif isinstance(value, str):
+			vals = REGEXP_TIME.match(value)
+			if vals: # Time without date, set date to curdate() and get next time
+				h = int(vals[1])
+				m = int(vals[3])
+				s = 0 # TODO : extract
+				if nowtime is None:
+					nowtime = datetime.now()
+				retValue = nowtime.replace(hour=h, minute=m, second=s)
+				if nowtime>retValue:
+					retValue = retValue + timedelta(days=1)
+			else:
+				# TODO datetime as str
+				raise CastException("Impossible cast to datetime from string "+value, 0)
+		else:
+			raise CastException("Impossible cast to datetime for type "+(type(value).__name__), 0)
+		return retValue
+
 	@staticmethod
 	def toTypeList(value):
 		"""
@@ -117,6 +149,8 @@ class CastUtililty:
 			retValue = CastUtililty.toTypeFloat(value)
 		elif destType=="list":
 			retValue = CastUtililty.toTypeList(value)
+		elif destType=="datetime":
+			retValue = CastUtililty.toTypeDatetime(value)
 		else:
 			raise CastException(".toType("+str(destType)+","+str(value)+") : Unknwon type", 0)
 		return retValue

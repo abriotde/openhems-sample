@@ -177,7 +177,19 @@ def states(request):
 	# print("datas:", datas)
 	for i, node in datas.items():
 		if i in OPENHEMS_CONTEXT.schedule:
-			OPENHEMS_CONTEXT.schedule[i].setSchedule(node["duration"], node["timeout"])
+			OPENHEMS_CONTEXT.logger.info("Schedule(%s)", node)
+			# Security: check inputs
+			duration = CastUtililty.toTypeInt(node.get("duration"))
+			try:
+				timeout = node.get("timeout")
+				if isinstance(timeout, int) and timeout==0:
+					timeout = None
+				else:
+					timeout = CastUtililty.toTypeDatetime(timeout)
+			except CastException as e:
+				timeout = None
+				OPENHEMS_CONTEXT.logger.warning("Fail cast to datetime %s : %s : Ignore timeout.", timeout,e)
+			OPENHEMS_CONTEXT.schedule[i].setSchedule(duration, timeout)
 		else:
 			OPENHEMS_CONTEXT.logger.error("Node id='%s' not found.",i)
 	return OPENHEMS_CONTEXT.schedule

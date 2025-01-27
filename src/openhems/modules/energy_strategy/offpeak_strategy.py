@@ -4,11 +4,12 @@ This is in case we just base on "off-peak" range hours to control output.
 	The strategy is to switch on electric devices only on "off-peak" hours
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from openhems.modules.network.network import OpenHEMSNetwork
 from openhems.modules.util import ConfigurationException
 from .energy_strategy import EnergyStrategy, LOOP_DELAY_VIRTUAL
 
+TIMEDELTA_0 = timedelta(0)
 
 # pylint: disable=broad-exception-raised
 class OffPeakStrategy(EnergyStrategy):
@@ -122,27 +123,41 @@ class OffPeakStrategy(EnergyStrategy):
 		Evaluate if a schedule can't be honor during offpeak periods only (regarding timeout)
 		Return: Time in seconds to switch on during peak periods.
 		"""
-		missingTime = 0
+		self.logger.debug("OffpeakStrategy.getMissingTime(%s)", schedule)
+		missingTime = TIMEDELTA_0 
 		if schedule.duration>0 and schedule.timeout is not None:
 			i = 0
 			previousRangeEnd = now
-			times = (0, 0, previousRangeEnd) # Tuple of time in seconds during offpeak
+			times = (timedelta(), timedelta(), previousRangeEnd) # Tuple of time in seconds during offpeak
+			(offpeakTime, peakTime, previousRangeEnd) = times
 			while previousRangeEnd is not None and schedule.timeout>previousRangeEnd:
-				if i>len(self.nextRanges):
-					myrange = self.offpeakHoursRanges.checkRange(previousRangeEnd)
+				self.logger.debug("OffpeakStrategy.getMissingTime() : previousRangeEnd=%s", previousRangeEnd)
+				if i>=len(self.nextRanges):
+					myrange = self.offpeakHoursRanges.checkRange(previousRangeEnd + timedelta(seconds=1))
+					self.logger.debug("Range : %s", myrange)
 					self.nextRanges.append(myrange)
 				else:
 					myrange = self.nextRanges[i]
 				i += 1
-				times = self.updateTimes(schedule, myrange, times)
-				offpeakTime, peakTime, previousRangeEnd = times
-			missingTime = schedule.duration*1.1 - offpeakTime
+				if schedule.timeout>previousRangeEnd:
+					inoffpeak, rangeEnd = myrange
+					if schedule.timeout>rangeEnd:
+						additionalTime = rangeEnd - previousRangeEnd
+					else:
+						additionalTime = schedule.timeout - previousRangeEnd
+					if inoffpeak:
+						offpeakTime += additionalTime
+					else:
+						peakTime += additionalTime
+					previousRangeEnd = rangeEnd
+			missingTime = timedelta(seconds=schedule.duration*1.1) - offpeakTime
 			# Marge of 10% for duration for safety,
 			# for case of electricity overload and need to stop devices.
 			# TODO: set this margin in configuration
 			if missingTime>peakTime:
 				self.logger.warning("Missing %d minutes to respect timeout.",
-					                    round((missingTime-peakTime)/60, 2))
+					                    missingTime-peakTime)
+		self.logger.debug("OffpeakStrategy.getMissingTime(%s) = %s", schedule, missingTime)
 		return missingTime
 
 	def check4MissingOffeakTime(self, now, cycleDuration):
@@ -169,15 +184,13 @@ class OffPeakStrategy(EnergyStrategy):
 						# TODO : remove past periods : useless anymore
 						schedule.setStrategyCache(self.strategyId, onPeriods)
 
-	def getOnPeriods(self, now, schedule):
+	def getPeakPeriods(self, now, schedule):
 		"""
 		Check a schedule wich must be switch on during peak-time
 		due to missing time during offpeak period to respect timeout
-		return: List of periods to switch on device during peaktime.
+		return: List of peak periods before scheduled timeout.
 		"""
-		missingTime = self.getMissingTime(schedule, now)
-		if missingTime<=0:
-			return []
+		self.logger.debug("OffpeakStrategy.getPeakPeriod(%s)", schedule)
 		# Determine when there is peakperiods and theire cost
 		peakPeriods = []
 		i = 0
@@ -190,25 +203,40 @@ class OffPeakStrategy(EnergyStrategy):
 				rangeEnd = schedule.timeout
 			if not inoffpeak:
 				availableTime = rangeEnd - previousRangeEnd
-				cost = self.network.getPrice(now, rangeEnd - (availableTime/2))
+				attime = rangeEnd - (availableTime/2)
+				cost = self.network.getPrice(now, attime)
+				self.logger.debug("OffpeakStrategy.getPeakPeriod().getPrice(%s) = %f", attime, cost)
 				peakPeriods.append([previousRangeEnd, availableTime, rangeEnd, cost])
 			previousRangeEnd = rangeEnd
 			i += 1
+		self.logger.debug("OffpeakStrategy.getPeakPeriod(%s) = %s", schedule, peakPeriods)
+		return peakPeriods
+
+	def getOnPeriods(self, now, schedule):
+		"""
+		Check a schedule wich must be switch on during peak-time
+		due to missing time during offpeak period to respect timeout
+		return: List of periods to switch on device during peaktime.
+		"""
+		missingTime = self.getMissingTime(schedule, now)
+		if missingTime<=TIMEDELTA_0:
+			return []
+		peakPeriods = self.getPeakPeriods(now, schedule)
 		# Choice when to start/stop: So choice the best periods
 		onPeriods = []
 		peakPeriods.sort(key=lambda x:x[3]) # Sort by cost
 		i = 0
-		while missingTime>0:
-			start, duration, end, cost = peakPeriods[i]
+		while missingTime>TIMEDELTA_0:
+			start, duration, end, _ = peakPeriods[i]
 			if duration>missingTime:
-				missingTime = 0
 				end = start + missingTime
+				missingTime = TIMEDELTA_0
 			else:
 				missingTime -= duration
 			onPeriods.append([start, end]) # Sort by start time
 			i += 1
 		onPeriods.sort(key=lambda x:x[0])
-		schedule.setStrategyCache(onPeriods)
+		self.logger.debug("OffpeakStrategy.getOnPeriod(%s) = %s", schedule, peakPeriods)
 		return onPeriods
 
 	def updateTimes(self, schedule, myrange, times:tuple):
@@ -221,6 +249,7 @@ class OffPeakStrategy(EnergyStrategy):
 		 - datetime of range end
 		"""
 		(offpeakTime, peakTime, previousRangeEnd) = times
+		print(type(schedule.timeout), type(previousRangeEnd))
 		if schedule.timeout>previousRangeEnd:
 			inoffpeak, rangeEnd = myrange
 			if schedule.timeout>rangeEnd:

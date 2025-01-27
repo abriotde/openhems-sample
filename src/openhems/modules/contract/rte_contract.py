@@ -22,7 +22,7 @@ class RTETempoContract(RTEContract):
 		if color is None:
 			color = "Bleu"
 		if not isinstance(color, Feeder):
-			color = feederProvider.getFeeder(color)
+			color = feederProvider.getFeeder(color, "str")
 		self.color = color
 		self.lastCall = ""
 		self.lastColor = ""
@@ -55,8 +55,8 @@ class RTETempoContract(RTEContract):
 		Warning : Considering that a day color start at 6 O'Clock and end at same time next day.
 		"""
 		if now.strftime("%Y%m%d")==attime.strftime("%Y%m%d"):
-			return attime.strftime("%H")<6 or now.strftime("%H")>=6
-		if attime.strftime("%H")>=6 or now.strftime("%H")<6:
+			return attime.hour<6 or now.hour>=6
+		if attime.hour>=6 or now.hour<6:
 			return False
 		return (attime-now).total_seconds()<86400
 
