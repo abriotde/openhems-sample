@@ -4,9 +4,10 @@ This is in case we just base on "off-peak" range hours to control output.
 	The strategy is to switch on electric devices only on "off-peak" hours
 """
 
+import logging
 from datetime import datetime, timedelta
 from openhems.modules.network.network import OpenHEMSNetwork
-from openhems.modules.util import ConfigurationException
+from openhems.modules.util import ConfigurationException, DATETIME_PRINT_FORMAT
 from .energy_strategy import EnergyStrategy, LOOP_DELAY_VIRTUAL
 
 TIMEDELTA_0 = timedelta(0)
@@ -75,18 +76,19 @@ class OffPeakStrategy(EnergyStrategy):
 		 - Only one (To be sure to not switch on to much devices)
 		"""
 		self.logger.info("%s.switchOnMax()", self.strategyId)
-		done = 0
 		marginPower = self.network.getMarginPowerOn()
-		doSwitchOn = True
+		ok = True
 		if marginPower<0:
 			self.logger.info("Can't switch on devices: not enough power margin : %s", marginPower)
 			return True
 		for elem in self.getNodes():
-			if self.switchOnSchedulable(elem, cycleDuration, doSwitchOn):
-				# Do just one at each loop to check Network constraint
-				doSwitchOn = False
-				done += 1
-		return done == 0
+			if not elem.isOn():
+				if self.switchOnSchedulable(elem, cycleDuration, True):
+					# Do just one at each loop to check Network constraint
+					return True
+				else:
+					ok = False
+		return ok
 
 	def updateNetwork(self, cycleDuration:int, allowSleep:bool, now=None) -> int:
 		"""
@@ -124,14 +126,14 @@ class OffPeakStrategy(EnergyStrategy):
 		Return: Time in seconds to switch on during peak periods.
 		"""
 		self.logger.debug("OffpeakStrategy.getMissingTime(%s)", schedule)
-		missingTime = TIMEDELTA_0 
+		missingTime = TIMEDELTA_0
 		if schedule.duration>0 and schedule.timeout is not None:
 			i = 0
 			previousRangeEnd = now
 			times = (timedelta(), timedelta(), previousRangeEnd) # Tuple of time in seconds during offpeak
 			(offpeakTime, peakTime, previousRangeEnd) = times
 			while previousRangeEnd is not None and schedule.timeout>previousRangeEnd:
-				self.logger.debug("OffpeakStrategy.getMissingTime() : previousRangeEnd=%s", previousRangeEnd)
+				# self.logger.debug("OffpeakStrategy.getMissingTime() : previousRangeEnd=%s", previousRangeEnd)
 				if i>=len(self.nextRanges):
 					myrange = self.offpeakHoursRanges.checkRange(previousRangeEnd + timedelta(seconds=1))
 					self.logger.debug("Range : %s", myrange)
@@ -150,7 +152,7 @@ class OffPeakStrategy(EnergyStrategy):
 					else:
 						peakTime += additionalTime
 					previousRangeEnd = rangeEnd
-			missingTime = timedelta(seconds=schedule.duration*1.1) - offpeakTime
+			missingTime = timedelta(seconds=schedule.duration) - offpeakTime
 			# Marge of 10% for duration for safety,
 			# for case of electricity overload and need to stop devices.
 			# TODO: set this margin in configuration
@@ -173,16 +175,23 @@ class OffPeakStrategy(EnergyStrategy):
 			if onPeriods is None:
 				onPeriods = self.getOnPeriods(now, schedule)
 				schedule.setStrategyCache(self.strategyId, onPeriods)
+				if self.logger.isEnabledFor(logging.INFO):
+					for onPeriod in onPeriods:
+						self.logger.info("Will have to switch on %s from %s to %s to respect %s", elem.id,
+						                 onPeriod[0].strftime(DATETIME_PRINT_FORMAT),
+						                 onPeriod[1].strftime(DATETIME_PRINT_FORMAT), schedule)
 			for onPeriod in onPeriods:
 				start, end = onPeriod
 				if now>start:
 					if end>now:
-						if self.switchOnSchedulable(elem, cycleDuration, True):
-							done += 1
+						if not elem.isOn() and self.switchOnSchedulable(elem, cycleDuration, True):
+							self.logger.info(
+							    "Switch on '%s' due to missing time on offpeak periods to respect constraints.",
+							    elem.id)
 					else:
-						self.switchOnSchedulable(elem, cycleDuration, False)
-						# TODO : remove past periods : useless anymore
-						schedule.setStrategyCache(self.strategyId, onPeriods)
+						if not self.switchOnSchedulable(elem, cycleDuration, False):
+							# TODO : remove past periods : useless anymore
+							schedule.setStrategyCache(self.strategyId, onPeriods)
 
 	def getPeakPeriods(self, now, schedule):
 		"""
@@ -236,7 +245,7 @@ class OffPeakStrategy(EnergyStrategy):
 			onPeriods.append([start, end]) # Sort by start time
 			i += 1
 		onPeriods.sort(key=lambda x:x[0])
-		self.logger.debug("OffpeakStrategy.getOnPeriod(%s) = %s", schedule, peakPeriods)
+		self.logger.debug("OffpeakStrategy.getOnPeriod(%s) = %s", schedule, onPeriods)
 		return onPeriods
 
 	def updateTimes(self, schedule, myrange, times:tuple):

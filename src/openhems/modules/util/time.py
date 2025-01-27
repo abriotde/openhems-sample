@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 # Time to wait in seconds before considering to be in offpeak range
 TIME_MARGIN_IN_S = 1
+DATETIME_PRINT_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 class Time:
 	"""

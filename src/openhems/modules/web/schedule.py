@@ -4,7 +4,6 @@ The web server is the UI used to that.
 """
 import logging
 import datetime
-from openhems.modules.util import Time
 
 
 class OpenHEMSSchedule:
@@ -83,4 +82,4 @@ class OpenHEMSSchedule:
 
 	def __str__(self):
 		timeout = self.timeout.strftime("%H:%M") if self.timeout is not None else "0"
-		return f"Schedule({self.name}, duration:{self.duration}, timeout:{self.timeout})"
+		return f"Schedule({self.name}, duration:{self.duration}, timeout:{timeout})"
