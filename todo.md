@@ -21,3 +21,4 @@
 - dev/schedule/automatic : For devices with a sensor witch give a value to maintain in a range goal (VMC, water heater, freezer, heater) => need to introduce an emergency notion && an average frequency
 - dev/rust : re-implement it as Rust
 - dev/maintenance : Package Python app as runable without venv : Nuitka or UV, cf branch "packaging"
+- dev/api : Use internet to get Tempo color instead of HA plugin (web or develop a custom openhomesystem api)

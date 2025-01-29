@@ -1,6 +1,17 @@
 # Changelog
 
 
+## 0.1.8 - 2024-01-29
+### Improvement
+- ADD strategy : Use timeout on scheduled devices to respect constraints
+- MOD doc : Add usage documentation
+- MOD contract : API to get current pricing and in futur
+
+### Fix
+
+### TODO
+- Use internet to get Tempo color instead of HA plugin
+
 ## 0.1.7 - 2024-01-03
 ### Improvement
 - MOD : Multi-strategy
