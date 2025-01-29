@@ -50,16 +50,18 @@ class GenericContract:
 		offpeakHoursRanges = GenericContract.get("offpeakHoursRanges", keys, "list")
 		return (peakPrice, offpeakPrice, offpeakHoursRanges)
 
-	def getOffPeakPrice(self):
+	def getOffPeakPrice(self, now=None, attime=None):
 		"""
 		Return: off-peak price
 		"""
+		del now, attime
 		return self.offpeakPrice
 
-	def getPeakPrice(self):
+	def getPeakPrice(self, now=None, attime=None):
 		"""
 		Return: peak price
 		"""
+		del now, attime
 		return self.peakPrice
 
 	def getOffPeakHoursRanges(self):
@@ -68,30 +70,37 @@ class GenericContract:
 		"""
 		return self.offpeakHoursRanges
 
-	def getPrice(self, now=None):
+	def getPrice(self, now=None, attime=None):
 		"""
+		now: datetime witch represent current time, default is datetime.now(). 
+		 now must never go back further at runtime
+		 now is used for cached time, usually it's datetime.now() except for test to simulate situations.
+		attime: datetime witch represent time to check price. Default is now.
 		Return: the Kw price at 'now'.
 		"""
-		if self.inOffpeakRange(now):
-			return self.getOffPeakPrice()
-		return self.getPeakPrice()
+		if self.inOffpeakRange(now, attime):
+			return self.getOffPeakPrice(now, attime)
+		return self.getPeakPrice(now, attime)
 
 	def __str__(self):
 		return ("GenericContract($"
 			+str(self.peakPrice)+" - "+str(self.offpeakPrice)+"/Kwh,"
 			+str(self.offpeakHoursRanges)+")")
 
-	def inOffpeakRange(self, now=None, useCache=True):
+	def inOffpeakRange(self, now=None, attime=None, useCache=True):
 		"""
 		Return: True if we are in off-peak range.
 		"""
 		offpeakHoursRanges = self.getOffPeakHoursRanges()
 		if offpeakHoursRanges.isEmpty():
 			return False
-		if not useCache or now>self.rangeEnd:
-			(inOffpeakRange, rangeEnd) = offpeakHoursRanges.checkRange(now)
-			self._inOffpeakRange = inOffpeakRange
-			self.rangeEnd = rangeEnd
+		if not useCache or attime>self.rangeEnd:
+			(inOffpeakRange, rangeEnd) = offpeakHoursRanges.checkRange(attime)
+			if attime==now: # Update cache if not in a futur time
+				self._inOffpeakRange = inOffpeakRange
+				self.rangeEnd = rangeEnd
+			else:
+				return inOffpeakRange
 		return self._inOffpeakRange
 
 	@staticmethod

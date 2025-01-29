@@ -32,7 +32,8 @@ class OpenHEMSServer:
 				offhoursrange = strategyParams.get('offrange', "[22h-6h]")
 				condition = strategyParams.get('condition', True)
 				reverse = CastUtililty.toTypeBool(strategyParams.get('reverse', False))
-				strategyObj = SwitchoffStrategy(mylogger, self.network, strategyId, offhoursrange, reverse, condition)
+				strategyObj = SwitchoffStrategy(mylogger, self.network, strategyId,
+				                                offhoursrange, reverse, condition)
 				self.strategies.append(strategyObj)
 			elif strategy=="emhass":
 				# pylint: disable=import-outside-toplevel

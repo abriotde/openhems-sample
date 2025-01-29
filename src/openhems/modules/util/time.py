@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 # Time to wait in seconds before considering to be in offpeak range
 TIME_MARGIN_IN_S = 1
+DATETIME_PRINT_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 class Time:
 	"""
@@ -98,6 +99,9 @@ class Time:
 	def __repr__(self):
 		h, m, _ = self.toHourMinSec()
 		return str(h).rjust(2, "0")+":"+(str(m).rjust(2, "0"))
+
+	def __eq__(self, other):
+		return self.time == other.time
 
 class HoursRanges:
 	"""

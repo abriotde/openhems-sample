@@ -29,7 +29,6 @@ class FakeNetwork(HomeStateUpdater):
 		 if the "key" can be a Home-Assistant element id.
 		 Otherwise, it consider it as constant.
 		"""
-		del expectedType
 		feeder = None
 		if isinstance(value, str):
 			value = value.strip().upper()
@@ -39,24 +38,24 @@ class FakeNetwork(HomeStateUpdater):
 				feeder = RandomFeeder(self, float(vals[1]), float(vals[3]), float(vals[5]))
 			else:
 				self.logger.debug("ConstFeeder(%s) - default str", value)
-				feeder = ConstFeeder(float(value))
+				feeder = ConstFeeder(value, None, expectedType)
 		elif isinstance(value, list):
 			self.logger.debug("RotationFeeder(%s)", value)
 			feeder = RotationFeeder(self, value)
 		elif defaultValue is not None:
 			self.logger.debug("ConstFeeder(%s) - defaultValue", defaultValue)
-			feeder = ConstFeeder(defaultValue)
+			feeder = ConstFeeder(defaultValue, None, expectedType)
 		else:
 			self.logger.debug("ConstFeeder(%s) - default", value)
-			feeder = ConstFeeder(value)
+			feeder = ConstFeeder(value, None, expectedType)
 		return feeder
 
 	def getSwitch(self, nameid, nodeConf):
-		currentPower = self.getFeeder(nodeConf, "currentPower")
+		currentPower = self._getFeeder(nodeConf, "currentPower")
 		_isOn = CastUtililty.toTypeBool(nodeConf.get('isOn', True))
 		self.logger.debug("StateFeeder(%s)", str(_isOn))
 		isOn = StateFeeder(_isOn)
-		maxPower = self.getFeeder(nodeConf, "maxPower", 2000)
+		maxPower = self._getFeeder(nodeConf, "maxPower")
 		currentPowerRealisttic = FakeSwitchFeeder(currentPower, isOn)
 		node = OutNode(nameid, currentPowerRealisttic, maxPower, isOn)
 		return node

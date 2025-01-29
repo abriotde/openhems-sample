@@ -41,6 +41,7 @@ class EnergyStrategy:
 		 - Switch off the node if time to be on elapsed
 		    or strategy choice is to switch off
 		ELSE IF doSwitchOn=True: Switch on the node
+		return: True if node is on
 		"""
 		if node.isSwitchable:
 			if node.isOn():
@@ -50,9 +51,11 @@ class EnergyStrategy:
 						node.id, "elapsed time" if remainingTime==0 else "strategy")
 					if node.switchOn(False):
 						self.logger.warning("Fail switch off '%s'.", node.id)
+						return True
 				else:
 					self.logger.debug("Node %s isOn for %s more seconds", \
 						node.id, remainingTime)
+					return True
 			else:
 				if doSwitchOn and node.getSchedule().duration>0:
 					if node.switchOn(True):
