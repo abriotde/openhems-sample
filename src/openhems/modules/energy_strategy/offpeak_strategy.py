@@ -86,8 +86,7 @@ class OffPeakStrategy(EnergyStrategy):
 				if self.switchOnSchedulable(elem, cycleDuration, True):
 					# Do just one at each loop to check Network constraint
 					return True
-				else:
-					ok = False
+				ok = False
 		return ok
 
 	def updateNetwork(self, cycleDuration:int, allowSleep:bool, now=None) -> int:
@@ -100,11 +99,11 @@ class OffPeakStrategy(EnergyStrategy):
 			now = datetime.now()
 		if now>self.rangeEnd:
 			self.checkRange()
+		time2Wait = 0
 		if self.inOffpeakRange:
 			# We are in off-peak range hours : switch on all
 			self.switchOnMax(cycleDuration)
 		else: # Sleep untill end.
-			time2Wait = 0
 			if not self._rangeChangeDone:
 				self.logger.debug("OffpeakStrategy : not offpeak, switchOffAll()")
 				if self.switchOffAll():

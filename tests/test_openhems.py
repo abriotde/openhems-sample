@@ -7,13 +7,12 @@ $ python3 -m twine upload --verbose --repository testpypi dist/*
 $ pip install -i https://test.pypi.org/simple/ openhems
 """
 
-
-import openhems
-# from openhems.modules.energy_strategy import LOOP_DELAY_VIRTUAL
 import unittest
 from pathlib import Path
-# pylint: disable=wrong-import-position
 # pylint: disable=import-error
+import openhems
+# from openhems.modules.energy_strategy import LOOP_DELAY_VIRTUAL
+
 ROOT_PATH = Path(__file__).parents[1]
 
 class TestOpenHEMSServer(unittest.TestCase):

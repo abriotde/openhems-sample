@@ -1,8 +1,8 @@
 """
 Import sub modules
 """
-import web
-import contract
-import energy_strategy
-import network
-import util
+from .web import *
+from .contract import *
+from .energy_strategy import *
+from .network import *
+from .util import *

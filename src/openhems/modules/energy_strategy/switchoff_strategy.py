@@ -91,6 +91,7 @@ class SwitchoffStrategy(EnergyStrategy):
 		if isPeriodStart and not self.testCondition(): # Cancel if condition is not satisfied
 			return True
 		for elem in self._todo:
+			msg = ""
 			if isPeriodStart: # Start of period : remember states
 				isOn = elem.isOn()
 				self._backupStates[elem.id] = isOn
@@ -101,7 +102,6 @@ class SwitchoffStrategy(EnergyStrategy):
 					_switchOn = switchOn
 			else: # End of period : restore states
 				_switchOn = self._backupStates.get(elem.id, None)
-				msg = ""
 				if (not _switchOn) ^ self.reverse:
 					# We should expect switch on at end of switchOff period,
 					# but as we restore as the start, we switch off

@@ -1,4 +1,7 @@
-"""Module to easily launch customized OpenHEMS Application. : A Home Energy Management System based on Home-Assistant"""
+"""
+Module to easily launch customized OpenHEMS Application.
+A Home Energy Management System based on Home-Assistant
+"""
 
 from .main import OpenHEMSApplication, main
 from .server import OpenHEMSServer
