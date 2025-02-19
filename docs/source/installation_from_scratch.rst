@@ -8,9 +8,9 @@ Prerequisites
 We need:
 
 * A server we named "homeassistant" installed with debian based Linux OS (Or HomeAssistantOS) connected to local lan. The script scripts/home-assistant.sh let you to install Home-Assistant. But if you have already a Home-Assistant installed use it.
-
- * Python3, tested on 3.9, 3.10 for Emhass
+ * Python3, tested on 3.9, but need 3.10 if you use EMHASS fonctionalities
  * Systemd older than v240
+ * By default we install Home-Assistanti (HA) as docker but for full-featured HA, use HAOS or insttal it from https://www.home-assistant.io/installation/linux & https://wiki.debian.org/KVM.
 
 * In your internet box
 

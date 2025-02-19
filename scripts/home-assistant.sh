@@ -5,6 +5,26 @@
 source config.sh
 source functions.sh
 
+function installHomeAssistantSupervised {
+	# https://wiki.debian.org/KVM
+	apt install --no-install-recommends qemu-system libvirt-clients libvirt-daemon-system
+	apt install virtinst
+	adduser olimex libvirt
+	export LIBVIRT_DEFAULT_URI='qemu:///system'
+	# https://www.home-assistant.io/installation/linux
+	lsusb -v
+	virsh net-define /usr/share/libvirt/networks/default.xml
+	virsh net-autostart default
+	virsh net-start default
+	virt-install --connect=qemu:///system --name haos --description "Home Assistant OS" --os-variant=generic --ram=512 --vcpus=1 --disk /home/olimex/haos_ova-14.2.qcow2,bus=scsi --controller type=scsi,model=virtio-scsi --import --graphics none --boot uefi --hostdev 003.003 # --osinfo detect=on,name=debian12
+	virsh list --all
+	virsh nodeinfo
+
+	# https://www.cyberciti.biz/faq/find-ip-address-of-linux-kvm-guest-virtual-machine/
+	# virsh --connect qemu:///system console haos
+	# virsh start haos # virsh shutdown haos # virsh destroy haos # virsh undefine --nvram haos
+	
+}
 
 function installHomeAsssistant {
 	echo "Run Home-Assistant"

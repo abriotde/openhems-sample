@@ -2,6 +2,9 @@
 - Contact installer
 - Open Home Fundation https://www.openhomefoundation.org/ ?
 
+# Integration
+- IA to command OpenHEMS devices ("Start the washing machine") & as "Personnal Assistant"
+
 # Development
 - funding/crowd : kickstarter
 - promote : LinuxFR

@@ -11,12 +11,16 @@ description = "A sample Home Energy Managment System based on Home-Assistant"
 readme = "readme.md"
 requires-python = ">=3.12"
 classifiers=[
-	"Development Status :: Alpha",
-	"Intended Audience :: Developers",
+	"Development Status :: Stable",
+	"Intended Audience :: End Users",
 	"Topic :: Software Development :: Build Tools",
-	"License :: GPL-3.0-or-later",
-	"Operating System :: Linux",
+	"License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+	"Operating System :: POSIX :: Linux",
 	"Programming Language :: Python :: 3 :: Only",
+	"Framework :: Pyramid",
+	"Topic :: Home Automation",
+	"Natural Language :: English",
+	"Natural Language :: French"
 ]
 keywords = ['energy', 'HEMS', 'home automation', 'home-assistant', 'domotic']
 dependencies = [
@@ -26,6 +30,8 @@ dependencies = [
 	'numpy', 'plotly', 'scikit-learn', 'skforecast', 'pvlib', 'beautifulsoup4', 'protobuf',
 	'pandas', 'scipy', 'h5py', 'pulp'
 ]
+
+license = {file = "LICENCE"}
 
 [console_scripts]
 # openhems = "openhems:main"
@@ -78,3 +84,6 @@ ignore_errors = true
 
 [tool.coverage.html]
 directory = "coverage_html_report"
+
+# [tool.setuptools]
+# package-dir = { "" = "src" }

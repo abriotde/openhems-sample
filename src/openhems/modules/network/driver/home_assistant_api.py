@@ -4,6 +4,7 @@ This HomeStateUpdater is based on home-Assistant software.
 It access to this by the API using URL and long_lived_token
 """
 
+import os
 import time
 import json
 import requests
@@ -29,8 +30,12 @@ class HomeAssistantAPI(HomeStateUpdater):
 	"""
 	def __init__(self, conf:ConfigurationManager) -> None:
 		super().__init__(conf)
-		self.apiUrl = conf.get("api.url")
-		self.token = conf.get("api.long_lived_token")
+		self.token = os.getenv("SUPERVISOR_TOKEN") # Injected by Supervisor on Home-Assistant OS
+		if self.token is None:
+			self.apiUrl = conf.get("api.url")
+			self.token = conf.get("api.long_lived_token")
+		else:
+			self.apiUrl = "http://supervisor/core/api"
 		self._elemsKeysCache = None
 		self.cachedIds = {}
 		self.refreshId = 0
