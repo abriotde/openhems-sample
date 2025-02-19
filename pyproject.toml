@@ -34,7 +34,7 @@ license = {file = "LICENSE"}
 
 # license = "GPL-3.0-or-later"
 # license-files = ["LICENSE"]
-
+# package_data = {'project'=['data/*.yaml']}
 
 [console_scripts]
 # openhems = "openhems:main"
@@ -87,6 +87,12 @@ ignore_errors = true
 
 [tool.coverage.html]
 directory = "coverage_html_report"
+
+[tool.setuptools.packages.find]
+where = ["data"]
+
+[tool.setuptools.package-data]
+data = ["*.yaml"]
 
 # [tool.setuptools]
 # package-dir = { "" = "src" }

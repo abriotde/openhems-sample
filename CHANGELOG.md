@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.9 - 2024-02-19
+### Improvement
+- Publish openhems as PIP package (Same version). The goal is put it in Home-Assistant's addon.
+- Lots of work done on website and hardware study but not on openhems-sample.
+
+### Fix
+- Github action python-publish.yml
 
 ## 0.1.8 - 2024-01-29
 ### Improvement
