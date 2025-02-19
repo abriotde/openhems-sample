@@ -1,5 +1,5 @@
 pandas>=2.0.0
-pyramid>=2.0
+pyramid>=2.0.0
 pyramid-jinja2>=2.7
 astral>=3.2
 sphinx==7.1.2

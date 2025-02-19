@@ -21,7 +21,7 @@ class CastUtililty:
 	"""
 	Usefull function to do something like a cast : Convertion of types
 	"""
-	
+
 	@staticmethod
 	def toTypeInt(value):
 		"""

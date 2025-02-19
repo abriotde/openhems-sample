@@ -12,7 +12,7 @@ readme = "readme.md"
 requires-python = ">=3.12"
 classifiers=[
 	"Development Status :: 5 - Production/Stable",
-	"Intended Audience :: End Users",
+	"Intended Audience :: End Users/Desktop",
 	"Topic :: Software Development :: Build Tools",
 	"License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
 	"Operating System :: POSIX :: Linux",
@@ -30,8 +30,11 @@ dependencies = [
 	'numpy', 'plotly', 'scikit-learn', 'skforecast', 'pvlib', 'beautifulsoup4', 'protobuf',
 	'pandas', 'scipy', 'h5py', 'pulp'
 ]
+license = {file = "LICENSE"}
 
-license = {file = "LICENCE"}
+# license = "GPL-3.0-or-later"
+# license-files = ["LICENSE"]
+
 
 [console_scripts]
 # openhems = "openhems:main"
@@ -55,11 +58,11 @@ requires = [
 [tool.pytest.ini_options]
 minversion = "6.0"
 addopts = "-ra -q"
-testpaths = ["src/openhems", "tests"]
+testpaths = ["src/openhems", "src/openhems/modules", "tests"]
 
 [tool.coverage.run]
 branch = true
-source = ["src/openhems", "tests"]
+source = ["src/openhems", "src/openhems/modules", "tests"]
 
 [tool.coverage.report]
 # Regexes for lines to exclude from consideration
