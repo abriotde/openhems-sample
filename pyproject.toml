@@ -11,7 +11,7 @@ description = "A sample Home Energy Managment System based on Home-Assistant"
 readme = "readme.md"
 requires-python = ">=3.12"
 classifiers=[
-	"Development Status :: Stable",
+	"Development Status :: 5 - Production/Stable",
 	"Intended Audience :: End Users",
 	"Topic :: Software Development :: Build Tools",
 	"License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
