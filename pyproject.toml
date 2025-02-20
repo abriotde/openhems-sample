@@ -1,20 +1,20 @@
 [project]
 name = "openhems"
-version = "0.1.11"
+dynamic = ["version", "description"]
 authors = [
 	{ name="OpenHomeSystem", email="contact@openhomesystem.com" },
 ]
 maintainers = [
 	{ name="Albéric de la Crochais", email="alberic.delacrochais@protonmail.com" }
 ]
-description = "A sample Home Energy Managment System based on Home-Assistant"
+# description = "A sample Home Energy Managment System based on Home-Assistant"
 readme = "readme.md"
 requires-python = ">=3.12"
 classifiers=[
 	"Development Status :: 5 - Production/Stable",
 	"Intended Audience :: End Users/Desktop",
 	"Topic :: Software Development :: Build Tools",
-	"License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+#	"License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
 	"Operating System :: POSIX :: Linux",
 	"Programming Language :: Python :: 3 :: Only",
 	"Framework :: Pyramid",
@@ -30,10 +30,9 @@ dependencies = [
 	'numpy', 'plotly', 'scikit-learn', 'skforecast', 'pvlib', 'beautifulsoup4', 'protobuf',
 	'pandas', 'scipy', 'h5py', 'pulp'
 ]
-license = {file = "LICENSE"}
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE"]
 
-# license = "GPL-3.0-or-later"
-# license-files = ["LICENSE"]
 # package_data = {'project'=['data/*.yaml']}
 
 [console_scripts]
@@ -51,8 +50,10 @@ requires = [
 	'GitPython',
 	# For EMHASS
 	'numpy', 'plotly', 'scikit-learn', 'skforecast', 'pvlib', 'beautifulsoup4' , 'protobuf',
-	'pandas', 'scipy', 'h5py', 'pulp'
+	'pandas', 'scipy', 'h5py', 'pulp',
+	'flit_core >=3.2,<4'
 ]
+build-backend = "flit_core.buildapi"
 # build-backend = "openhems.build"
 
 [tool.pytest.ini_options]
@@ -88,11 +89,27 @@ ignore_errors = true
 [tool.coverage.html]
 directory = "coverage_html_report"
 
-[tool.setuptools.packages.find]
-where = ["data"]
+# [tool.setuptools.packages.find]
+# where = ["data"]
 
-[tool.setuptools.package-data]
-data = ["*.yaml"]
+# [tool.setuptools.package-data]
+# data = ["*.yaml"]
 
 # [tool.setuptools]
 # package-dir = { "" = "src" }
+
+[tool.flit.sdist]
+include = [
+    "LICENSE",
+    "CHANGELOG.md",
+    # Documentation
+    "doc/",
+    # "CODE_OF_CONDUCT.rst",  # used as an include in the Documentation
+    # "EXAMPLES.rst",  # used as an include in the Documentation
+    # Tests
+    "tests/",
+    # "tox.ini",
+    # Utilities
+    "data/",
+    # "babel.cfg",
+]

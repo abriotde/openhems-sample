@@ -1,7 +1,10 @@
+""" A Home Energy Management System based on Home-Assistant """
 """
 Module to easily launch customized OpenHEMS Application.
-A Home Energy Management System based on Home-Assistant
 """
+
+__version__ = "0.1.11"
+__display_version__ = __version__  # used for command line version
 
 from .main import OpenHEMSApplication, main
 from .server import OpenHEMSServer

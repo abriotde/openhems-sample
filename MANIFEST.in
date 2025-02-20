@@ -1,5 +1,6 @@
-
 graft data
 
 recursive-include data/*.yaml
-include src/openhems/modules/web/templates/*.jinja2
+global-exclude */__pycache__/*
+global-exclude *.pyc
+
