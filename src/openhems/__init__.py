@@ -3,7 +3,7 @@
 Module to easily launch customized OpenHEMS Application.
 """
 
-__version__ = "0.1.11"
+__version__ = "0.1.12"
 __display_version__ = __version__  # used for command line version
 
 from .main import OpenHEMSApplication, main
