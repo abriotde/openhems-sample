@@ -12,7 +12,7 @@ import yaml
 from yaml.scanner import ScannerError
 from openhems.modules.util.cast_utility import CastUtililty
 
-rootPath = Path(__file__).parents[4]
+rootPath = Path(__file__).parents[2]
 DEFAULT_PATH = rootPath / "data/openhems_default.yaml"
 
 class ConfigurationException(Exception):

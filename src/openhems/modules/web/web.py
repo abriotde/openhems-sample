@@ -36,7 +36,7 @@ JSONEncoder.default = wrappedDefault
 
 OPENHEMS_CONTEXT = None
 
-ROOT_PATH = Path(__file__).parents[4]
+ROOT_PATH = Path(__file__).parents[2]
 
 @view_config(
 	route_name='panel',

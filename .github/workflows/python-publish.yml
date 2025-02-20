@@ -10,7 +10,7 @@ name: Upload Python Package
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main"]
 
 permissions:
   contents: read
@@ -28,6 +28,7 @@ jobs:
 
       - name: Build release distributions
         run: |
+          git submodule update --init --recursive
           python -m pip install build
           python -m build
 
