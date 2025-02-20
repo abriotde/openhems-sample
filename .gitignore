@@ -14,3 +14,4 @@ src/OpenHEMS.egg-info/
 src/openhems/modules/web/templates/params.jinja2
 config/openhems.secret.yaml
 src/openhems.egg-info/
+docs/OpenHemsUMLDiagram.puml
