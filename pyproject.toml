@@ -1,13 +1,16 @@
 [project]
 name = "openhems"
-dynamic = ["version", "description"]
+version = "0.1.12"
+dynamic = [
+	# "version" # , "description"
+]
 authors = [
 	{ name="OpenHomeSystem", email="contact@openhomesystem.com" },
 ]
 maintainers = [
 	{ name="Albéric de la Crochais", email="alberic.delacrochais@protonmail.com" }
 ]
-# description = "A sample Home Energy Managment System based on Home-Assistant"
+description = "A sample Home Energy Managment System based on Home-Assistant"
 readme = "readme.md"
 requires-python = ">=3.12"
 classifiers=[
@@ -30,10 +33,11 @@ dependencies = [
 	'numpy', 'plotly', 'scikit-learn', 'skforecast', 'pvlib', 'beautifulsoup4', 'protobuf',
 	'pandas', 'scipy', 'h5py', 'pulp'
 ]
-license = "GPL-3.0-or-later"
-license-files = ["LICENSE"]
+license = { file = "LICENSE" }
+# license = "GPL-3.0-or-later"
+# license-files = ["LICENSE"]
 
-# package_data = {'project'=['data/*.yaml']}
+# package_data = { 'openhems'=['lib/emhass/*', 'data/*.yaml'] }
 
 [console_scripts]
 # openhems = "openhems:main"
@@ -51,10 +55,11 @@ requires = [
 	# For EMHASS
 	'numpy', 'plotly', 'scikit-learn', 'skforecast', 'pvlib', 'beautifulsoup4' , 'protobuf',
 	'pandas', 'scipy', 'h5py', 'pulp',
-	'flit_core >=3.2,<4'
+	'flit_core >=3.2,<4', "setuptools>=42", "wheel"
 ]
-build-backend = "flit_core.buildapi"
+# build-backend = "flit_core.buildapi"
 # build-backend = "openhems.build"
+build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
 minversion = "6.0"
@@ -82,21 +87,37 @@ exclude_also = [
 
     # Don't complain about abstract methods, they aren't run:
     "@(abc\\.)?abstractmethod",
-    ]
+]
 
 ignore_errors = true
 
 [tool.coverage.html]
 directory = "coverage_html_report"
 
-# [tool.setuptools.packages.find]
-# where = ["data"]
 
-# [tool.setuptools.package-data]
-# data = ["*.yaml"]
+[tool.setuptools.data-files]
+# "share/openhems" = ["data/*.yaml"]
 
-# [tool.setuptools]
+[tool.setuptools]
+include-package-data = true
 # package-dir = { "" = "src" }
+
+[tool.setuptools.packages]
+# "share/openhems/data" = ["data/*.yaml"]
+find = { where=["src", "emhass", "data"], include=["openhems*"] }
+
+
+[tool.setuptools.package-data]
+# openhems.emhass = ["*.json", "*.yaml", "*.jinja2"]
+# find = { where=["data"], include=["*.yaml"] }
+# openhems = ["data/*.yaml"]
+openhems = [
+		"data/*.yaml",          # Root data files (now under src/openhems/data)
+		"emhass/*.json",
+		"emhass/scripts/*.json",
+		"emhass/src/emhass/static/data/*.json",
+		"emhass/src/emhass/data/*.json"
+]
 
 [tool.flit.sdist]
 include = [

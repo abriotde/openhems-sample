@@ -43,8 +43,7 @@ class TestUtilModule(unittest.TestCase):
 		Test default values/overridden/singleton/unknown key
 		"""
 		# print("test_configurationsManager()")
-		defaultPath = ROOT_PATH / "data/openhems_default.yaml"
-		configurator = ConfigurationManager(logger, defaultPath=defaultPath)
+		configurator = ConfigurationManager(logger)
 
 		# Test default values
 		value = configurator.get("api.url")

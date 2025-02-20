@@ -14,8 +14,8 @@ import importlib
 import jinja2
 from jinja2 import Environment, FileSystemLoader
 # from packaging.version import Version
-PATH_ROOT = Path(__file__).parents[5]
-PATH_EMHASS = PATH_ROOT / 'lib/emhass/src/'
+PATH_ROOT = Path(__file__).parents[3]
+PATH_EMHASS = PATH_ROOT / 'emhass/src/'
 emhassModuleSpec = importlib.util.find_spec('emhass')
 logger = logging.getLogger(__name__)
 
