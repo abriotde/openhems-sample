@@ -1,6 +1,8 @@
 graft data
+graft lib
 
 recursive-include data/*.yaml
+recursive-include lib/emhass/*
 global-exclude */__pycache__/*
 global-exclude *.pyc
 

@@ -111,5 +111,6 @@ include = [
     # "tox.ini",
     # Utilities
     "data/",
+    "lib/",
     # "babel.cfg",
 ]
