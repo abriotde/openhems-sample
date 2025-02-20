@@ -1,6 +1,6 @@
 [project]
 name = "openhems"
-version = "0.1.13"
+version = "0.1.14"
 dynamic = [
 	# "version" # , "description"
 ]
@@ -113,7 +113,11 @@ find = { where=["src", "emhass", "data"], include=["openhems*"] }
 # openhems = ["data/*.yaml"]
 openhems = [
 		"data/*.yaml",          # Root data files (now under src/openhems/data)
+		"modules/web/templates/*.jinja2",
 		"emhass/*.json",
+		"emhass/data/*.csv",
+		"emhass/data/*.pkl",
+		"emhass/data/*.pbz2",
 		"emhass/scripts/*.json",
 		"emhass/src/emhass/static/data/*.json",
 		"emhass/src/emhass/data/*.json"
