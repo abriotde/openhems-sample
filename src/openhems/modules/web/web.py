@@ -331,10 +331,25 @@ class OpenhemsHTTPServer():
 			config.add_route('params', '/params')
 			config.add_route('vpn', '/vpn')
 			# config.add_route('favicon.ico', '/favicon.ico')
-			root = (self.htmlRoot+'/img').replace('//','/')
+			imgUrl = (self.htmlRoot+'/img').replace('//','/')
+			jsUrl = (self.htmlRoot+'/js').replace('//','/')
+			cssUrl = (self.htmlRoot+'/css').replace('//','/')
+			faviconUrl = (self.htmlRoot+'/favicon.ico').replace('//','/')
 			config.add_static_view(
-				name=root,
-				path='openhems.modules.web:../../../../img'
+				name=imgUrl,
+				path='openhems.modules.web:img'
+			)
+			config.add_static_view(
+				name=jsUrl,
+				path='openhems.modules.web:js'
+			)
+			config.add_static_view(
+				name=cssUrl,
+				path='openhems.modules.web:css'
+			)
+			config.add_static_view(
+				name=faviconUrl,
+				path='openhems.modules.web:img/favicon.ico'
 			)
 			config.scan()
 			app = config.make_wsgi_app()

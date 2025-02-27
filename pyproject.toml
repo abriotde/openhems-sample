@@ -114,6 +114,9 @@ find = { where=["src", "emhass", "data"], include=["openhems*"] }
 openhems = [
 		"data/*.yaml",          # Root data files (now under src/openhems/data)
 		"modules/web/templates/*.jinja2",
+		"modules/web/img/*",
+		"modules/web/css/*.css",
+		"modules/web/js/*.js",
 		"emhass/*.json",
 		"emhass/data/*.csv",
 		"emhass/data/*.pkl",

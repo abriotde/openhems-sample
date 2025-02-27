@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
     <title>OpenHEMS</title>
-    <link rel="stylesheet" href="{{request.static_url('openhems.modules.web:../../../../img/openhems.css')}}">
+    <link rel="stylesheet" href="{{request.static_url('openhems.modules.web:css/openhems.css')}}">
+		<link rel="shortcut icon" href="{{request.static_url('openhems.modules.web:img/favicon.ico')}}" />
 </head>
 <body>
 <nav class="menu">
@@ -14,7 +15,7 @@
 <div class="page">
 	<h1>Devices program</h1>
 	<div id="network"></div>
-	<input id="valid" type="image" src="{{request.static_url('openhems.modules.web:../../../../img/correct_32.ico')}}" onclick="onSave()" ></input>
+	<input id="valid" type="image" src="{{request.static_url('openhems.modules.web:img/correct_32.ico')}}" onclick="onSave()" ></input>
 </div>
 <script>
 var nodes = {{ nodes|tojson }};
@@ -73,7 +74,7 @@ function initMainPage() {
 }
 function changeSthg() {
 	// console.log("changeSthg()");
-	document.getElementById("valid").src="{{request.static_url('openhems.modules.web:../../../../img/save_32.ico')}}";
+	document.getElementById("valid").src="{{request.static_url('openhems.modules.web:img/save_32.ico')}}";
 }
 function onSave() {
 	// console.log("onSave()");
@@ -113,7 +114,7 @@ function onSave() {
         	var json = JSON.parse(xhr.responseText);
         	console.log("Response : ",json);
         	setDevicesProgramm(json);
-        	document.getElementById("valid").src="{{request.static_url('openhems.modules.web:../../../../img/correct_32.ico')}}";
+        	document.getElementById("valid").src="{{request.static_url('openhems.modules.web:img/correct_32.ico')}}";
     	}
 	};
 	xhr.send(JSON.stringify(nodes));
