@@ -3,6 +3,8 @@ Module to manage RTE classic contracts. Feel automaticaly offpeak-hours and all 
 """
 
 import datetime
+# import functools
+import requests
 from openhems.modules.network.feeder import Feeder
 from .generic_contract import GenericContract
 
@@ -17,22 +19,42 @@ class RTETempoContract(RTEContract):
 	Contrat RTE avec option Tempo
 	"""
 	def __init__(self, color, colorNext,
-	             offpeakprices, peakprices, offpeakHoursRanges, feederProvider):
+	             offpeakprices, peakprices, offpeakHoursRanges, feederProvider=None):
 		super().__init__(offpeakprices, peakprices, offpeakHoursRanges)
-		if color is None:
-			color = "Bleu"
-		if not isinstance(color, Feeder):
+		if color is not None and not isinstance(color, Feeder):
 			color = feederProvider.getFeeder(color, "str")
 		self.color = color
 		self.lastCall = ""
 		self.lastColor = ""
-		if colorNext is None:
-			colorNext = "Bleu"
-		if not isinstance(colorNext, Feeder):
+		if colorNext is not None and not isinstance(colorNext, Feeder):
 			colorNext = feederProvider.getFeeder(colorNext)
 		self.colorNext = colorNext
 		self.lastCallNext = ""
 		self.lastColorNext = ""
+
+	# idClient = "4c8e84ae-4c0a-4f00-838a-66ca6bc3a7b4"
+	# idSecret = "f1a76990-3e0c-4b03-bc5e-87f94afdb956"
+	# url = "https://digital.iservices.rte-france.com/open_api/tempo_like_supply_contract/v1"
+	# https://www.api-couleur-tempo.fr/api
+	def callApiRteTempo(self, day):
+		"""
+			Use https://www.api-couleur-tempo.fr/api/ API to get TempoColori of a day.
+		"""
+		url = "https://www.api-couleur-tempo.fr/api/jourTempo/"+day
+		response = requests.get(url, timeout=10)
+		if response.status_code!=200:
+			print("Error get(%s)", url)
+			retVal = None
+		else:
+			vals = response.json()
+			color = vals['codeJour']
+			colorMap = {1: "bleu", 2: "blanc", 3: "rouge"}
+			retVal = colorMap.get(color)
+		# print(f" callApiRteTempo({day}):{retVal}")
+		return retVal
+	# callApiRteTempo("tomorrow")
+	# callApiRteTempo("today")
+	# callApiRteTempo("2025-03-02")
 
 	def getColor(self, now=None, attime=None):
 		"""
@@ -44,21 +66,33 @@ class RTETempoContract(RTEContract):
 			return self.getCurColor(now)
 		if now is None:
 			now = datetime.datetime.now()
-		if self.areSameColorDay(now, attime):
+		daytime = self.getColorDate(attime)
+		if self.getColorDate(now)==daytime:
 			return self.getCurColor(now)
-		return self.getNextColor(now)
+		if attime>now:
+			return self.getNextColor(now)
+		return self.getHistoryColor(daytime)
 
-	def areSameColorDay(self, now:datetime, attime:datetime):
+	# @functools.cache
+	def getHistoryColor(self, attime):
 		"""
-		Check if 2 datetime	are on the same color date : 6h-22H
-		Waring : Consider now<attime
-		Warning : Considering that a day color start at 6 O'Clock and end at same time next day.
+		Return the color of a passed date.
 		"""
-		if now.strftime("%Y%m%d")==attime.strftime("%Y%m%d"):
-			return attime.hour<6 or now.hour>=6
-		if attime.hour>=6 or now.hour<6:
-			return False
-		return (attime-now).total_seconds()<86400
+		if not isinstance(attime, str):
+			day = self.getColorDate(attime)
+		else:
+			day = attime
+		return self.callApiRteTempo(day)
+
+	def getColorDate(self, attime):
+		"""
+		As a color date start at 6 hour on morning and end at 6 hour the next day. 
+		So a day last 24h and can be represent by a standard date 'Y-m-d'
+		 but they are not corresponding.
+		"""
+		if int(attime.strftime("%H"))<6:
+			attime = attime-datetime.timedelta(days=1)
+		return attime.strftime("%Y-%m-%d")
 
 	def getNextColor(self, now=None):
 		"""
@@ -69,9 +103,12 @@ class RTETempoContract(RTEContract):
 			now = datetime.datetime.now()
 		curCall = now.strftime("%Y%m%d%H")
 		if self.lastCallNext!=curCall:
-			self.lastColorNext = self.colorNext.getValue().lower()
+			if self.colorNext is not None:
+				self.lastColorNext = self.colorNext.getValue().lower()
+			else:
+				self.lastColorNext = self.callApiRteTempo("tomorrow")
+			# TODO : check lastColorlNext is coherent
 			self.lastCallNext = curCall
-		# print("getColor() => ", self.lastColor)
 		return self.lastColorNext
 
 	def getCurColor(self, now=None):
@@ -83,7 +120,11 @@ class RTETempoContract(RTEContract):
 			now = datetime.datetime.now()
 		curCall = now.strftime("%Y%m%d%H")
 		if self.lastCall!=curCall:
-			self.lastColor = self.color.getValue().lower()
+			if self.color is not None:
+				self.lastColor = self.color.getValue().lower()
+			else:
+				self.lastColor = self.callApiRteTempo("today")
+			# TODO : check value
 			self.lastCall = curCall
 		# print("getColor() => ", self.lastColor)
 		return self.lastColor
