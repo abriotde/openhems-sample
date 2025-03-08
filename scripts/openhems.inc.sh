@@ -88,8 +88,7 @@ $OPENHEMS_LOGPATH/service.error.log {
 }
 EOF
 	sudo mv openhems /etc/logrotate.d/openhems
-	sudo ln -s /lib/systemd/system/logrotate.service /etc/systemd/system/multi-user.target.wants/
-	activate_service logrotate
+	activate_service logrotate.service
 }
 
 function installAutoupdate {

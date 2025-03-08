@@ -21,8 +21,6 @@ Restart=always
 [Install]
 WantedBy = multi-user.target
 EOF
-	sudo mv openhems.service /lib/systemd/system/
-	ln -s /lib/systemd/system/openhems.service /etc/systemd/system/multi-user.target.wants
 	activate_service openhems.service
 }
 

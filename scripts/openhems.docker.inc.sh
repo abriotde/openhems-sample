@@ -17,7 +17,7 @@ function installOpenHemsPrerequisites {
 		fi
 		cat >incrontab.root <<EOF
 	/data/vpn/request       IN_ATTRIB,IN_CLOSE_WRITE        $OPENHEMS_PATH/scripts/vpn_server.py
-	EOF
+EOF
 		incrontab incrontab.root
 	else # set incron as server...
 		cat >openhems_vpn.service <<EOF
@@ -36,10 +36,30 @@ Restart=always
 [Install]
 WantedBy = multi-user.target
 EOF
-			sudo mv openhems_vpn.service /lib/systemd/system/
-			ln -s /lib/systemd/system/openhems_vpn.service /etc/systemd/system/multi-user.target.wants
 			activate_service openhems_vpn.service
 	fi
+
+	cat >openhems.service <<EOF
+[Unit]
+Description=OpenHEMS Service
+After=docker.service
+Requires=docker.service
+After=homeassistant.service
+Requires=homeassistant.service
+ 
+[Service]
+TimeoutStartSec=0
+Restart=always
+WorkingDirectory=$OPENHEMS_PATH/scripts
+ExecStartPre=-/usr/bin/docker stop $DOCKER_NAME
+ExecStartPre=-/usr/bin/docker rm $DOCKER_NAME
+ExecStartPre=$OPENHEMS_PATH/scripts/openhems.sh update
+ExecStart=$OPENHEMS_PATH/scripts/openhems.sh start
+ 
+[Install]
+WantedBy=multi-user.target
+EOF
+	activate_service openhems.service
 }
 
 function installOpenHemsService {
