@@ -157,7 +157,7 @@ class OffPeakStrategy(EnergyStrategy):
 			# TODO: set this margin in configuration
 			if missingTime>peakTime:
 				self.logger.warning("Missing %d minutes to respect timeout.",
-					                    missingTime-peakTime)
+					                    round((missingTime-peakTime).seconds/60))
 		self.logger.debug("OffpeakStrategy.getMissingTime(%s) = %s", schedule, missingTime)
 		return missingTime
 
@@ -217,7 +217,8 @@ class OffPeakStrategy(EnergyStrategy):
 				peakPeriods.append([previousRangeEnd, availableTime, rangeEnd, cost])
 			previousRangeEnd = rangeEnd
 			i += 1
-		self.logger.debug("OffpeakStrategy.getPeakPeriod(%s) = %s", schedule, peakPeriods)
+		self.logger.debug("OffpeakStrategy.getPeakPeriod(%s) = %s",
+		                  schedule, peakPeriods)
 		return peakPeriods
 
 	def getOnPeriods(self, now, schedule):
@@ -230,11 +231,13 @@ class OffPeakStrategy(EnergyStrategy):
 		if missingTime<=TIMEDELTA_0:
 			return []
 		peakPeriods = self.getPeakPeriods(now, schedule)
+
 		# Choice when to start/stop: So choice the best periods
 		onPeriods = []
 		peakPeriods.sort(key=lambda x:x[3]) # Sort by cost
 		i = 0
-		while missingTime>TIMEDELTA_0:
+		while missingTime>TIMEDELTA_0 and i<len(peakPeriods):
+			self.logger.debug("Len(peakperiods)=%s, %s", len(peakPeriods), peakPeriods[i])
 			start, duration, end, _ = peakPeriods[i]
 			if duration>missingTime:
 				end = start + missingTime
@@ -244,6 +247,12 @@ class OffPeakStrategy(EnergyStrategy):
 			onPeriods.append([start, end]) # Sort by start time
 			i += 1
 		onPeriods.sort(key=lambda x:x[0])
+		if missingTime>TIMEDELTA_0:
+			end = onPeriods[len(onPeriods)-1][1]
+			end = end + missingTime
+			onPeriods[len(onPeriods)-1][1] = end
+			self.logger.warning("Pushing back last end (until %s) due to missing time (%d minutes).",
+			                    end, round(missingTime.seconds/60))
 		self.logger.debug("OffpeakStrategy.getOnPeriod(%s) = %s", schedule, onPeriods)
 		return onPeriods
 

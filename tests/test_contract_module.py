@@ -9,23 +9,14 @@ import unittest
 from datetime import datetime
 from pathlib import Path
 import logging
-import io
-import contextlib
 # pylint: disable=wrong-import-position
 # pylint: disable=import-error
 ROOT_PATH = Path(__file__).parents[1]
 sys.path.append(str(ROOT_PATH / "src"))
-from openhems.modules.network.driver.fake_network import FakeNetwork
 from openhems.modules.contract import (
-	RTEContract, RTETempoContract, RTEHeuresCreusesContract, RTETarifBleuContract
+	RTETempoContract
 )
 
-stdout_handler = logging.StreamHandler(stream=sys.stdout)
-logging.basicConfig(
-    level=logging.ERROR,
-    format='[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s',
-    handlers=[stdout_handler]
-)
 logger = logging.getLogger(__name__)
 
 
