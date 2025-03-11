@@ -215,3 +215,7 @@ div.alert {
 	border: medium double red;
 	margin: 1em;
 }
+
+.device {
+	border: solid black;
+}

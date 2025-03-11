@@ -29,6 +29,7 @@ function setDevicesProgramm(nodes) {
 		let nodeDiv = document.createElement("div");
 		var id ="node"+nodeid;
 		nodeDiv.id = "div"+id;
+		nodeDiv.classList.add("device");
 		duration = Math.floor(node.duration/60); // Keep only minutes, forget seconds.
 		if (duration=="0") {
 			checked	= "";
@@ -41,15 +42,15 @@ function setDevicesProgramm(nodes) {
 			duration=(""+hour).padStart(2,'0')+":"+(""+min).padStart(2,'0');
 			// console.log("Duration:", duration)
 		}
-		nodeDiv.innerHTML='<label for="'+id+'"> '+node.name+'</label>:'
-			+'<label class="switch">'
-			+  '<input type="checkbox" name="'+id+'" id="'+id+'" " onclick="showMe(\''+id+'_conf\', this)"'+ checked+'>'
-			+  '<span class="slider round"></span>'
-			+'</label>'
+		nodeDiv.innerHTML='<div class="col-25"><label for="'+id+'"> '+node.name+'</label>'
+			+'<input type="checkbox" name="'+id+'" id="'+id+'" " onclick="showMe(\''+id+'_conf\', this)"'+ checked+'>'
+			+'</div><div class="col-75">'
 			+'<span id="'+id+'_conf" '+display+'>'
-			+	' Duration (hr:min): <input type="time" id="'+id+'_duration" name="'+id+'_duration" value="'+duration+'" onchange="changeSthg()">'
-			+	' Timeout (Next hr:min): <input type="time" id="'+id+'_timeout" name="'+id+'_timeout" value="'+node.timeout+'" onchange="changeSthg()">'
-			+'</span>';
+			+	'<span class="col-25"><img title="Duration (hr:min)" src="{{request.static_url('openhems.modules.web:img/hourglass.svg')}}" /></span>'
+			+   '<span class="col-25"><input type="time" id="'+id+'_duration" name="'+id+'_duration" value="'+duration+'" onchange="changeSthg()"></span>'
+			+	'<span class="col-25"><img title="Timeout (Next hr:min)" src="{{request.static_url('openhems.modules.web:img/alarm.svg')}}" /></span>'
+			+   '<span class="col-25"><input type="time" id="'+id+'_timeout" name="'+id+'_timeout" value="'+node.timeout+'" onchange="changeSthg()"></span>'
+			+'</span></div>';
 		network.appendChild(nodeDiv);
 		i++;
 	}
