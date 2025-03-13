@@ -2,9 +2,9 @@
 var objectLists = {}
 var network = [];
 /**
-	Function to initiate page to the state of the VPN.
-	@param : bool : True if VPN is connected.
-*/
+ * Function to initiate page to the state of the VPN.
+ * @param {bool} connect : True if VPN is connected.
+ */
 function connectedVPN(connect) {
 	vpnButton = document.getElementById("vpnButton");
 	url = "/vpn?connect="+(connect?"false":"true");
@@ -26,17 +26,26 @@ function connectedVPN(connect) {
 	const vpnStatus = document.getElementById("vpnStatus");
 	vpnStatus.innerHTML = connect?"up":"down";
 }
+/**
+ * On change something in the form, change icon to set to save.
+ */
 function changeSthg() {
 	// console.log("changeSthg()");
 		document.getElementById("submitYamlParams")
 			.src = "http://localhost:8000/img/save_32.ico";
 }
+/**
+ * 
+ */
 function getNetwork() {
 	val = document.getElementById('network.nodes').value.trim().replaceAll("'","\"");
 	console.log("Network0:",val);
 	network = JSON.parse(val);
 	console.log("Network:",network);
 }
+/**
+ * Report IHM inputs change to network model in order to send it back.
+ */
 function setNetwork() {
 	console.log("setNetwork()");
 	var nodes = document.getElementById("nodes").children;
@@ -78,6 +87,11 @@ function setNetwork() {
 	console.log("setNetwork() => ", myNetwork);
 	return true;
 }
+/**
+ * Allow to delete a HTML network node
+ *  (It will delete model when HTML is converted to model)
+ * @param {*} index : HTML index of the node
+ */
 function deleteNode(index) {
 	var node = document.getElementById("node-"+index);
 	node.parentElement.removeChild(node);
@@ -90,6 +104,14 @@ function deleteNode(index) {
 	}
 	network = network2;
 }
+/**
+ * Get HTML diplay element for a network node model.
+ * @param {*} index : The HTML id of the node
+ * @param {*} attr : The "name" of the node model.
+ * @param {*} node : The node model
+ * @param {*} level : The node level.
+ * @returns 
+ */
 function getElement(index, attr, node, level=0) {
 	// console.log("getElement(",index,", ",attr,", ",node,", ",level,")")
 	var currentElement = document.createElement("div");
@@ -144,11 +166,17 @@ const noSelectObjects = [
 	"newnode-contract-peakprice",
 	"newnode-contract-offpeakprice"
 ];
+/**
+ * Display an object model in a newNode popup.
+ * @param {*} elementId 
+ * @param {*} element 
+ * @param {*} object 
+ */
 function newNodeAddObject(elementId, element, object) {
 	console.log("newNodeAddObject(",elementId, element, object,")");
 	for (caract in object) {
 		defaultValue = object[caract]
-		console.log("newNodeSelectChange() : ",caract," : ",defaultValue)
+		console.log("newNodeAddObject() : ",caract," : ",defaultValue)
 		var elem = document.createElement("div");
 		elem.classList.add("row");
 		elem.classList.add(caract);
@@ -181,8 +209,10 @@ function newNodeAddObject(elementId, element, object) {
 		}
 	}
 }
-/*
-*/
+/**
+ * In a newNode popup, when a select change, populate corresponding sub-object.
+ * @param {*} selectElementId 
+ */
 function newNodeSelectChange(selectElementId) {
 	var select = document.getElementById(selectElementId+"-select");
 	console.log("newNodeSelectChange(",selectElementId,") => ", select.value);
@@ -197,6 +227,12 @@ function newNodeSelectChange(selectElementId) {
 	addNodeSelecForm.innerHTML = "";
 	newNodeAddObject(selectElementId, addNodeSelecForm, nodeConfig);
 }
+/**
+ * Diplay a HTML select element based on Object model of the list.
+ * @param {*} elementId : Base HTML id
+ * @param {*} selectDiv : The select div
+ * @param {*} objectList : Object model of the list
+ */
 function displaySelectElement(elementId, selectDiv, objectList) {
 	var selectElement = document.createElement("select");
 	selectElement.id = elementId+"-select";
@@ -218,6 +254,14 @@ function displaySelectElement(elementId, selectDiv, objectList) {
 	form.id = elementId+'-form';
 	selectDiv.appendChild(form);
 }
+/**
+ * 
+ * @param {*} id 
+ * @param {*} node 
+ * @param {*} model 
+ * @param {*} keyvalues 
+ * @returns 
+ */
 function populateNode(id, node, model, keyvalues) {
 	// console.log("populateNode(",id,", ",node,", ",model,", ",keyvalues,")");
 	model["id"] = "X";
@@ -248,6 +292,10 @@ function populateNode(id, node, model, keyvalues) {
 	console.log("populateNode(",id,") => ", node);
 	return node;
 }
+/**
+ * 
+ * @param {*} submitBtn 
+ */
 function addNode(submitBtn) {
 	var keyvalues = {};
 	var addNodePopup = document.getElementById("addNodePopup");
@@ -271,7 +319,10 @@ function addNode(submitBtn) {
 	displayNode(node);
 	hideAddNodePopup();
 }
-var initAddNodePopup = false
+var initAddNodePopup = false;
+/**
+ * When want to add a new node, diplay an appropriate popup.
+ */
 function displayAddNodePopup() {
 	console.log("displayAddNodePopup()")
 	if (!initAddNodePopup) {
@@ -284,6 +335,9 @@ function displayAddNodePopup() {
 	popup.classList.add("show");
 	popup.style.visibility = "visible";
 }
+/**
+ * Hide the "new node popup".
+ */
 function hideAddNodePopup() {
 	// console.log("hideAddNodePopup()")
 	var popup = document.getElementById("addNodePopup");
@@ -291,6 +345,10 @@ function hideAddNodePopup() {
 	popup.style.visibility = "hidden";
 }
 var defaultId = 0;
+/**
+ * Display a network node model.
+ * @param {object} node 
+ */
 function displayNode(node) {
 	if (node.id===undefined) {
 		node.id = "id"+defaultId;
@@ -299,6 +357,9 @@ function displayNode(node) {
 	currentElement = getElement("node", node.id, node);
 	document.getElementById("nodes").appendChild(currentElement);
 }
+/**
+ * Display the network model.
+ */
 function displayNetwork() {
 	for (n in network) {
 		node = network[n];
@@ -306,6 +367,10 @@ function displayNetwork() {
 		displayNode(node);
 	}
 }
+/**
+ * Display global warning message witch indicate a error loading the YAML file (At OpenHEMS startup).
+ * @param {*} warningMessages 
+ */
 function displayWarningMessages(warningMessages) {
 	warningBox = document.getElementById("warningBox");
 	if (warningMessages.length>0) {

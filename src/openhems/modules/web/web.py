@@ -93,8 +93,14 @@ def updateConfigurator(fields):
 	"""
 	Update configurator with form fields	
 	"""
-	configurator = ConfigurationManager(OPENHEMS_CONTEXT.logger)
-	configurator.addYamlConfig(Path(OPENHEMS_CONTEXT.yamlConfFilepath))
+	if len(fields)==0: # When no update is needed (Call /params)
+		# We get back configurator as it was loaded
+		# for case we loaded many files (openhems.yaml & openhems.secret.yaml)
+		configurator = OPENHEMS_CONTEXT.configurator
+	else: # Call /params with update parameters
+		# We get configurator as it ougth to be on last file (openhems.secret.yaml)
+		configurator = ConfigurationManager(OPENHEMS_CONTEXT.logger)
+		configurator.addYamlConfig(Path(OPENHEMS_CONTEXT.yamlConfFilepath))
 	change = False
 	for key, newValue in fields.items():
 		currentValue = configurator.get(key)
@@ -109,6 +115,8 @@ def updateConfigurator(fields):
 			print(currentValue, type(currentValue), " != ", newValue, type(newValue), " for key = ", key)
 			configurator.add(key, newValue)
 			change = True
+	if change: # We update configurator
+		OPENHEMS_CONTEXT.configurator = configurator
 	return change, configurator
 
 @view_config(
@@ -123,6 +131,9 @@ def params(request):
 		change, configurator = updateConfigurator(request.params)
 		if change:
 			configurator.save(OPENHEMS_CONTEXT.yamlConfFilepath)
+			# Display current configuration. Redo all for safety
+			configurator = ConfigurationManager(OPENHEMS_CONTEXT.logger)
+			configurator.addYamlConfig(Path(OPENHEMS_CONTEXT.yamlConfFilepath))
 	except ConfigurationException as e:
 		# NB : The real value can be None...
 		OPENHEMS_CONTEXT.logger.warning(
@@ -131,9 +142,6 @@ def params(request):
 		)
 		raise exception_response(400) from e # HTTPBadRequest
 
-	# Display current configuration. Redo all for safety
-	configurator = ConfigurationManager(OPENHEMS_CONTEXT.logger)
-	configurator.addYamlConfig(Path(OPENHEMS_CONTEXT.yamlConfFilepath))
 	params0 = configurator.get("", deepSearch=True)
 	params1 = {}
 	for k,v  in params0.items():
