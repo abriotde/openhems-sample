@@ -1,6 +1,4 @@
-
-var objectLists = {}
-var network = [];
+var objectLists = {};
 /**
  * Function to initiate page to the state of the VPN.
  * @param {bool} connect : True if VPN is connected.
@@ -38,21 +36,24 @@ function changeSthg() {
  * 
  */
 function getNetwork() {
-	val = document.getElementById('network.nodes').value.trim().replaceAll("'","\"");
-	console.log("Network0:",val);
-	network = JSON.parse(val);
-	console.log("Network:",network);
 }
 /**
  * Report IHM inputs change to network model in order to send it back.
  */
 function setNetwork() {
+	nodes = setNodes(nodes, "network.nodes", "node");
+	strategys = setNodes(strategys, "server.strategies", "strategy");
+}
+/**
+ * Report IHM inputs change to network model in order to send it back.
+ */
+function setNodes(mynodes, key, nodeType) {
 	console.log("setNetwork()");
-	var nodes = document.getElementById("nodes").children;
+	var nodes = document.getElementById(nodeType+"s").children;
 	var networkById = {};
 	// As id can be changed, search orginals ids
-	for (n in network) {
-		node = network[n]
+	for (n in mynodes) {
+		node = mynodes[n]
 		networkById[node.id] = node;
 	}
 	var refs = [networkById];
@@ -83,9 +84,9 @@ function setNetwork() {
 	for (i in refs[0]) {
 		myNetwork.push(networkById[i]);
 	}
-	document.getElementById('network.nodes').value = JSON.stringify(myNetwork);
+	document.getElementById(key).value = JSON.stringify(myNetwork);
 	console.log("setNetwork() => ", myNetwork);
-	return true;
+	return mynodes;
 }
 /**
  * Allow to delete a HTML network node
@@ -95,14 +96,8 @@ function setNetwork() {
 function deleteNode(index) {
 	var node = document.getElementById("node-"+index);
 	node.parentElement.removeChild(node);
-	network2 = [];
-	for (n in network) {
-		node = network[n];
-		if(node.id!=index) {
-			network2.push(node);
-		}
-	}
-	network = network2;
+	nodes = nodes.filter((node) => node.id!=index);
+	strategys = strategys.filter((node) => node.id!=index);
 }
 /**
  * Get HTML diplay element for a network node model.
@@ -157,17 +152,21 @@ function getElement(index, attr, node, level=0) {
 		} else if (attr=="class") {
 			attr = "Identifier";
 		}
-		currentElement.innerHTML = "<input type='text' id='"+myindex+"'"
-			+custumInputAttr+"value='"+node+"'/>";
+		var input = document.createElement("input");
+		input.type = "text";
+		input.id = myindex;
+		input.value = node;
+		currentElement.appendChild(input);
 	}
 	return currentElement;
 }
-const noSelectObjects = [
-	"newnode-contract-peakprice",
-	"newnode-contract-offpeakprice"
+const objectSelectKeys = [
+	"newnode-publicpowergrid-contract"
 ];
 /**
  * Display an object model in a newNode popup.
+ * This function is quite similar to ConfigurationManager.completeWithDefaults()
+ *  objectSelectKeys is equivalent to selectKeys in ConfigurationManager.completeWithDefaults() (The opposite)
  * @param {*} elementId 
  * @param {*} element 
  * @param {*} object 
@@ -191,10 +190,10 @@ function newNodeAddObject(elementId, element, object) {
 				+'</div><div class="col-75" id="'+sElementId+'"></div>';
 			element.appendChild(elem);
 			elem2 = document.getElementById(sElementId);
-			if (noSelectObjects.includes(sElementId)) {
-				newNodeAddObject(sElementId, elem2, defaultValue);
-			} else {
+			if (objectSelectKeys.includes(sElementId)) {
 				displaySelectElement(sElementId, elem2, defaultValue);
+			} else {
+				newNodeAddObject(sElementId, elem2, defaultValue);
 			}
 		} else {
 			elem.id = sElementId;
@@ -221,7 +220,7 @@ function newNodeSelectChange(selectElementId) {
 	//   We choice to let that memory-leak
 	nodeConfig = objectList[select.value];
 	if(selectElementId=="newnode") {
-		nodeConfig["id"] = "id"+Object.keys(network).length
+		nodeConfig["id"] = "id"+Object.keys(nodes).length+Object.keys(strategys).length
 	}
 	addNodeSelecForm = document.getElementById(selectElementId+"-form");
 	addNodeSelecForm.innerHTML = "";
@@ -293,10 +292,13 @@ function populateNode(id, node, model, keyvalues) {
 	return node;
 }
 /**
- * 
+ * On click to add node from the popup,
+ *  add the node in the HTML and close the popup.
  * @param {*} submitBtn 
  */
-function addNode(submitBtn) {
+function addNode(addBtn) {
+	nodeType = addBtn.dataset.nodeType;
+	console.log("addNode(",nodeType,")");
 	var keyvalues = {};
 	var addNodePopup = document.getElementById("addNodePopup");
 	var inputs = addNodePopup.querySelectorAll('input');
@@ -313,23 +315,31 @@ function addNode(submitBtn) {
 	var id = "newnode"
 	var value = keyvalues[id+"-select"];
 	var node = {"class":value};
-	var model = availableNodes[value];
+	var model = availableNodes[nodeType][value];
 	node = populateNode(id, node, model, keyvalues);
-	network.push(node);
-	displayNode(node);
+	if (nodeType=="node") {
+		nodes.push(node);
+	} else {
+		strategys.push(node);
+	}
+	displayNode(node, nodeType);
 	hideAddNodePopup();
 }
-var initAddNodePopup = false;
+var initAddNodePopup = "";
 /**
- * When want to add a new node, diplay an appropriate popup.
+ * When want to add a new node (Click on + button next to the list),
+ * diplay an appropriate popup.
  */
-function displayAddNodePopup() {
-	console.log("displayAddNodePopup()")
-	if (!initAddNodePopup) {
+function displayAddNodePopup(nodeType="node") {
+	console.log("displayAddNodePopup(",nodeType,")");
+	if (initAddNodePopup!="nodeType") {
 		var selectDiv = document.getElementById("newnode-class");
 		console.log("displayAddNodePopup() : initAddNodePopup", selectDiv);
-		displaySelectElement("newnode", selectDiv, availableNodes);
-		initAddNodePopup = true;
+		myAvailableNodes = availableNodes[nodeType]
+		displaySelectElement("newnode", selectDiv, myAvailableNodes);
+		addBtn = document.getElementById("addNodeBtn");
+		addBtn.dataset.nodeType = nodeType;
+		initAddNodePopup = nodeType;
 	}
 	var popup = document.getElementById("addNodePopup");
 	popup.classList.add("show");
@@ -346,25 +356,31 @@ function hideAddNodePopup() {
 }
 var defaultId = 0;
 /**
- * Display a network node model.
- * @param {object} node 
+ * Append a node model to the display list.
+ * @param {object} node
  */
-function displayNode(node) {
+function displayNode(node, nodeType="node") {
+	console.log("displayNode(",node,nodeType,")");
 	if (node.id===undefined) {
 		node.id = "id"+defaultId;
 		defaultId+=1;
 	}
 	currentElement = getElement("node", node.id, node);
-	document.getElementById("nodes").appendChild(currentElement);
+	document.getElementById(nodeType+"s").appendChild(currentElement);
 }
 /**
  * Display the network model.
  */
 function displayNetwork() {
-	for (n in network) {
-		node = network[n];
+	for (n in nodes) {
+		node = nodes[n];
 		console.log("Node:", node);
 		displayNode(node);
+	}
+	for (n in strategys) {
+		node = strategys[n];
+		console.log("Strategy:", node);
+		displayNode(node, "strategy");
 	}
 }
 /**

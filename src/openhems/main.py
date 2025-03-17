@@ -94,6 +94,7 @@ class OpenHEMSApplication:
 				configurator.addYamlConfig(path)
 			else:
 				print("No '",str(path),"'")
+		configurator.completeWithDefaults()
 		return configurator
 
 	def __init__(self, yamlConfFilepath:str, *, port=0, logfilepath='', inDocker=False):

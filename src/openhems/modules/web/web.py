@@ -101,14 +101,20 @@ def updateConfigurator(fields):
 		# We get configurator as it ougth to be on last file (openhems.secret.yaml)
 		configurator = ConfigurationManager(OPENHEMS_CONTEXT.logger)
 		configurator.addYamlConfig(Path(OPENHEMS_CONTEXT.yamlConfFilepath))
+	configurator.completeWithDefaults()
 	change = False
 	for key, newValue in fields.items():
 		currentValue = configurator.get(key)
-		if isinstance(currentValue, list) and isinstance(newValue, str) \
-				 and key == "network.nodes":
-			val = configurator.get("default.node", deepSearch=True)
-			model = [ConfigurationManager.toTree(val)]
-			newValue = getNode(newValue, model)
+		hook = ConfigurationManager.HOOKS.get(key)
+		if hook is not None:
+			val = configurator.get("default."+hook, deepSearch=True)
+			model = ConfigurationManager.toTree(val)
+			if isinstance(currentValue, dict) and isinstance(newValue, str):
+				newValue = getNode(newValue, model)
+			elif isinstance(currentValue, list) and isinstance(newValue, str):
+				model = [model]
+				newValue = getNode(newValue, model)
+			OPENHEMS_CONTEXT.logger.debug("Update %s : %s -> %s", key, currentValue, newValue)
 		else:
 			currentValue = str(currentValue)
 		if currentValue!=newValue:
@@ -147,7 +153,10 @@ def params(request):
 	for k,v  in params0.items():
 		params1[k.replace(".","_")] = v
 	params1["vpn"] = "up" if OPENHEMS_CONTEXT.vpnDriver.testVPN() else "down"
-	params1["availableNodes"] = configurator.getRawYamlConfig()['default']['node']
+	params1["availableNodes"] = {}
+	nodeTypes = ['node', 'strategy']
+	for nodeType in nodeTypes:
+		params1["availableNodes"][nodeType] = configurator.getRawYamlConfig()['default'][nodeType]
 	params1["warningMessages"] = OPENHEMS_CONTEXT.warningMessages
 	return params1
 
@@ -290,13 +299,14 @@ class OpenhemsHTTPServer():
 			htmlTabsBody += b
 			jinja2Id = name.replace('.','_')
 			label = re.sub(r'(?<!^)(?=[A-Z])', ' ',elems[grade]).capitalize()
-			if name=="network.nodes":
+			hook = ConfigurationManager.HOOKS.get(name)
+			if hook is not None: # strategy or network node
 				tagAttributes = 'type="hidden"'
-				htmlTabsElem += ('<button type="button" '
-					' onclick="displayAddNodePopup()">+</button>')
+				htmlTabsElem = ('<button type="button" '
+					' onclick="displayAddNodePopup(\''+hook+'\')">+</button>')
 			else:
-				htmlTabsElem = ''
 				tagAttributes = 'type="text"'
+				htmlTabsElem = ''
 			htmlTabsBody += ('<div class="row"><div class="col-25">'
 				f'<label for="{name}">{label}:</label>'
 				'</div><div class="col-75">' + htmlTabsElem +
@@ -304,8 +314,10 @@ class OpenhemsHTTPServer():
 					f'name="{name}" title="{tooltip}"'
 					' value="{{ '+jinja2Id+' }}" />'
 					'</div></div><br>\n')
-			if name=="network.nodes":
-				htmlTabsBody += '<div id="nodes"></div>\n'
+			if hook is not None: # strategy or network node.
+				# 'strategys' is huggly, but it's simpler...
+				htmlTabsBody += '<div id="'+hook+'s"></div>\n'
+				htmlTabsBody += '<script>'+hook+'s = {{ '+jinja2Id+'|tojson }};</script>\n'
 			lastElems = elems
 		htmlTabsBody += ("</div>\n"*(len(lastElems)-1))
 		return "<ul>"+htmlTabsMenu+"</ul>"+htmlTabsBody

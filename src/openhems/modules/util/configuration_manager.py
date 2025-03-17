@@ -31,6 +31,10 @@ class ConfigurationManager():
 	2. Overload with user defined configuration value (If key defined as default)
 	3. get the value by key/value dict
 	"""
+	HOOKS = { # Those key are list of class-types following model define in key "default."+hook.
+		"network.nodes": "node",
+		"server.strategies": "strategy"
+	}
 	_instance = None
 	def __init__(self, logger, defaultPath=None):
 		# print("ConfigurationManager()")
@@ -43,6 +47,83 @@ class ConfigurationManager():
 			self.defaultPath = defaultPath
 		self.addYamlConfig(self.defaultPath, True)
 		self.lastYamlConfFilepath = self.defaultPath
+
+	def _completeFromModelCB(self, configuration, model, baseKey="", exceptKeys=[]):
+		"""
+		Check if val match recursively to a model wich is an object,
+			if not complete with default value.
+		"""
+		for key, sModel in model.items():
+			if key in exceptKeys:
+				continue
+			value = configuration.get(key)
+			if value is None:
+				if isinstance(sModel, str) or isinstance(sModel, int) or isinstance(sModel, float) or isinstance(sModel, list):
+					defaultValue = sModel
+					self.logger.debug("ConfigurationManager._completeFromModelCB() : set configuration[%s] = %s",
+						baseKey+"."+key, defaultValue)
+				else:
+					defaultValue = self._completeFromModel({}, sModel, baseKey+"."+key)
+			else:
+				if isinstance(sModel, str):
+					defaultValue = CastUtililty.toTypeStr(value)
+				elif isinstance(sModel, int):
+					defaultValue = CastUtililty.toTypeInt(value)
+				elif isinstance(sModel, float):
+					defaultValue = CastUtililty.toTypeFloat(value)
+				elif isinstance(sModel, list):
+					defaultValue = CastUtililty.toTypeList(value)
+				elif sModel is None: # Case model not define default value.
+					defaultValue = value
+				else:
+					defaultValue = self._completeFromModel(value, sModel, baseKey+'.'+key)
+				if defaultValue!=value:
+					self.logger.debug("ConfigurationManager._completeFromModelCB() : change configuration[%s] = %s to %s",
+						baseKey+"."+key, value, defaultValue)
+			configuration[key] = defaultValue
+		return configuration
+
+	def _completeFromModel(self, configuration, model, baseKey=""):
+		"""
+		Check if val correspond to a model,
+			if not complete with default value.
+			The model an be an object representing a choice between classes or a real dict of key/value.
+		"""
+		selectKeys = { # Keys where we have object as a select choice beetwen classes.
+			"": True,
+			".publicpowergrid.contract": True
+		}
+		if selectKeys.get(baseKey.lower()) is None: # Case iterate over object.
+			configuration = self._completeFromModelCB(configuration, model, baseKey)
+		else:
+			classname = configuration.get("class")
+			if classname is None:
+				self.logger.error("ConfigurationManager._completeFromModel() : No 'class' defined in id='%s'.", configuration.get('id',''))
+				return None
+			myModel = model.get(classname.lower())
+			if myModel is None:
+				self.logger.error("ConfigurationManager._completeFromModel() : Class='%s' not defined for id='%s'.", classname, configuration.get('id',''))
+				return None
+			configuration = self._completeFromModelCB(configuration, myModel, baseKey+"."+classname, ["class"])
+		return configuration
+
+	def completeWithDefaults(self):
+		"""
+		Check if all hooks are correctly defined.
+		"""
+		for key, hook in self.HOOKS.items():
+			model = self.get("default."+hook, deepSearch=True, asTree=True)
+			vals = self.get(key)
+			if vals is None:
+				msg = "Hook '"+key+"' is not defined in configuration."
+				self.logger.error(msg)
+				raise ConfigurationException(msg)
+			elif isinstance(vals, list):
+				vals2 = [x for x in 
+							[self._completeFromModel(val, model) for val in vals]
+							if x is not None
+						]
+				self.add(key, vals2)
 
 	def _load(self, dictConfig, init=False, prekey=''):
 		"""

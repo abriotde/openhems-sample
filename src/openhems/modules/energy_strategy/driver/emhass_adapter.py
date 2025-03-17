@@ -287,13 +287,13 @@ Altitude: {altitude}
 		return datas
 
 	@staticmethod
-	def getEmhassDatas(configuration, network):
+	def getEmhassDatas(configurationEmhass, network):
 		"""
 		Extract usefull informations from openhems.yaml configuration
 		 for configuring EMHASS
 		Return: Dict of varname=>String to felle configuration file.
 		"""
-		datas = configuration.get("emhass", deepSearch=True)
+		datas = configurationEmhass
 		# P_from_grid_max / P_to_grid_max
 		datas['P_from_grid_max'] = network.getMaxPower("publicpowergrid")
 		datas['P_to_grid_max'] = network.getMinPower("publicpowergrid")
@@ -331,14 +331,14 @@ Altitude: {altitude}
 		return datas
 
 	@staticmethod
-	def generateYamlConfig(configuration, network, emhassConfigPath:Path):
+	def generateYamlConfig(configurationEmhass, network, emhassConfigPath:Path):
 		"""
 		Generate Emhass YAML config file : config_emhass.yaml from openhems.yaml
 		"""
 		templateDirPath = str(Path(__file__).parents[0] / "data/")
 		templateName = "config_emhass.jinja2.yaml"
 		environment = Environment(loader=FileSystemLoader(templateDirPath))
-		datas = EmhassAdapter.getEmhassDatas(configuration, network)
+		datas = EmhassAdapter.getEmhassDatas(configurationEmhass, network)
 		try:
 			template = environment.get_template(templateName)
 			content = template.render(
@@ -359,19 +359,24 @@ Altitude: {altitude}
 		return False
 
 	@staticmethod
-	def createFromOpenHEMS(configuration=None, network=None):
+	def createFromOpenHEMS(configurationGlobal=None, configurationEmhass:dict=None, network=None):
 		"""
 		Create EmhassAdapter with parameters for standard OpenHEMS installations
 		"""
 		configPath = PATH_ROOT / "config"
-		if configuration is not None:
+		if configurationGlobal is not None:
 			EmhassAdapter.generateSecretConfig(
-				configuration,
+				configurationGlobal,
 				configPath / "secrets_emhass.yaml"
 			)
+		else:
+			logger.warning(
+				"Can't generate EMHASS secrets due to missing configuration params."
+			)
+		if configurationEmhass is not None:
 			if network is not None:
 				EmhassAdapter.generateYamlConfig(
-					configuration, network,
+					configurationEmhass, network,
 					configPath / "config_emhass.yaml"
 				)
 				EmhassAdapter.generateHomeAssistantTemplateConfig(
@@ -384,7 +389,7 @@ Altitude: {altitude}
 				)
 		else:
 			logger.warning(
-				"Can't generate EMHASS secrets due to missing configuration parma."
+				"Can't generate EMHASS secrets due to missing EMHASS configuration params."
 			)
 		dataPath = Path("/tmp/emhass_data")
 		if not os.path.exists(dataPath):

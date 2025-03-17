@@ -37,8 +37,8 @@
 	<div id="newnode-class-form">
 	</div>
 
-	<button type="button" data-theme="b" onclick="hideAddNodePopup()">Cancel</button>
-	<button type="button" data-theme="b" onclick="addNode()">Add</button>
+	<button type="button" onclick="hideAddNodePopup()">Cancel</button>
+	<button type="button" data-nodeType="" id="addNodeBtn" onclick="addNode(this)">Add</button>
 </div>
 <script>
 vpn = {{ vpn|tojson }};
