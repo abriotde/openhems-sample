@@ -43,12 +43,13 @@ function getNetwork() {
 function setNetwork() {
 	nodes = setNodes(nodes, "network.nodes", "node");
 	strategys = setNodes(strategys, "server.strategies", "strategy");
+	return true;
 }
 /**
  * Report IHM inputs change to network model in order to send it back.
  */
 function setNodes(mynodes, key, nodeType) {
-	console.log("setNetwork()");
+	// console.log("setNodes()");
 	var nodes = document.getElementById(nodeType+"s").children;
 	var networkById = {};
 	// As id can be changed, search orginals ids
@@ -69,8 +70,8 @@ function setNodes(mynodes, key, nodeType) {
 					for (j=1; j<ids.length; j++) {
 						refs[j] = refs[j-1][ids[j]];
 					}
-					if (refs[ids.length-1]!=input.value) {
-						console.log(refs[ids.length-1] , " VS ", input.value);
+					if (refs[ids.length-1]!=input.value && JSON.stringify(refs[ids.length-1])!=input.value) {
+						console.log("setNodes() : ",input.id," has changed from ",refs[ids.length-1] , " to ", input.value);
 						refs[ids.length-1] = input.value;
 						for (j=ids.length-1; j>0; j--) {
 							refs[j-1][ids[j]] = refs[j];
@@ -85,7 +86,7 @@ function setNodes(mynodes, key, nodeType) {
 		myNetwork.push(networkById[i]);
 	}
 	document.getElementById(key).value = JSON.stringify(myNetwork);
-	console.log("setNetwork() => ", myNetwork);
+	console.log("setNodes(",nodeType,") => ", myNetwork);
 	return mynodes;
 }
 /**
@@ -332,9 +333,10 @@ var initAddNodePopup = "";
  */
 function displayAddNodePopup(nodeType="node") {
 	console.log("displayAddNodePopup(",nodeType,")");
-	if (initAddNodePopup!="nodeType") {
+	if (initAddNodePopup!=nodeType) {
 		var selectDiv = document.getElementById("newnode-class");
 		console.log("displayAddNodePopup() : initAddNodePopup", selectDiv);
+		selectDiv.innerHTML = "";
 		myAvailableNodes = availableNodes[nodeType]
 		displaySelectElement("newnode", selectDiv, myAvailableNodes);
 		addBtn = document.getElementById("addNodeBtn");
@@ -360,7 +362,7 @@ var defaultId = 0;
  * @param {object} node
  */
 function displayNode(node, nodeType="node") {
-	console.log("displayNode(",node,nodeType,")");
+	console.log("displayNode(",nodeType,",",node,")");
 	if (node.id===undefined) {
 		node.id = "id"+defaultId;
 		defaultId+=1;
@@ -371,17 +373,21 @@ function displayNode(node, nodeType="node") {
 /**
  * Display the network model.
  */
+networkDisplayed = false;
 function displayNetwork() {
+	if (networkDisplayed) {
+		console.log("Warning : Network already displayed.");
+		// return;
+	}
 	for (n in nodes) {
 		node = nodes[n];
-		console.log("Node:", node);
 		displayNode(node);
 	}
 	for (n in strategys) {
 		node = strategys[n];
-		console.log("Strategy:", node);
 		displayNode(node, "strategy");
 	}
+	networkDisplayed = true;
 }
 /**
  * Display global warning message witch indicate a error loading the YAML file (At OpenHEMS startup).

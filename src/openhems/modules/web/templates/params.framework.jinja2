@@ -21,7 +21,7 @@
 <div class="page">
 	<h1>Parameters</h1>
 	<div id="warningBox" class="alert"></div>
-	<div><img id="waitImg" src="{{request.static_url('openhems.modules.web:img/wait.gif')}}" style="display:none" alt="Wait"></img><div>
+	<div><img id="waitImg" src="{{request.static_url('openhems.modules.web:img/wait.gif')}}" style="display:none" alt="Wait"><div>
 	<div>VPN is <b id="vpnStatus">{{ vpn }}</b>.<button id="vpnButton"></button></div>
 
 	<form name="yamlParamsForm" action="/params" method="POST" onsubmit="return setNetwork()">
@@ -45,6 +45,7 @@ vpn = {{ vpn|tojson }};
 availableNodes = {{ availableNodes|tojson }};
 URL_IMG_DELETE = "{{request.static_url('openhems.modules.web:img/delete-20px.png')}}";
 $( function() {
+	console.log("Init page");
 	$( "#yamlParams" ).tabs();
 	// $("#addNodePopup").popup();
 	warningMessages = {{ warningMessages|tojson }};

@@ -83,7 +83,6 @@ class CastUtililty:
 			raise CastException("Impossible cast to float: Undefined algorythm : '"+type(value)+"'", 0)
 		return retValue
 
-
 	@staticmethod
 	def toTypeDatetime(value, nowtime:datetime=None):
 		"""
@@ -122,7 +121,11 @@ class CastUtililty:
 				try:
 					retValue = json.loads(value)
 				except ValueError:
-					retValue = [value]
+					value2 = value.replace('[', '["').replace(']', '"]').replace(',', '","')
+					try:
+						retValue = json.loads(value2)
+					except ValueError:
+						retValue = [value]
 			else:
 				raise CastException("Incorect string value for  float: '"+value+"'", 0)
 		else:

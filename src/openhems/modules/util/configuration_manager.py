@@ -67,6 +67,8 @@ class ConfigurationManager():
 			else:
 				if isinstance(sModel, str):
 					defaultValue = CastUtililty.toTypeStr(value)
+				elif isinstance(sModel, bool):
+					defaultValue = CastUtililty.toTypeBool(value)
 				elif isinstance(sModel, int):
 					defaultValue = CastUtililty.toTypeInt(value)
 				elif isinstance(sModel, float):

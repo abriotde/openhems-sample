@@ -52,16 +52,17 @@ def panel(request):
 # pylint: disable=too-many-branches
 def getNode(node, model):
 	"""
-	Implement on server side configuration checker.
+	Implement on server side configuration checker. Check that it don't set unknown parameters (for security)
 	Something like populateNode() on params.js
 	"""
-	OPENHEMS_CONTEXT.logger.info(f"getNode({node}, {model})")
+	OPENHEMS_CONTEXT.logger.debug(f"getNode({node}, {model})")
 	newNode = None
 	if isinstance(model, dict):
 		if not isinstance(node, dict):
 			raise ConfigurationException(f"Expecting a dict {node}")
 		newNode = {}
 		className = node.get("class")
+		id = node.get("id")
 		if className is not None: # Check the className exists as key in the model (We have a choice)
 			model = model.get(className.lower())
 			if model is None:
@@ -72,6 +73,7 @@ def getNode(node, model):
 			if snode is None:
 				raise ConfigurationException(f"No field '{k}' in {node}")
 			newNode[k] = getNode(snode, smodel)
+		newNode["id"] = id
 	elif isinstance(model, list):
 		if not isinstance(node, list):
 			try:
@@ -102,6 +104,7 @@ def updateConfigurator(fields):
 		configurator = ConfigurationManager(OPENHEMS_CONTEXT.logger)
 		configurator.addYamlConfig(Path(OPENHEMS_CONTEXT.yamlConfFilepath))
 	configurator.completeWithDefaults()
+
 	change = False
 	for key, newValue in fields.items():
 		currentValue = configurator.get(key)
@@ -114,7 +117,7 @@ def updateConfigurator(fields):
 			elif isinstance(currentValue, list) and isinstance(newValue, str):
 				model = [model]
 				newValue = getNode(newValue, model)
-			OPENHEMS_CONTEXT.logger.debug("Update %s : %s -> %s", key, currentValue, newValue)
+			OPENHEMS_CONTEXT.logger.debug("updateConfigurator() : Update %s : %s -> %s", key, currentValue, newValue)
 		else:
 			currentValue = str(currentValue)
 		if currentValue!=newValue:
@@ -155,9 +158,11 @@ def params(request):
 	params1["vpn"] = "up" if OPENHEMS_CONTEXT.vpnDriver.testVPN() else "down"
 	params1["availableNodes"] = {}
 	nodeTypes = ['node', 'strategy']
+	rawConfig = configurator.getRawYamlConfig()
 	for nodeType in nodeTypes:
-		params1["availableNodes"][nodeType] = configurator.getRawYamlConfig()['default'][nodeType]
+		params1["availableNodes"][nodeType] = rawConfig['default'][nodeType]
 	params1["warningMessages"] = OPENHEMS_CONTEXT.warningMessages
+	OPENHEMS_CONTEXT.logger.debug("generate /params with %s", params1)
 	return params1
 
 @view_config(
@@ -242,7 +247,6 @@ class OpenhemsHTTPServer():
 		translationsPath = ROOT_PATH / ("data/keys_"+lang+".yaml")
 		with translationsPath.open("r", encoding="utf-8") as keyFile:
 			self.translations = yaml.load(keyFile, Loader=yaml.FullLoader)
-		self.generateTemplateYamlParams(lang)
 		if inDocker:
 			vpnDriver = VpnDriverIncronClient(mylogger)
 		else:
@@ -252,6 +256,7 @@ class OpenhemsHTTPServer():
 		global OPENHEMS_CONTEXT
 		OPENHEMS_CONTEXT = self
 		OPENHEMS_CONTEXT.vpnDriver.testVPN()
+		self.generateTemplateYamlParams(lang)
 
 	def getTemplateYamlParamsBodyHeaders(self, lastElems, elems):
 		"""
@@ -326,6 +331,7 @@ class OpenhemsHTTPServer():
 		"""
 		Generate the template file for /params page based on YAML configuration file.
 		"""
+		OPENHEMS_CONTEXT.logger.info("Generate template for /params page")
 		templatesPath = Path(__file__).parents[0]/"templates"
 		tooltipPath = ROOT_PATH / ("data/openhems_tooltips_"+lang+".yaml")
 		configurator = ConfigurationManager(self.logger, defaultPath=tooltipPath)

@@ -6,7 +6,7 @@ import re
 import time
 import logging
 from datetime import datetime, timedelta
-from .cast_utility import CastException
+from .cast_utility import CastUtililty, CastException
 # from openhems.modules.util.cast_utility import CastException
 logger = logging.getLogger(__name__)
 
@@ -121,6 +121,8 @@ class HoursRanges:
 		Parse a list of ranges (2-tuple or String) to convert it on Time
 		"""
 		offpeaks = []
+		if not isinstance(offPeakHoursRanges, list):
+			offPeakHoursRanges = CastUtililty.toTypeList(offPeakHoursRanges)
 		for offpeakHoursRange in offPeakHoursRanges:
 			if isinstance(offpeakHoursRange, str):
 				offpeakHoursRange = offpeakHoursRange.split("-")
