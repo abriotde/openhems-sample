@@ -59,7 +59,7 @@ def getNode(node, model):
 	newNode = None
 	if isinstance(model, dict):
 		if not isinstance(node, dict):
-			raise ConfigurationException(f"Expecting a dict {node}")
+			raise ConfigurationException(f"Expecting a dict {node} for model {model}")
 		newNode = {}
 		className = node.get("class")
 		id = node.get("id")
@@ -107,17 +107,16 @@ def updateConfigurator(fields):
 
 	change = False
 	for key, newValue in fields.items():
+		OPENHEMS_CONTEXT.logger.debug("updateConfigurator() GET %s : %s", key, newValue)
 		currentValue = configurator.get(key)
 		hook = ConfigurationManager.HOOKS.get(key)
 		if hook is not None:
 			val = configurator.get("default."+hook, deepSearch=True)
 			model = ConfigurationManager.toTree(val)
-			if isinstance(currentValue, dict) and isinstance(newValue, str):
-				newValue = getNode(newValue, model)
-			elif isinstance(currentValue, list) and isinstance(newValue, str):
-				model = [model]
-				newValue = getNode(newValue, model)
-			OPENHEMS_CONTEXT.logger.debug("updateConfigurator() : Update %s : %s -> %s", key, currentValue, newValue)
+			model = [model]
+			newValue = CastUtililty.toTypeList(newValue)
+			newValue = getNode(newValue, model)
+			OPENHEMS_CONTEXT.logger.debug("updateConfigurator() : Update %s : %s \n -> %s", key, currentValue, newValue)
 		else:
 			currentValue = str(currentValue)
 		if currentValue!=newValue:
@@ -317,7 +316,7 @@ class OpenhemsHTTPServer():
 				'</div><div class="col-75">' + htmlTabsElem +
 				'<input '+tagAttributes+f' id="{name}" '
 					f'name="{name}" title="{tooltip}"'
-					' value="{{ '+jinja2Id+' }}" />'
+					' value="{{ '+jinja2Id+' }}">'
 					'</div></div><br>\n')
 			if hook is not None: # strategy or network node.
 				# 'strategys' is huggly, but it's simpler...

@@ -379,13 +379,17 @@ function displayNetwork() {
 		console.log("Warning : Network already displayed.");
 		// return;
 	}
+	nodeType="node";
+	document.getElementById(nodeType+"s").innerHTML = "";
 	for (n in nodes) {
 		node = nodes[n];
-		displayNode(node);
+		displayNode(node, nodeType);
 	}
+	nodeType="strategy";
+	document.getElementById(nodeType+"s").innerHTML = "";
 	for (n in strategys) {
 		node = strategys[n];
-		displayNode(node, "strategy");
+		displayNode(node, nodeType);
 	}
 	networkDisplayed = true;
 }
