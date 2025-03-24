@@ -10,8 +10,8 @@ server:
   loopDelay: 30 # interval beetween 2
   network: fake # Define the type of network API used to control the home energy.
   strategies: 
-    - {class: offpeak} # Define the algorithm used to control the  home energy.
+    - {class: offpeak, id: offpeak} # Define the algorithm used to control the  home energy.
 network:
   nodes: # List the source of electric power
-    - {id: linky, currentPower: "RANDOM(0, 6000.1, 100)", powerMargin: 1000, maxPower: 6000, minPower: 0, class: PublicPowerGrid, contract: {type: sensor, elem: rte_tempo, value: couleur_actuelle_visuel, class: RTETempoContract, params: {}} }
+    - {id: linky, currentPower: "RANDOM(0, 6000.1, 100)", powerMargin: 1000, maxPower: 6000, minPower: 0, class: PublicPowerGrid, contract: {type: sensor, elem: rte_tempo, value: couleur_actuelle_visuel, class: RTETempo}}
     - {id: voiture, class: switch, currentPower: 2000, maxPower:2000}
