@@ -133,6 +133,17 @@ class CastUtililty:
 		return retValue
 
 	@staticmethod
+	def toTypeDict(value):
+		"""
+		Convert to type list, raise CastException if it's impossible
+		"""
+		if isinstance(value, dict):
+			retValue = value
+		else:
+			raise CastException("Impossible to cat "+str(value)+" to type dict.", 0)
+		return retValue
+
+	@staticmethod
 	def toType(destType, value):
 		"""
 		With Home-Assitant API we get all as string.
@@ -154,6 +165,8 @@ class CastUtililty:
 			retValue = CastUtililty.toTypeList(value)
 		elif destType=="datetime":
 			retValue = CastUtililty.toTypeDatetime(value)
+		elif destType=="dict":
+			retValue = CastUtililty.toTypeDict(value)
 		else:
 			raise CastException(".toType("+str(destType)+","+str(value)+") : Unknwon type", 0)
 		return retValue

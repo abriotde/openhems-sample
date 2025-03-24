@@ -52,7 +52,8 @@ def panel(request):
 # pylint: disable=too-many-branches
 def getNode(node, model):
 	"""
-	Implement on server side configuration checker. Check that it don't set unknown parameters (for security)
+	Implement on server side configuration checker.
+	Check that it don't set unknown parameters (for security)
 	Something like populateNode() on params.js
 	"""
 	OPENHEMS_CONTEXT.logger.debug(f"getNode({node}, {model})")
@@ -62,7 +63,7 @@ def getNode(node, model):
 			raise ConfigurationException(f"Expecting a dict {node} for model {model}")
 		newNode = {}
 		className = node.get("class")
-		id = node.get("id")
+		myid = node.get("id")
 		if className is not None: # Check the className exists as key in the model (We have a choice)
 			model = model.get(className.lower())
 			if model is None:
@@ -73,7 +74,7 @@ def getNode(node, model):
 			if snode is None:
 				raise ConfigurationException(f"No field '{k}' in {node}")
 			newNode[k] = getNode(snode, smodel)
-		newNode["id"] = id
+		newNode["id"] = myid
 	elif isinstance(model, list):
 		if not isinstance(node, list):
 			try:
@@ -116,7 +117,8 @@ def updateConfigurator(fields):
 			model = [model]
 			newValue = CastUtililty.toTypeList(newValue)
 			newValue = getNode(newValue, model)
-			OPENHEMS_CONTEXT.logger.debug("updateConfigurator() : Update %s : %s \n -> %s", key, currentValue, newValue)
+			OPENHEMS_CONTEXT.logger.debug("updateConfigurator() : Update %s : %s \n -> %s",
+								 key, currentValue, newValue)
 		else:
 			currentValue = str(currentValue)
 		if currentValue!=newValue:
@@ -287,6 +289,7 @@ class OpenhemsHTTPServer():
 						f"<h{headerLevel}>{header}</h{headerLevel}>\n")
 		return (htmlTabsMenu, htmlTabsBody)
 
+	# pylint: disable=too-many-locals
 	def getTemplateYamlParamsBody(self, tooltips:dict):
 		"""
 		represent YAML (tooltip) as HTML Form.
