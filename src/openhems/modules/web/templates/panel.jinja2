@@ -23,9 +23,9 @@ var network;
 function setDevicesProgramm(nodes) {
 	network.innerHTML="";
 	var i = 0;
-	// console.log("nodes : ",nodes);
+	console.log("nodes : ",nodes);
 	for (const [nodeid, node] of Object.entries(nodes)) {
-		// console.log("node : ",nodeid," => ",node);
+		console.log("node : ",nodeid," => ",node);
 		let nodeDiv = document.createElement("div");
 		var id ="node"+nodeid;
 		nodeDiv.id = "div"+id;
@@ -78,24 +78,29 @@ function changeSthg() {
 	document.getElementById("valid").src="{{request.static_url('openhems.modules.web:img/save_32.ico')}}";
 }
 function onSave() {
-	// console.log("onSave()");
+	console.log("onSave()");
 	nodes = {};
 	for (const divnode of network.children) {
 		// console.log(divnode);
 		const id = divnode.id.substring(7);
 		// console.log("id:",id);
-		const label = divnode.children[0].innerHTML;
+		const col0 = divnode.children[0];
+		const col1 = divnode.children[1];
+		const label = col0.children[0].innerHTML;
 		// console.log("label:",label);
-		const checkbox = divnode.children[1].children[0];
+		const checkbox = col0.children[1];
 		// console.log("checkbox:",checkbox);
+		const nodeid = "node"+id;
 		if (checkbox.checked) {
-			durationVal = divnode.children[2].children[0].value;
+			durationVal = document.getElementById(nodeid+"_duration").value;
+			// console.log("durationVal:",durationVal);
 			if (durationVal=="") duration = 0;
 			else {
 				const vals = durationVal.split(":");
 				duration = parseInt(vals[0])*60 + parseInt(vals[1]);
 			}
-			timeout = divnode.children[2].children[1].value;
+			timeout = document.getElementById(nodeid+"_timeout").value;
+			// console.log("timeout:",timeout);
 			if (timeout=="") timeout = 0;
 		} else {
 			duration = 0;
