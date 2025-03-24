@@ -53,15 +53,17 @@ def panel(request):
 def getNode(node, model):
 	"""
 	Implement on server side configuration checker.
+	Check that it don't set unknown parameters (for security)
 	Something like populateNode() on params.js
 	"""
-	OPENHEMS_CONTEXT.logger.info(f"getNode({node}, {model})")
+	OPENHEMS_CONTEXT.logger.debug(f"getNode({node}, {model})")
 	newNode = None
 	if isinstance(model, dict):
 		if not isinstance(node, dict):
-			raise ConfigurationException(f"Expecting a dict {node}")
+			raise ConfigurationException(f"Expecting a dict {node} for model {model}")
 		newNode = {}
 		className = node.get("class")
+		myid = node.get("id")
 		if className is not None: # Check the className exists as key in the model (We have a choice)
 			model = model.get(className.lower())
 			if model is None:
@@ -72,6 +74,7 @@ def getNode(node, model):
 			if snode is None:
 				raise ConfigurationException(f"No field '{k}' in {node}")
 			newNode[k] = getNode(snode, smodel)
+		newNode["id"] = myid
 	elif isinstance(model, list):
 		if not isinstance(node, list):
 			try:
@@ -93,22 +96,37 @@ def updateConfigurator(fields):
 	"""
 	Update configurator with form fields	
 	"""
-	configurator = ConfigurationManager(OPENHEMS_CONTEXT.logger)
-	configurator.addYamlConfig(Path(OPENHEMS_CONTEXT.yamlConfFilepath))
+	if len(fields)==0: # When no update is needed (Call /params)
+		# We get back configurator as it was loaded
+		# for case we loaded many files (openhems.yaml & openhems.secret.yaml)
+		configurator = OPENHEMS_CONTEXT.configurator
+	else: # Call /params with update parameters
+		# We get configurator as it ougth to be on last file (openhems.secret.yaml)
+		configurator = ConfigurationManager(OPENHEMS_CONTEXT.logger)
+		configurator.addYamlConfig(Path(OPENHEMS_CONTEXT.yamlConfFilepath))
+	configurator.completeWithDefaults()
+
 	change = False
 	for key, newValue in fields.items():
+		OPENHEMS_CONTEXT.logger.debug("updateConfigurator() GET %s : %s", key, newValue)
 		currentValue = configurator.get(key)
-		if isinstance(currentValue, list) and isinstance(newValue, str) \
-				 and key == "network.nodes":
-			val = configurator.get("default.node", deepSearch=True)
-			model = [ConfigurationManager.toTree(val)]
+		hook = ConfigurationManager.HOOKS.get(key)
+		if hook is not None:
+			val = configurator.get("default."+hook, deepSearch=True)
+			model = ConfigurationManager.toTree(val)
+			model = [model]
+			newValue = CastUtililty.toTypeList(newValue)
 			newValue = getNode(newValue, model)
+			OPENHEMS_CONTEXT.logger.debug("updateConfigurator() : Update %s : %s \n -> %s",
+								 key, currentValue, newValue)
 		else:
 			currentValue = str(currentValue)
 		if currentValue!=newValue:
 			print(currentValue, type(currentValue), " != ", newValue, type(newValue), " for key = ", key)
 			configurator.add(key, newValue)
 			change = True
+	if change: # We update configurator
+		OPENHEMS_CONTEXT.configurator = configurator
 	return change, configurator
 
 @view_config(
@@ -123,6 +141,9 @@ def params(request):
 		change, configurator = updateConfigurator(request.params)
 		if change:
 			configurator.save(OPENHEMS_CONTEXT.yamlConfFilepath)
+			# Display current configuration. Redo all for safety
+			configurator = ConfigurationManager(OPENHEMS_CONTEXT.logger)
+			configurator.addYamlConfig(Path(OPENHEMS_CONTEXT.yamlConfFilepath))
 	except ConfigurationException as e:
 		# NB : The real value can be None...
 		OPENHEMS_CONTEXT.logger.warning(
@@ -131,16 +152,18 @@ def params(request):
 		)
 		raise exception_response(400) from e # HTTPBadRequest
 
-	# Display current configuration. Redo all for safety
-	configurator = ConfigurationManager(OPENHEMS_CONTEXT.logger)
-	configurator.addYamlConfig(Path(OPENHEMS_CONTEXT.yamlConfFilepath))
 	params0 = configurator.get("", deepSearch=True)
 	params1 = {}
 	for k,v  in params0.items():
 		params1[k.replace(".","_")] = v
 	params1["vpn"] = "up" if OPENHEMS_CONTEXT.vpnDriver.testVPN() else "down"
-	params1["availableNodes"] = configurator.getRawYamlConfig()['default']['node']
+	params1["availableNodes"] = {}
+	nodeTypes = ['node', 'strategy']
+	rawConfig = configurator.getRawYamlConfig()
+	for nodeType in nodeTypes:
+		params1["availableNodes"][nodeType] = rawConfig['default'][nodeType]
 	params1["warningMessages"] = OPENHEMS_CONTEXT.warningMessages
+	OPENHEMS_CONTEXT.logger.debug("generate /params with %s", params1)
 	return params1
 
 @view_config(
@@ -225,7 +248,6 @@ class OpenhemsHTTPServer():
 		translationsPath = ROOT_PATH / ("data/keys_"+lang+".yaml")
 		with translationsPath.open("r", encoding="utf-8") as keyFile:
 			self.translations = yaml.load(keyFile, Loader=yaml.FullLoader)
-		self.generateTemplateYamlParams(lang)
 		if inDocker:
 			vpnDriver = VpnDriverIncronClient(mylogger)
 		else:
@@ -235,6 +257,7 @@ class OpenhemsHTTPServer():
 		global OPENHEMS_CONTEXT
 		OPENHEMS_CONTEXT = self
 		OPENHEMS_CONTEXT.vpnDriver.testVPN()
+		self.generateTemplateYamlParams(lang)
 
 	def getTemplateYamlParamsBodyHeaders(self, lastElems, elems):
 		"""
@@ -266,6 +289,7 @@ class OpenhemsHTTPServer():
 						f"<h{headerLevel}>{header}</h{headerLevel}>\n")
 		return (htmlTabsMenu, htmlTabsBody)
 
+	# pylint: disable=too-many-locals
 	def getTemplateYamlParamsBody(self, tooltips:dict):
 		"""
 		represent YAML (tooltip) as HTML Form.
@@ -282,22 +306,25 @@ class OpenhemsHTTPServer():
 			htmlTabsBody += b
 			jinja2Id = name.replace('.','_')
 			label = re.sub(r'(?<!^)(?=[A-Z])', ' ',elems[grade]).capitalize()
-			if name=="network.nodes":
+			hook = ConfigurationManager.HOOKS.get(name)
+			if hook is not None: # strategy or network node
 				tagAttributes = 'type="hidden"'
-				htmlTabsElem += ('<button type="button" '
-					' onclick="displayAddNodePopup()">+</button>')
+				htmlTabsElem = ('<button type="button" '
+					' onclick="displayAddNodePopup(\''+hook+'\')">+</button>')
 			else:
-				htmlTabsElem = ''
 				tagAttributes = 'type="text"'
+				htmlTabsElem = ''
 			htmlTabsBody += ('<div class="row"><div class="col-25">'
 				f'<label for="{name}">{label}:</label>'
 				'</div><div class="col-75">' + htmlTabsElem +
 				'<input '+tagAttributes+f' id="{name}" '
 					f'name="{name}" title="{tooltip}"'
-					' value="{{ '+jinja2Id+' }}" />'
+					' value="{{ '+jinja2Id+' }}">'
 					'</div></div><br>\n')
-			if name=="network.nodes":
-				htmlTabsBody += '<div id="nodes"></div>\n'
+			if hook is not None: # strategy or network node.
+				# 'strategys' is huggly, but it's simpler...
+				htmlTabsBody += '<div id="'+hook+'s"></div>\n'
+				htmlTabsBody += '<script>'+hook+'s = {{ '+jinja2Id+'|tojson }};</script>\n'
 			lastElems = elems
 		htmlTabsBody += ("</div>\n"*(len(lastElems)-1))
 		return "<ul>"+htmlTabsMenu+"</ul>"+htmlTabsBody
@@ -306,6 +333,7 @@ class OpenhemsHTTPServer():
 		"""
 		Generate the template file for /params page based on YAML configuration file.
 		"""
+		OPENHEMS_CONTEXT.logger.info("Generate template for /params page")
 		templatesPath = Path(__file__).parents[0]/"templates"
 		tooltipPath = ROOT_PATH / ("data/openhems_tooltips_"+lang+".yaml")
 		configurator = ConfigurationManager(self.logger, defaultPath=tooltipPath)
@@ -331,10 +359,25 @@ class OpenhemsHTTPServer():
 			config.add_route('params', '/params')
 			config.add_route('vpn', '/vpn')
 			# config.add_route('favicon.ico', '/favicon.ico')
-			root = (self.htmlRoot+'/img').replace('//','/')
+			imgUrl = (self.htmlRoot+'/img').replace('//','/')
+			jsUrl = (self.htmlRoot+'/js').replace('//','/')
+			cssUrl = (self.htmlRoot+'/css').replace('//','/')
+			faviconUrl = (self.htmlRoot+'/favicon.ico').replace('//','/')
 			config.add_static_view(
-				name=root,
-				path='openhems.modules.web:../../../../img'
+				name=imgUrl,
+				path='openhems.modules.web:img'
+			)
+			config.add_static_view(
+				name=jsUrl,
+				path='openhems.modules.web:js'
+			)
+			config.add_static_view(
+				name=cssUrl,
+				path='openhems.modules.web:css'
+			)
+			config.add_static_view(
+				name=faviconUrl,
+				path='openhems.modules.web:img/favicon.ico'
 			)
 			config.scan()
 			app = config.make_wsgi_app()

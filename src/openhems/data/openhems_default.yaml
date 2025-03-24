@@ -60,6 +60,7 @@ default:
       contract:
         rtetempo:
           color: null
+          nextcolor: null
           offpeakhoursranges: ["22h - 6h"]
           peakprice:
             bleu: 0.1609

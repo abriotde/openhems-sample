@@ -25,15 +25,18 @@ class EmhassStrategy(EnergyStrategy):
 	So this require some more Python packages.
 	"""
 
-	def __init__(self, mylogger, network: OpenHEMSNetwork, configuration:ConfigurationManager,
-	             strategyId:str="emhass"):
+	def __init__(self, mylogger, network: OpenHEMSNetwork,
+			configurationGlobal:ConfigurationManager, configurationEmhass:dict,
+			strategyId:str="emhass"):
 		super().__init__(strategyId, network, mylogger, True)
-		self.adapter = EmhassAdapter.createFromOpenHEMS(configuration, network)
-		self.logger.info("EmhassStrategy()")
+		self.logger.info("EmhassStrategy(%s)", configurationEmhass)
+		self.adapter = EmhassAdapter.createFromOpenHEMS(
+			configurationEmhass=configurationEmhass, configurationGlobal=configurationGlobal,
+			network=network)
 		self.network = network
-		freq = configuration.get("emhass.freq")
+		freq = configurationEmhass.get("freq")
 		self.emhassEvalFrequence = timedelta(minutes=freq)
-		self.timezone = pytz.timezone(configuration.get("localization.timeZone"))
+		self.timezone = pytz.timezone(configurationGlobal.get("localization.timeZone"))
 		self.data = None
 		self.deferables = {}
 		self.deferablesKeys = []
@@ -50,7 +53,7 @@ class EmhassStrategy(EnergyStrategy):
 			data = self.adapter.performOptim()
 			if self.logger.isEnabledFor(logging.DEBUG):
 				self.logger.debug("EMHASS result is : %s", data)
-				for timestamp, row in self.data.iterrows():
+				for timestamp, row in data.iterrows():
 					row = "> "+str(timestamp)
 					for index, deferable in enumerate(self.deferablesKeys):
 						key = 'P_deferrable'+str(index)
@@ -206,3 +209,4 @@ class EmhassStrategy(EnergyStrategy):
 			now = now.replace(tzinfo=self.timezone)
 		self.check(now)
 		self.emhassApply(cycleDuration, now=now)
+		return cycleDuration

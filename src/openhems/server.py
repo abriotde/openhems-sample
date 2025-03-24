@@ -39,7 +39,8 @@ class OpenHEMSServer:
 				# pylint: disable=import-outside-toplevel
 				# Avoid to import EmhassStrategy and all it's dependances when no needs.
 				from openhems.modules.energy_strategy.emhass_strategy import EmhassStrategy
-				self.strategies.append(EmhassStrategy(mylogger, self.network, serverConf, strategyId))
+				self.strategies.append(
+					EmhassStrategy(mylogger, self.network, serverConf, strategyParams, strategyId))
 			else:
 				msg = f"OpenHEMSServer() : Unknown strategy '{strategy}'"
 				self.logger.critical(msg)

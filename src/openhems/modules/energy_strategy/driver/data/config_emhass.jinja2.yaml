@@ -3,8 +3,8 @@
 retrieve_hass_conf:
   freq: {{freq}}
   days_to_retrieve: {{days_to_retrieve}} # We will retrieve data from now and up to days_to_retrieve days. Minimum is 2
-  var_PV: sensor.emhass_photovoltaic_power_produced # Photovoltaic produced power sensor in Watts - Template Sensor auto-generated
-  var_load: sensor.emhass_household_power_consumption # Household power consumption sensor in Watts (deferrable loads should be substracted) - Template Sensor auto-generated
+  var_PV: {{emhass_photovoltaic_power_produced}} # Photovoltaic produced power sensor in Watts - Template Sensor auto-generated
+  var_load: {{emhass_household_power_consumption}} # Household power consumption sensor in Watts (deferrable loads should be substracted) - Template Sensor auto-generated
   load_negative: False # Set to True if the retrived load variable is negative by convention
   set_zero_min: True # A special treatment for a minimum value saturation to zero. Values below zero are replaced by nans
   var_replace_zero: {{var_replace_zero}} # A list of retrived variables that we would want  to replace nans with zeros

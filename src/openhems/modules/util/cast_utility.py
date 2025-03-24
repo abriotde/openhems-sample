@@ -83,7 +83,6 @@ class CastUtililty:
 			raise CastException("Impossible cast to float: Undefined algorythm : '"+type(value)+"'", 0)
 		return retValue
 
-
 	@staticmethod
 	def toTypeDatetime(value, nowtime:datetime=None):
 		"""
@@ -122,11 +121,26 @@ class CastUtililty:
 				try:
 					retValue = json.loads(value)
 				except ValueError:
-					retValue = [value]
+					value2 = value.replace('[', '["').replace(']', '"]').replace(',', '","')
+					try:
+						retValue = json.loads(value2)
+					except ValueError:
+						retValue = [value]
 			else:
 				raise CastException("Incorect string value for  float: '"+value+"'", 0)
 		else:
 			raise CastException("Impossible cast to list: Undefined algorythm : '"+type(value)+"'", 0)
+		return retValue
+
+	@staticmethod
+	def toTypeDict(value):
+		"""
+		Convert to type list, raise CastException if it's impossible
+		"""
+		if isinstance(value, dict):
+			retValue = value
+		else:
+			raise CastException("Impossible to cat "+str(value)+" to type dict.", 0)
 		return retValue
 
 	@staticmethod
@@ -151,6 +165,8 @@ class CastUtililty:
 			retValue = CastUtililty.toTypeList(value)
 		elif destType=="datetime":
 			retValue = CastUtililty.toTypeDatetime(value)
+		elif destType=="dict":
+			retValue = CastUtililty.toTypeDict(value)
 		else:
 			raise CastException(".toType("+str(destType)+","+str(value)+") : Unknwon type", 0)
 		return retValue

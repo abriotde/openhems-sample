@@ -7,6 +7,46 @@ from openhems.modules.network.network import OpenHEMSNetwork
 
 LOOP_DELAY_VIRTUAL = 0
 
+class StrategyNode:
+	"""
+	Class to manage a node in a strategy: keep track of its state
+	"""
+	def  __init__(self, node, logger):
+		self.logger = logger
+		self.node = node
+		self.isOn = None
+
+	def changed(self, isOn=None):
+		"""
+		Change the state of the node
+		"""
+		wasOn = self.isOn
+		if isOn is None:
+			isOn = self.node.isOn()
+		self.isOn = isOn
+		return wasOn!=self.isOn
+
+	def decreaseTime(self, cycleDuration:int):
+		"""
+		Decrease the time of the schedule
+		"""
+		if self.isOn:
+			if not self.node.isOn(): # Was successfully switched off at previous cycle
+				self.isOn = False
+				return False
+			schedule = self.node.getSchedule()
+			remainingTime = schedule.decreaseTime(cycleDuration)
+			if remainingTime==0:
+				self.logger.info("Switch off '%s' due to elapsed time.", self.node.id)
+				if self.node.switchOn(False):
+					self.logger.warning("Fail switch off '%s'.", self.node.id)
+				else:
+					return False
+			return True
+		else:
+			return False
+	
+
 class EnergyStrategy:
 	"""
 	Super class for all EnergyStrategy modules
@@ -19,11 +59,16 @@ class EnergyStrategy:
 		self.strategyId = strategyId
 		self.network = network
 		self.useSchedulable = useSchedulable
+		self._nodes = None
 
-	def getNodes(self):
+	def getNodes(self, encapsulated=False):
 		"""
 		Return nodes concerned by a defined strategy
 		"""
+		if encapsulated:
+			if self._nodes is None:
+				self._nodes = [StrategyNode(node, self.logger) for node in self.network.getNodesForStrategy(self.strategyId)]
+			return self._nodes
 		return self.network.getNodesForStrategy(self.strategyId)
 
 	def updateNetwork(self, cycleDuration:int, allowSleep:bool, now=None):
@@ -35,12 +80,8 @@ class EnergyStrategy:
 
 	def switchOnSchedulable(self, node, cycleDuration, doSwitchOn):
 		"""
-		Switch on/off the node depending on doSwitchOn.
-		IF the node is ever on:
-		 - decrement his time to be on from cycleDuration
-		 - Switch off the node if time to be on elapsed
-		    or strategy choice is to switch off
-		ELSE IF doSwitchOn=True: Switch on the node
+		param node: Node to switch on
+		param doSwitchOn: Set if we want to switch on or off
 		return: True if node is on
 		"""
 		if node.isSwitchable:

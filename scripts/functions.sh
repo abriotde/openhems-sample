@@ -16,6 +16,12 @@ function wait_homeassistant_container_up {
 
 function activate_service {
 	service = $1
+	if [ -f $service ]; then
+		sudo cp $service /etc/systemd/system/
+		sudo mv $service /lib/systemd/system/
+	fi
+	ln -s /lib/systemd/system/$service /etc/systemd/system/multi-user.target.wants
+	systemctl daemon-reload
     systemctl enable $service
     systemctl start $service
     ok=`systemctl is-active --quiet $service`
@@ -55,6 +61,7 @@ function installDocker {
 
 function launchDocker {
 	dockerName=$1
+	DO_START=0
 	if [[ `docker ps --format '{{.Names}}'|grep $dockerName|wc -l` -ge 1 ]]; then
 		echo "Docker container '$dockerName' is running."
 	else if [ `docker ps -a --format '{{.Names}}'|grep $dockerName|wc -l` -ge 1 ]; then
@@ -76,25 +83,23 @@ function launchDocker {
 	if [[ $DO_INSTALL -eq 1 ]]; then
 		echo "Create docker '$dockerName'"
 		if [[ $dockerName == "homeassistant" ]]; then
-			sudo docker run -d \
+			/usr/bin/docker run \
 			  --name $dockerName \
 			  --privileged \
-			  --restart=unless-stopped \
 			  -v $HOMEASSISTANT_DIR/config:/config \
 			  -v /run/dbus:/run/dbus:ro \
 			  -e TZ=$MY_TIME_ZONE \
-			  --network=host \
+			  --network=host --rm \
 			  ghcr.io/home-assistant/home-assistant:stable
 		else if [[ $dockerName == "openhems" ]]; then
-			sudo docker run -d \
+			/usr/bin/docker run \
 			  --name $dockerName \
 			  --privileged \
-			  --restart=unless-stopped \
 			  -v $OPENHEMS_PATH/config:/app/config \
 			  -v $OPENHEMS_LOGPATH:/log \
 			  -v /data:/opt \
 			  -e TZ=$MY_TIME_ZONE \
-			  -p 8000:8000 \
+			  -p 8000:8000 --rm \
 			  ghcr.io/abriotde/openhems-sample:main
 		else
 			echo "ERROR : unknown docker name $dockerName"

@@ -219,7 +219,7 @@ class Updater:
 					filepath.chmod(0o755)
 				else:
 					print("ERROR : chmod 755 ", filepath)
-		for subdir in ["src","img","scripts", "version", "data"]:
+		for subdir in ["src","scripts", "version", "docs", "tests"]:
 			spath = tmpPath / subdir
 			print(" - ",str(spath))
 			if spath.is_dir():

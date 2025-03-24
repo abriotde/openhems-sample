@@ -5,7 +5,7 @@ network:
   nodes:
   - class: PublicPowerGrid
     contract:
-      class: RTETempoContract
+      class: RTETempo
       color: sensor.rte_tempo_couleur_actuelle
       nextcolor: sensor.rte_tempo_prochaine_couleur
     currentPower: sensor.lixee_zlinky_tic_puissance_apparente

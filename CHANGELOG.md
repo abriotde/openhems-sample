@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.2.0 - 2024-03-24
+### Fix
+- Configuration UI : It was broken since the possibility to have multiple strategies. It was not very stable even before.
+- Emhass : it was broken too since multi-strategies
+- Improve autostart with systemd while running OpenHEMS on separate docker (Not in HAOS).
+- Bug, not decreasing device duration, fixed.
+
+### Improvement
+- ADD call to a web API to get RTE Tempo color
+
+### Todo
+- Improve stability of
+- Update documentations
+
+## 0.1.14 - 2024-02-20
+### Fix
+- Fix pip package usage : Add necessary datas and correct paths. The goal is to create Home-Assistant integration.
+
+## 0.1.13 - 2024-02-20
+
+## 0.1.12 - 2024-02-20
+
+## 0.1.11 - 2024-02-20
+
+## 0.1.10 - 2024-02-20
+
 ## 0.1.9 - 2024-02-19
 ### Improvement
 - Publish openhems as PIP package (Same version). The goal is put it in Home-Assistant's addon.

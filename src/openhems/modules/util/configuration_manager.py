@@ -10,7 +10,7 @@ import shutil
 import traceback
 import yaml
 from yaml.scanner import ScannerError
-from openhems.modules.util.cast_utility import CastUtililty
+from openhems.modules.util.cast_utility import CastUtililty, CastException
 
 rootPath = Path(__file__).parents[2]
 DEFAULT_PATH = rootPath / "data/openhems_default.yaml"
@@ -31,6 +31,10 @@ class ConfigurationManager():
 	2. Overload with user defined configuration value (If key defined as default)
 	3. get the value by key/value dict
 	"""
+	HOOKS = { # Those key are list of class-types following model define in key "default."+hook.
+		"network.nodes": "node",
+		"server.strategies": "strategy"
+	}
 	_instance = None
 	def __init__(self, logger, defaultPath=None):
 		# print("ConfigurationManager()")
@@ -43,6 +47,107 @@ class ConfigurationManager():
 			self.defaultPath = defaultPath
 		self.addYamlConfig(self.defaultPath, True)
 		self.lastYamlConfFilepath = self.defaultPath
+
+	#pylint: disable=too-many-branches
+	def _completeFromModelCB(self, configuration, model, baseKey="", exceptKeys=None):
+		"""
+		Check if val match recursively to a model wich is an object,
+			if not complete with default value.
+		"""
+		if model is None:
+			return configuration
+		if exceptKeys is None:
+			exceptKeys=[]
+		for key, sModel in model.items():
+			if key in exceptKeys:
+				continue
+			value = configuration.get(key)
+			defaultValue = value
+			if value is None:
+				if isinstance(sModel, (float, int, list, str)):
+					defaultValue = sModel
+					self.logger.debug(
+						"ConfigurationManager._completeFromModelCB() : set configuration[%s] = %s",
+						baseKey+"."+key, defaultValue)
+				else:
+					defaultValue = self._completeFromModel({}, sModel, baseKey+"."+key)
+			else:
+				classname = sModel.__class__.__name__
+				if sModel is None: # Case model not define default value.
+					defaultValue = value
+				elif classname in ["int", "float", "bool", "str", "list"]:
+					try:
+						value = CastUtililty.toType(classname, value)
+					except CastException as e:
+						self.logger.error("Fail to cast %s to type %s : '%s",
+						value, sModel.__class__.__name__, e.message)
+				elif classname=="dict":
+					defaultValue = self._completeFromModel(value, sModel, baseKey+'.'+key)
+				else:
+					self.logger.error(
+						"ConfigurationManager._completeFromModelCB() : Unknown type '%s' for key='%s' : %s.",
+						classname, key, model)
+				if defaultValue!=value:
+					self.logger.debug(
+						"ConfigurationManager._completeFromModelCB() : change configuration[%s] = %s to %s",
+						baseKey+"."+key, value, defaultValue)
+			configuration[key] = defaultValue
+		return configuration
+
+	def _completeFromModel(self, configuration, model, baseKey=""):
+		"""
+		Check if val correspond to a model,
+			if not complete with default value.
+			The model an be an object representing a choice between classes or a real dict of key/value.
+		"""
+		selectKeys = { # Keys where we have object as a select choice beetwen classes.
+			"": True,
+			".publicpowergrid.contract": True
+		}
+		if selectKeys.get(baseKey.lower()) is None: # Case iterate over object.
+			configuration = self._completeFromModelCB(configuration, model, baseKey)
+		else:
+			classname = configuration.get("class")
+			if classname is None:
+				self.logger.error(
+					"ConfigurationManager._completeFromModel() : No 'class' defined in id='%s'.",
+					configuration.get('id',''))
+				return None
+			myModel = model.get(classname.lower())
+			if myModel is None:
+				self.logger.error(
+					"ConfigurationManager._completeFromModel() : Class='%s' not defined for id='%s'.",
+					classname, configuration.get('id',''))
+				return None
+			configuration = self._completeFromModelCB(
+				configuration, myModel, baseKey+"."+classname, ["class"])
+		return configuration
+
+	def completeWithDefaults(self):
+		"""
+		Check if all hooks are correctly defined.
+		"""
+		for key, hook in self.HOOKS.items():
+			model = self.get("default."+hook, deepSearch=True, asTree=True)
+			vals = self.get(key)
+			if vals is None:
+				msg = "Hook '"+key+"' is not defined in configuration."
+				self.logger.error(msg)
+				raise ConfigurationException(msg)
+			if isinstance(vals, list):
+				vals2 = []
+				change = False
+				for conf in vals:
+					conf2 = self._completeFromModel(conf, model)
+					if conf2 is not None:
+						vals2.append(conf2)
+						if conf!=conf2:
+							change = True
+							self.logger.debug(
+								"Change configuration[%s][x] = %s to %s",
+						 		key, conf, conf2)
+				if change:
+					self.add(key, vals2)
 
 	def _load(self, dictConfig, init=False, prekey=''):
 		"""

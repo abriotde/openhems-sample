@@ -13,6 +13,7 @@ import importlib
 # from importlib.metadata import version
 import jinja2
 from jinja2 import Environment, FileSystemLoader
+from openhems.modules.util.configuration_manager import ConfigurationException
 # from packaging.version import Version
 PATH_ROOT = Path(__file__).parents[3]
 PATH_EMHASS = PATH_ROOT / 'emhass/src/'
@@ -60,6 +61,9 @@ class EmhassAdapter:
 		self.logger = logging.getLogger(__name__)
 		if associationsPath is None:
 			associationsPath = rootPath / 'data/associations.csv'
+		if not os.path.exists(associationsPath):
+			self.logger.error("Can't find associations file on '%s'", associationsPath)
+			raise ConfigurationException(f"Can't find associations file on '{associationsPath}'")
 		self.logger.debug("EmhassAdapter(%s, %s, %s, %s)",
 			configPath, dataPath, rootPath , associationsPath)
 		# self.configPath = configPath
@@ -287,13 +291,13 @@ Altitude: {altitude}
 		return datas
 
 	@staticmethod
-	def getEmhassDatas(configuration, network):
+	def getEmhassDatas(configurationEmhass, network, useTemplateVar=False):
 		"""
 		Extract usefull informations from openhems.yaml configuration
 		 for configuring EMHASS
 		Return: Dict of varname=>String to felle configuration file.
 		"""
-		datas = configuration.get("emhass", deepSearch=True)
+		datas = configurationEmhass
 		# P_from_grid_max / P_to_grid_max
 		datas['P_from_grid_max'] = network.getMaxPower("publicpowergrid")
 		datas['P_to_grid_max'] = network.getMinPower("publicpowergrid")
@@ -323,6 +327,16 @@ Altitude: {altitude}
 			x.modulesPerString)
 		datas['strings_per_inverter'] = EmhassAdapter.getYamlList(elems, lambda x:
 			x.stringsPerInverter)
+		if useTemplateVar:
+			varPV = "sensor.emhass_photovoltaic_power_produced"
+			varLoad = "sensor.emhass_household_power_consumption"
+		else:
+			for elem in network.getAll("solarpanel"):
+				varPV = elem.currentPower.nameid
+			for elem in network.getAll("inout"):
+				varLoad = elem.currentPower.nameid
+		datas['emhass_photovoltaic_power_produced'] =varPV
+		datas['emhass_household_power_consumption'] =varLoad
 
 		datas = datas \
 			|EmhassAdapter.getYamlConfBattery(network) \
@@ -331,14 +345,14 @@ Altitude: {altitude}
 		return datas
 
 	@staticmethod
-	def generateYamlConfig(configuration, network, emhassConfigPath:Path):
+	def generateYamlConfig(configurationEmhass, network, emhassConfigPath:Path, useTemplateVar=False):
 		"""
 		Generate Emhass YAML config file : config_emhass.yaml from openhems.yaml
 		"""
 		templateDirPath = str(Path(__file__).parents[0] / "data/")
 		templateName = "config_emhass.jinja2.yaml"
 		environment = Environment(loader=FileSystemLoader(templateDirPath))
-		datas = EmhassAdapter.getEmhassDatas(configuration, network)
+		datas = EmhassAdapter.getEmhassDatas(configurationEmhass, network, useTemplateVar)
 		try:
 			template = environment.get_template(templateName)
 			content = template.render(
@@ -359,24 +373,36 @@ Altitude: {altitude}
 		return False
 
 	@staticmethod
-	def createFromOpenHEMS(configuration=None, network=None):
+	def createFromOpenHEMS(configurationGlobal=None, configurationEmhass:dict=None, network=None):
 		"""
 		Create EmhassAdapter with parameters for standard OpenHEMS installations
 		"""
-		configPath = PATH_ROOT / "config"
-		if configuration is not None:
+		print(f"createFromOpenHEMS({configurationGlobal}, {configurationEmhass})")
+		dataPath = Path("/tmp/emhass_data")
+		if not os.path.exists(dataPath):
+			os.mkdir(dataPath)
+		if configurationGlobal is not None:
 			EmhassAdapter.generateSecretConfig(
-				configuration,
-				configPath / "secrets_emhass.yaml"
+				configurationGlobal,
+				dataPath / "secrets_emhass.yaml"
 			)
+		else:
+			logger.warning(
+				"Can't generate EMHASS secrets due to missing configuration params."
+			)
+		if configurationEmhass is not None:
 			if network is not None:
+				useTemplateVar=False # It would be better set to True
+				# but need to update Home-Assistant configurations... too complex.
+				if useTemplateVar:
+					EmhassAdapter.generateHomeAssistantTemplateConfig(
+						network,
+						dataPath / "template.yaml"
+					)
 				EmhassAdapter.generateYamlConfig(
-					configuration, network,
-					configPath / "config_emhass.yaml"
-				)
-				EmhassAdapter.generateHomeAssistantTemplateConfig(
-					network,
-					configPath / "template.yaml"
+					configurationEmhass, network,
+					dataPath / "config_emhass.yaml",
+					useTemplateVar=useTemplateVar
 				)
 			else:
 				logger.warning(
@@ -384,13 +410,10 @@ Altitude: {altitude}
 				)
 		else:
 			logger.warning(
-				"Can't generate EMHASS secrets due to missing configuration parma."
+				"Can't generate EMHASS secrets due to missing EMHASS configuration params."
 			)
-		dataPath = Path("/tmp/emhass_data")
-		if not os.path.exists(dataPath):
-			os.mkdir(dataPath)
 		rootPath = PATH_EMHASS / "emhass"
-		return EmhassAdapter(configPath, dataPath, rootPath)
+		return EmhassAdapter(dataPath, dataPath, rootPath)
 
 	@staticmethod
 	def createForDocker():
@@ -401,14 +424,3 @@ Altitude: {altitude}
 		rootPath = Path("/app")
 		dataPath = rootPath / "data"
 		return EmhassAdapter(rootPath, dataPath, rootPath)
-
-if __name__ == "__main__":
-	sys.path.append(str(PATH_ROOT/"src"))
-	emhass = EmhassAdapter.createFromOpenHEMS()
-	emhass.deferables = [
-		Deferrable(1000, 3),
-		Deferrable(300, 2),
-		Deferrable(1500, 5)
-	]
-	data = emhass.performOptim()
-	print(data)
