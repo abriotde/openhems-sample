@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.15 - 2024-02-19
+## 0.2.0 - 2024-03-24
 ### Fix
 - Configuration UI : It was broken since the possibility to have multiple strategies. It was not very stable even before.
 - Emhass : it was broken too since multi-strategies
