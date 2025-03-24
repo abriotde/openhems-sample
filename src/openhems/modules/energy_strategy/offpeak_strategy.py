@@ -81,13 +81,12 @@ class OffPeakStrategy(EnergyStrategy):
 		if marginPower<0:
 			self.logger.info("Can't switch on devices: not enough power margin : %s", marginPower)
 			return True
-		for elem in self.getNodes():
-			if not elem.isOn():
-				if self.switchOnSchedulable(elem, cycleDuration, True):
-					# Do just one at each loop to check Network constraint
-					return True
-				ok = False
-		return ok
+		for elem in self.getNodes(True):
+			switchOn = self.switchOnSchedulable(elem.node, cycleDuration, True)
+			if switchOn and elem.changed(switchOn):
+				self.logger.info("Switch on just one device at each loop to ensure Network constraint.")
+				return True
+		return False
 
 	def updateNetwork(self, cycleDuration:int, allowSleep:bool, now=None) -> int:
 		"""
@@ -183,12 +182,12 @@ class OffPeakStrategy(EnergyStrategy):
 				start, end = onPeriod
 				if now>start:
 					if end>now:
-						if not elem.isOn() and self.switchOnSchedulable(elem, cycleDuration, True):
+						if self.switchOnSchedulable(elem, cycleDuration, True):
 							self.logger.info(
 							    "Switch on '%s' due to missing time on offpeak periods to respect constraints.",
 							    elem.id)
 					else:
-						if not self.switchOnSchedulable(elem, cycleDuration, False):
+						if not elem.switchOn(False):
 							# TODO : remove past periods : useless anymore
 							schedule.setStrategyCache(self.strategyId, onPeriods)
 

@@ -5,6 +5,7 @@
 - Configuration UI : It was broken since the possibility to have multiple strategies. It was not very stable even before.
 - Emhass : it was broken too since multi-strategies
 - Improve autostart with systemd while running OpenHEMS on separate docker (Not in HAOS).
+- Bug, not decreasing device duration, fixed.
 
 ### Improvement
 - ADD call to a web API to get RTE Tempo color

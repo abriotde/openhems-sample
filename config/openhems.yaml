@@ -18,7 +18,7 @@ server:
 network:
   nodes:
     - {id: linky, currentPower: sensor.lixee_zlinky_tic_puissance_apparente, powerMargin: 1000, maxPower: 10000, minPower: 0, class: PublicPowerGrid,
-        contract: {class: RTETempo, color: sensor.rte_tempo_couleur_actuelle, nextcolor: sensor.rte_tempo_prochaine_couleur, offpeakhoursranges: ["6h - 22h"]}
+        contract: {class: RTETempo, color: sensor.rte_tempo_couleur_actuelle, nextcolor: sensor.rte_tempo_prochaine_couleur}
       }
     - {id: voiture, strategy: offpeak, class: switch, isOn: switch.tz3000_2putqrmw_ts011f_commutateur_2, currentPower: sensor.tz3000_2putqrmw_ts011f_puissance_2, maxPower: 2000}
     - {id: box, strategy: redDay, class: switch, isOn: switch.tz3000_2putqrmw_ts011f_commutateur, currentPower: sensor.tz3000_2putqrmw_ts011f_puissance}
