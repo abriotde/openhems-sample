@@ -3,7 +3,7 @@ Usage
 =====
 
 
-In this paragraph we will see main use cases of OpenHEMS and how we can use it.
+In this paragraph we will see main use cases of OpenHEMS and how we can use it. We will introduce some notions.
 
 As said previously, you need to have controlable devices. But there is different contrallable devices:
 
@@ -38,9 +38,9 @@ For this there is usually an acceptable margin, with OpenHEMS we could play with
 
 For each devices you will affect a "strategy". This strategy will decide when to start & stop it. There is some different kind of strategy. Lets explore it.
 
+
 Different strategy
 ------------------
-
 
 First, we class use cases depending on source power.
 
@@ -62,10 +62,12 @@ But some time ther is not enough time during offpeak periods to respect wanted t
 
 It happen the consumption run to higth (configured), for safety the system will suspend device.
 
+
 Switchoff strategy
 ~~~~~~~~~~~~~~~~~~
 
 This strategy is used for devices to switch on (or switch off) during a period depending time. We can configure to add conditions witch is usefull to switch off not neccessary devices on exceptionnal and critical cases (Hight cost or low battery)
+
 
 Emhass strategy
 ~~~~~~~~~~~~~~~

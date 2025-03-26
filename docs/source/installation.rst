@@ -11,8 +11,15 @@ Buy it
 You can bye a pre-installed system on [OpenHEMS server on OpenHomeSystem](https://openhomesystem.com/product/openhems-server/).
 Then plug theelectric power cable and the ethenet one. It should be available from local network on http://192.168.1.202:8123/ and http://192.168.1.202:8000/.
 
-From docker
------------
+Install on Home-AssistantOS as add-on
+-----------------------------------
+
+This is the easiest way to install it manually. You need a installed Home-AssistantOS. On parameters menu, click on "Add-on store" (bottom right). On top right, click on parameters symbol (3 point button) and select "Store" to open a popup. In the field paste "https://github.com/abriotde/openhems-addon" aand click "Add" button. Close the popup and refresh the store page. You should see "OpenHEMS" in the list. Click on it and then install it.
+
+Then you will need to configure it. See dedicated page :doc:`configure`. After configured, restart Home-AssistantOS.
+
+Install from docker
+-------------------
 
 This is a modern, quick and secure way to install it but there is less customizations way (creating your own Dockerfile from it ?).
 
@@ -26,7 +33,6 @@ Prerequisites
 
 Installation
 ~~~~~~~~~~~~
-
 
 You need 3 parameters :
 
@@ -51,10 +57,10 @@ On a Linux server run :
  	-v /data:/opt \
  	-e TZ=$MY_TIME_ZONE \
  	-p 8000:8000 \
- 	ghcr.io/abriotde/openhems-sample:main
+ 	ghcr.io/abriotde/openhems-sample:latest
 
-From scratch
-------------
+Install from scratch
+--------------------
 
 This way is reserved to aknowledged people. See dedicated page :doc:`installation_from_scratch`.
 
