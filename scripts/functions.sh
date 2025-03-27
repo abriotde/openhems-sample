@@ -100,7 +100,7 @@ function launchDocker {
 			  -v /data:/opt \
 			  -e TZ=$MY_TIME_ZONE \
 			  -p 8000:8000 --rm \
-			  ghcr.io/abriotde/openhems-sample:main
+			  ghcr.io/abriotde/openhems-sample:$OPENHEMS_DOCKER_VERSION
 		else
 			echo "ERROR : unknown docker name $dockerName"
 			exit 1

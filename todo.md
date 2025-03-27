@@ -11,7 +11,7 @@
 - prod/mvp : Minimum Valuable Product
 - dev/strategy : Add simulated_annealing_strategy from https://github.com/jmcollin78/solar_optimizer
 - dev/general : Add priority on devices to switch off when reach max power consumption.
-- dev/general : Add variable maximum power consumption (offpeak/peak hours)?
+- dev/strategy/offpeak : + Add multi time slots cost... order them + Add variable maximum power consumption for each time-slot.
 - dev/general : Improve resilience : When fail get global status at init time wait and retry
 - dev/admin : Run openhems as user 'openhems' instead root, use 
 - dev/updater : Add HomeStateUpdater from openhab_api.py

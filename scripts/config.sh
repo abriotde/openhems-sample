@@ -15,6 +15,7 @@ DOCKER_NAME=openhems
 OPENHEMS_USER=olimex
 OPENHEMS_PATH=/home/olimex/openhems-sample
 OPENHEMS_BRANCH=main
+OPENHEMS_DOCKER_VERSION=latest
 TMP_DIR=/tmp
 VPN_IP=10.0.0.2
 MY_TIME_ZONE=`cat /etc/timezone`
