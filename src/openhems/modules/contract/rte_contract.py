@@ -1,7 +1,7 @@
 """
 Module to manage RTE classic contracts. Feel automaticaly offpeak-hours and all prices
 """
-
+import time
 import datetime
 # import functools
 import requests
@@ -41,16 +41,25 @@ class RTETempoContract(RTEContract):
 			Use https://www.api-couleur-tempo.fr/api/ API to get TempoColori of a day.
 		"""
 		url = "https://www.api-couleur-tempo.fr/api/jourTempo/"+day
-		response = requests.get(url, timeout=10)
-		if response.status_code!=200:
-			print("Error get(%s)", url)
-			retVal = None
-		else:
-			vals = response.json()
-			color = vals['codeJour']
-			colorMap = {1: "bleu", 2: "blanc", 3: "rouge"}
-			retVal = colorMap.get(color)
-		# print(f" callApiRteTempo({day}):{retVal}")
+		retVal = None
+		for i in range(3): # Could be usefull for 502 error
+			# User-Agent is mandatory else 502 error
+			response = requests.get(url, timeout=10, allow_redirects=False, headers={'User-Agent': 'Mozilla/5.0'})
+			if response.status_code!=200:
+				self.logger.error("Error get(%s) : %d", url, response.status_code)
+				if response.status_code==502:
+					self.logger.warning("Error 502: Retry in 2 seconds")
+					time.sleep(2)
+				else:
+					return retVal
+			else:
+				self.logger.debug("Response: %s", response.text)
+				vals = response.json()
+				color = vals['codeJour']
+				colorMap = {1: "bleu", 2: "blanc", 3: "rouge"}
+				retVal = colorMap.get(color)
+				# print(f" callApiRteTempo({day}):{retVal}")
+				return retVal
 		return retVal
 	# callApiRteTempo("tomorrow")
 	# callApiRteTempo("today")

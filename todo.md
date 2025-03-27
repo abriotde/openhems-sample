@@ -9,9 +9,10 @@
 - funding/crowd : kickstarter
 - promote : LinuxFR
 - prod/mvp : Minimum Valuable Product
-- dev/strategy : use timeout to stay alife
+- dev/strategy : Add simulated_annealing_strategy from https://github.com/jmcollin78/solar_optimizer
+- dev/general : Add priority on devices to switch off when reach max power consumption.
+- dev/strategy/offpeak : + Add multi time slots cost... order them + Add variable maximum power consumption for each time-slot.
 - dev/general : Improve resilience : When fail get global status at init time wait and retry
-- dev/ihm : Improve edit Yaml configuration whith HTML : Check pb openhems.yaml.20241226: save without diff for nodes + node_id
 - dev/admin : Run openhems as user 'openhems' instead root, use 
 - dev/updater : Add HomeStateUpdater from openhab_api.py
 - dev/strategy : Add solar panel without internet, use Python skyfield module or pvlib module

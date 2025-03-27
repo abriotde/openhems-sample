@@ -73,11 +73,11 @@ function installOpenHems {
 }
 
 function updateOpenHEMS {
-	docker pull ghcr.io/abriotde/openhems-sample:main
+	docker pull ghcr.io/abriotde/openhems-sample:$OPENHEMS_DOCKER_VERSION
 	# TODO : Backup
 	docker stop $DOCKER_NAME
 	docker container rm $DOCKER_NAME
-	# docker rmi ghcr.io/abriotde/openhems-sample:main
+	# docker rmi ghcr.io/abriotde/openhems-sample:$OPENHEMS_DOCKER_VERSION
 	launchDocker $DOCKER_NAME
 }
 

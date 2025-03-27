@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.1 - 2024-03-27
+### Fix
+- FIX docker stability
+- FIX integration for Home-Assisant.
+
+### Improvement
+- Update Documentation
+
 ## 0.2.0 - 2024-03-24
 ### Fix
 - Configuration UI : It was broken since the possibility to have multiple strategies. It was not very stable even before.
