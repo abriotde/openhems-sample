@@ -23,13 +23,15 @@ class OpenHEMSNode:
 		"""
 		self.id = haId.strip().replace(" ", "_")
 
-	def __init__(self, nameId, currentPower, maxPower, isOnFeeder=None):
+	def __init__(self, nameId, currentPower, maxPower, isOnFeeder=None, controlledPowerFeeder=None):
 		self.id = ""
 		self.setId(nameId)
 		self.params = ""
 		self.network = None
 		self._isSwitchable = False
 		self._isOn: Feeder = None
+		self._isControlledPower = controlledPowerFeeder is not None
+		self._controlledPower = controlledPowerFeeder
 		self.currentPower: Feeder = 0
 		self.maxPower: Feeder = 2000
 		self.currentPower = currentPower
@@ -43,7 +45,7 @@ class OpenHEMSNode:
 
 	def setCurrentPower(self, currentPower):
 		"""
-		Get current power.
+		Set current power.
 		"""
 		if len(self.previousPower)>=CYCLE_HISTORY:
 			self.previousPower.popleft()
@@ -96,6 +98,27 @@ class OpenHEMSNode:
 		return [self.currentPower-abs(maxDiff),\
 			self.currentPower+curDiff,\
 			self.currentPower+abs(maxDiff)]
+
+	def isControlledPower(self):
+		"""
+			Return true if this OpenHEMSNode can be switch on/off.
+		"""
+		return self._isControlledPower
+
+
+	def getControlledPower(self):
+		"""
+		Get current wanted controlled power for node with controlable power.
+		!!! Warning maybe we don't get power but an abstract value. !!!
+		"""
+		return self._controlledPower.getValue()
+
+	def setControlledPower(self, power):
+		"""
+		Set wanted controlled power for node with controlable power.
+		!!! Warning maybe we don't set power but an abstract value. !!!
+		"""
+		return self._controlledPower.setValue(power)
 
 	def isSwitchable(self):
 		"""

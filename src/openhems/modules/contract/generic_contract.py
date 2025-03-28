@@ -13,7 +13,7 @@ class GenericContract:
 	"""
 	logger = logging.getLogger(__name__)
 
-	def __init__(self, peakPrice, offpeakPrice=None, offpeakHoursRanges=None):
+	def __init__(self, peakPrice, offpeakPrice=None, offpeakHoursRanges=None, sellPrice=0):
 		self.peakPrice = peakPrice
 		if offpeakHoursRanges is None:
 			self.offpeakHoursRanges = HoursRanges([])
@@ -27,6 +27,7 @@ class GenericContract:
 			else:
 				self.offpeakPrice = offpeakPrice
 		self._inOffpeakRange = None
+		self.sellPrice = sellPrice
 		self.rangeEnd = datetime.datetime.now()
 
 	@staticmethod
@@ -34,9 +35,9 @@ class GenericContract:
 		"""
 		Parse a configuration dict to create a GenericContract
 		"""
-		peakPrice, offpeakPrice, offpeakHoursRanges = \
+		peakPrice, offpeakPrice, offpeakHoursRanges, sellPrice = \
 			GenericContract.extractFromDict(dictConf, configuration)
-		return GenericContract(peakPrice, offpeakPrice, offpeakHoursRanges)
+		return GenericContract(peakPrice, offpeakPrice, offpeakHoursRanges, sellPrice)
 
 	@staticmethod
 	def extractFromDict(dictConf, configuration):
@@ -46,9 +47,10 @@ class GenericContract:
 		"""
 		keys = (dictConf, configuration, "generic")
 		peakPrice = GenericContract.get("peakPrice", keys, "float")
+		sellPrice = GenericContract.get("sellPrice", keys, "float")
 		offpeakPrice = GenericContract.get("offpeakPrice", keys, "float")
 		offpeakHoursRanges = GenericContract.get("offpeakHoursRanges", keys, "list")
-		return (peakPrice, offpeakPrice, offpeakHoursRanges)
+		return (peakPrice, offpeakPrice, offpeakHoursRanges, sellPrice)
 
 	def getOffPeakPrice(self, now=None, attime=None):
 		"""
@@ -81,6 +83,17 @@ class GenericContract:
 		if self.inOffpeakRange(now, attime):
 			return self.getOffPeakPrice(now, attime)
 		return self.getPeakPrice(now, attime)
+
+	def getSellPrice(self, now=None, attime=None):
+		"""
+		now: datetime witch represent current time, default is datetime.now(). 
+		 now must never go back further at runtime
+		 now is used for cached time, usually it's datetime.now() except for test to simulate situations.
+		attime: datetime witch represent time to check price. Default is now.
+		Return: the Kw sell cost at 'now'.
+		"""
+		del now, attime
+		return 0
 
 	def __str__(self):
 		return ("GenericContract($"

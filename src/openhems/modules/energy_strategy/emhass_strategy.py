@@ -4,8 +4,7 @@ This use Artificial Intelligence to guess the  futur.
 So this require some more Python packages.
 """
 
-import math
-from datetime import datetime, timedelta
+from datetime import datetime
 import logging
 import pytz
 import numpy as np
@@ -28,21 +27,17 @@ class EmhassStrategy(EnergyStrategy):
 	def __init__(self, mylogger, network: OpenHEMSNetwork,
 			configurationGlobal:ConfigurationManager, configurationEmhass:dict,
 			strategyId:str="emhass"):
-		super().__init__(strategyId, network, mylogger, True)
+		freq = configurationEmhass.get("freq")
+		super().__init__(strategyId, network, mylogger, True, evalFrequency=freq)
 		self.logger.info("EmhassStrategy(%s)", configurationEmhass)
 		self.adapter = EmhassAdapter.createFromOpenHEMS(
 			configurationEmhass=configurationEmhass, configurationGlobal=configurationGlobal,
 			network=network)
 		self.network = network
-		freq = configurationEmhass.get("freq")
-		self.emhassEvalFrequence = timedelta(minutes=freq)
 		self.timezone = pytz.timezone(configurationGlobal.get("localization.timeZone"))
-		self.data = None
-		self.deferables = {}
-		self.deferablesKeys = []
-		self.nextEvalDate = datetime.now(self.timezone) - self.emhassEvalFrequence
+		self._data = None
 
-	def emhassEval(self):
+	def eval(self):
 		"""
 		Launch EMHASS optimization plan and store result.
 		Also update depending attributes.
@@ -63,61 +58,17 @@ class EmhassStrategy(EnergyStrategy):
 			self.logger.debug("No deferrables so no EMHASS optimization to do.")
 			data = None
 		self.deferablesKeys = self.deferables.keys()
-		self.data = data
-		self.nextEvalDate = datetime.now(self.timezone) + self.emhassEvalFrequence
+		self._data = data
 		return data
 
-	def getDurationInHour(self, durationInSecs):
+	def getDeferrables(self, node, durationInSecs):
 		"""
-		Return duration in Emhass prevision granularity
+		Return a Deferrable representing the node (adding usefull informations for algo).
 		"""
-		# TODO granularity can be less or more than hour...
-		return math.ceil(durationInSecs / 3600)
-
-	def updateDeferables(self):
-		"""
-		Update scheduled devices according to emhass
-		 to scheduled devices according to openhems
-		Return true if schedule has been updated
-		"""
-		# print("EmhassStrategy.updateDeferables()")
-		update = False
-		self.deferables = {}
-		for node in self.network.getAll("out"):
-			nodeId = node.id
-			durationInSecs = node.getSchedule().duration
-			deferable = self.deferables.get(nodeId, None)
-			durationInHour = self.getDurationInHour(durationInSecs)
-			if deferable is None:
-				if durationInSecs>0: # Add a new deferrable
-					update = True
-					power = node.getMaxPower()
-					self.deferables[nodeId] = Deferrable(
-						power=power, duration=durationInHour, node=node
-					)
-			else:
-				if durationInSecs<=0: # Remove a deferrable
-					del self.deferables[nodeId]
-					update = True
-				elif deferable.duration!=durationInHour: # update a deferrable
-					update = True
-					deferable.duration = durationInHour
-		print("EmhassStrategy.updateDeferables() => ", update, )
-		return update
-
-	def check(self, now=None):
-		"""
-		Check and eval if necessary
-		- EMHASS optimization
-		- power margin
-		- conformity to EMHASS plan
-		"""
-		# print("EmhassStrategy.check()")
-		if now is None:
-			now = datetime.now(self.timezone)
-		if self.updateDeferables() or now>self.nextEvalDate:
-			# print("EmhassStrategy.check() : emhassEval")
-			self.emhassEval()
+		power = node.getMaxPower()
+		return Deferrable(
+			power=power, duration=durationInSecs, node=node
+		)
 
 	def evaluatePertinenceSwitchOn(self, switchOnRate, node):
 		"""
@@ -134,7 +85,7 @@ class EmhassStrategy(EnergyStrategy):
 		Return a tuple of datetime and rows for datetime = "now", 
 			with previous (If present) and Next one
 		"""
-		if self.data is None or isinstance(self.data, bool): # Case no deferables or Error
+		if self._data is None or isinstance(self._data, bool): # Case no deferables or Error
 			return ((None, None, None), (None, None, None))
 		if now is None:
 			now = datetime.now(self.timezone)
@@ -146,7 +97,7 @@ class EmhassStrategy(EnergyStrategy):
 		curDT = None
 		nextDT = None
 		stop = False
-		for timestamp, row in self.data.iterrows():
+		for timestamp, row in self._data.iterrows():
 			prevDT = curDT
 			curDT = nextDT
 			nextDT = timestamp.to_pydatetime()
@@ -157,14 +108,14 @@ class EmhassStrategy(EnergyStrategy):
 				return ((prevDT, curDT, nextDT), (prevRow, curRow, nextRow))
 			if nextDT>now:
 				stop = True
-		if not stop: # should be impossible : Relaunch emhassEval()?
+		if not stop: # should be impossible : Relaunch eval()?
 			self.logger.error("No row in data previsions from EMHASS for current datetime.")
 			return ((None, None, None), (None, None, None))
 		return [[prevDT, curDT, nextDT], [prevRow, curRow, nextRow]]
 
-	def emhassApply(self, cycleDuration, now=None):
+	def apply(self, cycleDuration, now=None):
 		"""
-		This should apply emhass result (emhassEval call) : self.data
+		This should apply emhass result (eval call) : self._data
 		"""
 		if now is None:
 			now = datetime.now(self.timezone)
@@ -195,18 +146,3 @@ class EmhassStrategy(EnergyStrategy):
 			doSwitchOn = self.evaluatePertinenceSwitchOn(switchOnRate, deferable.node)
 			self.switchOnSchedulable(deferable.node, cycleDuration, doSwitchOn)
 		return True
-
-	def updateNetwork(self, cycleDuration, allowSleep:bool, now=None):
-		"""
-		Decide what to do during the cycle:
-		 IF off-peak : switch on all
-		 ELSE : Switch off all AND Sleep until off-peak
-		Now is used to get a fake 
-		"""
-		if now is None:
-			now = datetime.now(self.timezone)
-		elif now.tzinfo is None or now.tzinfo!=self.timezone:
-			now = now.replace(tzinfo=self.timezone)
-		self.check(now)
-		self.emhassApply(cycleDuration, now=now)
-		return cycleDuration

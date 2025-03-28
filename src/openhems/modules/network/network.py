@@ -230,8 +230,7 @@ class OpenHEMSNetwork:
 		"""
 		Return true if grid source is available (even if no power is used)
 		"""
-		# TODO
-		return True
+		return self.getAll("publicpowergrid") != []
 
 	def getBattery(self) -> Battery:
 		"""
@@ -286,4 +285,13 @@ class OpenHEMSNetwork:
 		"""
 		for elem in self.getAll("publicpowergrid"):
 			cost = elem.getContract().getPrice(now, attime)
+			return cost
+
+	def getSellPrice(self, now=None, attime=None):
+		"""
+		Estimate what should be the electricity sell cost at a Time.
+		If time is None, set to now"
+		"""
+		for elem in self.getAll("publicpowergrid"):
+			cost = elem.getContract().getSellPrice(now, attime)
 			return cost

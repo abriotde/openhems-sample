@@ -3,6 +3,7 @@ Super class for all EnergyStrategy modules
 """
 
 import logging
+import datetime
 from openhems.modules.network.network import OpenHEMSNetwork
 
 LOOP_DELAY_VIRTUAL = 0
@@ -15,6 +16,7 @@ class StrategyNode:
 		self.logger = logger
 		self.node = node
 		self.isOn = None
+		self.timezone = None
 
 	def changed(self, isOn=None):
 		"""
@@ -43,16 +45,34 @@ class StrategyNode:
 				else:
 					return False
 			return True
-		else:
-			return False
-	
+		return False
+
+class DefaultDeferrable:
+	"""
+	Class to manage a deferrable device
+	"""
+	def __init__(self, node, durationInSecs:int):
+		self.node = node
+		self.durationInSecs = durationInSecs
+
+	def getDuration(self):
+		"""
+		return the duration of the deferrable device
+		"""
+		return self.durationInSecs
+
+	def setDuration(self, durationInSecs:int):
+		"""
+		Set the duration of the deferrable device
+		"""
+		self.durationInSecs = durationInSecs
 
 class EnergyStrategy:
 	"""
 	Super class for all EnergyStrategy modules
 	"""
 	def  __init__(self, strategyId:str, network:OpenHEMSNetwork,
-	              logger=None, useSchedulable:bool=False):
+	              logger=None, useSchedulable:bool=False, evalFrequency:int=60):
 		if logger is None:
 			logger = logging.getLogger(__name__)
 		self.logger = logger
@@ -60,6 +80,11 @@ class EnergyStrategy:
 		self.network = network
 		self.useSchedulable = useSchedulable
 		self._nodes = None
+		self.evalFrequence = datetime.timedelta(minutes=evalFrequency)
+		self.nextEvalDate = datetime.datetime.now() - self.evalFrequence
+		self.deferables = {}
+		self.deferablesKeys = []
+		self.timezone = None
 
 	def getNodes(self, encapsulated=False):
 		"""
@@ -67,16 +92,12 @@ class EnergyStrategy:
 		"""
 		if encapsulated:
 			if self._nodes is None:
-				self._nodes = [StrategyNode(node, self.logger) for node in self.network.getNodesForStrategy(self.strategyId)]
+				self._nodes = [
+					StrategyNode(node, self.logger)
+					for node in self.network.getNodesForStrategy(self.strategyId)
+				]
 			return self._nodes
 		return self.network.getNodesForStrategy(self.strategyId)
-
-	def updateNetwork(self, cycleDuration:int, allowSleep:bool, now=None):
-		"""
-		Function to update OpenHEMSNetwork. To implement in sub-class
-		"""
-		del cycleDuration, allowSleep, now
-		self.logger.error("EnergyStrategy.updateNetwork() : To implement in sub-class")
 
 	def switchOnSchedulable(self, node, cycleDuration, doSwitchOn):
 		"""
@@ -132,3 +153,81 @@ class EnergyStrategy:
 		if not self.useSchedulable:
 			return []
 		return self.getNodes()
+
+	def getDeferrable(self, node, durationInSecs:int):
+		"""
+		return: a Deferable device witch can be encapsulated if usefull
+		This function can be overload.
+		"""
+		return DefaultDeferrable(node, durationInSecs)
+
+	def updateDeferables(self):
+		"""
+		Update scheduled devices according to emhass
+		 to scheduled devices according to openhems
+		Return true if schedule has been updated
+		"""
+		# self.logger.debug("EnergyStrategy.updateDeferables()")
+		update = False
+		self.deferables = {}
+		for node in self.getNodes():
+			nodeId = node.id
+			durationInSecs = node.getSchedule().duration
+			deferable = self.deferables.get(nodeId, None)
+			if deferable is None:
+				if durationInSecs>0: # Add a new deferrable
+					update = True
+					self.deferables[nodeId] = self.getDeferrable(node, durationInSecs)
+			else:
+				if durationInSecs<=0: # Remove a deferrable
+					del self.deferables[nodeId]
+					update = True
+				elif deferable.getDuration()!=durationInSecs: # update a deferrable
+					update = True
+					deferable.setDuration(durationInSecs)
+		self.logger.debug("EnergyStrategy.updateDeferables() => %s : %s", update, self.deferables)
+		return update
+
+	def check(self, now=None):
+		"""
+		Check and eval if necessary
+		- EMHASS optimization
+		- power margin
+		- conformity to EMHASS plan
+		"""
+		# self.logger.debug("EnergyStrategy.check()")
+		if now is None:
+			now = datetime.datetime.now(self.timezone)
+		if self.updateDeferables() or now>self.nextEvalDate:
+			# self.logger.debug("EnergyStrategy.check() : eval")
+			self.eval()
+			self.nextEvalDate = datetime.datetime.now() + self.evalFrequence
+
+	def eval(self):
+		"""
+		This function must be overload
+		"""
+		self.logger.debug("EnergyStrategy.eval() must be overload")
+
+	def apply(self, cycleDuration, now):
+		"""
+		This function must be overload
+		"""
+		del cycleDuration, now
+		self.logger.debug("EnergyStrategy.apply() must be overload")
+
+	def updateNetwork(self, cycleDuration, allowSleep:bool, now=None):
+		"""
+		Generic function to updateNetwork base on algorythm
+		In that case, sub-strategy must implement :
+		- eval()
+		- apply(cycleDuration, now)
+		"""
+		del allowSleep
+		if now is None:
+			now = datetime.datetime.now(self.timezone)
+		elif self.timezone is not None and (now.tzinfo is None or now.tzinfo!=self.timezone):
+			now = now.replace(tzinfo=self.timezone)
+		self.check(now)
+		self.apply(cycleDuration, now=now)
+		return cycleDuration
