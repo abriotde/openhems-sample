@@ -77,7 +77,6 @@ class OffPeakStrategy(EnergyStrategy):
 		"""
 		self.logger.info("%s.switchOnMax()", self.strategyId)
 		marginPower = self.network.getMarginPowerOn()
-		ok = True
 		if marginPower<0:
 			self.logger.info("Can't switch on devices: not enough power margin : %s", marginPower)
 			return True

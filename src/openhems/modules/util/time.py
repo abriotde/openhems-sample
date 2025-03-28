@@ -7,7 +7,8 @@ import time
 import logging
 from datetime import datetime, timedelta
 from .cast_utility import CastUtililty, CastException
-# from openhems.modules.util.cast_utility import CastException
+from .configuration_manager import ConfigurationException
+
 logger = logging.getLogger(__name__)
 
 # Time to wait in seconds before considering to be in offpeak range
@@ -111,51 +112,100 @@ class HoursRanges:
 	- Parse from strings
 	- Check if a datetime is in or out
 	"""
-	def __init__(self, offPeakHoursRanges:list):
+	def __init__(self, offPeakHoursRanges:list, timeStart=None, timeout=None, timeoutCallBack=None, data=None):
 		self._index = 0
 		self.setOffPeakHoursRanges(offPeakHoursRanges)
 		self.rangeEnd = datetime.now()
+		self.timeout = timeout
+		if timeStart is None:
+			self.timeStart = datetime.datetime.now()
+		self.timeStart = timeStart
+		self._timeoutCallBack = timeoutCallBack
+		self.data=data
+		self.minCost = 0
 
-	def setOffPeakHoursRanges(self, offPeakHoursRanges):
+
+	def _fillRange(self, outRangeCost):
 		"""
-		Parse a list of ranges (2-tuple or String) to convert it on Time
+		Check for hole in self.ranges and fill it.
+		Raise an exception if there is range cross.
+		"""
+		peakPeriods = self.ranges.sort(key=lambda x: x[0].time)
+		firstBegin = None
+		lastEnd = None
+		for begin, end, _ in peakPeriods:
+			if firstBegin is None:
+				firstBegin = begin
+			if lastEnd is not None:
+				if lastEnd.time<begin.time:
+					self.ranges.append([lastEnd, begin, outRangeCost])
+				elif begin.time<lastEnd.time: # Should be equal
+					raise ConfigurationException(f"HoursRanges : ranges are crossing : {begin} < {lastEnd}")
+			lastEnd = end
+		if lastEnd is not None and lastEnd.time!=firstBegin.time:
+			self.ranges.append([lastEnd, firstBegin, outRangeCost])
+
+	def setOffPeakHoursRanges(self, offPeakHoursRanges, defaultCost=0.0, outRangeCost:float=0.15):
+		"""
+		We can define only off-peak hours but we get full 24h range.
+		Missing ranges are filled with outRangeCost (peak hours cost).
+		When cost is not set in range, we consider it as defaultCost (offpeak hours cost).
+		This function parse a list of ranges (2-tuple or 3-tuple) to convert it on Time
+		Exp:
+		[
+			"22h-06h",
+			["06h-10h",  0.12],
+			[Time("10h")-Time("12h"), 0.2],
+			["12h","16h", 0.13],
+			["16h00","20h00"]
+		]
+		Result:
+		[
+			[22h, 06h, 0.0],
+			[06h, 10h,  0.12],
+			[10h, 12h, 0.2],
+			[12h, 16h, 0.13],
+			[16, 20h, 0.0],
+			[20h, 22h, 0.15]
+		]
 		"""
 		offpeaks = []
 		if not isinstance(offPeakHoursRanges, list):
 			offPeakHoursRanges = CastUtililty.toTypeList(offPeakHoursRanges)
 		for offpeakHoursRange in offPeakHoursRanges:
+			begin = end = cost = None
+			cost = defaultCost
+			if isinstance(offpeakHoursRange, list):
+				if len(offpeakHoursRange) == 3:
+					begin = offpeakHoursRange[0]
+					end = offpeakHoursRange[1]
+					cost = offpeakHoursRange[2]
+				elif len(offpeakHoursRange) == 2:
+					cost = offpeakHoursRange[1]
+					if not isinstance(cost, (float, int)):
+						begin = offpeakHoursRange[0]
+						end = offpeakHoursRange[1]
+						cost = defaultCost
+					offpeakHoursRange = offpeakHoursRange[0]
+				elif len(offpeakHoursRange) == 1:
+					offpeakHoursRange = offpeakHoursRange[0]
+				else:
+					raise ConfigurationException(f"Invalid range format {offpeakHoursRange}")
 			if isinstance(offpeakHoursRange, str):
 				offpeakHoursRange = offpeakHoursRange.split("-")
-			begin = offpeakHoursRange[0]
+			if begin is None:
+				begin = offpeakHoursRange[0]
+			if end is None:
+				end = offpeakHoursRange[1]
 			if not isinstance(begin, Time):
 				begin = Time(begin)
-			end = offpeakHoursRange[1]
 			if not isinstance(end, Time):
 				end = Time(end)
-			offpeaks.append([begin, end])
+			offpeaks.append([begin, end, cost])
 		self.ranges = offpeaks
-
-	def getReverse(self):
-		"""
-		Reverse the range : Usefull for Emhass which need peekHours.
-		(getPeakHoursRanges() is too confusing name)
-		Applying twice this function should give back the same.
-		"""
-		# TODO Sort/merge ?
-		reverse = []
-		first = None # Keep the first
-		start = None
-		for r in self.ranges:
-			if first is None:
-				first = r[0]
-			else:
-				# The previous start is now the end, and reverse
-				reverse.append([start, r[0]])
-			start = r[1]
-		if first is not None:
-			reverse.append([start, first])
-		return HoursRanges(reverse)
-
+		# check for hole
+		self._fillRange(outRangeCost)
+		
 	def checkRange(self, nowDatetime: datetime=None):
 		"""
 		Check if nowDatetime (Default now) is in off-peak range (offpeakHoursRange)
