@@ -129,7 +129,7 @@ class CastUtililty:
 			else:
 				raise CastException("Incorect string value for  float: '"+value+"'", 0)
 		else:
-			raise CastException("Impossible cast to list: Undefined algorythm : '"+type(value)+"'", 0)
+			raise CastException("Impossible cast to list: Undefined algorythm : '"+str(type(value))+"'", 0)
 		return retValue
 
 	@staticmethod

@@ -25,9 +25,9 @@ class OffPeakStrategy(EnergyStrategy):
 		super().__init__(strategyId, network, mylogger, True)
 		self.inOffpeakRange = False
 		self.rangeEnd = datetime.now()
-		self.offpeakHoursRanges = self.network.getOffPeakHoursRanges()
-		self.logger.info("OffPeakStrategy(%s) on %s", str(self.offpeakHoursRanges), str(self.getNodes()))
-		if not self.offpeakHoursRanges:
+		self.hoursRanges = self.network.getHoursRanges()
+		self.logger.info("OffPeakStrategy(%s) on %s", str(self.hoursRanges), str(self.getNodes()))
+		if not self.hoursRanges:
 			msg = "OffPeak-strategy is useless without offpeak hours. Check your configuration."
 			self.logger.critical(msg)
 			raise ConfigurationException(msg)
@@ -43,11 +43,11 @@ class OffPeakStrategy(EnergyStrategy):
 		"""
 		if nowDatetime is None:
 			nowDatetime = datetime.now()
-		offpeakranges = self.offpeakHoursRanges
+		offpeakranges = self.hoursRanges
 		inoffpeakPrev = self.inOffpeakRange
-		self.offpeakHoursRanges = self.network.getOffPeakHoursRanges()
+		self.hoursRanges = self.network.getHoursRanges()
 		useCache = False
-		if offpeakranges!=self.offpeakHoursRanges:
+		if offpeakranges!=self.hoursRanges:
 			self.nextRanges = []
 		else:
 			# use cache
@@ -58,12 +58,12 @@ class OffPeakStrategy(EnergyStrategy):
 					self.rangeEnd = rangeEnd
 					useCache = True
 					break
-		self.inOffpeakRange, self.rangeEnd, _ = self.offpeakHoursRanges.checkRange(nowDatetime)
+		self.inOffpeakRange, self.rangeEnd, _ = self.hoursRanges.checkRange(nowDatetime)
 		if inoffpeakPrev!=self.inOffpeakRange:
 			self._rangeChangeDone = False
 			if useCache:
 				# Remove old ranges from self.nextRanges
-				self.nextRanges = filter(lambda r: nowDatetime>r[1], self.nextRanges)
+				self.nextRanges = list(filter(lambda r: nowDatetime>r[1], self.nextRanges))
 		if len(self.nextRanges)==0:
 			self.nextRanges = [
 				(self.inOffpeakRange, self.rangeEnd)
@@ -106,11 +106,11 @@ class OffPeakStrategy(EnergyStrategy):
 				self.logger.debug("OffpeakStrategy : not offpeak, switchOffAll()")
 				if self.switchOffAll():
 					if cycleDuration>LOOP_DELAY_VIRTUAL and allowSleep:
-						self.offpeakHoursRanges.sleepUntillNextRange(now)
+						self.hoursRanges.sleepUntillNextRange(now)
 						self.checkRange() # To update self.rangeEnd (and should change self.inOffpeakRange)
 					else:
 						self._rangeChangeDone = True
-						time2Wait = self.offpeakHoursRanges.getTime2NextRange(now)
+						time2Wait = self.hoursRanges.getTime2NextRange(now)
 				else:
 					self.logger.warning("Fail to switch off all. We will try again on next loop.")
 			# TODO : check time2Wait
@@ -132,7 +132,7 @@ class OffPeakStrategy(EnergyStrategy):
 			while previousRangeEnd is not None and schedule.timeout>previousRangeEnd:
 				# self.logger.debug("OffpeakStrategy.getMissingTime() : previousRangeEnd=%s", previousRangeEnd)
 				if i>=len(self.nextRanges):
-					myrange = self.offpeakHoursRanges.checkRange(previousRangeEnd + timedelta(seconds=1))
+					myrange = self.hoursRanges.checkRange(previousRangeEnd + timedelta(seconds=1))
 					self.logger.debug("Range : %s", myrange)
 					self.nextRanges.append(myrange)
 				else:
@@ -203,14 +203,13 @@ class OffPeakStrategy(EnergyStrategy):
 		previousRangeEnd = now
 		ok = True
 		while len(self.nextRanges)>i and ok:
-			inoffpeak, rangeEnd = self.nextRanges[i]
+			inoffpeak, rangeEnd, cost = self.nextRanges[i]
 			if rangeEnd>schedule.timeout:
 				ok = False
 				rangeEnd = schedule.timeout
 			if not inoffpeak:
 				availableTime = rangeEnd - previousRangeEnd
 				attime = rangeEnd - (availableTime/2)
-				cost = self.network.getPrice(now, attime)
 				self.logger.debug("OffpeakStrategy.getPeakPeriod().getPrice(%s) = %f", attime, cost)
 				peakPeriods.append([previousRangeEnd, availableTime, rangeEnd, cost])
 			previousRangeEnd = rangeEnd

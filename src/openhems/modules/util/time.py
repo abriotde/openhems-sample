@@ -112,16 +112,24 @@ class HoursRanges:
 	- Reverse it
 	- Parse from strings
 	- Check if a datetime is in or out
+	:param str offPeakHoursRanges: list of ranges
+	:param datetime timeStart: Before this date, this prices are not valid
+	:param datetime timeout: After this date, this prices are not valid
+	:param function timeoutCallBack: A callback function witch is called when timeout occures
+	:param float defaultCost: Cost for offPeakHoursRanges when cost is not set.
+	:param float outRangeCost: Cost ranges not defined in offPeakHoursRanges
 	"""
-	def __init__(self, offPeakHoursRanges:list, timeStart=None,
-			  timeout=None, timeoutCallBack=None, data=None,
+	def __init__(self, offPeakHoursRanges:list=None, timeStart:datetime=None,
+			  timeout:datetime=None, timeoutCallBack=None, data=None,
 			  defaultCost:float=0.0, outRangeCost:float=0.15):
+		if offPeakHoursRanges==None:
+			offPeakHoursRanges = []
 		self._index = 0
 		self.setOffPeakHoursRanges(offPeakHoursRanges, defaultCost, outRangeCost)
 		self.rangeEnd = datetime.now()
 		self.timeout = timeout
 		if timeStart is None:
-			self.timeStart = datetime.now()
+			timeStart = datetime.now()
 		self.timeStart = timeStart
 		self._timeoutCallBack = timeoutCallBack
 		self.data=data
@@ -152,6 +160,8 @@ class HoursRanges:
 			addedRange.append([lastEnd, firstBegin, outRangeCost])
 		if len(addedRange)>0:
 			self.ranges += addedRange
+		if len(self.ranges)==0: # Case no range
+			self.ranges = [[Time(0), Time(Time.MIDNIGHT), outRangeCost]]
 
 	def setOffPeakHoursRanges(self, offPeakHoursRanges, defaultCost:float=0.0, outRangeCost:float=0.15):
 		"""
@@ -181,7 +191,7 @@ class HoursRanges:
 		if not isinstance(offPeakHoursRanges, list):
 			offPeakHoursRanges = CastUtililty.toTypeList(offPeakHoursRanges)
 		for offpeakHoursRange in offPeakHoursRanges:
-			begin = end = cost = None
+			begin = end = None
 			cost = defaultCost
 			if isinstance(offpeakHoursRange, list):
 				if len(offpeakHoursRange) == 3:
@@ -202,9 +212,9 @@ class HoursRanges:
 			if isinstance(offpeakHoursRange, str):
 				offpeakHoursRange = offpeakHoursRange.split("-")
 			if begin is None:
-				begin = offpeakHoursRange[0]
+				begin = offpeakHoursRange[0].strip()
 			if end is None:
-				end = offpeakHoursRange[1]
+				end = offpeakHoursRange[1].strip()
 			if not isinstance(begin, Time):
 				begin = Time(begin)
 			if not isinstance(end, Time):
@@ -277,4 +287,10 @@ class HoursRanges:
 		raise StopIteration
 
 	def __str__(self):
-		return str(self.ranges)
+		offpeakHoursRanges = ""
+		sep =""
+		for begin, end, cost in self.ranges:
+			offpeakHoursRanges += sep+str(begin)+" $"+str(cost)+" "
+			sep =", "
+		offpeakHoursRanges += str(end)
+		return "["+offpeakHoursRanges+"]"

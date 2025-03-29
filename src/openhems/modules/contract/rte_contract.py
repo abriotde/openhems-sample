@@ -6,6 +6,7 @@ import datetime
 # import functools
 import requests
 from openhems.modules.network.feeder import Feeder
+from openhems.modules.util import HoursRanges
 from .generic_contract import GenericContract
 
 # pylint: disable=too-few-public-methods
@@ -20,7 +21,15 @@ class RTETempoContract(RTEContract):
 	"""
 	def __init__(self, color, colorNext,
 	             offpeakprices, peakprices, offpeakHoursRanges, feederProvider=None):
-		super().__init__(offpeakprices, peakprices, offpeakHoursRanges)
+		super().__init__(offpeakHoursRanges, outRangePrice=1, defaultPrice=0)
+		self.colors = ['bleu', 'blanc', 'rouge']
+		self.colorRanges = {}
+		for color in self.colors:
+			outRangeCost=peakprices.get(color, 1)
+			defaultCost=offpeakprices.get(color, 1)
+			print("RTETempoContract: HoursRanges()",defaultCost,outRangeCost,offpeakHoursRanges)
+			self.colorRanges[color] = HoursRanges(offpeakHoursRanges, outRangeCost=outRangeCost, defaultCost=defaultCost)
+		self.historyColor = {}
 		if color is not None and not isinstance(color, Feeder):
 			color = feederProvider.getFeeder(color, "str")
 		self.color = color
@@ -96,6 +105,7 @@ class RTETempoContract(RTEContract):
 
 	def getColorDate(self, attime):
 		"""
+		return the date in ISO format of a datetime.
 		As a color date start at 6 hour on morning and end at 6 hour the next day. 
 		So a day last 24h and can be represent by a standard date 'Y-m-d'
 		 but they are not corresponding.
@@ -134,7 +144,6 @@ class RTETempoContract(RTEContract):
 				self.lastColor = self.color.getValue().lower()
 			else:
 				self.lastColor = self.callApiRteTempo("today")
-			# TODO : check value
 			self.lastCall = curCall
 		# print("getColor() => ", self.lastColor)
 		return self.lastColor
@@ -149,20 +158,6 @@ class RTETempoContract(RTEContract):
 			# pylint: disable=broad-exception-raised
 			raise Exception(f"RTETempoContract : Invalid color : '{color}'")
 		return price
-
-	def getPeakPrice(self, now=None, attime=None):
-		"""
-		Return peakprice 
-		"""
-		color = self.getColor(now, attime)
-		price = self.peakPrice.get(color)
-		if price is None:
-			# pylint: disable=broad-exception-raised
-			raise Exception(f"RTETempoContract : Invalid color : '{color}'")
-		return price
-
-	def getOffPeakHoursRanges(self):
-		return self.offpeakHoursRanges
 
 	# pylint: disable=arguments-differ
 	@staticmethod
@@ -187,14 +182,13 @@ class RTEHeuresCreusesContract(RTEContract):
 	"""
 	Contrat RTE avec option Heures-Creuses
 	"""
-
 	@staticmethod
 	def fromdict(dictConf, configuration):
 		keys = (dictConf, configuration, "rteheurescreuses")
 		peakPrice = GenericContract.get("peakPrice", keys, "float")
 		offpeakPrice = GenericContract.get("offpeakPrice", keys, "float")
 		offpeakHoursRanges = GenericContract.get("offpeakHoursRanges", keys, "list")
-		return RTEHeuresCreusesContract(peakPrice, offpeakPrice, offpeakHoursRanges)
+		return RTEHeuresCreusesContract(offpeakHoursRanges, outRangePrice=peakPrice, defaultPrice=offpeakPrice)
 
 class RTETarifBleuContract(RTEContract):
 	"""
@@ -207,4 +201,4 @@ class RTETarifBleuContract(RTEContract):
 	def fromdict(dictConf, configuration):
 		keys = (dictConf, configuration, "rtetarifbleu")
 		price = GenericContract.get("price", keys, "float")
-		return RTETarifBleuContract(price)
+		return RTETarifBleuContract(defaultPrice=price)

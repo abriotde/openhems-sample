@@ -96,7 +96,7 @@ Strategies
 
 2. *swithoff* : Use it if you want to swith on/off some devices at precise time each day.
 
-3. *emhass* : Use it if you have solar-panels. There is lots of optionnal parameters.
+3. *emhass* : Use it if you have solar-panels. There is lots of optionnal parameters. A limitation is that it can have only two differents price range in the day.
 
 Those parameters are those from config_emhass.yaml from EMHASS project, please refer to the [documentation](https://emhass.readthedocs.io/en/latest/differences.html) incase of doubt.
 

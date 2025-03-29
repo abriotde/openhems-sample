@@ -3,6 +3,7 @@
 This is the server thread witch aim to centralize information and take right deccisions
 """
 import time
+import sys
 import datetime
 from openhems.modules.energy_strategy import OffPeakStrategy, SwitchoffStrategy, LOOP_DELAY_VIRTUAL
 from openhems.modules.network import HomeStateUpdaterException
@@ -46,6 +47,7 @@ class OpenHEMSServer:
 				self.logger.critical(msg)
 				throwErr = msg
 		if throwErr is not None:
+			sys._exit()
 			raise ConfigurationException(throwErr)
 		self.allowSleep = len(self.strategies)==1
 

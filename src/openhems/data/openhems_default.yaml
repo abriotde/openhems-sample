@@ -77,9 +77,9 @@ default:
         rtetarifbleu:
           price: 0.2516
         generic:
-          offpeakhoursranges: ["22h - 6h"]
-          peakprice: None
-          offpeakprice: None
+          hoursRanges: []
+          defaultPrice: 0.1
+          outRangePrice: 1
     solarpanel:
       currentPower: None
       maxPower: 500

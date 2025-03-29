@@ -264,14 +264,14 @@ class OpenHEMSNetwork:
 			# self.logger.debug("getNodesForStrategy(%s) = %s", strategyId, nodes)
 		return nodes
 
-	def getOffPeakHoursRanges(self):
+	def getHoursRanges(self):
 		"""
 		Return a concatenation of all offpeak ours off sources.
 		"""
 		offpeakhours = []
 		nb = 0
 		for elem in self.getAll("publicpowergrid"):
-			offpeakhours = elem.getContract().getOffPeakHoursRanges()
+			offpeakhours = elem.getContract().getHoursRanges()
 			nb += 1
 		if nb==0:
 			self.logger.warning("No PublicPowerGrid on the network.")
