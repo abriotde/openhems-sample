@@ -32,7 +32,7 @@ class TestContractModule(unittest.TestCase):
 		"""
 		# print("test_configurationsManager()")
 		contract = RTETempoContract(color=None, colorNext=None,
-	             offpeakprices=[0.1, 0.2, 0.3], peakprices = [0.4, 0.5, 0.6],
+	             offpeakprices={"bleu":0.1, "blanc":0.2, "rouge":0.3}, peakprices = {"bleu":0.4, "blanc":0.5, "rouge":0.6},
 	             offpeakHoursRanges=["6h-22h"])
 		self.assertEqual(contract.callApiRteTempo("2025-03-02"), "bleu")
 		self.assertEqual(contract.callApiRteTempo("2025-03-03"), "blanc")

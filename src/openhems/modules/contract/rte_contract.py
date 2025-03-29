@@ -29,8 +29,8 @@ class RTETempoContract(RTEContract):
 		for c in self.colors:
 			outRangeCost=peakprices.get(c, 1)
 			defaultCost=offpeakprices.get(c, 1)
-			print("RTETempoContract: HoursRanges()",defaultCost,outRangeCost,offpeakHoursRanges)
-			self.colorRanges[color] = HoursRanges(
+			# print("RTETempoContract: HoursRanges()",defaultCost,outRangeCost,offpeakHoursRanges)
+			self.colorRanges[c] = HoursRanges(
 				offpeakHoursRanges, outRangeCost=outRangeCost, defaultCost=defaultCost
 			)
 		self.historyColor = {}
