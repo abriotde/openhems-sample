@@ -58,7 +58,7 @@ class OffPeakStrategy(EnergyStrategy):
 					self.rangeEnd = rangeEnd
 					useCache = True
 					break
-		self.inOffpeakRange, self.rangeEnd = self.offpeakHoursRanges.checkRange(nowDatetime)
+		self.inOffpeakRange, self.rangeEnd, _ = self.offpeakHoursRanges.checkRange(nowDatetime)
 		if inoffpeakPrev!=self.inOffpeakRange:
 			self._rangeChangeDone = False
 			if useCache:
@@ -139,7 +139,7 @@ class OffPeakStrategy(EnergyStrategy):
 					myrange = self.nextRanges[i]
 				i += 1
 				if schedule.timeout>previousRangeEnd:
-					inoffpeak, rangeEnd = myrange
+					inoffpeak, rangeEnd, _ = myrange
 					if schedule.timeout>rangeEnd:
 						additionalTime = rangeEnd - previousRangeEnd
 					else:

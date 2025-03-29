@@ -95,7 +95,7 @@ class GenericContract:
 		if offpeakHoursRanges.isEmpty():
 			return False
 		if not useCache or attime>self.rangeEnd:
-			(inOffpeakRange, rangeEnd) = offpeakHoursRanges.checkRange(attime)
+			(inOffpeakRange, rangeEnd, _) = offpeakHoursRanges.checkRange(attime)
 			if attime==now: # Update cache if not in a futur time
 				self._inOffpeakRange = inOffpeakRange
 				self.rangeEnd = rangeEnd

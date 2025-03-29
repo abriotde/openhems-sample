@@ -55,6 +55,7 @@ class Time:
 			self.time = atime
 		else:
 			logger.error("Error Time() from incompatible type")
+			raise Exception("Error Time() from incompatible type : '%s'", type(atime))
 
 	def toHourMinSec(self):
 		"""
@@ -112,13 +113,15 @@ class HoursRanges:
 	- Parse from strings
 	- Check if a datetime is in or out
 	"""
-	def __init__(self, offPeakHoursRanges:list, timeStart=None, timeout=None, timeoutCallBack=None, data=None):
+	def __init__(self, offPeakHoursRanges:list, timeStart=None,
+			  timeout=None, timeoutCallBack=None, data=None,
+			  defaultCost:float=0.0, outRangeCost:float=0.15):
 		self._index = 0
-		self.setOffPeakHoursRanges(offPeakHoursRanges)
+		self.setOffPeakHoursRanges(offPeakHoursRanges, defaultCost, outRangeCost)
 		self.rangeEnd = datetime.now()
 		self.timeout = timeout
 		if timeStart is None:
-			self.timeStart = datetime.datetime.now()
+			self.timeStart = datetime.now()
 		self.timeStart = timeStart
 		self._timeoutCallBack = timeoutCallBack
 		self.data=data
@@ -130,22 +133,27 @@ class HoursRanges:
 		Check for hole in self.ranges and fill it.
 		Raise an exception if there is range cross.
 		"""
-		peakPeriods = self.ranges.sort(key=lambda x: x[0].time)
+		self.ranges.sort(key=lambda x: x[0].time)
 		firstBegin = None
 		lastEnd = None
-		for begin, end, _ in peakPeriods:
+		addedRange = []
+		for begin, end, _ in self.ranges:
 			if firstBegin is None:
 				firstBegin = begin
+			# print("range:", begin, end, "lastEnd:", lastEnd)
 			if lastEnd is not None:
 				if lastEnd.time<begin.time:
-					self.ranges.append([lastEnd, begin, outRangeCost])
+					addedRange.append([lastEnd, begin, outRangeCost])
 				elif begin.time<lastEnd.time: # Should be equal
 					raise ConfigurationException(f"HoursRanges : ranges are crossing : {begin} < {lastEnd}")
 			lastEnd = end
+		# Close the cycle from end to the begeining
 		if lastEnd is not None and lastEnd.time!=firstBegin.time:
-			self.ranges.append([lastEnd, firstBegin, outRangeCost])
+			addedRange.append([lastEnd, firstBegin, outRangeCost])
+		if len(addedRange)>0:
+			self.ranges += addedRange
 
-	def setOffPeakHoursRanges(self, offPeakHoursRanges, defaultCost=0.0, outRangeCost:float=0.15):
+	def setOffPeakHoursRanges(self, offPeakHoursRanges, defaultCost:float=0.0, outRangeCost:float=0.15):
 		"""
 		We can define only off-peak hours but we get full 24h range.
 		Missing ranges are filled with outRangeCost (peak hours cost).
@@ -203,8 +211,12 @@ class HoursRanges:
 				end = Time(end)
 			offpeaks.append([begin, end, cost])
 		self.ranges = offpeaks
+		# print("peakPeriods:", self.ranges)
 		# check for hole
 		self._fillRange(outRangeCost)
+		self.ranges.sort(key=lambda x: x[0].time)
+		# print("peakPeriods.2:", self.ranges)
+		return self.ranges
 		
 	def checkRange(self, nowDatetime: datetime=None):
 		"""
@@ -220,23 +232,15 @@ class HoursRanges:
 		# This has no real signification but it's usefull and the most simple way
 		time2NextTime = Time.MIDNIGHT
 		for hoursRange in self.ranges:
-			begin, end = hoursRange
-			wait = now.getTimeToWait(begin)
-			if wait<time2NextTime:
-				nextTime = begin.time
-				time2NextTime = wait
-				inOffpeakRange = False
+			_, end, _ = hoursRange
 			wait = now.getTimeToWait(end)
 			if wait<time2NextTime:
-				nextTime = end.time
+				nextTime = hoursRange
 				time2NextTime = wait
-				inOffpeakRange = True
-		assert nextTime<=240000
-		self.rangeEnd = Time(nextTime).toDatetime(nowDatetime)
-		# nbSecondsToNextRange = (self.rangeEnd - nowDatetime).total_seconds()
-		# logger.info("OffPeakStrategy.checkRange({now}) => %s, %d", \
-		# 	rangeEnd, nbSecondsToNextRange)
-		return (inOffpeakRange, self.rangeEnd)
+		_, end, cost = nextTime
+		self.rangeEnd = end.toDatetime(nowDatetime)
+		inOffpeakRange = self.minCost==cost
+		return (inOffpeakRange, self.rangeEnd, cost)
 
 	def isEmpty(self):
 		"""
