@@ -55,7 +55,7 @@ class Time:
 			self.time = atime
 		else:
 			logger.error("Error Time() from incompatible type")
-			raise Exception("Error Time() from incompatible type : '%s'", type(atime))
+			raise NotImplementedError(f"Error Time() from incompatible type : '{type(atime)}'", )
 
 	def toHourMinSec(self):
 		"""
@@ -122,9 +122,10 @@ class HoursRanges:
 	def __init__(self, offPeakHoursRanges:list=None, timeStart:datetime=None,
 			  timeout:datetime=None, timeoutCallBack=None, data=None,
 			  defaultCost:float=0.0, outRangeCost:float=0.15):
-		if offPeakHoursRanges==None:
+		if offPeakHoursRanges is None:
 			offPeakHoursRanges = []
 		self._index = 0
+		self.ranges = []
 		self.setOffPeakHoursRanges(offPeakHoursRanges, defaultCost, outRangeCost)
 		self.rangeEnd = datetime.now()
 		self.timeout = timeout
@@ -163,7 +164,37 @@ class HoursRanges:
 		if len(self.ranges)==0: # Case no range
 			self.ranges = [[Time(0), Time(Time.MIDNIGHT), outRangeCost]]
 
-	def setOffPeakHoursRanges(self, offPeakHoursRanges, defaultCost:float=0.0, outRangeCost:float=0.15):
+	def _extractRangeValues(self, offpeakHoursRange, defaultCost):
+		begin = end = None
+		cost = defaultCost
+		if isinstance(offpeakHoursRange, list):
+			if len(offpeakHoursRange) == 3:
+				begin = offpeakHoursRange[0]
+				end = offpeakHoursRange[1]
+				cost = offpeakHoursRange[2]
+			elif len(offpeakHoursRange) == 2:
+				cost = offpeakHoursRange[1]
+				if not isinstance(cost, (float, int)):
+					begin = offpeakHoursRange[0]
+					end = offpeakHoursRange[1]
+					cost = defaultCost
+				offpeakHoursRange = offpeakHoursRange[0]
+			else:
+				raise ConfigurationException(f"Invalid range format {offpeakHoursRange}")
+		if isinstance(offpeakHoursRange, str):
+			offpeakHoursRange = offpeakHoursRange.split("-")
+		if begin is None:
+			begin = offpeakHoursRange[0].strip()
+		if end is None:
+			end = offpeakHoursRange[1].strip()
+		if not isinstance(begin, Time):
+			begin = Time(begin)
+		if not isinstance(end, Time):
+			end = Time(end)
+		return begin, end, cost
+
+	def setOffPeakHoursRanges(self,
+			offPeakHoursRanges, defaultCost:float=0.0, outRangeCost:float=0.15):
 		"""
 		We can define only off-peak hours but we get full 24h range.
 		Missing ranges are filled with outRangeCost (peak hours cost).
@@ -191,34 +222,7 @@ class HoursRanges:
 		if not isinstance(offPeakHoursRanges, list):
 			offPeakHoursRanges = CastUtililty.toTypeList(offPeakHoursRanges)
 		for offpeakHoursRange in offPeakHoursRanges:
-			begin = end = None
-			cost = defaultCost
-			if isinstance(offpeakHoursRange, list):
-				if len(offpeakHoursRange) == 3:
-					begin = offpeakHoursRange[0]
-					end = offpeakHoursRange[1]
-					cost = offpeakHoursRange[2]
-				elif len(offpeakHoursRange) == 2:
-					cost = offpeakHoursRange[1]
-					if not isinstance(cost, (float, int)):
-						begin = offpeakHoursRange[0]
-						end = offpeakHoursRange[1]
-						cost = defaultCost
-					offpeakHoursRange = offpeakHoursRange[0]
-				elif len(offpeakHoursRange) == 1:
-					offpeakHoursRange = offpeakHoursRange[0]
-				else:
-					raise ConfigurationException(f"Invalid range format {offpeakHoursRange}")
-			if isinstance(offpeakHoursRange, str):
-				offpeakHoursRange = offpeakHoursRange.split("-")
-			if begin is None:
-				begin = offpeakHoursRange[0].strip()
-			if end is None:
-				end = offpeakHoursRange[1].strip()
-			if not isinstance(begin, Time):
-				begin = Time(begin)
-			if not isinstance(end, Time):
-				end = Time(end)
+			begin, end, cost = self._extractRangeValues(offpeakHoursRange, defaultCost)
 			offpeaks.append([begin, end, cost])
 		self.ranges = offpeaks
 		# print("peakPeriods:", self.ranges)
@@ -227,7 +231,7 @@ class HoursRanges:
 		self.ranges.sort(key=lambda x: x[0].time)
 		# print("peakPeriods.2:", self.ranges)
 		return self.ranges
-		
+
 	def checkRange(self, nowDatetime: datetime=None):
 		"""
 		Check if nowDatetime (Default now) is in off-peak range (offpeakHoursRange)
@@ -289,6 +293,7 @@ class HoursRanges:
 	def __str__(self):
 		offpeakHoursRanges = ""
 		sep =""
+		end = ""
 		for begin, end, cost in self.ranges:
 			offpeakHoursRanges += sep+str(begin)+" $"+str(cost)+" "
 			sep =", "

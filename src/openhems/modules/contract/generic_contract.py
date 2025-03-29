@@ -19,7 +19,9 @@ class GenericContract:
 		else:
 			self.logger.info("GenericContract(hoursRanges=%s, defaultCost=%s, outRangeCost=%s)",
 				str(hoursRanges), defaultPrice, outRangePrice)
-			self.hoursRanges = HoursRanges(hoursRanges, defaultCost=defaultPrice , outRangeCost=outRangePrice)
+			self.hoursRanges = HoursRanges(
+				hoursRanges, defaultCost=defaultPrice , outRangeCost=outRangePrice
+			)
 		self._inOffpeakRange = None
 		self.rangeEnd = datetime.datetime.now()
 
@@ -63,6 +65,7 @@ class GenericContract:
 		"""
 		:return float: the peak-price
 		"""
+		del now, attime
 		val = max(self.hoursRanges.ranges, key=lambda s: (print("SSSS",s), s[2]))
 		return val[2]
 
@@ -70,6 +73,7 @@ class GenericContract:
 		"""
 		:return float: the offpeak-price
 		"""
+		del now, attime
 		val = min(self.hoursRanges.ranges, key=lambda s: s[2])
 		return val[2]
 
@@ -89,7 +93,7 @@ class GenericContract:
 		return cost
 
 	def __str__(self):
-		return ("GenericContract("+str(self.hoursRanges)+")")
+		return "GenericContract("+str(self.hoursRanges)+")"
 
 	def inOffpeakRange(self, now=None, attime=None, useCache=True):
 		"""

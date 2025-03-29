@@ -20,15 +20,19 @@ class RTETempoContract(RTEContract):
 	Contrat RTE avec option Tempo
 	"""
 	def __init__(self, color, colorNext,
-	             offpeakprices, peakprices, offpeakHoursRanges, feederProvider=None):
+	             offpeakprices=0.0, peakprices=1, offpeakHoursRanges=None, feederProvider=None):
 		super().__init__(offpeakHoursRanges, outRangePrice=1, defaultPrice=0)
 		self.colors = ['bleu', 'blanc', 'rouge']
 		self.colorRanges = {}
-		for color in self.colors:
-			outRangeCost=peakprices.get(color, 1)
-			defaultCost=offpeakprices.get(color, 1)
+		self.offpeakprices = offpeakprices
+		# self.peakprices = peakprices
+		for c in self.colors:
+			outRangeCost=peakprices.get(c, 1)
+			defaultCost=offpeakprices.get(c, 1)
 			print("RTETempoContract: HoursRanges()",defaultCost,outRangeCost,offpeakHoursRanges)
-			self.colorRanges[color] = HoursRanges(offpeakHoursRanges, outRangeCost=outRangeCost, defaultCost=defaultCost)
+			self.colorRanges[color] = HoursRanges(
+				offpeakHoursRanges, outRangeCost=outRangeCost, defaultCost=defaultCost
+			)
 		self.historyColor = {}
 		if color is not None and not isinstance(color, Feeder):
 			color = feederProvider.getFeeder(color, "str")
@@ -149,10 +153,10 @@ class RTETempoContract(RTEContract):
 		return self.lastColor
 
 	def getOffPeakPrice(self, now=None, attime=None):
-		print("getOffPeakPrice(:",self.color,")")
+		# print("getOffPeakPrice(:",self.color,")")
 		color = self.getColor(now, attime)
-		print("Color0:", color)
-		price = self.offpeakPrice.get(color)
+		# print("Color0:", color)
+		price = self.offpeakprices.get(color)
 		if price is None:
 			print("Color:", self.color)
 			# pylint: disable=broad-exception-raised
@@ -188,7 +192,9 @@ class RTEHeuresCreusesContract(RTEContract):
 		peakPrice = GenericContract.get("peakPrice", keys, "float")
 		offpeakPrice = GenericContract.get("offpeakPrice", keys, "float")
 		offpeakHoursRanges = GenericContract.get("offpeakHoursRanges", keys, "list")
-		return RTEHeuresCreusesContract(offpeakHoursRanges, outRangePrice=peakPrice, defaultPrice=offpeakPrice)
+		return RTEHeuresCreusesContract(
+			offpeakHoursRanges, outRangePrice=peakPrice, defaultPrice=offpeakPrice
+		)
 
 class RTETarifBleuContract(RTEContract):
 	"""
@@ -201,4 +207,5 @@ class RTETarifBleuContract(RTEContract):
 	def fromdict(dictConf, configuration):
 		keys = (dictConf, configuration, "rtetarifbleu")
 		price = GenericContract.get("price", keys, "float")
+		# pylint: disable=unexpected-keyword-arg, no-value-for-parameter
 		return RTETarifBleuContract(defaultPrice=price)

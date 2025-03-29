@@ -43,9 +43,7 @@ class StrategyNode:
 				else:
 					return False
 			return True
-		else:
-			return False
-	
+		return False
 
 class EnergyStrategy:
 	"""
@@ -67,7 +65,10 @@ class EnergyStrategy:
 		"""
 		if encapsulated:
 			if self._nodes is None:
-				self._nodes = [StrategyNode(node, self.logger) for node in self.network.getNodesForStrategy(self.strategyId)]
+				self._nodes = [
+					StrategyNode(node, self.logger)
+					for node in self.network.getNodesForStrategy(self.strategyId)
+				]
 			return self._nodes
 		return self.network.getNodesForStrategy(self.strategyId)
 
