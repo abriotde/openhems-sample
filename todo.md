@@ -1,15 +1,15 @@
 # Administration
 - Contact installer
 - Open Home Fundation https://www.openhomefoundation.org/ ?
+- funding/crowd : kickstarter
+- promote : LinuxFR
 
 # Integration
 - IA to command OpenHEMS devices ("Start the washing machine") & as "Personnal Assistant"
 
 # Development
-- funding/crowd : kickstarter
-- promote : LinuxFR
-- prod/mvp : Minimum Valuable Product
 - dev/strategy : Add simulated_annealing_strategy from https://github.com/jmcollin78/solar_optimizer
+- dev/strategy : Add over-production/no-sell strategy : Start a device when production + ratio of device concumption > consumpion (if ratio = 0: nosell strategy)
 - dev/general : Add priority on devices to switch off when reach max power consumption.
 - dev/strategy/offpeak : + Add multi time slots cost... order them + Add variable maximum power consumption for each time-slot.
 - dev/general : Improve resilience : When fail get global status at init time wait and retry

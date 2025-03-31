@@ -46,6 +46,7 @@ class OpenHEMSServer:
 				self.logger.critical(msg)
 				throwErr = msg
 		if throwErr is not None:
+			self.logger.error(str(throwErr))
 			raise ConfigurationException(throwErr)
 		self.allowSleep = len(self.strategies)==1
 

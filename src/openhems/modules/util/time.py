@@ -131,8 +131,6 @@ class HoursRanges:
 		self.setOffPeakHoursRanges(offPeakHoursRanges, defaultCost, outRangeCost)
 		self.rangeEnd = datetime.now()
 		self.timeout = timeout
-		if timeStart is None:
-			timeStart = datetime.now()
 		self.timeStart = timeStart
 		self._timeoutCallBack = timeoutCallBack
 		self.data=data

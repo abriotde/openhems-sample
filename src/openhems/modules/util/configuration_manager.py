@@ -69,6 +69,8 @@ class ConfigurationManager():
 					self.logger.debug(
 						"ConfigurationManager._completeFromModelCB() : set configuration[%s] = %s",
 						baseKey+"."+key, defaultValue)
+				elif sModel is None:
+					defaultValue = None
 				else:
 					defaultValue = self._completeFromModel({}, sModel, baseKey+"."+key)
 			else:
