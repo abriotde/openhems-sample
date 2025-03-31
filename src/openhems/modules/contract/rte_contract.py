@@ -62,7 +62,7 @@ class RTETempoContract(RTEContract):
 		url = "https://www.api-couleur-tempo.fr/api/jourTempo/"+day
 		retVal = None
 		for _ in range(3): # Could be usefull for 502 error
-			self.logger.debug(f"Call API {url} : .")
+			self.logger.debug("Call API %s : %s.", url)
 			# User-Agent is mandatory else 502 error
 			response = requests.get(url, timeout=10, allow_redirects=False,
 						   headers={'User-Agent': 'Mozilla/5.0'})
@@ -177,7 +177,7 @@ class RTETempoContract(RTEContract):
 		hoursRanges = self.colorRanges.get(color)
 		if hoursRanges is None:
 			raise ConfigurationException(
-				f"getHoursRanges() : RTETempoContract : Color '"+color+"' is not defined in configuration."
+				f"getHoursRanges() : RTETempoContract : Color '{color}' is not defined in configuration."
 				"The configuration must specified it or the API not get this.")
 		mytime = self.getTime(now, attime)
 		hour = mytime.hour

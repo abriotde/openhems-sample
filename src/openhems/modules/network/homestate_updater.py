@@ -191,6 +191,7 @@ class HomeStateUpdater:
 			strategyId = self.network.getDefaultStrategy().id
 		maxPower = self._getFeeder(nodeConf, "maxPower", "int")
 		isOn = self._getFeeder(nodeConf, "isOn", "bool")
-		node = OutNode(nameid, strategyId, currentPower, maxPower, isOn)
+		priority = self._getFeeder(nodeConf, "priority", "int")
+		node = OutNode(nameid, strategyId, currentPower, maxPower, isOn, priority=priority)
 		# self.logger.info(node)
 		return node

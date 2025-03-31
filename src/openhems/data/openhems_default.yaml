@@ -105,4 +105,4 @@ default:
       maxPower: 2000
       isOn: None
       strategy: None
-
+      priority: 50

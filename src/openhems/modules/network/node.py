@@ -40,6 +40,7 @@ class OpenHEMSNode:
 		else:
 			self._isSwitchable = False
 		self.previousPower = deque()
+		self._isActivate = True
 
 	def setCurrentPower(self, currentPower):
 		"""
@@ -103,6 +104,19 @@ class OpenHEMSNode:
 		"""
 		return self._isSwitchable
 
+	def setActivate(self, value:bool):
+		"""
+		Used to inhibate node when it is risking over-load electrical network.
+		"""
+		self._isActivate = value
+
+	def isActivate(self):
+		"""
+		:return bool: False if node is deactivate due to risk of over-load 
+		 electrical network if we switch on it.
+		"""
+		return self._isActivate
+
 	def isOn(self):
 		"""
 		Return true if the node is not switchable or is switch on.
@@ -118,7 +132,7 @@ class OpenHEMSNode:
 		
 		return bool: False if fail to switchOn/switchOff
 		"""
-		if self._isSwitchable:
+		if self._isSwitchable and self._isActivate:
 			return self.network.networkUpdater.switchOn(connect, self)
 		logger.warning("Try to switchOn/Off a not switchable device : %s", self.id)
 		return connect # Consider node is always on network
@@ -126,12 +140,21 @@ class OpenHEMSNode:
 class OutNode(OpenHEMSNode):
 	"""
 	Electricity consumer (like washing-machine, water-heater).
+	:param int priority: A device with higth priority is more important than a low priority one.
+		Usually priority is a number between 0 and 100
 	"""
-	def __init__(self, nameId, strategyId, currentPower, maxPower, isOnFeeder=None):
+	def __init__(self, nameId, strategyId, currentPower, maxPower, isOnFeeder=None, priority=50):
 		super().__init__(nameId, currentPower, maxPower, isOnFeeder)
 		self.name = nameId
 		self.schedule = OpenHEMSSchedule(self.id, nameId)
 		self.strategyId = strategyId
+		self._priority = priority
+
+	def getPriority(self):
+		"""
+		:return int: number representing the level of priority
+		"""
+		return self._priority
 
 	def getSchedule(self):
 		"""
