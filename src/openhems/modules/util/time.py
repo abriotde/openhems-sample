@@ -115,7 +115,8 @@ class HoursRanges:
 	:param str offPeakHoursRanges: list of ranges
 	:param datetime timeStart: Before this date, this prices are not valid
 	:param datetime timeout: After this date, this prices are not valid
-	:param function timeoutCallBack: A callback function witch is called when timeout occures
+	:param function timeoutCallBack: An object with implement getHoursRanges(nowDatetime, attime)
+			function witch is called when timeout/timeStart occures
 	:param float defaultCost: Cost for offPeakHoursRanges when cost is not set.
 	:param float outRangeCost: Cost ranges not defined in offPeakHoursRanges
 	"""
@@ -126,6 +127,7 @@ class HoursRanges:
 			offPeakHoursRanges = []
 		self._index = 0
 		self.ranges = []
+		self.minCost = 0
 		self.setOffPeakHoursRanges(offPeakHoursRanges, defaultCost, outRangeCost)
 		self.rangeEnd = datetime.now()
 		self.timeout = timeout
@@ -134,7 +136,6 @@ class HoursRanges:
 		self.timeStart = timeStart
 		self._timeoutCallBack = timeoutCallBack
 		self.data=data
-		self.minCost = 0
 
 
 	def _fillRange(self, outRangeCost):
@@ -230,15 +231,21 @@ class HoursRanges:
 		self._fillRange(outRangeCost)
 		self.ranges.sort(key=lambda x: x[0].time)
 		# print("peakPeriods.2:", self.ranges)
+		self.minCost = min(self.ranges, key=lambda x:x[2])[2]
 		return self.ranges
 
-	def checkRange(self, nowDatetime: datetime=None):
+	def checkRange(self, nowDatetime:datetime=None, attime:datetime=None):
 		"""
 		Check if nowDatetime (Default now) is in off-peak range (offpeakHoursRange)
 		 and set end time of this range
 		"""
 		if nowDatetime is None:
 			nowDatetime = datetime.now()
+		# Check range validity of this housRange
+		if ( (self.timeStart is not None and nowDatetime<self.timeStart)
+				or (self.timeout is not None and self.timeout<nowDatetime)):
+			return self._timeoutCallBack.getHoursRanges(nowDatetime, attime) \
+				.checkRange(nowDatetime, attime)
 		now = Time(nowDatetime)
 		# print("OffPeakStrategy.checkRange(",now,")")
 		inOffpeakRange = False
@@ -255,6 +262,13 @@ class HoursRanges:
 		self.rangeEnd = end.toDatetime(nowDatetime)
 		inOffpeakRange = self.minCost==cost
 		return (inOffpeakRange, self.rangeEnd, cost)
+
+	def setLimits(self, timeStart=None, timeout=None):
+		"""
+		Change the timeout && timeStart
+		"""
+		self.timeout = timeout
+		self.timeStart = timeStart
 
 	def isEmpty(self):
 		"""

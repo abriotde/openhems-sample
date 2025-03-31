@@ -19,19 +19,21 @@ class RTETempoContract(RTEContract):
 	"""
 	Contrat RTE avec option Tempo
 	"""
+	HOUR_DAY_CHANGE = 6
+	HOUR_OFFPEAK_START = 22
 	def __init__(self, color, colorNext,
-	             offpeakprices=0.0, peakprices=1, offpeakHoursRanges=None, feederProvider=None):
+	             offpeakprices=0.0, peakprices=1, feederProvider=None):
+		offpeakHoursRanges = [str(self.HOUR_OFFPEAK_START)+"h-"+str(self.HOUR_DAY_CHANGE)+"h"]
 		super().__init__(offpeakHoursRanges, outRangePrice=1, defaultPrice=0)
 		self.colors = ['bleu', 'blanc', 'rouge']
 		self.colorRanges = {}
-		self.offpeakprices = offpeakprices
 		# self.peakprices = peakprices
 		for c in self.colors:
 			outRangeCost=peakprices.get(c, 1)
 			defaultCost=offpeakprices.get(c, 1)
 			# print("RTETempoContract: HoursRanges()",defaultCost,outRangeCost,offpeakHoursRanges)
 			self.colorRanges[c] = HoursRanges(
-				offpeakHoursRanges, outRangeCost=outRangeCost, defaultCost=defaultCost
+				offpeakHoursRanges, outRangeCost=outRangeCost, defaultCost=defaultCost, timeoutCallBack=self
 			)
 		self.historyColor = {}
 		if color is not None and not isinstance(color, Feeder):
@@ -110,11 +112,12 @@ class RTETempoContract(RTEContract):
 	def getColorDate(self, attime):
 		"""
 		return the date in ISO format of a datetime.
-		As a color date start at 6 hour on morning and end at 6 hour the next day. 
+		As a color date start at HOUR_DAY_CHANGE hour on morning
+		  and end at HOUR_DAY_CHANGE hour the next day. 
 		So a day last 24h and can be represent by a standard date 'Y-m-d'
 		 but they are not corresponding.
 		"""
-		if int(attime.strftime("%H"))<6:
+		if int(attime.strftime("%H"))<self.HOUR_DAY_CHANGE:
 			attime = attime-datetime.timedelta(days=1)
 		return attime.strftime("%Y-%m-%d")
 
@@ -152,16 +155,28 @@ class RTETempoContract(RTEContract):
 		# print("getColor() => ", self.lastColor)
 		return self.lastColor
 
-	def getOffPeakPrice(self, now=None, attime=None):
-		# print("getOffPeakPrice(:",self.color,")")
-		color = self.getColor(now, attime)
-		# print("Color0:", color)
-		price = self.offpeakprices.get(color)
-		if price is None:
-			print("Color:", self.color)
-			# pylint: disable=broad-exception-raised
-			raise Exception(f"RTETempoContract : Invalid color : '{color}'")
-		return price
+	def getHoursRanges(self, now=None, attime=None):
+		"""
+		Return: hours range as dedicated type
+		!!! Warning : This function is not thread-safe !!!
+			as one colorRange is used in multi context changing it's Limits.
+		"""
+		mytime = self.getTime(now, attime)
+		color = self.getColor(now, mytime)
+		hoursRanges = self.colorRanges.get(color)
+		hour = mytime.hour
+		if hour<self.HOUR_DAY_CHANGE:
+			timeout = mytime.replace(hour=self.HOUR_DAY_CHANGE, minute=00, second=00)
+			mytime -= datetime.timedelta(hours=self.HOUR_DAY_CHANGE+1) # Go to previous day
+			timeStart = mytime.replace(hour=self.HOUR_DAY_CHANGE, minute=00, second=00)
+			# Warning: During 1 secons at 06:00:00, 2 hoursRange are possible,
+			#  but it's less a problem than 1 second of no ranges.
+		else:
+			timeStart = mytime.replace(hour=self.HOUR_DAY_CHANGE, minute=00, second=00)
+			mytime += datetime.timedelta(hours=25-self.HOUR_DAY_CHANGE) # Go to next day
+			timeout = mytime.replace(hour=self.HOUR_DAY_CHANGE, minute=00, second=00)
+		hoursRanges.setLimits(timeStart, timeout)
+		return hoursRanges
 
 	# pylint: disable=arguments-differ
 	@staticmethod

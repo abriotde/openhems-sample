@@ -46,19 +46,21 @@ class GenericContract:
 		hoursRanges = GenericContract.get("hoursRanges", keys, "list")
 		return (hoursRanges, defaultPrice, outRangePrice)
 
-	def getHoursRanges(self):
+	def getHoursRanges(self, now=None, attime=None):
 		"""
 		Return: hours range as dedicated type
 		"""
+		del now, attime
 		return self.hoursRanges
 
-	def getOffPeakHoursRanges(self):
+	def getOffPeakHoursRanges(self, now=None, attime=None):
 		"""
 
 		Return: off-peak hours range : list of 2-tuple of Time
 		"""
 		peakPrice = self.getPeakPrice()
-		ranges = list(filter(lambda x: x[2]==peakPrice, self.hoursRanges)) # Filter by cost==peakPrice
+		# Filter by cost==peakPrice
+		ranges = list(filter(lambda x: x[2]==peakPrice, self.getHoursRanges(now, attime)))
 		return ranges
 
 	def getPeakPrice(self, now=None, attime=None):
@@ -66,7 +68,7 @@ class GenericContract:
 		:return float: the peak-price
 		"""
 		del now, attime
-		val = max(self.hoursRanges.ranges, key=lambda s: (print("SSSS",s), s[2]))
+		val = max(self.getHoursRanges(now, attime).ranges, key=lambda s: (print("SSSS",s), s[2]))
 		return val[2]
 
 	def getOffPeakPrice(self, now=None, attime=None):
@@ -74,8 +76,21 @@ class GenericContract:
 		:return float: the offpeak-price
 		"""
 		del now, attime
-		val = min(self.hoursRanges.ranges, key=lambda s: s[2])
+		val = min(self.getHoursRanges(now, attime).ranges, key=lambda s: s[2])
 		return val[2]
+
+	def getTime(self, now=None, attime=None):
+		"""
+		Get "attime" real value (never None)
+		Consider, that if attime is None, attime=now
+		And if now is None, now = datetime.datetime.now()
+		"""
+		if attime is None:
+			attime = now
+			if attime is None:
+				attime = datetime.datetime.now()
+		return attime
+
 
 	def getPrice(self, now=None, attime=None):
 		"""
@@ -85,11 +100,7 @@ class GenericContract:
 		attime: datetime witch represent time to check price. Default is now.
 		Return: the Kw price at 'now'.
 		"""
-		if attime is None:
-			attime = now
-			if attime is None:
-				attime = datetime.datetime.now()
-		_, _, cost = self.getHoursRanges().checkRange(attime)
+		_, _, cost = self.getHoursRanges(now, attime).checkRange(self.getTime(now, attime))
 		return cost
 
 	def __str__(self):
