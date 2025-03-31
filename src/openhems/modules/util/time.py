@@ -112,23 +112,23 @@ class HoursRanges:
 	- Reverse it
 	- Parse from strings
 	- Check if a datetime is in or out
-	:param str offPeakHoursRanges: list of ranges
+	:param str hoursRangesList: list of ranges
 	:param datetime timeStart: Before this date, this prices are not valid
 	:param datetime timeout: After this date, this prices are not valid
 	:param function timeoutCallBack: An object with implement getHoursRanges(nowDatetime, attime)
 			function witch is called when timeout/timeStart occures
-	:param float defaultCost: Cost for offPeakHoursRanges when cost is not set.
-	:param float outRangeCost: Cost ranges not defined in offPeakHoursRanges
+	:param float defaultCost: Cost for hoursRangesList when cost is not set.
+	:param float outRangeCost: Cost ranges not defined in hoursRangesList
 	"""
-	def __init__(self, offPeakHoursRanges:list=None, timeStart:datetime=None,
+	def __init__(self, hoursRangesList:list=None, timeStart:datetime=None,
 			  timeout:datetime=None, timeoutCallBack=None, data=None,
 			  defaultCost:float=0.0, outRangeCost:float=0.15):
-		if offPeakHoursRanges is None:
-			offPeakHoursRanges = []
+		if hoursRangesList is None:
+			hoursRangesList = []
 		self._index = 0
 		self.ranges = []
 		self.minCost = 0
-		self.setOffPeakHoursRanges(offPeakHoursRanges, defaultCost, outRangeCost)
+		self.setHoursRangesList(hoursRangesList, defaultCost, outRangeCost)
 		self.rangeEnd = datetime.now()
 		self.timeout = timeout
 		self.timeStart = timeStart
@@ -192,8 +192,8 @@ class HoursRanges:
 			end = Time(end)
 		return begin, end, cost
 
-	def setOffPeakHoursRanges(self,
-			offPeakHoursRanges, defaultCost:float=0.0, outRangeCost:float=0.15):
+	def setHoursRangesList(self,
+			hoursRangesList, defaultCost:float=0.0, outRangeCost:float=0.15):
 		"""
 		We can define only off-peak hours but we get full 24h range.
 		Missing ranges are filled with outRangeCost (peak hours cost).
@@ -218,9 +218,9 @@ class HoursRanges:
 		]
 		"""
 		offpeaks = []
-		if not isinstance(offPeakHoursRanges, list):
-			offPeakHoursRanges = CastUtililty.toTypeList(offPeakHoursRanges)
-		for offpeakHoursRange in offPeakHoursRanges:
+		if not isinstance(hoursRangesList, list):
+			hoursRangesList = CastUtililty.toTypeList(hoursRangesList)
+		for offpeakHoursRange in hoursRangesList:
 			begin, end, cost = self._extractRangeValues(offpeakHoursRange, defaultCost)
 			offpeaks.append([begin, end, cost])
 		self.ranges = offpeaks

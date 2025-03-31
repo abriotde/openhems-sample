@@ -130,16 +130,15 @@ class EnergyStrategy:
 			self.logger.debug("switchOn() : Node is not switchable : %s.", node.id)
 		return False
 
-	def switchOffAll(self):
+	def switchOffAll(self, cycleDuration=1):
 		"""
 		Switch of all connected devices with this strategy.
 		"""
-		# self.print(logger.info)
-		# marginPower = self.getCurrentPowerConsumption()
-		# self.print(logger.info)
+		self.logger.debug("EnergyStrategy.switchOffAll(%s)", self.strategyId)
 		ok = True
 		for elem in self.getNodes():
-			if elem.isSwitchable and elem.switchOn(False):
+			self.logger.debug("switch off id:", elem.id)
+			if elem.isSwitchable and self.switchSchedulable(elem, cycleDuration, False):
 				self.logger.warning("Fail to switch off '%s'",elem.id)
 				ok = False
 		return ok

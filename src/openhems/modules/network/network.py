@@ -252,9 +252,11 @@ class OpenHEMSNetwork:
 		"""
 		Return list of nodes for a strategy
 		"""
+		# self.logger.debug("getNodesForStrategy(%s)", strategyId)
 		key = "strategy_"+strategyId
 		nodes = self._elemsCache.get(key, None)
 		if nodes is None:
+			# self.logger.debug("getNodesForStrategy() : generate cache")
 			nodes = []
 			for node in self.getAll("out"):
 				strategy = node.getStrategyId()

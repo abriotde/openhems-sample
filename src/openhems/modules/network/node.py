@@ -58,7 +58,7 @@ class OpenHEMSNode:
 		currentPower = self.currentPower.getValue()
 		if self._isSwitchable and not self.isOn() and currentPower!=0:
 			logger.warning("'%s' is Off but current power=%d", self.id, currentPower)
-		logger.info("OpenHEMSNode.getCurrentPower() = %d", currentPower)
+		logger.info("OpenHEMSNode.getCurrentPower(%s) = %d", self.id, currentPower)
 		return currentPower
 
 	def getMaxPower(self):

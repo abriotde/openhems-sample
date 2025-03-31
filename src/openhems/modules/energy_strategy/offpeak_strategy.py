@@ -96,7 +96,7 @@ class OffPeakStrategy(EnergyStrategy):
 		if now is None:
 			now = datetime.now()
 		if now>self.rangeEnd:
-			self.checkRange()
+			self.checkRange(now)
 		time2Wait = 0
 		if self.inOffpeakRange:
 			# We are in off-peak range hours : switch on all

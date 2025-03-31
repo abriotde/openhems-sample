@@ -30,7 +30,7 @@ class GenericContract:
 		"""
 		Parse a configuration dict to create a GenericContract
 		"""
-		outRangePrice, defaultPrice, hoursRanges = \
+		hoursRanges, defaultPrice, outRangePrice = \
 			GenericContract.extractFromDict(dictConf, configuration)
 		return GenericContract(hoursRanges, defaultPrice, outRangePrice)
 
