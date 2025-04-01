@@ -120,6 +120,7 @@ class OpenHEMSApplication:
 			self.server = OpenHEMSServer(self.logger, network, configurator)
 			schedule = self.server.getSchedule()
 		except ConfigurationException as e:
+			self.logger.error(str(e))
 			warnings.append(str(e))
 		for warning in warnings:
 			self.logger.error(warning)

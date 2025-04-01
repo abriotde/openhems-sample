@@ -17,6 +17,6 @@ server:
     - {class: emhass, freq: 1, id: emhass}
 network:
   nodes:
-    - {id: linky, currentPower: sensor.lixee_zlinky_tic_puissance_apparente, powerMargin: 1000, maxPower: 6000, minPower: 0, class: PublicPowerGrid, contract: { class: RTETempo, color: sensor.rte_tempo_couleur_actuelle }}
-    - {id: solarpanel, currentPower: sensor.tz3000_2putqrmw_ts011f_puissance_2, powerMargin: 1000, maxPower: 2000, minPower: 0, class: SolarPanel}
+    - {id: linky, currentPower: sensor.lixee_zlinky_tic_puissance_apparente, marginPower: 1000, maxPower: 6000, minPower: 0, class: PublicPowerGrid, contract: { class: RTETempo, color: sensor.rte_tempo_couleur_actuelle }}
+    - {id: solarpanel, currentPower: sensor.tz3000_2putqrmw_ts011f_puissance_2, marginPower: 1000, maxPower: 2000, minPower: 0, class: SolarPanel}
     - {id: voiture, class: switch, isOn: switch.tz3000_2putqrmw_ts011f_commutateur_2, currentPower: sensor.tz3000_2putqrmw_ts011f_puissance_2, maxPower:2000, strategy: emhass}

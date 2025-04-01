@@ -6,6 +6,7 @@ import datetime
 # import functools
 import requests
 from openhems.modules.network.feeder import Feeder
+from openhems.modules.util import HoursRanges, ConfigurationException
 from .generic_contract import GenericContract
 
 # pylint: disable=too-few-public-methods
@@ -18,9 +19,27 @@ class RTETempoContract(RTEContract):
 	"""
 	Contrat RTE avec option Tempo
 	"""
-	def __init__(self, color, colorNext,
-	             offpeakprices, peakprices, offpeakHoursRanges, feederProvider=None):
-		super().__init__(offpeakprices, peakprices, offpeakHoursRanges)
+	HOUR_DAY_CHANGE = 6
+	HOUR_OFFPEAK_START = 22
+	def __init__(self, color=None, colorNext=None,
+	             offpeakprices=None, peakprices=None, feederProvider=None, offpeakHoursRanges=None):
+		if offpeakHoursRanges is None:
+			offpeakHoursRanges = [str(self.HOUR_OFFPEAK_START)+"h-"+str(self.HOUR_DAY_CHANGE)+"h"]
+		if offpeakprices is None:
+			offpeakprices = {"bleu":0.1, "blanc":0.2, "rouge":0.3}
+		if peakprices is None:
+			peakprices = {"bleu":0.4, "blanc":0.5, "rouge":0.6}
+		super().__init__(offpeakHoursRanges, outRangePrice=1, defaultPrice=0)
+		self.colorRanges = {}
+		# self.peakprices = peakprices
+		for c in peakprices.keys():
+			outRangeCost=peakprices.get(c, 1)
+			defaultCost=offpeakprices.get(c, 1)
+			# print("RTETempoContract: HoursRanges()",defaultCost,outRangeCost,offpeakHoursRanges)
+			self.colorRanges[c] = HoursRanges(
+				offpeakHoursRanges, outRangeCost=outRangeCost, defaultCost=defaultCost, timeoutCallBack=self
+			)
+		self.historyColor = {}
 		if color is not None and not isinstance(color, Feeder):
 			color = feederProvider.getFeeder(color, "str")
 		self.color = color
@@ -42,9 +61,11 @@ class RTETempoContract(RTEContract):
 		"""
 		url = "https://www.api-couleur-tempo.fr/api/jourTempo/"+day
 		retVal = None
-		for i in range(3): # Could be usefull for 502 error
+		for _ in range(3): # Could be usefull for 502 error
+			self.logger.debug("Call API %s : %s.", url)
 			# User-Agent is mandatory else 502 error
-			response = requests.get(url, timeout=10, allow_redirects=False, headers={'User-Agent': 'Mozilla/5.0'})
+			response = requests.get(url, timeout=10, allow_redirects=False,
+						   headers={'User-Agent': 'Mozilla/5.0'})
 			if response.status_code!=200:
 				self.logger.error("Error get(%s) : %d", url, response.status_code)
 				if response.status_code==502:
@@ -58,6 +79,10 @@ class RTETempoContract(RTEContract):
 				color = vals['codeJour']
 				colorMap = {1: "bleu", 2: "blanc", 3: "rouge"}
 				retVal = colorMap.get(color)
+				if retVal is None:
+					self.logger.error(
+						"Call API url='%s' return '%s' witch is not a valid value. Values given are : %s",
+						url, color, vals)
 				# print(f" callApiRteTempo({day}):{retVal}")
 				return retVal
 		return retVal
@@ -70,6 +95,7 @@ class RTETempoContract(RTEContract):
 		Return "day color". As it change every day, keep cache for 1 hour at least
 		"""
 		if isinstance(self.color, str):
+			# self.logger.debug("getColor() : STR(%s)", self.color)
 			return self.color
 		if now==attime or attime is None:
 			return self.getCurColor(now)
@@ -80,7 +106,9 @@ class RTETempoContract(RTEContract):
 			return self.getCurColor(now)
 		if attime>now:
 			return self.getNextColor(now)
-		return self.getHistoryColor(daytime)
+		retVal = self.getHistoryColor(daytime)
+		# self.logger.debug("getColor() : getHistoryColor() : %s", retVal)
+		return retVal
 
 	# @functools.cache
 	def getHistoryColor(self, attime):
@@ -95,11 +123,13 @@ class RTETempoContract(RTEContract):
 
 	def getColorDate(self, attime):
 		"""
-		As a color date start at 6 hour on morning and end at 6 hour the next day. 
+		return the date in ISO format of a datetime.
+		As a color date start at HOUR_DAY_CHANGE hour on morning
+		  and end at HOUR_DAY_CHANGE hour the next day. 
 		So a day last 24h and can be represent by a standard date 'Y-m-d'
 		 but they are not corresponding.
 		"""
-		if int(attime.strftime("%H"))<6:
+		if int(attime.strftime("%H"))<self.HOUR_DAY_CHANGE:
 			attime = attime-datetime.timedelta(days=1)
 		return attime.strftime("%Y-%m-%d")
 
@@ -133,35 +163,36 @@ class RTETempoContract(RTEContract):
 				self.lastColor = self.color.getValue().lower()
 			else:
 				self.lastColor = self.callApiRteTempo("today")
-			# TODO : check value
 			self.lastCall = curCall
 		# print("getColor() => ", self.lastColor)
 		return self.lastColor
 
-	def getOffPeakPrice(self, now=None, attime=None):
-		print("getOffPeakPrice(:",self.color,")")
-		color = self.getColor(now, attime)
-		print("Color0:", color)
-		price = self.offpeakPrice.get(color)
-		if price is None:
-			print("Color:", self.color)
-			# pylint: disable=broad-exception-raised
-			raise Exception(f"RTETempoContract : Invalid color : '{color}'")
-		return price
-
-	def getPeakPrice(self, now=None, attime=None):
+	def getHoursRanges(self, now=None, attime=None):
 		"""
-		Return peakprice 
+		Return: hours range as dedicated type
+		!!! Warning : This function is not thread-safe !!!
+			as one colorRange is used in multi context changing it's Limits.
 		"""
 		color = self.getColor(now, attime)
-		price = self.peakPrice.get(color)
-		if price is None:
-			# pylint: disable=broad-exception-raised
-			raise Exception(f"RTETempoContract : Invalid color : '{color}'")
-		return price
-
-	def getOffPeakHoursRanges(self):
-		return self.offpeakHoursRanges
+		hoursRanges = self.colorRanges.get(color)
+		if hoursRanges is None:
+			raise ConfigurationException(
+				f"getHoursRanges() : RTETempoContract : Color '{color}' is not defined in configuration."
+				"The configuration must specified it or the API not get this.")
+		mytime = self.getTime(now, attime)
+		hour = mytime.hour
+		if hour<self.HOUR_DAY_CHANGE:
+			timeout = mytime.replace(hour=self.HOUR_DAY_CHANGE, minute=00, second=00)
+			mytime -= datetime.timedelta(hours=self.HOUR_DAY_CHANGE+1) # Go to previous day
+			timeStart = mytime.replace(hour=self.HOUR_DAY_CHANGE, minute=00, second=00)
+			# Warning: During 1 secons at 06:00:00, 2 hoursRange are possible,
+			#  but it's less a problem than 1 second of no ranges.
+		else:
+			timeStart = mytime.replace(hour=self.HOUR_DAY_CHANGE, minute=00, second=00)
+			mytime += datetime.timedelta(hours=25-self.HOUR_DAY_CHANGE) # Go to next day
+			timeout = mytime.replace(hour=self.HOUR_DAY_CHANGE, minute=00, second=00)
+		hoursRanges.setLimits(timeStart, timeout)
+		return hoursRanges
 
 	# pylint: disable=arguments-differ
 	@staticmethod
@@ -179,21 +210,23 @@ class RTETempoContract(RTEContract):
 			price = GenericContract.get("offpeakprice."+c, keys)
 			offpeakPrice[c] = price
 		offpeakHoursRanges = GenericContract.get("offpeakhoursranges", keys, "list")
-		return RTETempoContract(colorFeeder, colorNextFeeder,
-		                        peakPrice, offpeakPrice, offpeakHoursRanges, networtUpdater)
+		return RTETempoContract(color=colorFeeder, colorNext=colorNextFeeder,
+		        peakprices=peakPrice, offpeakprices=offpeakPrice, offpeakHoursRanges=offpeakHoursRanges,
+				feederProvider=networtUpdater)
 
 class RTEHeuresCreusesContract(RTEContract):
 	"""
 	Contrat RTE avec option Heures-Creuses
 	"""
-
 	@staticmethod
 	def fromdict(dictConf, configuration):
 		keys = (dictConf, configuration, "rteheurescreuses")
 		peakPrice = GenericContract.get("peakPrice", keys, "float")
 		offpeakPrice = GenericContract.get("offpeakPrice", keys, "float")
 		offpeakHoursRanges = GenericContract.get("offpeakHoursRanges", keys, "list")
-		return RTEHeuresCreusesContract(peakPrice, offpeakPrice, offpeakHoursRanges)
+		return RTEHeuresCreusesContract(
+			offpeakHoursRanges, outRangePrice=peakPrice, defaultPrice=offpeakPrice
+		)
 
 class RTETarifBleuContract(RTEContract):
 	"""
@@ -206,4 +239,5 @@ class RTETarifBleuContract(RTEContract):
 	def fromdict(dictConf, configuration):
 		keys = (dictConf, configuration, "rtetarifbleu")
 		price = GenericContract.get("price", keys, "float")
-		return RTETarifBleuContract(price)
+		# pylint: disable=unexpected-keyword-arg, no-value-for-parameter
+		return RTETarifBleuContract(defaultPrice=price)

@@ -18,7 +18,7 @@ sys.path.append(str(ROOT_PATH / "src"))
 from openhems.modules.network.driver.fake_network import FakeNetwork
 from openhems.modules.util import (
 	NotificationManager, MessageHistory,
-	HoursRanges,
+	HoursRanges,Time,
 	CastUtililty,
 	CastException, ConfigurationManager
 )
@@ -111,12 +111,12 @@ class TestUtilModule(unittest.TestCase):
 		# Check range contains midnight
 		offpeakRange = HoursRanges([["22:00:00","06:00:00"]])
 		# Check for sensitive time for midnight
-		inOffpeakRange, _ = offpeakRange.checkRange(
+		inOffpeakRange, _, _ = offpeakRange.checkRange(
 			datetime(2024, 7, 11, 23, 00, 00)
 		)
 		self.assertTrue(inOffpeakRange)
 		# Check for not o'clock time
-		inOffpeakRange, rangeEnd = offpeakRange.checkRange(
+		inOffpeakRange, rangeEnd, _ = offpeakRange.checkRange(
 			datetime(2024, 7, 11, 6, 30, 00)
 		)
 		self.assertFalse(inOffpeakRange)
@@ -126,22 +126,40 @@ class TestUtilModule(unittest.TestCase):
 		offpeakRange = HoursRanges(
 			[["10:00:00","11:30:00"],["14:00:00","16:00:00"]]
 		)
-		inOffpeakRange, rangeEnd = offpeakRange.checkRange(
+		inOffpeakRange, rangeEnd, _ = offpeakRange.checkRange(
 			datetime(2024, 7, 11, 15, 00, 00)
 		)
 		self.assertTrue(inOffpeakRange)
 		self.assertEqual(rangeEnd.strftime("%H%M%S"), "160000")
-		inOffpeakRange, rangeEnd = offpeakRange.checkRange(
+		inOffpeakRange, rangeEnd, _ = offpeakRange.checkRange(
 			datetime(2024, 7, 11, 23, 00, 00)
 		)
 		self.assertFalse(inOffpeakRange)
 		self.assertEqual(rangeEnd.strftime("%H%M%S"), "100000")
 		# Check in middle of 2 range
-		inOffpeakRange, rangeEnd = offpeakRange.checkRange(
+		inOffpeakRange, rangeEnd, _ = offpeakRange.checkRange(
 			datetime(2024, 7, 11, 12, 34, 56)
 		)
 		self.assertFalse(inOffpeakRange)
 		self.assertEqual(rangeEnd.strftime("%H%M%S"), "140000")
+
+		offpeakRange = HoursRanges([
+			"22h-06h",
+			["06h-10h",  0.12],
+			[Time("10:00:00"), Time("12:00:00"), 0.2],
+			["12h","16h", 0.13],
+			["16h00","20h00"]
+		])
+		outRange = offpeakRange.ranges
+		self.assertEqual(outRange,[
+			[Time(60000), Time(100000),  0.12],
+			[Time(100000), Time(120000), 0.2],
+			[Time(120000), Time(160000), 0.13],
+			[Time(160000), Time(200000), 0.0],
+			[Time(200000), Time(220000), 0.15],
+			[Time(220000), Time(60000), 0.0]
+		]
+		)
 
 
 	def test_notifyManager(self):

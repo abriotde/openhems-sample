@@ -193,7 +193,7 @@ class EmhassStrategy(EnergyStrategy):
 				switchOnRate = 100 * ( np.dot(vals, rates) ) / value
 			deferable = self.deferables[deferableName]
 			doSwitchOn = self.evaluatePertinenceSwitchOn(switchOnRate, deferable.node)
-			self.switchOnSchedulable(deferable.node, cycleDuration, doSwitchOn)
+			self.switchSchedulable(deferable.node, cycleDuration, doSwitchOn)
 		return True
 
 	def updateNetwork(self, cycleDuration, allowSleep:bool, now=None):

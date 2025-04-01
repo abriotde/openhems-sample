@@ -42,6 +42,9 @@ class OpenHEMSNetwork:
 		self.notificationManager = None
 		self._elemsCache = {}
 		self.logger = logger
+		self._loopNb = 0 # used for cache (if loopNb didn't move, get from cache)
+		self._loopNbMarginPowerOn = -1
+		self._marginPowerOn = -1
 		self.addNetworkUpdater(networkUpdater, nodesConf)
 
 	def addNetworkUpdater(self, networkUpdater: HomeStateUpdater, nodesConf):
@@ -89,7 +92,8 @@ class OpenHEMSNetwork:
 		for elem in self.getAll("inout"):
 			p = elem.getCurrentPower()
 			if isinstance(p, str):
-				self.logger.critical("power as string : '%s'", p)
+				self.logger.critical("Power as string '%s' for node '%s'", p, elem.id)
+				# Usually it's because we miss initiate something because Home-Assistant was off
 				os._exit(1)
 			globalPower += p
 		return globalPower
@@ -112,6 +116,10 @@ class OpenHEMSNetwork:
 				elemFilter = filters.get(filterId, None)
 			if elemFilter is not None:
 				out = list(filter(elemFilter, self.nodes))
+				if filterId=="out":
+					out.sort(
+						reverse=True, key=lambda x:x.getPriority()
+					)
 			elif filterId=="":
 				out = self.nodes
 			else:
@@ -139,11 +147,17 @@ class OpenHEMSNetwork:
 			globalPower += function(elem)
 		return globalPower
 
-	def getMaxPower(self, filterId=None):
+	def getMaxPowerProduction(self, filterId=None):
 		"""
 		Get current maximum power consumption possible.
+		It's instant max-power
+		- For solar panel, max-power = current-power.
+		- For public power grid, it's usually a constant.
 		"""
 		return self._sumNodesValues(filterId, "inout", (lambda x: x.getMaxPower()))
+
+	def getMaxPowerConsumption(self):
+		return self._sumNodesValues("out", "out", (lambda x: x.isOn() and x.getMaxPower()))
 
 	def getMinPower(self, filterId=None):
 		"""
@@ -163,23 +177,23 @@ class OpenHEMSNetwork:
 		"""
 		Get how many power we can add safely
 		"""
-		maxPower = self.getMaxPower()
-		currentPower = self.getCurrentPowerConsumption()
-		marginPower = self.getMarginPower()
-		marginPowerOn = maxPower-marginPower-currentPower
-		if marginPowerOn<0: # Need to switch off some elements
-			self.logger.warning("Margin power On is negativ (%f): Need to wsitch off devices."
-			                    , marginPowerOn)
-			while marginPowerOn<0:
-				for elem in self.getAll("out"):
-					if elem.isSwitchable() and elem.isOn():
-						power = elem.getCurrentPower()
-						self.logger.info("Switch off '%s' due to missing power margin.", elem.id)
-						if elem.switchOn(False):
-							self.logger.error("Fail switch off '%s' due to missing power margin.", elem.id)
-							marginPowerOn += power
-			return 0
-		return maxPower-(currentPower+marginPower)
+		if self._loopNbMarginPowerOn != self._loopNb:
+			# The maximum production before black-out
+			maxPowerP = self.getMaxPowerProduction()
+			# The consumption if every switched on devices consume at max capability
+			maxPowerC = self.getMaxPowerConsumption()
+			currentPower = self.getCurrentPowerConsumption()
+			marginPower = self.getMarginPower()
+			# self.logger.debug(
+			#	"MaxPowerProduction:%s; MaxPowerConsumption:%s; CurrentPower:%s; MarginPower:%s;",
+			#	maxPowerP, maxPowerC, currentPower, marginPower)
+			self._marginPowerOn = min(
+				maxPowerP-(currentPower+marginPower),
+				maxPowerP-maxPowerC # Maybe is it too safe?
+			)
+			self._loopNbMarginPowerOn = self._loopNb
+		return self._marginPowerOn
+
 	def getMarginPowerOff(self):
 		"""
 		Get how many power we can remove safely (Case we do not want to over produce)
@@ -224,6 +238,7 @@ class OpenHEMSNetwork:
 		"""
 		Update network state using the NetworkUpdater
 		"""
+		self._loopNb += 1
 		self.networkUpdater.updateNetwork()
 
 	def isGridSourceOn(self):
@@ -252,9 +267,11 @@ class OpenHEMSNetwork:
 		"""
 		Return list of nodes for a strategy
 		"""
+		# self.logger.debug("getNodesForStrategy(%s)", strategyId)
 		key = "strategy_"+strategyId
 		nodes = self._elemsCache.get(key, None)
 		if nodes is None:
+			# self.logger.debug("getNodesForStrategy() : generate cache")
 			nodes = []
 			for node in self.getAll("out"):
 				strategy = node.getStrategyId()
@@ -264,14 +281,14 @@ class OpenHEMSNetwork:
 			# self.logger.debug("getNodesForStrategy(%s) = %s", strategyId, nodes)
 		return nodes
 
-	def getOffPeakHoursRanges(self):
+	def getHoursRanges(self):
 		"""
 		Return a concatenation of all offpeak ours off sources.
 		"""
 		offpeakhours = []
 		nb = 0
 		for elem in self.getAll("publicpowergrid"):
-			offpeakhours = elem.getContract().getOffPeakHoursRanges()
+			offpeakhours = elem.getContract().getHoursRanges()
 			nb += 1
 		if nb==0:
 			self.logger.warning("No PublicPowerGrid on the network.")

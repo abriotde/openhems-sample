@@ -56,7 +56,7 @@ default:
       currentPower: null
       maxPower: 6000
       minPower: 0
-      marginPower: 300
+      marginPower: 1000
       contract:
         rtetempo:
           color: null
@@ -77,9 +77,9 @@ default:
         rtetarifbleu:
           price: 0.2516
         generic:
-          offpeakhoursranges: ["22h - 6h"]
-          peakprice: None
-          offpeakprice: None
+          hoursRanges: []
+          defaultPrice: 0.1
+          outRangePrice: 1.0
     solarpanel:
       currentPower: None
       maxPower: 500
@@ -105,4 +105,4 @@ default:
       maxPower: 2000
       isOn: None
       strategy: None
-
+      priority: 50
