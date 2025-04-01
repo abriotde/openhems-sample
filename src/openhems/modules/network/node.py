@@ -3,10 +3,12 @@ Represent device of home network
 """
 
 import logging
-from collections import deque
+
 from typing import Final
+from collections import deque, OrderedDict
 from openhems.modules.web import OpenHEMSSchedule
 from openhems.modules.contract import Contract
+from openhems.modules.util import CastUtililty
 from .feeder import Feeder
 
 CYCLE_HISTORY: Final[int] = 10 # Number of cycle we keep history
@@ -23,15 +25,16 @@ class OpenHEMSNode:
 		"""
 		self.id = haId.strip().replace(" ", "_")
 
-	def __init__(self, nameId, currentPower, maxPower, isOnFeeder=None, controlledPowerFeeder=None):
+	def __init__(self, nameId, currentPower, maxPower, isOnFeeder=None, controlledPowerFeeder=None, controlledPowerValues=None):
 		self.id = ""
 		self.setId(nameId)
 		self.params = ""
 		self.network = None
 		self._isSwitchable = False
 		self._isOn: Feeder = None
-		self._isControlledPower = controlledPowerFeeder is not None
 		self._controlledPower = controlledPowerFeeder
+		self._controlledPowerValues = controlledPowerValues
+		self._initControlledPowerValues()
 		self.currentPower: Feeder = 0
 		self.maxPower: Feeder = 2000
 		self.currentPower = currentPower
@@ -43,6 +46,40 @@ class OpenHEMSNode:
 			self._isSwitchable = False
 		self.previousPower = deque()
 		self._isActivate = True
+
+	def _initControlledPowerValues(self):
+		"""
+		Allow to define controlledPowerValues as
+		- {range: [0, 10], step: 2}
+		- {0: 0, 1: 100, 2: 400, 3: 1000}
+		- [0, 1, 2, 3, 4, 5]
+		"""
+		if isinstance(self._controlledPowerValues, list):
+			values = [None for _ in self._controlledPowerValues]
+			self._controlledPowerValues = dict(zip(self._controlledPowerValues, values))
+		elif isinstance(self._controlledPowerValues, dict):
+			myrange = None
+			step = None
+			controlledPowerValues = {}
+			for k, v in self._controlledPowerValues.items():
+				if isinstance(k, str):
+					if k=="range":
+						myrange=v
+					elif k=="step":
+						step=v
+				else:
+					controlledPowerValues[k]=v
+			if myrange is not None or step is not None:
+				if step is None:
+					step=1
+				if myrange is None:
+					myrange=[0,self.getMaxPower()]
+				elif isinstance(myrange, str):
+					myrange = CastUtililty.toTypeList(myrange)
+				keys = range(myrange[0], myrange[1], step)
+				values = [None for _ in keys]
+				controlledPowerValues = dict(zip(keys, values))
+			self._controlledPowerValues = OrderedDict(sorted(controlledPowerValues))
 
 	def setCurrentPower(self, currentPower):
 		"""
@@ -104,7 +141,15 @@ class OpenHEMSNode:
 		"""
 			Return true if this OpenHEMSNode can be switch on/off.
 		"""
-		return self._isControlledPower
+		return self._controlledPower is not None
+
+	def getControlledPowerValues(self):
+		"""
+		Get a dict matching possible command with possible power.
+		"""
+		if self._controlledPower is not None: # Fist call, init values
+			return self._controlledPowerValues
+		return None
 
 
 	def getControlledPower(self):
@@ -112,14 +157,41 @@ class OpenHEMSNode:
 		Get current wanted controlled power for node with controlable power.
 		!!! Warning maybe we don't get power but an abstract value. !!!
 		"""
-		return self._controlledPower.getValue()
+		if self._controlledPower is not None:
+			value = self._controlledPower.getValue()
+			power = self._controlledPowerValues.get(value)
+			newValue = self.getCurrentPower()
+			if power is None:
+				self._controlledPowerValues[value] = newValue
+			elif newValue!=value: # Choice the most coherent value
+				linkPrev, linkNext, key = self._controlledPowerValues._OrderedDict__map[value]
+				prevValue = self._controlledPowerValues[linkPrev[2]]
+				nextValue = self._controlledPowerValues[linkNext[2]]
+				# check that power values are ordered (like control value)
+				coherent = (prevValue<value and value<nextValue)
+				coherentNew = (prevValue<newValue and newValue<nextValue)
+				if coherent and coherentNew:
+					old = max(value-prevValue, nextValue-value)
+					new = max(newValue-prevValue, nextValue-newValue)
+					if new<old:
+						self._controlledPowerValues[value] = newValue
+					# else nothing to do, that was the "best"
+				elif coherent:
+					pass
+				elif coherentNew:
+					self._controlledPowerValues[value] = newValue
+				# else: uncoherent values, the error is probably elsewhere
+			return value
+		return None
 
 	def setControlledPower(self, power):
 		"""
 		Set wanted controlled power for node with controlable power.
 		!!! Warning maybe we don't set power but an abstract value. !!!
 		"""
-		return self._controlledPower.setValue(power)
+		if self._controlledPower is not None:
+			return self._controlledPower.setValue(power)
+		return None
 
 	def isSwitchable(self):
 		"""

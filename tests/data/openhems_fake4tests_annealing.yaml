@@ -1,0 +1,22 @@
+localization:
+  latitude: 48.430883803968456
+  longitude: -2.2153649964972693
+  altitude: 100
+  timeZone: Europe/Paris
+server:
+  # logformat: Optional default is "%(levelname)s : %(asctime)s : %(message)s", for custom configuration see https://docs.python.org/3/library/logging.html#logrecord-attributes
+  logfile: openhems.log # Optional, default is /var/log/openhems.log
+  loglevel: debug
+  loopDelay: 30 # interval beetween 2
+  network: fake # Define the type of network API used to control the home energy.
+  strategies: 
+    - {class: annealing, id: annealing} # Define the algorithm used to control the  home energy.
+network:
+  nodes: # List the source of electric power
+    - {id: linky, currentPower: "SUM(out)", marginPower: 1000, maxPower: 3100, minPower: 0, class: PublicPowerGrid, contract: {
+        class: generic, defaultPrice: 0.15, outRangePrice: 0.30, hoursRanges: ["22h-6h"]
+      }
+    }
+    - {id: car, class: switch, currentPower: 1800, maxPower: 2000, priority: 50, strategy: annealing}
+    - {id: machine, class: switch, currentPower: 800, maxPower: 1200, priority: 40, strategy: annealing}
+    - {id: pump, class: switch, currentPower: 280, maxPower: 300, priority: 60, strategy: annealing}

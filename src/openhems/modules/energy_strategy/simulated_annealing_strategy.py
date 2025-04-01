@@ -8,6 +8,7 @@ It's inspired by https://github.com/jmcollin78/solar_optimizer.git
 import logging
 from datetime import datetime, timedelta
 from openhems.modules.network.network import OpenHEMSNetwork
+from openhems.modules.util import ConfigurationManager
 from .simulated_annealing_algo import SimulatedAnnealingAlgorithm
 from .energy_strategy import EnergyStrategy, LOOP_DELAY_VIRTUAL
 
@@ -30,19 +31,17 @@ class SimulatedAnnealingStrategy(EnergyStrategy):
 		cooling_factor = float(configurationAnnealing.get("cooling_factor"))
 		max_iteration_number = int(configurationAnnealing.get("max_iteration_number"))
 		self._algo = SimulatedAnnealingAlgorithm(
-			init_temp, min_temp, cooling_factor, max_iteration_number
+			init_temp, min_temp, cooling_factor, max_iteration_number, logger=self.logger
 		)
 		self.network = network
 		freq = configurationAnnealing.get("freq")
 		self.evalFrequence = timedelta(minutes=freq)
-		self.timezone = pytz.timezone(configurationGlobal.get("localization.timeZone"))
 		self.data = None
-		self.deferables = {}
-		self.deferablesKeys = []
-		self.nextEvalDate = datetime.now(self.timezone) - self.evalFrequence
+		self.nextEvalDate = datetime.now() - self.evalFrequence
 		self._bestSolution = None
 		self._bestGoal = None
 		self._totalPower = None
+		self.deferables = {}
 
 	def eval(self):
 		"""
@@ -52,14 +51,20 @@ class SimulatedAnnealingStrategy(EnergyStrategy):
 		batteries = self.network.getAll("battery")
 		# TODO : create dedicated function for battery in network
 		powerProduction = sum(node.getCurrentPower() for node in batteries)
-		batterySoc = sum(node.getLevel() for node in batteries) / len(batteries) # TODO : improve accuracy (It's wrong)
+		if len(batteries):
+			batterySoc = sum(node.getLevel() for node in batteries) / len(batteries) # TODO : improve accuracy (It's wrong)
+		else:
+			batterySoc = 0
 		buyCost = self.network.getPrice()
 		sellCost = self.network.getSellPrice()
 		sellTaxPercent = 100*(buyCost-sellCost)/buyCost
 
+		nodes = self.getNodes()
+		for node in nodes:
+			self.deferables[node.id] = node
 		self._bestSolution, self._bestGoal, self._totalPower \
 			= self._algo.simulatedAnnealing(
-			self._devices,
+			nodes,
 			powerConsumption,
 			powerProduction,
 			sellCost,
@@ -73,21 +78,22 @@ class SimulatedAnnealingStrategy(EnergyStrategy):
 		This apply what eval function computed.
 		"""
 		# Uses the result to turn on or off or change power
+		print(self.deferables)
 		for equipement in self._bestSolution:
-			nodeId = equipement["name"]
-			requestedPower = equipement.get("requested_power")
-			state = equipement["state"]
-			device = self.deferables[nodeId]
-			if not device:
+			nodeId = equipement.name
+			requestedPower = equipement.requestedPower
+			state = equipement.state
+			node = self.deferables.get(nodeId)
+			if node is None:
 				continue
-			self.switchOnSchedulable(device, cycleDuration, state)
+			self.switchSchedulable(node, cycleDuration, state)
 
 			# Send change power if state is now on and change power is accepted and (power have change or eqt is just activated)
 			if (state and device.isControlledPower()
 				and (device.getCurrentPower() != requestedPower)
 				 # TODO : Warning maybe we don't set power but an abstract value...
 			):
-				self.logger.debug("Change power of %s to %s", equipement["name"], requestedPower)
+				self.logger.debug("Change power of %s to %s", equipement.name, requestedPower)
 				# TODO, there is no variable devices in OpenHEMS today
 				device.setControlledPower(requestedPower)
 
@@ -99,9 +105,7 @@ class SimulatedAnnealingStrategy(EnergyStrategy):
 		Now is used to get a fake 
 		"""
 		if now is None:
-			now = datetime.now(self.timezone)
-		elif now.tzinfo is None or now.tzinfo!=self.timezone:
-			now = now.replace(tzinfo=self.timezone)
+			now = datetime.now()
 		self.check(now)
 		self.apply(cycleDuration, now=now)
 		return cycleDuration

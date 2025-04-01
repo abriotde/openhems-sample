@@ -3,12 +3,30 @@ import logging
 import random
 import math
 import copy
-
+import scipy.optimize
+from dataclasses import dataclass
 from openhems.modules.network.node import OutNode
+
+@dataclass
+class SimulatedAnnealingNode:
+	powerMax:float
+	powerValues:dict
+	currentPower:float
+	requestedPower:float
+	name:str
+	state:bool
+	isUsable:bool
+	isWaiting:bool
+	canChangePower:bool
+
 
 class SimulatedAnnealingAlgorithm:
 	"""
 	The class which implemenets the Simulated Annealing algorithm
+	TODO: use https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.basinhopping.html instead
+		Scipy recommand basinhopping and is more optimized/performant and can be switched easily
+		Witch allow customization for users.
+	It's inspired by https://github.com/jmcollin78/solar_optimizer.git
 	"""
 
 	_temperature_initiale: float = 1000
@@ -45,6 +63,37 @@ class SimulatedAnnealingAlgorithm:
 			self._nombre_iterations,
 		)
 
+	def basinhopping(
+		self,
+		devices: list[OutNode],
+		powerConsumption: float,
+		solar_power_production: float,
+		sellCost: float,
+		buyCost: float,
+		sell_tax_percent: float,
+		batterySoc: float
+	):
+		"""
+		Seam impossible because not all devices are variable consumption devices.
+		"""
+		optimizeResult = scipy.optimize.basinhopping(
+			self.evalTarget,
+			self._temperature_initiale,
+			niter=self._nombre_iterations,
+			T=self._coolingFactor, #
+			stepsize=0.5,
+			minimizer_kwargs=None, # {"method": "BFGS"}, {"method":"L-BFGS-B", "jac":True}
+			take_step=None,
+			accept_test=None,
+			callback=None,
+			interval=50,
+			disp=False,
+			niter_success=None,
+			rng=None,
+			target_accept_rate=0.5,
+			stepwise_factor=0.9
+		)
+
 	def simulatedAnnealing(
 		self,
 		devices: list[OutNode],
@@ -53,7 +102,7 @@ class SimulatedAnnealingAlgorithm:
 		sellCost: float,
 		buyCost: float,
 		sell_tax_percent: float,
-		battery_soc: float
+		batterySoc: float
 	):
 		"""The entrypoint of the algorithm:
 		You should give:
@@ -100,19 +149,17 @@ class SimulatedAnnealingAlgorithm:
 		self._equipements = []
 		for device in devices:
 			self._equipements.append(
-				{
-					"powerMax": device.getMaxPower(),
-					"powerMin": device.getMinPower(),
-					"powerStep": 1,
-					"current_power": device.getCurrentPower(),
-					# Initial Requested power is the current power if usable
-					"requested_power": device.getCurrentPower(),
-					"name": device.id,
-					"state": device.isOn(),
-					"is_usable": True,
-					"isWaiting": False,
-					"canChangePower": device.isControlledPower()
-				}
+				SimulatedAnnealingNode(
+					powerMax=device.getMaxPower(),
+					powerValues=device.getControlledPowerValues(),
+					currentPower=device.getCurrentPower(),
+					requestedPower=device.getControlledPower(),
+					name=device.id,
+					state=device.isOn(),
+					isUsable=device.isActivate(),
+					isWaiting=False,
+					canChangePower=device.isControlledPower()
+				)
 			)
 		self._logger.debug("enabled _equipements are: %s", self._equipements)
 
@@ -165,7 +212,7 @@ class SimulatedAnnealingAlgorithm:
 		return (
 			bestSolution,
 			bestTarget,
-			self.devicesConsumption(bestSolution),
+			SimulatedAnnealingAlgorithm.devicesConsumption(bestSolution),
 		)
 
 	def evalTarget(self, solution) -> float:
@@ -175,7 +222,7 @@ class SimulatedAnnealingAlgorithm:
 		consommation_totale = consommation_net + consommation_solaire
 		"""
 
-		puissance_totale_eqt = self.devicesConsumption(solution)
+		puissance_totale_eqt = SimulatedAnnealingAlgorithm.devicesConsumption(solution)
 		_totalPowerOfTotalEqtDiff = (
 			puissance_totale_eqt - self._totalPowerOfInitialEqt
 		)
@@ -205,49 +252,49 @@ class SimulatedAnnealingAlgorithm:
 
 	def genererateInitialeSolution(self, solution):
 		"""Generate the initial solution (which is the solution given in argument) and calculate the total initial power"""
-		self._totalPowerOfInitialEqt = self.devicesConsumption(solution)
+		self._totalPowerOfInitialEqt = SimulatedAnnealingAlgorithm.devicesConsumption(solution)
 		return copy.deepcopy(solution)
 
-	def devicesConsumption(self, solution):
+	@staticmethod
+	def devicesConsumption(solution):
 		"""The total power consumption for all active equipement"""
 		return sum(
-			equipement["requested_power"]
+			equipement.requestedPower
 			for equipement in solution
-			if equipement["state"]
+			if equipement.state
 		)
 
-	def evalNewPower(
-		self, currentPower, powerStep, powerMin, powerMax, canSwitchOff
-	):
+	def evalNewPower(self, equipment:SimulatedAnnealingNode):
 		"""Calculate a new power"""
 		choices = []
-		powerMinToUse = powerMin if canSwitchOff else powerMin + powerStep
-		if currentPower > powerMinToUse:
+		powerMinToUse = equipment.powerValues[0]
+		if equipment.currentPower > powerMinToUse:
 			choices.append(-1)
-		if currentPower < powerMax:
+		if equipment.currentPower < equipment.powerMax:
 			choices.append(1)
 
 		if len(choices) <= 0:
 			# No changes
-			return currentPower
-
-		powerAdd = random.choice(choices) * powerStep
-		self._logger.debug("Adding %d power to currentPower (%d)", powerAdd, currentPower)
-		requestedPower = currentPower + powerAdd
-		self._logger.debug("New requestedPower is %s", requestedPower)
+			return equipment.currentPower
+		# Find the index of closest power possible value
+		currentPowerIndex, currentPowerValue = min(
+			equipment.powerValues.items(),
+			key=lambda x: abs(equipment.currentPower - x[1])
+		)
+		requestedPowerIdx = random.choice(choices)+currentPowerIndex
+		if requestedPowerIdx<0:
+			requestedPowerIdx=0
+		if len(equipment.powerValues)<=requestedPowerIdx:
+			requestedPowerIdx=len(equipment.powerValues)-1
+		requestedPower = equipment.powerValues.get(requestedPowerIdx)
+		self._logger.debug("Change power to %d, currentPower=%d", requestedPower, currentPowerValue)
 		return requestedPower
-		# if requestedPower < powerMin:
-		# deactivate the equipment
-		#    requestedPower = 0
-		# elif requestedPower > powerMax:
-		# Do nothing
-		#    requestedPower = currentPower
 
 	def equipmentSwap(self, solution):
-		"""Permuter le state d'un equipement eau hasard"""
+		"""Permuter le state d'un equipement au hasard"""
 		voisin = copy.deepcopy(solution)
 
-		usable = [eqt for eqt in voisin if eqt["is_usable"]]
+		usable = [eqt for eqt in voisin if eqt.isUsable]
 
 		if len(usable) <= 0:
 			return voisin
@@ -255,16 +302,15 @@ class SimulatedAnnealingAlgorithm:
 		eqt = random.choice(usable)
 
 		# name = eqt["name"]
-		state = eqt["state"]
-		canChangePower = eqt["canChangePower"]
-		isWaiting = eqt["isWaiting"]
+		state = eqt.state
+		canChangePower = eqt.canChangePower
+		isWaiting = eqt.isWaiting
 
-		# Current power is the last requested_power
-		current_power = eqt.get("requested_power")
-		powerMax = eqt.get("powerMax")
-		powerStep = eqt.get("powerStep")
+		# Current power is the last requestedPower
+		currentPower = eqt.requestedPower
+		powerMax = eqt.powerMax
 		if canChangePower:
-			powerMin = eqt.get("powerMin")
+			powerMin = eqt.powerMin
 		else:
 			# If power is not manageable, min = max
 			powerMin = powerMax
@@ -277,7 +323,7 @@ class SimulatedAnnealingAlgorithm:
 		#    -> on ne fait rien (mais ne devrait pas arriver car il ne serait pas usable dans ce cas)
 		#
 		# if state and canChangePower and isWaiting:
-		#    -> change power mais sans l'éteindre (requested_power >= powerMin)
+		#    -> change power mais sans l'éteindre (requestedPower >= powerMin)
 		#
 		# if state and canChangePower and not isWaiting:
 		#    -> change power avec extinction possible
@@ -296,43 +342,39 @@ class SimulatedAnnealingAlgorithm:
 
 		if state and canChangePower and isWaiting:
 			# calculated a new power but do not switch off (because waiting)
-			requested_power = self.evalNewPower(
-				current_power, powerStep, powerMin, powerMax, can_switch_off=False
-			)
+			requestedPower = self.evalNewPower(eqt)
 			assert (
-				requested_power > 0
-			), "Requested_power should be > 0 because isWaiting is True"
+				requestedPower > 0
+			), "requestedPower should be > 0 because isWaiting is True"
 
 		elif state and canChangePower and not isWaiting:
 			# change power and accept switching off
-			requested_power = self.evalNewPower(
-				current_power, powerStep, powerMin, powerMax, can_switch_off=True
-			)
-			if requested_power <= powerMin:
+			requestedPower = self.evalNewPower(eqt)
+			if requestedPower <= powerMin:
 				# deactivate the equipment
-				eqt["state"] = False
-				requested_power = 0
+				eqt.state = False
+				requestedPower = 0
 
 		elif not state and not isWaiting:
 			# Allumage
-			eqt["state"] = not state
-			requested_power = powerMin
+			eqt.state = not state
+			requestedPower = powerMin
 
 		elif state and not isWaiting:
 			# Extinction
-			eqt["state"] = not state
-			requested_power = 0
+			eqt.state = not state
+			requestedPower = 0
 
-		elif "requested_power" not in locals():
+		elif "requestedPower" not in locals():
 			self._logger.error("We should not be there. eqt=%s", eqt)
 			assert False, "Requested power n'a pas été calculé. Ce n'est pas normal"
 
-		eqt["requested_power"] = requested_power
+		eqt.requestedPower = requestedPower
 
 		self._logger.debug(
 				"      -- On permute %s puissance max de %.2f. Il passe à %s",
-				eqt["name"],
-				eqt["requested_power"],
-				eqt["state"],
+				eqt.name,
+				eqt.requestedPower,
+				eqt.state,
 			)
 		return voisin

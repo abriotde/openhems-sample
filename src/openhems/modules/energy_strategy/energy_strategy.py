@@ -16,7 +16,6 @@ class StrategyNode:
 		self.logger = logger
 		self.node = node
 		self.isOn = None
-		self.timezone = None
 
 	def changed(self, isOn=None):
 		"""
@@ -84,7 +83,6 @@ class EnergyStrategy:
 		self.nextEvalDate = datetime.datetime.now() - self.evalFrequence
 		self.deferables = {}
 		self.deferablesKeys = []
-		self.timezone = None
 
 	def getNodes(self, encapsulated=False):
 		"""
@@ -222,7 +220,7 @@ class EnergyStrategy:
 		"""
 		# self.logger.debug("EnergyStrategy.check()")
 		if now is None:
-			now = datetime.datetime.now(self.timezone)
+			now = datetime.datetime.now()
 		if self.updateDeferables() or now>self.nextEvalDate:
 			# self.logger.debug("EnergyStrategy.check() : eval")
 			self.eval()
@@ -250,9 +248,7 @@ class EnergyStrategy:
 		"""
 		del allowSleep
 		if now is None:
-			now = datetime.datetime.now(self.timezone)
-		elif self.timezone is not None and (now.tzinfo is None or now.tzinfo!=self.timezone):
-			now = now.replace(tzinfo=self.timezone)
+			now = datetime.datetime.now()
 		self.check(now)
 		self.apply(cycleDuration, now=now)
 		return cycleDuration

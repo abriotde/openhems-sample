@@ -263,7 +263,6 @@ class OffPeakStrategy(EnergyStrategy):
 		 - datetime of range end
 		"""
 		(offpeakTime, peakTime, previousRangeEnd) = times
-		print(type(schedule.timeout), type(previousRangeEnd))
 		if schedule.timeout>previousRangeEnd:
 			inoffpeak, rangeEnd = myrange
 			if schedule.timeout>rangeEnd:

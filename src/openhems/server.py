@@ -46,7 +46,7 @@ class OpenHEMSServer:
 				from openhems.modules.energy_strategy.emhass_strategy import EmhassStrategy
 				self.strategies.append(
 					EmhassStrategy(mylogger, self.network, serverConf, strategyParams, strategyId))
-			elif strategy=="anealing":
+			elif strategy=="annealing":
 				self.strategies.append(
 						SimulatedAnnealingStrategy(
 							mylogger, self.network, serverConf, strategyParams, strategyId)

@@ -13,12 +13,12 @@ class GenericContract:
 	"""
 	logger = logging.getLogger(__name__)
 
-	def __init__(self, hoursRanges=None, defaultPrice=0.0, outRangePrice=0.15):
+	def __init__(self, hoursRanges=None, defaultPrice=0.0, outRangePrice=0.15, sellPrice=0.0):
 		if hoursRanges is None:
 			self.hoursRanges = HoursRanges([], outRangeCost=defaultPrice)
 		else:
-			self.logger.info("GenericContract(hoursRanges=%s, defaultCost=%s, outRangeCost=%s)",
-				str(hoursRanges), defaultPrice, outRangePrice)
+			self.logger.info("GenericContract(hoursRanges=%s, defaultCost=%s, outRangeCost=%s, sellPrice=%s)",
+				str(hoursRanges), defaultPrice, outRangePrice, sellPrice)
 			self.hoursRanges = HoursRanges(
 				hoursRanges, defaultCost=defaultPrice , outRangeCost=outRangePrice
 			)
@@ -31,7 +31,7 @@ class GenericContract:
 		"""
 		Parse a configuration dict to create a GenericContract
 		"""
-		hoursRanges, defaultPrice, outRangePrice = \
+		hoursRanges, defaultPrice, outRangePrice, sellPrice = \
 			GenericContract.extractFromDict(dictConf, configuration)
 		return GenericContract(hoursRanges, defaultPrice, outRangePrice)
 
@@ -44,8 +44,9 @@ class GenericContract:
 		keys = (dictConf, configuration, "generic")
 		defaultPrice = GenericContract.get("defaultPrice", keys, "float")
 		outRangePrice = GenericContract.get("outRangePrice", keys, "float")
+		sellPrice = GenericContract.get("sellPrice", keys, "float")
 		hoursRanges = GenericContract.get("hoursRanges", keys, "list")
-		return (hoursRanges, defaultPrice, outRangePrice)
+		return (hoursRanges, defaultPrice, outRangePrice, sellPrice)
 
 	def getHoursRanges(self, now=None, attime=None):
 		"""
@@ -113,10 +114,10 @@ class GenericContract:
 		Return: the Kw sell cost at 'now'.
 		"""
 		del now, attime
-		return 0
+		return self.sellPrice
 
 	def __str__(self):
-		return "GenericContract("+str(self.hoursRanges)+")"
+		return "GenericContract("+str(self.hoursRanges)+", sellPrice={self.sellPrice})"
 
 	def inOffpeakRange(self, now=None, attime=None, useCache=True):
 		"""
@@ -144,16 +145,22 @@ class GenericContract:
 		value = dictConf.get(key)
 		if value is None:
 			baseKey = "default.node.publicpowergrid.contract"
+			completeKey = baseKey+"."+classname+"."+key
 			value = configuration.get(
-				baseKey+"."+classname+"."+key,
+				completeKey,
 				defaultType
 			)
 			if value is None:
-				GenericContract.logger.warning(
-					"No default value for '%s.%s.%s'. Availables are %s",
-					baseKey, classname, key,
-					configuration.get(baseKey, deepSearch=True)
+				value = configuration.get(
+					completeKey.lower(),
+					defaultType
 				)
+				if value is None:
+					GenericContract.logger.warning(
+						"No default value for '%s.%s.%s'. Availables are %s",
+						baseKey, classname, key,
+						configuration.get(baseKey, deepSearch=True)
+					)
 		elif defaultType is not None:
 			value = CastUtililty.toType(defaultType, value)
 		return value
