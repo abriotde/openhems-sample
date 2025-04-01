@@ -116,6 +116,10 @@ class OpenHEMSNetwork:
 				elemFilter = filters.get(filterId, None)
 			if elemFilter is not None:
 				out = list(filter(elemFilter, self.nodes))
+				if filterId=="out":
+					out.sort(
+						reverse=True, key=lambda x:x.getPriority()
+					)
 			elif filterId=="":
 				out = self.nodes
 			else:
@@ -143,7 +147,7 @@ class OpenHEMSNetwork:
 			globalPower += function(elem)
 		return globalPower
 
-	def getMaxPower(self, filterId=None):
+	def getMaxPowerProduction(self, filterId=None):
 		"""
 		Get current maximum power consumption possible.
 		It's instant max-power
@@ -151,6 +155,9 @@ class OpenHEMSNetwork:
 		- For public power grid, it's usually a constant.
 		"""
 		return self._sumNodesValues(filterId, "inout", (lambda x: x.getMaxPower()))
+
+	def getMaxPowerConsumption(self):
+		return self._sumNodesValues("out", "out", (lambda x: x.isOn() and x.getMaxPower()))
 
 	def getMinPower(self, filterId=None):
 		"""
@@ -171,11 +178,19 @@ class OpenHEMSNetwork:
 		Get how many power we can add safely
 		"""
 		if self._loopNbMarginPowerOn != self._loopNb:
-			# It's instant max-power, for solar panel, max-power = current-power
-			maxPower = self.getMaxPower()
+			# The maximum production before black-out
+			maxPowerP = self.getMaxPowerProduction()
+			# The consumption if every switched on devices consume at max capability
+			maxPowerC = self.getMaxPowerConsumption()
 			currentPower = self.getCurrentPowerConsumption()
 			marginPower = self.getMarginPower()
-			self._marginPowerOn = maxPower-(currentPower+marginPower)
+			# self.logger.debug(
+			#	"MaxPowerProduction:%s; MaxPowerConsumption:%s; CurrentPower:%s; MarginPower:%s;",
+			#	maxPowerP, maxPowerC, currentPower, marginPower)
+			self._marginPowerOn = min(
+				maxPowerP-(currentPower+marginPower),
+				maxPowerP-maxPowerC # Maybe is it too safe?
+			)
 			self._loopNbMarginPowerOn = self._loopNb
 		return self._marginPowerOn
 

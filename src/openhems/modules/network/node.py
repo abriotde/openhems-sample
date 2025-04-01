@@ -169,7 +169,7 @@ class OutNode(OpenHEMSNode):
 		return self.strategyId
 
 	def __str__(self):
-		return (f"OutNode(name={self.name}, strategy={self.strategyId},"
+		return (f"OutNode(name={self.name}, strategy={self.strategyId}, priority={self._priority}"
 			f" currentPower={self.currentPower},"
 			f"maxPower={self.maxPower}, isOn={self._isOn})")
 	def __repr__(self):
@@ -213,8 +213,9 @@ class InOutNode(OpenHEMSNode):
 		"""
 		Return current margin power
 		"""
-		return self.marginPower.getValue()
-
+		margin = self.marginPower.getValue()
+		# logger.debug("MarginPower of Node %s is %s", self.id, margin)
+		return margin
 	def getSafetyLevel(self):
 		"""
 		Get a int value representing how safe is the current power value

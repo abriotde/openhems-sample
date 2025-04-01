@@ -71,12 +71,14 @@ class OpenHEMSServer:
 		If margin power is used, we switch off devices
 		"""
 		marginPowerOn = self.network.getMarginPowerOn()
+		self.logger.debug("Security margin power:%s",marginPowerOn)
 		if marginPowerOn<0: # Need to switch off (deactivate) some nodes
 			self.logger.warning(
 				"Margin power On is negativ (%f): Need to sitch off devices.",
 				marginPowerOn)
-			elems = self.network.getAll("out").sort(
-				reverse=True, key=lambda x:x.getPriority()
+			elems = self.network.getAll("out")
+			elems.sort( # start from the less priority
+				key=lambda x:x.getPriority()
 			)
 			for elem in elems:
 				if marginPowerOn<0 and elem.isSwitchable() and elem.isOn():
@@ -90,9 +92,8 @@ class OpenHEMSServer:
 						self.inOverLoadMode = True
 		elif self.inOverLoadMode and marginPowerOn>0: # Try to re-activate nodes
 			inOverLoadMode = False
-			elems = self.network.getAll("out").sort(
-				reverse=True, key=lambda x:x.getPriority()
-			)
+			# start from the bigest priority (default order)
+			elems = self.network.getAll("out")
 			for elem in elems:
 				if not elem.isActivate():
 					if elem.getMaxPower()>marginPowerOn: # re-activate the node

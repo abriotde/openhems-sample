@@ -80,8 +80,8 @@ class HomeStateUpdater:
 		marginPower = self._getFeeder(nodeConf, "marginPower", "int")
 		maxPower = self._getFeeder(nodeConf, "maxPower", "int")
 		minPower = self._getFeeder(nodeConf, "minPower", "int")
-		# nameid = self._getFeeder(nodeConf, "id", "str", "publicpowergrid")
 		contract = nodeConf.get("contract")
+		# print("getPublicPowerGrid() : marginPower=", marginPower, nodeConf)
 		node = PublicPowerGrid(nameid, currentPower, maxPower, minPower, marginPower,
 			contract, self)
 		# self.logger.info(node)
@@ -191,7 +191,7 @@ class HomeStateUpdater:
 			strategyId = self.network.getDefaultStrategy().id
 		maxPower = self._getFeeder(nodeConf, "maxPower", "int")
 		isOn = self._getFeeder(nodeConf, "isOn", "bool")
-		priority = self._getFeeder(nodeConf, "priority", "int")
+		priority = nodeConf.get("priority", 50)
 		node = OutNode(nameid, strategyId, currentPower, maxPower, isOn, priority=priority)
 		# self.logger.info(node)
 		return node

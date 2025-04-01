@@ -13,9 +13,10 @@ server:
     - {class: offpeak, id: offpeak} # Define the algorithm used to control the  home energy.
 network:
   nodes: # List the source of electric power
-    - {id: linky, currentPower: "SUM(out)", powerMargin: 1000, maxPower: 3500, minPower: 0, class: PublicPowerGrid, contract: {
+    - {id: linky, currentPower: "SUM(out)", marginPower: 1000, maxPower: 3100, minPower: 0, class: PublicPowerGrid, contract: {
         class: generic, defaultPrice: 0.15, outRangePrice: 0.30, hoursRanges: ["22h-6h"]
       }
     }
-    - {id: voiture, class: switch, currentPower: 2000, maxPower: 2000, priority: 50, strategy: offpeak}
-    - {id: machine, class: switch, currentPower: 1000, maxPower: 1000, priority: 40, strategy: offpeak}
+    - {id: car, class: switch, currentPower: 1800, maxPower: 2000, priority: 50, strategy: offpeak}
+    - {id: machine, class: switch, currentPower: 800, maxPower: 1200, priority: 40, strategy: offpeak}
+    - {id: pump, class: switch, currentPower: 280, maxPower: 300, priority: 60, strategy: offpeak}

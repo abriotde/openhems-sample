@@ -62,10 +62,11 @@ class FakeNetwork(HomeStateUpdater):
 		isOn = StateFeeder(_isOn)
 		maxPower = self._getFeeder(nodeConf, "maxPower")
 		strategy = nodeConf.get("strategy", "default")
+		priority = nodeConf.get("priority", 50)
 		currentPowerRealisttic = FakeSwitchFeeder(currentPower, isOn)
 		node = OutNode(nameid, currentPower=currentPowerRealisttic,
 				maxPower=maxPower, isOnFeeder=isOn,
-				strategyId=strategy)
+				strategyId=strategy, priority=priority)
 		return node
 
 	def switchOn(self, isOn:bool, node):
