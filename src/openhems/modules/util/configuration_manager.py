@@ -69,6 +69,8 @@ class ConfigurationManager():
 					self.logger.debug(
 						"ConfigurationManager._completeFromModelCB() : set configuration[%s] = %s",
 						baseKey+"."+key, defaultValue)
+				elif sModel is None:
+					defaultValue = None
 				else:
 					defaultValue = self._completeFromModel({}, sModel, baseKey+"."+key)
 			else:
@@ -116,8 +118,8 @@ class ConfigurationManager():
 			myModel = model.get(classname.lower())
 			if myModel is None:
 				self.logger.error(
-					"ConfigurationManager._completeFromModel() : Class='%s' not defined for id='%s'.",
-					classname, configuration.get('id',''))
+					"ConfigurationManager._completeFromModel() : Class='%s' not defined for id='%s' key=%s.",
+					classname, configuration.get('id',''), baseKey)
 				return None
 			configuration = self._completeFromModelCB(
 				configuration, myModel, baseKey+"."+classname, ["class"])

@@ -17,7 +17,7 @@ server:
     - {class: switchoff, id: redDay, offrange: [ "6h-22h"], condition: "self.getVal('sensor.rte_tempo_couleur_actuelle')=='Rouge'"}
 network:
   nodes:
-    - {id: linky, currentPower: sensor.lixee_zlinky_tic_puissance_apparente, powerMargin: 1000, maxPower: 10000, minPower: 0, class: PublicPowerGrid,
+    - {id: linky, currentPower: sensor.lixee_zlinky_tic_puissance_apparente, marginPower: 1000, maxPower: 10000, minPower: 0, class: PublicPowerGrid,
         contract: {class: RTETempo, color: sensor.rte_tempo_couleur_actuelle, nextcolor: sensor.rte_tempo_prochaine_couleur}
       }
     - {id: voiture, strategy: offpeak, class: switch, isOn: switch.tz3000_2putqrmw_ts011f_commutateur_2, currentPower: sensor.tz3000_2putqrmw_ts011f_puissance_2, maxPower: 2000}

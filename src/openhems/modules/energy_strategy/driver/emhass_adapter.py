@@ -252,9 +252,12 @@ Altitude: {altitude}
 		Return YAML configuration for Emhass off-peak hours.
 		"""
 		datas = {}
+		# The peak-price/offpeak-price is approximative
+		# isn't exact because we can have many different price during the day.
 		for elem in network.getAll("publicpowergrid"):
 			contract = elem.getContract()
-			ranges = contract.getOffPeakHoursRanges().getReverse()
+			ranges = contract.getOffPeakHoursRanges()
+			peakPrice = contract.getPeakPrice()
 			listHpPeriods = ""
 			i = 1
 			for r in ranges:
@@ -268,7 +271,7 @@ Altitude: {altitude}
 			if listHpPeriods == "":
 				listHpPeriods = "[]"
 			datas["list_hp_periods"] = listHpPeriods
-			datas["load_cost_hp"] = contract.getPeakPrice()
+			datas["load_cost_hp"] = peakPrice
 			datas["load_cost_hc"] = contract.getOffPeakPrice()
 		return datas
 

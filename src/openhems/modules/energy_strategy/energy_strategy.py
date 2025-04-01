@@ -99,7 +99,40 @@ class EnergyStrategy:
 			return self._nodes
 		return self.network.getNodesForStrategy(self.strategyId)
 
-	def switchOnSchedulable(self, node, cycleDuration, doSwitchOn):
+	def updateNetwork(self, cycleDuration:int, allowSleep:bool, now=None):
+		"""
+		Function to update OpenHEMSNetwork. To implement in sub-class
+		"""
+		del cycleDuration, allowSleep, now
+		self.logger.error("EnergyStrategy.updateNetwork() : To implement in sub-class")
+
+	def _switchSchedulableWitchIsOff(self, node, cycleDuration, doSwitchOn):
+		"""
+		Like switchSchedulable() but for node off and switchable
+		"""
+		del cycleDuration
+		if doSwitchOn and node.getSchedule().duration>0:
+			marginPower = node.network.getMarginPowerOn()
+			if node.getMaxPower()>marginPower:
+				self.logger.info(
+					"Not enough power margin (%d) to switch on '%s' witch need %d Kw.",
+					marginPower, node.id, node.getMaxPower())
+				return False
+			if not node.isActivate():
+				self.logger.info(
+					"Can't switch on '%s' due to deactivation for margin power security.",
+					node.id)
+				return False
+			if node.switchOn(True):
+				self.logger.info("Switch on '%s' successfully.", node.id)
+				return True
+			self.logger.warning("Fail switch on '%s'.", node.id)
+		else:
+			self.logger.debug("Node '%s' is off.",
+				node.id)
+		return False
+
+	def switchSchedulable(self, node, cycleDuration, doSwitchOn):
 		"""
 		param node: Node to switch on
 		param doSwitchOn: Set if we want to switch on or off
@@ -119,28 +152,20 @@ class EnergyStrategy:
 						node.id, remainingTime)
 					return True
 			else:
-				if doSwitchOn and node.getSchedule().duration>0:
-					if node.switchOn(True):
-						self.logger.info("Switch on '%s' successfully.", node.id)
-						return True
-					self.logger.warning("Fail switch on '%s'.", node.id)
-				else:
-					self.logger.debug("Node '%s' is off and not schedule for %d secondes.",
-						node.id, node.getSchedule().duration)
+				return self._switchSchedulableWitchIsOff(node, cycleDuration, doSwitchOn)
 		else:
 			self.logger.debug("switchOn() : Node is not switchable : %s.", node.id)
 		return False
 
-	def switchOffAll(self):
+	def switchOffAll(self, cycleDuration=1):
 		"""
 		Switch of all connected devices with this strategy.
 		"""
-		# self.print(logger.info)
-		# marginPower = self.getCurrentPowerConsumption()
-		# self.print(logger.info)
+		self.logger.debug("EnergyStrategy.switchOffAll(%s)", self.strategyId)
 		ok = True
 		for elem in self.getNodes():
-			if elem.isSwitchable and elem.switchOn(False):
+			self.logger.debug("switch off id:", elem.id)
+			if elem.isSwitchable and self.switchSchedulable(elem, cycleDuration, False):
 				self.logger.warning("Fail to switch off '%s'",elem.id)
 				ok = False
 		return ok

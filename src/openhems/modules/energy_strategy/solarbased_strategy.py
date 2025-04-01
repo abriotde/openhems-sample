@@ -99,8 +99,6 @@ class SolarBasedStrategy(OffPeakStrategy):
 		(Like we are always on off-peak time, so we  can use electricity
 		 all the time as we want nethermind.)
 		"""
-		if len(self.offpeakHoursRanges)<=0:
-			return True
-		if datetime.datetime.now()>self.rangeEnd:
-			self.checkRange()
+		hoursRange = self.network.getHoursRanges()
+		self.inOffpeakRange, _, _ = hoursRange.checkRange()
 		return self.inOffpeakRange

@@ -44,7 +44,7 @@ class SwitchoffStrategy(EnergyStrategy):
 		 and set end time of this range
 		"""
 		inOff = self.inOffRange
-		self.inOffRange, self._rangeEnd = self.offHoursRanges.checkRange(nowDatetime)
+		self.inOffRange, self._rangeEnd, _ = self.offHoursRanges.checkRange(nowDatetime)
 		if inOff!=self.inOffRange:
 			self._rangeChangeDone = False
 			self._todo = self.getNodes()

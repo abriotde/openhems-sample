@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.2 - 2024-04-01
+### Fix
+- FIX security against over-load problems + add devices deactivation to avoid ping-pong effect.
+
+### Improvement
+- ADD multi hours-ranges for contract. Before we have only 2 : peak-hours and off-peak.
+- ADD priority notion for devices.
+- Improve test_server.py with multi-cycle and test security against over-load.
+
 ## 0.2.1 - 2024-03-27
 ### Fix
 - FIX docker stability

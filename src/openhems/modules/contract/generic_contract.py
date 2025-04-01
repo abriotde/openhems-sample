@@ -13,19 +13,15 @@ class GenericContract:
 	"""
 	logger = logging.getLogger(__name__)
 
-	def __init__(self, peakPrice, offpeakPrice=None, offpeakHoursRanges=None, sellPrice=0):
-		self.peakPrice = peakPrice
-		if offpeakHoursRanges is None:
-			self.offpeakHoursRanges = HoursRanges([])
-			self.offpeakPrice = peakPrice
+	def __init__(self, hoursRanges=None, defaultPrice=0.0, outRangePrice=0.15):
+		if hoursRanges is None:
+			self.hoursRanges = HoursRanges([], outRangeCost=defaultPrice)
 		else:
-			self.logger.info("GenericContract(offpeakHoursRanges=%s)",
-				str(offpeakHoursRanges))
-			self.offpeakHoursRanges = HoursRanges(offpeakHoursRanges)
-			if offpeakPrice is None:
-				self.offpeakPrice = peakPrice/2
-			else:
-				self.offpeakPrice = offpeakPrice
+			self.logger.info("GenericContract(hoursRanges=%s, defaultCost=%s, outRangeCost=%s)",
+				str(hoursRanges), defaultPrice, outRangePrice)
+			self.hoursRanges = HoursRanges(
+				hoursRanges, defaultCost=defaultPrice , outRangeCost=outRangePrice
+			)
 		self._inOffpeakRange = None
 		self.sellPrice = sellPrice
 		self.rangeEnd = datetime.datetime.now()
@@ -35,42 +31,67 @@ class GenericContract:
 		"""
 		Parse a configuration dict to create a GenericContract
 		"""
-		peakPrice, offpeakPrice, offpeakHoursRanges, sellPrice = \
+		hoursRanges, defaultPrice, outRangePrice = \
 			GenericContract.extractFromDict(dictConf, configuration)
-		return GenericContract(peakPrice, offpeakPrice, offpeakHoursRanges, sellPrice)
+		return GenericContract(hoursRanges, defaultPrice, outRangePrice)
 
 	@staticmethod
 	def extractFromDict(dictConf, configuration):
 		"""
 		Parse a configuration dict to get key values: 
-		Return tuple of (peakPrice, offpeakPrice, offpeakHoursRanges)
+		Return tuple of (peakPrice, offpeakPrice, hoursRanges)
 		"""
 		keys = (dictConf, configuration, "generic")
-		peakPrice = GenericContract.get("peakPrice", keys, "float")
-		sellPrice = GenericContract.get("sellPrice", keys, "float")
-		offpeakPrice = GenericContract.get("offpeakPrice", keys, "float")
-		offpeakHoursRanges = GenericContract.get("offpeakHoursRanges", keys, "list")
-		return (peakPrice, offpeakPrice, offpeakHoursRanges, sellPrice)
+		defaultPrice = GenericContract.get("defaultPrice", keys, "float")
+		outRangePrice = GenericContract.get("outRangePrice", keys, "float")
+		hoursRanges = GenericContract.get("hoursRanges", keys, "list")
+		return (hoursRanges, defaultPrice, outRangePrice)
 
-	def getOffPeakPrice(self, now=None, attime=None):
+	def getHoursRanges(self, now=None, attime=None):
 		"""
-		Return: off-peak price
+		Return: hours range as dedicated type
 		"""
 		del now, attime
-		return self.offpeakPrice
+		return self.hoursRanges
+
+	def getOffPeakHoursRanges(self, now=None, attime=None):
+		"""
+
+		Return: off-peak hours range : list of 2-tuple of Time
+		"""
+		peakPrice = self.getPeakPrice()
+		# Filter by cost==peakPrice
+		ranges = list(filter(lambda x: x[2]==peakPrice, self.getHoursRanges(now, attime)))
+		return ranges
 
 	def getPeakPrice(self, now=None, attime=None):
 		"""
-		Return: peak price
+		:return float: the peak-price
 		"""
 		del now, attime
-		return self.peakPrice
+		val = max(self.getHoursRanges(now, attime).ranges, key=lambda s: (print("SSSS",s), s[2]))
+		return val[2]
 
-	def getOffPeakHoursRanges(self):
+	def getOffPeakPrice(self, now=None, attime=None):
 		"""
-		Return: off-peak hours range : list of 2-tuple of Time
+		:return float: the offpeak-price
 		"""
-		return self.offpeakHoursRanges
+		del now, attime
+		val = min(self.getHoursRanges(now, attime).ranges, key=lambda s: s[2])
+		return val[2]
+
+	def getTime(self, now=None, attime=None):
+		"""
+		Get "attime" real value (never None)
+		Consider, that if attime is None, attime=now
+		And if now is None, now = datetime.datetime.now()
+		"""
+		if attime is None:
+			attime = now
+			if attime is None:
+				attime = datetime.datetime.now()
+		return attime
+
 
 	def getPrice(self, now=None, attime=None):
 		"""
@@ -80,9 +101,8 @@ class GenericContract:
 		attime: datetime witch represent time to check price. Default is now.
 		Return: the Kw price at 'now'.
 		"""
-		if self.inOffpeakRange(now, attime):
-			return self.getOffPeakPrice(now, attime)
-		return self.getPeakPrice(now, attime)
+		_, _, cost = self.getHoursRanges(now, attime).checkRange(self.getTime(now, attime))
+		return cost
 
 	def getSellPrice(self, now=None, attime=None):
 		"""
@@ -96,19 +116,17 @@ class GenericContract:
 		return 0
 
 	def __str__(self):
-		return ("GenericContract($"
-			+str(self.peakPrice)+" - "+str(self.offpeakPrice)+"/Kwh,"
-			+str(self.offpeakHoursRanges)+")")
+		return "GenericContract("+str(self.hoursRanges)+")"
 
 	def inOffpeakRange(self, now=None, attime=None, useCache=True):
 		"""
 		Return: True if we are in off-peak range.
 		"""
-		offpeakHoursRanges = self.getOffPeakHoursRanges()
-		if offpeakHoursRanges.isEmpty():
+		hoursRanges = self.getHoursRanges()
+		if hoursRanges.isEmpty():
 			return False
 		if not useCache or attime>self.rangeEnd:
-			(inOffpeakRange, rangeEnd) = offpeakHoursRanges.checkRange(attime)
+			(inOffpeakRange, rangeEnd, _) = hoursRanges.checkRange(attime)
 			if attime==now: # Update cache if not in a futur time
 				self._inOffpeakRange = inOffpeakRange
 				self.rangeEnd = rangeEnd

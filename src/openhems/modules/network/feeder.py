@@ -165,3 +165,25 @@ class FakeSwitchFeeder(Feeder):
 		return self.defaultValue
 	def __str__(self):
 		return "FakeSwitchFeeder()"
+
+class SumFeeder(Feeder):
+	"""
+	The return 'value' whitch is the sum of getNodes()
+	"""
+	def __init__(self, network, inputType="out"):
+		super().__init__(inputType.lower())
+		self._network = network
+
+	def getValue(self):
+		"""
+		The return 'value' rotate on a list of predefined 'values'.
+		On each OpenHEMS server loop, self.source.refreshId should increment,
+		 witch occure the change, 
+		"""
+		sum = 0
+		for node in self._network.getAll(self.value):
+			sum += node.getCurrentPower()
+		return sum
+
+	def __str__(self):
+		return f"SumFeeder({self.value})"

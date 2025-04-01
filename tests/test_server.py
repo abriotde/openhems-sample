@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
 Test server, 
-TODO : Fake network
 """
 
 
 import sys
 import unittest
 import logging
+import datetime
 from pathlib import Path
 # pylint: disable=wrong-import-position
 # pylint: disable=import-error
@@ -30,9 +30,40 @@ class TestOpenHEMSServer(unittest.TestCase):
 		configFile = ROOT_PATH / "tests/data/openhems_fake4tests.yaml"
 		# print("test_runServer()")
 		app = OpenHEMSApplication(configFile)
-		app.server.loop(LOOP_DELAY_VIRTUAL)
-		# pylint: disable=redundant-unittest-assert
-		self.assertTrue(True)
+		now = datetime.datetime.now()
+		now = now.replace(hour=23, minute=0, second=0) # Force offpeak
+		logger.info("Now: %s",now.strftime("%d/%m/%Y, %H:%M:%S"))
+		app.server.loop(LOOP_DELAY_VIRTUAL, now)
+		nodes = {}
+		for node in app.server.network.getAll("out"):
+			# logger.info("Node: %s is on:%s", node.id, node.isOn())
+			node.getSchedule().duration = 3600
+			self.assertFalse(node.isOn())
+			nodes[node.id] = node
+		app.server.loop(1, now)
+		car = nodes["car"]
+		machine = nodes["machine"]
+		pump = nodes["pump"]
+		self.assertEqual(car.getCurrentPower(), 0)
+		self.assertEqual(machine.getCurrentPower(), 0)
+		self.assertEqual(pump.getCurrentPower(), 280)
+		self.assertEqual(app.server.network.getMarginPowerOn(), 2100)
+		app.server.loop(1, now)
+		self.assertEqual(car.getCurrentPower(), 0)
+		self.assertEqual(machine.getCurrentPower(), 800)
+		self.assertEqual(pump.getCurrentPower(), 280)
+		self.assertEqual(app.server.network.getMarginPowerOn(), 1820)
+		app.server.loop(1, now)
+		self.assertEqual(car.getCurrentPower(), 0)
+		self.assertEqual(machine.getCurrentPower(), 800)
+		self.assertEqual(pump.getCurrentPower(), 280)
+		self.assertEqual(app.server.network.getMarginPowerOn(), 1020)
+		car.switchOn(True)
+		app.server.loop(1, now)
+		self.assertEqual(car.getCurrentPower(), 1800)
+		self.assertEqual(machine.getCurrentPower(), 0)
+		self.assertEqual(pump.getCurrentPower(), 280)
+		self.assertEqual(app.server.network.getMarginPowerOn(), -780)
 
 if __name__ == '__main__':
 	unittest.main()
