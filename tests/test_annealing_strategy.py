@@ -2,15 +2,17 @@
 """
 Test AnnealingStrategy class, 
 """
-
+import sys
 import unittest
+from pathlib import Path
 import logging
 # pylint: disable=wrong-import-position, import-error
-from utils import TestStrategy, ROOT_PATH
+sys.path.append(str(Path(__file__).parents[0]))
+import utils
 
 logger = logging.getLogger(__name__)
 
-class TestAnnealingStrategy(TestStrategy):
+class TestAnnealingStrategy(utils.TestStrategy):
 	"""
 	Try test wall core server (OpenHEMS part, not web part)
 	"""
@@ -20,7 +22,7 @@ class TestAnnealingStrategy(TestStrategy):
 		"""
 		Test if server start well with FakeNetwork adapter
 		"""
-		configFile = ROOT_PATH / "tests/data/openhems_fake4tests_annealing.yaml"
+		configFile = utils.ROOT_PATH / "tests/data/openhems_fake4tests_annealing.yaml"
 		self.init(configFile)
 		nodes = self.firstLoop()
 		car = nodes["car"]

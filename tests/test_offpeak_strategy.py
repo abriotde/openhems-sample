@@ -3,15 +3,18 @@
 Test OffpeakStrategy class
 """
 
+import sys
 import unittest
+from pathlib import Path
 import datetime
 import logging
 # pylint: disable=wrong-import-position, import-error
-from utils import TestStrategy, ROOT_PATH
+sys.path.append(str(Path(__file__).parents[0]))
+import utils
 
 logger = logging.getLogger(__name__)
 
-class TestOffpeakStrategy(TestStrategy):
+class TestOffpeakStrategy(utils.TestStrategy):
 	"""
 	Try test wall core server (OpenHEMS part, not web part)
 	"""
@@ -21,7 +24,7 @@ class TestOffpeakStrategy(TestStrategy):
 		"""
 		Test if server start well with FakeNetwork adapter
 		"""
-		configFile = ROOT_PATH / "tests/data/openhems_fake4tests.yaml"
+		configFile = utils.ROOT_PATH / "tests/data/openhems_fake4tests.yaml"
 		# print("test_runServer()")
 		self.init(configFile)
 		now = datetime.datetime.now()

@@ -4,7 +4,7 @@ Utils classes for tests
 import sys
 import unittest
 from pathlib import Path
-ROOT_PATH = Path(__file__).parents[1]
+ROOT_PATH = Path(__file__).parents[2]
 sys.path.append(str(ROOT_PATH / "src"))
 from openhems.main import OpenHEMSApplication
 from openhems.modules.energy_strategy.energy_strategy import LOOP_DELAY_VIRTUAL
