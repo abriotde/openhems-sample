@@ -1,10 +1,9 @@
 """ The Simulated Annealing (recuit simulé) algorithm"""
-import logging
 import random
 import math
 import copy
-import scipy.optimize
 from dataclasses import dataclass
+import scipy.optimize
 from openhems.modules.network.node import OutNode
 
 @dataclass
@@ -23,6 +22,16 @@ class SimulatedAnnealingNode:
 	isWaiting: bool
 	canChangePower: bool
 
+@dataclass
+class SimulatedAnnealingAlgorithmParams:
+	"""
+	This is a storage class for OpenHEMSNode parameters 
+	used for SimulatedAnnealingAlgorithm
+	"""
+	initialTemperature:float
+	minTemperature:float
+	coolingFactor:float
+	maxNumberOfIteration:int
 
 class SimulatedAnnealingAlgorithm:
 	"""
@@ -34,39 +43,33 @@ class SimulatedAnnealingAlgorithm:
 	It's inspired by https://github.com/jmcollin78/solar_optimizer.git
 	"""
 
-	temperatureInitial: float = 1000
-	temperatureMinimal: float = 0.1
-	coolingFactor: float = 0.95
-	iterationCount: float = 1000
-	equipments: list[OutNode]
-	totalPowerOfInitialEquipments: float
-	buyCost: float = 15  # in cents
-	sellCost: float = 10  # in cents
-	sellTax: float = 10  # in percent
-	notConsumption: float
-	solarProduction: float
+	@dataclass
+	class Solution:
+		"""
+		Used to compute solution of Simulated Annealing Algorithm
+		"""
+		solution:list
+		target:list
 
-	def __init__(
-		self,
-		initialTemp: float,
-		minTemp: float,
-		coolingFactor: float,
-		maxIterationNumber: int,
-		logger=None
-	):
+	def __init__(self, initialTemp:float=1000, minTemp:float=0.1, coolingFactor:float=0.95,
+		maxIterationNumber:int=1000,logger=None):
 		self.logger = logger
 		"""Initialize the algorithm with values"""
-		self.temperatureInitial = initialTemp
-		self.temperatureMinimal = minTemp
-		self.coolingFactor = coolingFactor
-		self.iterationCount = maxIterationNumber
+		self.algoParams = SimulatedAnnealingAlgorithmParams(
+			initialTemp, minTemp, coolingFactor, maxIterationNumber
+		)
+		self._totalPowerOfInitialEquipments: float = 0
+		self.buyCost: float = 15  # in cents
+		self.sellCost: float = 10  # in cents
+		self.sellTax: float = 10  # in percent
+		self._notConsumption: float = 0
+		self.solarProduction: float = 0
+		self._equipments: list[SimulatedAnnealingNode] = []
 		self.logger.info(
 			"Initializing the SimulatedAnnealingAlgorithm with "
-			"initialTemp=%.2f minTemp=%.2f coolingFactor=%.2f max_iterations_number=%d",
-			self.temperatureInitial,
-			self.temperatureMinimal,
-			self.coolingFactor,
-			self.iterationCount,
+			"initialTemp=%.2f minTemp=%.2f _coolingFactor=%.2f max_iterations_number=%d",
+			self.algoParams.initialTemperature, self.algoParams.minTemperature,
+			self.algoParams.coolingFactor, self.algoParams.maxNumberOfIteration,
 		)
 
 	def basinhopping(
@@ -82,11 +85,13 @@ class SimulatedAnnealingAlgorithm:
 		"""
 		Seam impossible because not all devices are variable consumption devices.
 		"""
-		optimizeResult = scipy.optimize.basinhopping(
+		del devices, powerConsumption, solarPowerProduction, batterySoc
+		del sellCost, buyCost, sellTaxPercent
+		scipy.optimize.basinhopping(
 			self.evalTarget,
-			self.temperatureInitial,
-			niter=self.iterationCount,
-			T=self.coolingFactor, #
+			self.algoParams.initialTemperature,
+			niter=self.algoParams.maxNumberOfIteration,
+			T=self.algoParams.coolingFactor, #
 			stepsize=0.5,
 			minimizer_kwargs=None, # {"method": "BFGS"}, {"method":"L-BFGS-B", "jac":True}
 			take_step=None,
@@ -95,21 +100,15 @@ class SimulatedAnnealingAlgorithm:
 			interval=50,
 			disp=False,
 			niter_success=None,
-			rng=None,
+			# rng=None,
 			target_accept_rate=0.5,
 			stepwise_factor=0.9
 		)
 
-	def simulatedAnnealing(
-		self,
-		devices: list[OutNode],
-		powerConsumption: float,
-		solarPowerProduction: float,
-		sellCost: float,
-		buyCost: float,
-		sellTaxPercent: float,
-		batterySoc: float
-	):
+
+	def simulatedAnnealing(self, devices:list[OutNode], powerConsumption:float,
+			solarPowerProduction:float, sellCost:float, buyCost:float, sellTaxPercent:float,
+			batterySoc: float):
 		"""The entrypoint of the algorithm:
 		You should give:
 			- devices: a list of OutNode devices
@@ -124,40 +123,31 @@ class SimulatedAnnealingAlgorithm:
 			- bestSolution: a list of object in which name, powerMax and state are set,
 			- bestObjective: the measure of the objective for that solution,
 			- totalPowerConsumption: the total of power consumption for 
-			  all equipments which should be activated (state=True)
+			  all _equipments which should be activated (state=True)
 		"""
-		if (
-			len(devices) <= 0  # pylint: disable=too-many-boolean-expressions
-			or powerConsumption is None
-			or solarPowerProduction is None
-			or sellCost is None
-			or buyCost is None
-			or sellTaxPercent is None
-		):
-			self.logger.info(
-				"Not all informations are available for Simulated Annealing algorithm to work. Calculation is abandoned"
+		del batterySoc
+		if ( len(devices)==0 or
+				any(x is None for x in [
+					powerConsumption, solarPowerProduction, sellCost, buyCost, sellTaxPercent
+				]) ):
+			self.logger.warning(
+				"Not all informations are available for Simulated"
+				"Annealing algorithm to work. Calculation is abandoned"
 			)
 			return [], -1, -1
-
 		self.logger.debug(
 			"Calling simulatedAnnealing with powerConsumption=%.2f, solarPowerProduction=%.2f"
 			"sellCost=%.2f, buyCost=%.2f, tax=%.2f%% devices=%s",
-			powerConsumption,
-			solarPowerProduction,
-			sellCost,
-			buyCost,
-			sellTaxPercent,
-			devices,
+			powerConsumption, solarPowerProduction, sellCost, buyCost, sellTaxPercent, devices,
 		)
 		self.buyCost = buyCost
 		self.sellCost = sellCost
 		self.sellTax = sellTaxPercent
-		self.notConsumption = powerConsumption
+		self._notConsumption = powerConsumption
 		self.solarProduction = solarPowerProduction
-
-		self.equipments = []
+		self._equipments = []
 		for device in devices:
-			self.equipments.append(
+			self._equipments.append(
 				SimulatedAnnealingNode(
 					powerMax=device.getMaxPower(),
 					powerValues=device.getControlledPowerValues(),
@@ -170,42 +160,53 @@ class SimulatedAnnealingAlgorithm:
 					canChangePower=device.isControlledPower()
 				)
 			)
-		self.logger.debug("enabled equipments are: %s", self.equipments)
+		self.logger.debug("enabled _equipments are: %s", self._equipments)
+		best = self.coreSimulatedAnnealing()
+		return (
+			best.solution,
+			best.target,
+			SimulatedAnnealingAlgorithm.devicesConsumption(best.solution),
+		)
 
+	def coreSimulatedAnnealing(self):
+		"""
+		Core algorithm of simulated annealing
+		"""
 		# Generate an initial solution
-		currentSolution = self.generateInitialSolution(self.equipments)
-		bestSolution = currentSolution
-		bestTarget = self.evalTarget(currentSolution)
-		temperature = self.temperatureInitial
+		current = SimulatedAnnealingAlgorithm.Solution(0,0)
+		neighbor = SimulatedAnnealingAlgorithm.Solution(0,0)
+		current.solution = self.generateInitialSolution(self._equipments)
+		best = SimulatedAnnealingAlgorithm.Solution(current.solution, self.evalTarget(current.solution))
+		temperature = self.algoParams.initialTemperature
 
-		for _ in range(self.iterationCount):
+		for _ in range(self.algoParams.maxNumberOfIteration):
 			# Generate a neighbor
-			currentTarget = self.evalTarget(currentSolution)
-			self.logger.debug("Current objective: %.2f", currentTarget)
-
-			neighbor = self.equipmentSwap(currentSolution)
+			current.target = self.evalTarget(current.solution)
+			self.logger.debug("Current objective: %.2f", current.target)
 
 			# Calculate objectives for the current solution and the neighbor
-			neighborTarget = self.evalTarget(neighbor)
-			self.logger.debug("Neighbor objective: %.2f", neighborTarget)
+			neighbor.solution = self._equipmentswap(current.solution)
+			neighbor.target = self.evalTarget(neighbor.solution)
+			self.logger.debug("Neighbor objective: %.2f", neighbor.target)
 
-			# Accept the neighbor if its objective is better or if the total consumption does not exceed solar production
-			if neighborTarget < currentTarget:
+			# Accept the neighbor if its objective is better
+			# or if the total consumption does not exceed solar production
+			if neighbor.target<current.target:
 				self.logger.debug("---> Keeping the neighbor objective")
-				currentSolution = neighbor
-				if neighborTarget < self.evalTarget(bestSolution):
+				current.solution = neighbor.solution
+				if neighbor.target<self.evalTarget(best.solution):
 					self.logger.debug("---> This is the best so far")
-					bestSolution = neighbor
-					bestTarget = neighborTarget
+					best = neighbor
 			else:
 				# Accept the neighbor with a certain probability
 				probability = math.exp(
-					(currentTarget - neighborTarget) / temperature
+					(current.target - neighbor.target) / temperature
 				)
 				if (threshold := random.random()) < probability:
-					currentSolution = neighbor
+					current.solution = neighbor.solution
 					self.logger.debug(
-							"---> Keeping the neighbor objective because threshold (%.2f) is less than probability (%.2f)",
+							"---> Keeping the neighbor objective because "
+							"threshold (%.2f) is less than probability (%.2f)",
 							threshold,
 							probability,
 						)
@@ -213,16 +214,11 @@ class SimulatedAnnealingAlgorithm:
 					self.logger.debug("--> Not accepting")
 
 			# Reduce the temperature
-			temperature *= self.coolingFactor
+			temperature *= self.algoParams.coolingFactor
 			self.logger.debug(" !! Temperature %.2f", temperature)
-			if temperature < self.temperatureMinimal:
+			if temperature < self.algoParams.minTemperature:
 				break
-
-		return (
-			bestSolution,
-			bestTarget,
-			SimulatedAnnealingAlgorithm.devicesConsumption(bestSolution),
-		)
+			return best
 
 	def evalTarget(self, solution) -> float:
 		"""
@@ -233,10 +229,10 @@ class SimulatedAnnealingAlgorithm:
 		"""
 		totalEquipmentPower = SimulatedAnnealingAlgorithm.devicesConsumption(solution)
 		totalEquipmentPowerDiff = (
-			totalEquipmentPower - self.totalPowerOfInitialEquipments
+			totalEquipmentPower - self._totalPowerOfInitialEquipments
 		)
 
-		newNetConsumption = self.notConsumption + totalEquipmentPowerDiff
+		newNetConsumption = self._notConsumption + totalEquipmentPowerDiff
 		newDischarges = 0 if newNetConsumption >= 0 else -newNetConsumption
 		newImport = 0 if newNetConsumption < 0 else newNetConsumption
 		newSolarConsumption = min(
@@ -265,7 +261,7 @@ class SimulatedAnnealingAlgorithm:
 		Generate the initial solution (which is the solution given in argument) 
 		and calculate the total initial power
 		"""
-		self.totalPowerOfInitialEquipments = SimulatedAnnealingAlgorithm.devicesConsumption(solution)
+		self._totalPowerOfInitialEquipments = SimulatedAnnealingAlgorithm.devicesConsumption(solution)
 		return copy.deepcopy(solution)
 
 	@staticmethod
@@ -299,15 +295,14 @@ class SimulatedAnnealingAlgorithm:
 			key=lambda x: abs(equipment.currentPower - x[1])
 		)
 		requestedPowerIdx = random.choice(choices) + currentPowerIndex
-		if requestedPowerIdx < 0:
-			requestedPowerIdx = 0
+		requestedPowerIdx = max(requestedPowerIdx, 0)
 		if len(equipment.powerValues) <= requestedPowerIdx:
 			requestedPowerIdx = len(equipment.powerValues) - 1
 		requestedPower = equipment.powerValues.get(requestedPowerIdx)
 		self.logger.debug("Change power to %d, currentPower=%d", requestedPower, currentPowerValue)
 		return requestedPower
 
-	def equipmentSwap(self, solution):
+	def _equipmentswap(self, solution):
 		"""Swap the state of a random equipment"""
 		neighbor = copy.deepcopy(solution)
 
@@ -323,7 +318,7 @@ class SimulatedAnnealingAlgorithm:
 		isWaiting = equipment.isWaiting
 
 		# Current power is the last requestedPower
-		currentPower = equipment.requestedPower
+		# currentPower = equipment.requestedPower
 		powerMax = equipment.powerMax
 		if canChangePower:
 			powerMin = equipment.powerValues[0]
