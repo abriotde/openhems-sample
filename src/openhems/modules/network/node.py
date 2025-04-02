@@ -25,20 +25,18 @@ class OpenHEMSNode:
 		"""
 		self.id = haId.strip().replace(" ", "_")
 
-	def __init__(self, nameId, currentPower, maxPower, isOnFeeder=None, controlledPowerFeeder=None, controlledPowerValues=None):
+	def __init__(self, nameId, currentPower, maxPower, isOnFeeder=None,
+			  controlledPowerFeeder=None, controlledPowerValues=None):
 		self.id = ""
 		self.setId(nameId)
-		self.params = ""
 		self.network = None
 		self._isSwitchable = False
-		self._isOn: Feeder = None
+		self._isOn:Feeder = None
 		self._controlledPower = controlledPowerFeeder
 		self._controlledPowerValues = controlledPowerValues
 		self._initControlledPowerValues()
-		self.currentPower: Feeder = 0
-		self.maxPower: Feeder = 2000
-		self.currentPower = currentPower
-		self.maxPower = maxPower
+		self.currentPower:Feeder = currentPower
+		self.maxPower:Feeder = maxPower
 		if isOnFeeder is not None:
 			self._isOn = isOnFeeder
 			self._isSwitchable = True
@@ -62,14 +60,14 @@ class OpenHEMSNode:
 			step = None
 			controlledPowerValues = {}
 			for k, v in self._controlledPowerValues.items():
-				if isinstance(k, str):
-					if k=="range":
-						myrange=v
-					elif k=="step":
-						step=v
+				if k=="range":
+					myrange=v
+				elif k=="step":
+					step=v
 				else:
 					controlledPowerValues[k]=v
-			if myrange is not None or step is not None:
+			if (myrange is not None or step is not None) \
+					or len(controlledPowerValues)==0:
 				if step is None:
 					step=1
 				if myrange is None:
@@ -78,10 +76,10 @@ class OpenHEMSNode:
 					myrange = CastUtililty.toTypeList(myrange)
 				keys = range(myrange[0], myrange[1], step)
 				values = [None for _ in keys]
-				controlledPowerValues = dict(zip(keys, values))
+				controlledPowerValues = controlledPowerValues | dict(zip(keys, values))
 			self._controlledPowerValues = OrderedDict(sorted(controlledPowerValues))
 
-	def setCurrentPower(self, currentPower):
+	def _setCurrentPower(self, currentPower):
 		"""
 		Set current power.
 		"""
@@ -106,7 +104,7 @@ class OpenHEMSNode:
 		"""
 		return self.maxPower.getValue()
 
-	def estimateNextPower(self):
+	def _estimateNextPower(self):
 		"""
 		Estimate what could be the next value of currentPower if there is no change
 
@@ -164,12 +162,13 @@ class OpenHEMSNode:
 			if power is None:
 				self._controlledPowerValues[value] = newValue
 			elif newValue!=value: # Choice the most coherent value
-				linkPrev, linkNext, key = self._controlledPowerValues._OrderedDict__map[value]
+				# pylint: disable=protected-access
+				linkPrev, linkNext, _ = self._controlledPowerValues._OrderedDict__map[value]
 				prevValue = self._controlledPowerValues[linkPrev[2]]
 				nextValue = self._controlledPowerValues[linkNext[2]]
 				# check that power values are ordered (like control value)
-				coherent = (prevValue<value and value<nextValue)
-				coherentNew = (prevValue<newValue and newValue<nextValue)
+				coherent = prevValue<value<nextValue
+				coherentNew = prevValue<newValue<nextValue
 				if coherent and coherentNew:
 					old = max(value-prevValue, nextValue-value)
 					new = max(newValue-prevValue, nextValue-newValue)
@@ -311,19 +310,20 @@ class InOutNode(OpenHEMSNode):
 		margin = self.marginPower.getValue()
 		# logger.debug("MarginPower of Node %s is %s", self.id, margin)
 		return margin
-	def getSafetyLevel(self):
+
+	def _getSafetyLevel(self):
 		"""
 		Get a int value representing how safe is the current power value
 
 		return int:
 			- 0: unsafe
-			- 1: respect constraints but shouldn't on nex loop
+			- 1: respect constraints but shouldn't on next loop
 			- 2: respect constraints but could be out of constraints next loop
 			- 3: Safe values
 		"""
 		if not self.respectConstraints():
 			return 0
-		_min, avg, _max = self.estimateNextPower()
+		_min, avg, _max = self._estimateNextPower()
 		if not self.respectConstraints(avg):
 			return 1
 		if not (self.respectConstraints(_min) or self.respectConstraints(_max)):

@@ -14,6 +14,7 @@ from .homestate_updater import HomeStateUpdater
 
 POWER_MARGIN: Final[int] = 10 # Margin of power consumption for security
 
+# pylint: disable=too-many-public-methods
 class OpenHEMSNetwork:
 	"""
 	This class aim to abstract home network of connected devices.
@@ -157,6 +158,9 @@ class OpenHEMSNetwork:
 		return self._sumNodesValues(filterId, "inout", (lambda x: x.getMaxPower()))
 
 	def getMaxPowerConsumption(self):
+		"""
+		Return how much the network could consume if all devices switched on consume at there max.
+		"""
 		return self._sumNodesValues("out", "out", (lambda x: x.isOn() and x.getMaxPower()))
 
 	def getMinPower(self, filterId=None):

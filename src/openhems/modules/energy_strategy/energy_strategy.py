@@ -97,13 +97,6 @@ class EnergyStrategy:
 			return self._nodes
 		return self.network.getNodesForStrategy(self.strategyId)
 
-	def updateNetwork(self, cycleDuration:int, allowSleep:bool, now=None):
-		"""
-		Function to update OpenHEMSNetwork. To implement in sub-class
-		"""
-		del cycleDuration, allowSleep, now
-		self.logger.error("EnergyStrategy.updateNetwork() : To implement in sub-class")
-
 	def _switchSchedulableWitchIsOff(self, node, cycleDuration, doSwitchOn):
 		"""
 		Like switchSchedulable() but for node off and switchable
@@ -162,7 +155,7 @@ class EnergyStrategy:
 		self.logger.debug("EnergyStrategy.switchOffAll(%s)", self.strategyId)
 		ok = True
 		for elem in self.getNodes():
-			self.logger.debug("switch off id:", elem.id)
+			# self.logger.debug("Switch off '%s'", elem.id)
 			if elem.isSwitchable and self.switchSchedulable(elem, cycleDuration, False):
 				self.logger.warning("Fail to switch off '%s'",elem.id)
 				ok = False

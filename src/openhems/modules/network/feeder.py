@@ -180,10 +180,10 @@ class SumFeeder(Feeder):
 		On each OpenHEMS server loop, self.source.refreshId should increment,
 		 witch occure the change, 
 		"""
-		sum = 0
-		for node in self._network.getAll(self.value):
-			sum += node.getCurrentPower()
-		return sum
+		mysum = sum(
+			node.getCurrentPower()
+			for node in self._network.getAll(self.value))
+		return mysum
 
 	def __str__(self):
 		return f"SumFeeder({self.value})"

@@ -62,7 +62,7 @@ class RTETempoContract(RTEContract):
 		url = "https://www.api-couleur-tempo.fr/api/jourTempo/"+day
 		retVal = None
 		for _ in range(3): # Could be usefull for 502 error
-			self.logger.debug("Call API %s : %s.", url)
+			self.logger.debug("Call API %s.", url)
 			# User-Agent is mandatory else 502 error
 			response = requests.get(url, timeout=10, allow_redirects=False,
 						   headers={'User-Agent': 'Mozilla/5.0'})

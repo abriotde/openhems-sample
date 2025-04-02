@@ -1,16 +1,16 @@
 """
 This is a similar use case of EMHASS strategy, but without IA usage.
 The advantage is to conssume less resources, but the disadvantage is to be maybe less accurate.
-This strategy is based on a simulated annealing algorithm https://en.wikipedia.org/wiki/Simulated_annealing.
+This strategy is based on a simulated annealing algorithm 
+https://en.wikipedia.org/wiki/Simulated_annealing.
 It's inspired by https://github.com/jmcollin78/solar_optimizer.git
 """
 
-import logging
 from datetime import datetime, timedelta
 from openhems.modules.network.network import OpenHEMSNetwork
 from openhems.modules.util import ConfigurationManager
 from .simulated_annealing_algo import SimulatedAnnealingAlgorithm
-from .energy_strategy import EnergyStrategy, LOOP_DELAY_VIRTUAL
+from .energy_strategy import EnergyStrategy
 
 TIMEDELTA_0 = timedelta(0)
 
@@ -20,18 +20,19 @@ class SimulatedAnnealingStrategy(EnergyStrategy):
 	short name is AnnealingStrategy
 	"""
 
-	def __init__(self, mylogger, network: OpenHEMSNetwork,
-			configurationGlobal:ConfigurationManager, configurationAnnealing:dict,
-			strategyId:str="emhass"):
-		super().__init__(strategyId, network, mylogger, True)
+	def __init__(self, myLogger, network: OpenHEMSNetwork,
+			configurationGlobal: ConfigurationManager, configurationAnnealing: dict,
+			strategyId: str = "emhass"):
+		del configurationGlobal
+		super().__init__(strategyId, network, myLogger, True)
 		self.logger.info("SimulatedAnnealingStrategy(%s)", configurationAnnealing)
 
-		init_temp = float(configurationAnnealing.get("initial_temp"))
-		min_temp = float(configurationAnnealing.get("min_temp"))
-		cooling_factor = float(configurationAnnealing.get("cooling_factor"))
-		max_iteration_number = int(configurationAnnealing.get("max_iteration_number"))
+		initTemp = float(configurationAnnealing.get("initial_temp"))
+		minTemp = float(configurationAnnealing.get("min_temp"))
+		coolingFactor = float(configurationAnnealing.get("cooling_factor"))
+		maxIterationNumber = int(configurationAnnealing.get("max_iteration_number"))
 		self._algo = SimulatedAnnealingAlgorithm(
-			init_temp, min_temp, cooling_factor, max_iteration_number, logger=self.logger
+			initTemp, minTemp, coolingFactor, maxIterationNumber, logger=self.logger
 		)
 		self.network = network
 		freq = configurationAnnealing.get("freq")
@@ -48,16 +49,19 @@ class SimulatedAnnealingStrategy(EnergyStrategy):
 		Eval the best optimization plan using simulated annealing algorithm.
 		"""
 		powerConsumption = self.network.getCurrentPowerConsumption()
+		solarPanel = self.network.getAll("solarpanel")
+		powerProduction = sum(node.getCurrentPower() for node in solarPanel)
+		powerProduction = 1000
 		batteries = self.network.getAll("battery")
 		# TODO : create dedicated function for battery in network
-		powerProduction = sum(node.getCurrentPower() for node in batteries)
 		if len(batteries):
-			batterySoc = sum(node.getLevel() for node in batteries) / len(batteries) # TODO : improve accuracy (It's wrong)
+			# TODO : improve accuracy (It's wrong)
+			batterySoc = sum(node.getLevel() for node in batteries) / len(batteries)
 		else:
 			batterySoc = 0
 		buyCost = self.network.getPrice()
 		sellCost = self.network.getSellPrice()
-		sellTaxPercent = 100*(buyCost-sellCost)/buyCost
+		sellTaxPercent = 100 * (buyCost - sellCost) / buyCost
 
 		nodes = self.getNodes()
 		for node in nodes:
@@ -77,27 +81,29 @@ class SimulatedAnnealingStrategy(EnergyStrategy):
 		"""
 		This apply what eval function computed.
 		"""
+		del now
+		print(self._bestSolution)
 		# Uses the result to turn on or off or change power
-		print(self.deferables)
-		for equipement in self._bestSolution:
-			nodeId = equipement.name
-			requestedPower = equipement.requestedPower
-			state = equipement.state
+		for equipment in self._bestSolution:
+			nodeId = equipment.name
+			requestedPower = equipment.requestedPower
+			state = equipment.state
 			node = self.deferables.get(nodeId)
 			if node is None:
 				continue
 			self.switchSchedulable(node, cycleDuration, state)
 
-			# Send change power if state is now on and change power is accepted and (power have change or eqt is just activated)
-			if (state and device.isControlledPower()
-				and (device.getCurrentPower() != requestedPower)
+			# Send change power if state is now on and change power is accepted and
+			#  (power have change or eqt is just activated)
+			if (state and node.isControlledPower()
+				and (node.getCurrentPower() != requestedPower)
 				 # TODO : Warning maybe we don't set power but an abstract value...
 			):
-				self.logger.debug("Change power of %s to %s", equipement.name, requestedPower)
+				self.logger.debug("Change power of %s to %s", equipment.name, requestedPower)
 				# TODO, there is no variable devices in OpenHEMS today
-				device.setControlledPower(requestedPower)
+				node.setControlledPower(requestedPower)
 
-	def updateNetwork(self, cycleDuration, allowSleep:bool, now=None):
+	def updateNetwork(self, cycleDuration, allowSleep: bool, now=None):
 		"""
 		Decide what to do during the cycle:
 		 IF off-peak : switch on all

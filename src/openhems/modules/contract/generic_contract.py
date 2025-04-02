@@ -17,7 +17,8 @@ class GenericContract:
 		if hoursRanges is None:
 			self.hoursRanges = HoursRanges([], outRangeCost=defaultPrice)
 		else:
-			self.logger.info("GenericContract(hoursRanges=%s, defaultCost=%s, outRangeCost=%s, sellPrice=%s)",
+			self.logger.info(
+				"GenericContract(hoursRanges=%s, defaultCost=%s, outRangeCost=%s, sellPrice=%s)",
 				str(hoursRanges), defaultPrice, outRangePrice, sellPrice)
 			self.hoursRanges = HoursRanges(
 				hoursRanges, defaultCost=defaultPrice , outRangeCost=outRangePrice
@@ -33,7 +34,7 @@ class GenericContract:
 		"""
 		hoursRanges, defaultPrice, outRangePrice, sellPrice = \
 			GenericContract.extractFromDict(dictConf, configuration)
-		return GenericContract(hoursRanges, defaultPrice, outRangePrice)
+		return GenericContract(hoursRanges, defaultPrice, outRangePrice, sellPrice=sellPrice)
 
 	@staticmethod
 	def extractFromDict(dictConf, configuration):

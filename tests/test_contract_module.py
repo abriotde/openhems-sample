@@ -30,7 +30,8 @@ class TestContractModule(unittest.TestCase):
 		Return a standard RteTempoContract
 		"""
 		contract = RTETempoContract(color=None, colorNext=None,
-	             offpeakprices={"bleu":0.1, "blanc":0.2, "rouge":0.3}, peakprices = {"bleu":0.4, "blanc":0.5, "rouge":0.6})
+				offpeakprices={"bleu":0.1, "blanc":0.2, "rouge":0.3},
+				peakprices = {"bleu":0.4, "blanc":0.5, "rouge":0.6})
 		return contract
 
 	# pylint: disable=invalid-name
