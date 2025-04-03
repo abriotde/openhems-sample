@@ -3,9 +3,8 @@ Super class for all solar-based strategy
 """
 
 import datetime
-import logging
-import astral
 from dataclasses import dataclass
+import astral
 from openhems.modules.network.network import OpenHEMSNetwork
 from openhems.modules.util import ConfigurationManager
 from .energy_strategy import EnergyStrategy
@@ -109,5 +108,5 @@ class SolarBasedStrategy(EnergyStrategy):
 		 all the time as we want nethermind.)
 		"""
 		hoursRange = self.network.getHoursRanges()
-		self.inOffpeakRange, _, _ = hoursRange.checkRange()
-		return self.inOffpeakRange
+		inOffpeakRange, _, _ = hoursRange.checkRange()
+		return inOffpeakRange

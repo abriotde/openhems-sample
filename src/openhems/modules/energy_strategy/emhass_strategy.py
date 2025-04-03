@@ -30,7 +30,7 @@ class EmhassStrategy(EnergyStrategy):
 			configurationGlobal:ConfigurationManager, configurationEmhass:dict,
 			strategyId:str="emhass"):
 		freq = configurationEmhass.get("freq")
-		super().__init__(strategyId, network, mylogger, True, evalFrequency=freq)
+		super().__init__(strategyId, network, mylogger, evalFrequency=freq)
 		self.logger.info("EmhassStrategy(%s)", configurationEmhass)
 		self.adapter = EmhassAdapter.createFromOpenHEMS(
 			configurationEmhass=configurationEmhass, configurationGlobal=configurationGlobal,

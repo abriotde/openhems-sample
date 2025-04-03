@@ -18,7 +18,6 @@ class OffGridStrategy(SolarBasedStrategy):
 		self.logger = logging.getLogger(__name__)
 		self.logger.info("OffGridStrategy()")
 		self.network = network
-		self.checkRange()
 		self.maxBatteryLevel = config.get("maxBattery", 95)
 		self.hightBatteryLevel = config.get("hightBattery", 80)
 		self.lowBatteryLevel = config.get("lowBattery", 20)

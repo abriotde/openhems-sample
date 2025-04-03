@@ -10,7 +10,7 @@ import logging
 from datetime import datetime, timedelta
 from openhems.modules.network.network import OpenHEMSNetwork
 from openhems.modules.util import ConfigurationException, DATETIME_PRINT_FORMAT
-from .energy_strategy import EnergyStrategy, LOOP_DELAY_VIRTUAL
+from .energy_strategy import EnergyStrategy
 
 TIMEDELTA_0 = timedelta(0)
 
@@ -70,24 +70,6 @@ class OffPeakStrategy(EnergyStrategy):
 			self.nextRanges = [
 				(self.inOffpeakRange, self.rangeEnd)
 			]
-
-	def switchOnMax(self, cycleDuration):
-		"""
-		Switch on nodes, but 
-		 - If there is no margin to switch on, do nothing.
-		 - Only one (To be sure to not switch on to much devices)
-		"""
-		self.logger.info("%s.switchOnMax()", self.strategyId)
-		marginPower = self.network.getMarginPowerOn()
-		if marginPower<=0:
-			self.logger.info("Can't switch on devices: not enough power margin : %s", marginPower)
-			return True
-		for elem in self.getNodes(True):
-			switchOn = self.switchSchedulable(elem.node, cycleDuration, True)
-			if switchOn and elem.changed(switchOn):
-				self.logger.info("Switch on just one device at each loop to ensure Network constraint.")
-				return True
-		return False
 
 	def updateNetwork(self, cycleDuration:int, now=None) -> int:
 		"""

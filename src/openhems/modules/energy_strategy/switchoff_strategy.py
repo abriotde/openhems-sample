@@ -8,7 +8,7 @@ This is in case we just base on "off-peak" range hours to control output.
 from datetime import datetime
 from openhems.modules.network.network import OpenHEMSNetwork
 from openhems.modules.util import ConfigurationException, HoursRanges
-from .energy_strategy import EnergyStrategy, LOOP_DELAY_VIRTUAL
+from .energy_strategy import EnergyStrategy
 
 
 # pylint: disable=broad-exception-raised
@@ -130,8 +130,7 @@ class SwitchoffStrategy(EnergyStrategy):
 			if self.switchOnAll(not self.inOffRange ^ self.reverse):
 				self._rangeChangeDone = True
 				return self.offHoursRanges.getTime2NextRange(now)
-			else:
-				self.logger.warning("Fail to switch all. We will try again on next loop.")
+			self.logger.warning("Fail to switch all. We will try again on next loop.")
 		return 0
 
 	def getVal(self, key:str):

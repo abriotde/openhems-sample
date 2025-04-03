@@ -4,8 +4,9 @@ Case dual-source managed by controlled "source inverter" :
 - Grid
 Strategy is to :
 - Use grid energy when battery level is low and solar production less than consumption
-- Reverse if battery level is medium and/or solar production higher than conumption during a certain time 
-	: batteryCapacity enought for x minutes, solarProductionPower>consomation from y minutes, x+y>z
+- Reverse if battery level is medium and/or solar production higher
+	than conumption during a certain time : batteryCapacity enought for x minutes,
+	solarProductionPower>consomation from y minutes, x+y>z
 Advantages : No electricity goes in grid.
 Disadvantages : Could not charge battery on off-peak grid hours
  if there is not so much solar production

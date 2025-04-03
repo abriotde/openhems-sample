@@ -1,21 +1,21 @@
 """
-It's the simplest use case to manage solar-electricity. Usefull for fixed public grid price (No offpeak prices).
+It's the simplest use case to manage solar-electricity.
+Usefull for fixed public grid price (No offpeak prices).
 Case offpeak + solar-panel, use emhass or simulated annealing strategy
 
 #TODO : TestAuto - RunOk - InProd : 3/6
 """
-import datetime
-import logging
 from openhems.modules.network.network import OpenHEMSNetwork
 from openhems.modules.util import ConfigurationManager
-from .solarbased_strategy import SolarBasedStrategy, GeoPosition
+from .solarbased_strategy import SolarBasedStrategy
 
 class SolarNoSellStrategy(SolarBasedStrategy):
 	"""
 	Could be named too NoBuy
 	- Start the device when production > consommation + X * consommationDevice (during Y minutes?)
 	- Stop a device if production < consommation - (1-X) * consommationDevice (during Y minutes?)
-	If X==0 we could never sell electricity (If there is enough device consumption and the cycle duration is enough quick).
+	If X==0 we could never sell electricity
+	 (If there is enough device consumption and the cycle duration is enough quick).
 	If X==1 we could never buy electricity (If produce enough and the cycle duration is enough quick).
 	"""
 	def __init__(self, mylogger, network: OpenHEMSNetwork,
@@ -57,7 +57,7 @@ class SolarNoSellStrategy(SolarBasedStrategy):
 		"""
 		assert margin<0
 		# Reverse because begin to switch off nodes with lowest priority
-		for node in reversed(self.getNodes()): 
+		for node in reversed(self.getNodes()):
 			if node.isOn():
 				# production < consommation - (1-X) * consommationDevice
 				#  = (production - consommation) < (X-1) * consommationDevice
