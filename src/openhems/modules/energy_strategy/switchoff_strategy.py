@@ -2,6 +2,8 @@
 This is in case we just base on "off-peak" range hours to control output.
 	 Classic use-case is some grid contract (Like Tempo on EDF).
 	The strategy is to switch on electric devices only on "off-peak" hours
+
+#TODO : TestAuto - RunOk - InProd : 3/6
 """
 from datetime import datetime
 from openhems.modules.network.network import OpenHEMSNetwork
@@ -12,16 +14,14 @@ from .energy_strategy import EnergyStrategy, LOOP_DELAY_VIRTUAL
 # pylint: disable=broad-exception-raised
 class SwitchoffStrategy(EnergyStrategy):
 	"""
-	This is in case we just base on "off-peak" range hours to control output.
-	 Classic use-case is some grid contract (Like Tempo on EDF).
-	The strategy is to switch on electric devices only on "off-peak" hours
-	 with check to not exceed authorized max consumption
+	This is in case we just want to switch on a device at a time,
+	 and switch off it at an other time
+	(Like internet box for WiFi, or swimming-pool pump, or controlled mechanical ventilation).
 	"""
 
 	def __init__(self, mylogger, network: OpenHEMSNetwork, strategyId:str,
 		     offHoursRanges, reverse=False, condition=True):
-		super().__init__(strategyId, mylogger)
-		self.network = network
+		super().__init__(strategyId, network, mylogger)
 		self.offHoursRanges = HoursRanges(offHoursRanges)
 		self.inOffRange = False
 		self._rangeEnd = datetime.now()
@@ -116,7 +116,7 @@ class SwitchoffStrategy(EnergyStrategy):
 		self._todo = todo
 		return len(self._todo)==0
 
-	def updateNetwork(self, cycleDuration:int, allowSleep:bool, now=None) -> int:
+	def updateNetwork(self, cycleDuration:int, now=None) -> int:
 		"""
 		Decide what to do during the cycle:
 		 IF off-peak : switch on all
@@ -128,12 +128,8 @@ class SwitchoffStrategy(EnergyStrategy):
 			self.checkRange()
 		if not self._rangeChangeDone:
 			if self.switchOnAll(not self.inOffRange ^ self.reverse):
-				if cycleDuration>LOOP_DELAY_VIRTUAL and allowSleep:
-					self.offHoursRanges.sleepUntillNextRange(now)
-					self.checkRange() # To update self._rangeEnd (and should change self.inOffRange)
-				else:
-					self._rangeChangeDone = True
-					return self.offHoursRanges.getTime2NextRange(now)
+				self._rangeChangeDone = True
+				return self.offHoursRanges.getTime2NextRange(now)
 			else:
 				self.logger.warning("Fail to switch all. We will try again on next loop.")
 		return 0

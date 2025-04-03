@@ -2,6 +2,8 @@
 This is in case we just base on "off-peak" range hours to control output.
 	 Classic use-case is some grid contract (Like Tempo on EDF).
 	The strategy is to switch on electric devices only on "off-peak" hours
+
+#DONE: Implemented - Call - Conf - TestAuto - RunOk - InProd : 6/6
 """
 
 import logging
@@ -22,7 +24,7 @@ class OffPeakStrategy(EnergyStrategy):
 	"""
 
 	def __init__(self, mylogger, network: OpenHEMSNetwork, strategyId:str):
-		super().__init__(strategyId, network, mylogger, True)
+		super().__init__(strategyId, network, mylogger)
 		self.inOffpeakRange = False
 		self.rangeEnd = datetime.now()
 		self.hoursRanges = self.network.getHoursRanges()
@@ -87,7 +89,7 @@ class OffPeakStrategy(EnergyStrategy):
 				return True
 		return False
 
-	def updateNetwork(self, cycleDuration:int, allowSleep:bool, now=None) -> int:
+	def updateNetwork(self, cycleDuration:int, now=None) -> int:
 		"""
 		Decide what to do during the cycle:
 		 IF off-peak : switch on all
@@ -105,15 +107,12 @@ class OffPeakStrategy(EnergyStrategy):
 			if not self._rangeChangeDone:
 				self.logger.debug("OffpeakStrategy : not offpeak, switchOffAll()")
 				if self.switchOffAll():
-					if cycleDuration>LOOP_DELAY_VIRTUAL and allowSleep:
-						self.hoursRanges.sleepUntillNextRange(now)
-						self.checkRange() # To update self.rangeEnd (and should change self.inOffpeakRange)
-					else:
-						self._rangeChangeDone = True
-						time2Wait = self.hoursRanges.getTime2NextRange(now)
+					self._rangeChangeDone = True
+					time2Wait = self.hoursRanges.getTime2NextRange(now)
 				else:
 					self.logger.warning("Fail to switch off all. We will try again on next loop.")
-			# TODO : check time2Wait
+			# TODO : check time2Wait with check4MissingOffeakTime
+			# Even on peak hours, start devices with no other solutions to respect timeout
 			self.check4MissingOffeakTime(now, cycleDuration)
 		return time2Wait
 

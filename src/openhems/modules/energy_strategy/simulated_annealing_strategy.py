@@ -4,6 +4,8 @@ The advantage is to conssume less resources, but the disadvantage is to be maybe
 This strategy is based on a simulated annealing algorithm 
 https://en.wikipedia.org/wiki/Simulated_annealing.
 It's inspired by https://github.com/jmcollin78/solar_optimizer.git
+
+#TODO: RunOk - InProd : 4/6
 """
 
 from datetime import datetime, timedelta
@@ -21,10 +23,10 @@ class SimulatedAnnealingStrategy(EnergyStrategy):
 	"""
 
 	def __init__(self, myLogger, network: OpenHEMSNetwork,
-			configurationGlobal: ConfigurationManager, configurationAnnealing: dict,
+			configurationGlobal:ConfigurationManager, configurationAnnealing: dict,
 			strategyId: str = "emhass"):
 		del configurationGlobal
-		super().__init__(strategyId, network, myLogger, True)
+		super().__init__(strategyId, network, myLogger)
 		self.logger.info("SimulatedAnnealingStrategy(%s)", configurationAnnealing)
 
 		initTemp = float(configurationAnnealing.get("initial_temp"))
@@ -48,7 +50,7 @@ class SimulatedAnnealingStrategy(EnergyStrategy):
 		"""
 		Eval the best optimization plan using simulated annealing algorithm.
 		"""
-		powerConsumption = self.network.getCurrentPowerConsumption()
+		powerConsumption = self.network.getCurrentPower()
 		solarPanel = self.network.getAll("solarpanel")
 		powerProduction = sum(node.getCurrentPower() for node in solarPanel)
 		powerProduction = 1000
@@ -103,7 +105,7 @@ class SimulatedAnnealingStrategy(EnergyStrategy):
 				# TODO, there is no variable devices in OpenHEMS today
 				node.setControlledPower(requestedPower)
 
-	def updateNetwork(self, cycleDuration, allowSleep: bool, now=None):
+	def updateNetwork(self, cycleDuration, now=None):
 		"""
 		Decide what to do during the cycle:
 		 IF off-peak : switch on all

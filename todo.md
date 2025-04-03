@@ -8,7 +8,7 @@
 - IA to command OpenHEMS devices ("Start the washing machine") & as "Personnal Assistant"
 
 # Development
-- dev/strategy : Add simulated_annealing_strategy from https://github.com/jmcollin78/solar_optimizer
+- dev/strategy : Fix SimulatedAnnealingStrategy from https://github.com/jmcollin78/solar_optimizer
 - dev/strategy : Add over-production/no-sell strategy : Start a device when production + ratio of device concumption > consumpion (if ratio = 0: nosell strategy)
 - dev/publicpowergrid : Add variable maximum power consumption for time-slots.
 - dev/general : Improve resilience : When fail get global status at init time wait and retry

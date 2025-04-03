@@ -2,6 +2,8 @@
 This strategy use HEMASS to choose what to do.
 This use Artificial Intelligence to guess the  futur.
 So this require some more Python packages.
+
+TODO : RunOk - InProd
 """
 
 from datetime import datetime

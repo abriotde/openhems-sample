@@ -1,5 +1,15 @@
 """
 Super class for all EnergyStrategy modules
+
+List of todo list to integrate a strategy
+- Implemented : Implement main functions inherit from EnergyStrategy: at least __init__() and updateNetwork() (or eval and apply)
+- Call : Call constructor in server.py
+- Conf : Configure it in openhems_default.py
+- TestAuto : Add unittest in test_xxx_strategy.py.
+- RunOk : Unitest do not test all, if run ok, all seam really ok.
+- InProd : If it's tested in a real house.
+
+#DONE: Implemented - Call - Conf - TestAuto - RunOk - InProd
 """
 
 import logging
@@ -71,13 +81,12 @@ class EnergyStrategy:
 	Super class for all EnergyStrategy modules
 	"""
 	def  __init__(self, strategyId:str, network:OpenHEMSNetwork,
-	              logger=None, useSchedulable:bool=False, evalFrequency:int=60):
+	              logger=None, evalFrequency:int=60):
 		if logger is None:
 			logger = logging.getLogger(__name__)
 		self.logger = logger
 		self.strategyId = strategyId
 		self.network = network
-		self.useSchedulable = useSchedulable
 		self._nodes = None
 		self.evalFrequence = datetime.timedelta(minutes=evalFrequency)
 		self.nextEvalDate = datetime.datetime.now() - self.evalFrequence
@@ -166,8 +175,6 @@ class EnergyStrategy:
 		Return the list of nodes that should be scheduled by the user, using the HTTP UI
 		 to start (or stop) the device
 		"""
-		if not self.useSchedulable:
-			return []
 		return self.getNodes()
 
 	def getDeferrable(self, node, durationInSecs:int):
@@ -232,14 +239,13 @@ class EnergyStrategy:
 		del cycleDuration, now
 		self.logger.debug("EnergyStrategy.apply() must be overload")
 
-	def updateNetwork(self, cycleDuration, allowSleep:bool, now=None):
+	def updateNetwork(self, cycleDuration, now=None):
 		"""
 		Generic function to updateNetwork base on algorythm
 		In that case, sub-strategy must implement :
 		- eval()
 		- apply(cycleDuration, now)
 		"""
-		del allowSleep
 		if now is None:
 			now = datetime.datetime.now()
 		self.check(now)

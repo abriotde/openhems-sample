@@ -6,6 +6,7 @@ import time
 import datetime
 from openhems.modules.energy_strategy import (
 	OffPeakStrategy, SwitchoffStrategy, SimulatedAnnealingStrategy,
+	SolarNoSellStrategy,
 	LOOP_DELAY_VIRTUAL
 )
 from openhems.modules.network import HomeStateUpdaterException
@@ -51,6 +52,15 @@ class OpenHEMSServer:
 						SimulatedAnnealingStrategy(
 							mylogger, self.network, serverConf, strategyParams, strategyId)
 					)
+			elif strategy in ["nosell", "nobuy", "ratiosellbuy"]:
+				if strategy=="nosell":
+					strategyParams["ratio"] = 0
+				if strategy=="nobuy":
+					strategyParams["ratio"] = 1
+				self.strategies.append(
+						SolarNoSellStrategy(
+							mylogger, self.network, serverConf, strategyParams, strategyId)
+				)
 			else:
 				msg = f"OpenHEMSServer() : Unknown strategy '{strategy}'"
 				self.logger.critical(msg)
@@ -128,7 +138,7 @@ class OpenHEMSServer:
 		time2wait = 86400
 		allowSleep = self.allowSleep and loopDelay>LOOP_DELAY_VIRTUAL
 		for strategy in self.strategies:
-			t = strategy.updateNetwork(loopDelay, allowSleep, now)
+			t = strategy.updateNetwork(loopDelay, now)
 			time2wait = min(t, time2wait)
 		if allowSleep and time2wait > 0:
 			self.logger.info("Loop sleep(%d min)", round(time2wait/60))
