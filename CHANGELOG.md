@@ -6,11 +6,9 @@ Want to extends possibilities. For the moment it do not run ok, but write down m
 ### Improvement
 - ADD SolarNoSellStrategy
 - ADD SimulatedAnnealing Strategy (do not work)
-- ADD notion of variable device
-- Factorize code of Strategy using a alg running not at each cycle : emhass & annealing
+- ADD first notions of variable device
+- Factorize code for strategy using an algo running not at each cycle : emhass & annealing
 - Update documentation
-- ADD 
-- 
 
 # 0.2.2 - 2024-04-01
 ### Fix
