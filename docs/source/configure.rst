@@ -164,21 +164,23 @@ This is named too *nobuy* or *ratiosellbuy*. In fact, these are the same princip
 
 This strategy is usefull if you have solar panel and you have a fixed price from public power grid. It can be used if for other reason if you don't want to avoid sell or buy electricity (to test your autonomy level for instance). Attention, even in nosell or nobuy, and good parameters, you will sell and buy due to the reaction time.
 
-The algorithme is
+The pseudo-algorithme is
 
-* Start the device when production > consommation + ratio * consommationDevice - margin (during Y minutes?)
+* Start the device when production > consommation + ratio * consommationDevice & add a ratio*margin for safety
 
-* Stop a device if production < consommation - (1-ratio) * consommationDevice - margin (during Y minutes?)
+* Stop a device if production < consommation - (1-ratio) * consommationDevice & add a ratio*margin for safety
 
-If ratio==0 we could never sell electricity (If there is enough device consumption and the cycle duration is enough quick).
+If ratio==-1 we could never sell electricity (If there is enough device consumption and the cycle duration is enough quick).
 
 If ratio==1 we could never buy electricity (If produce enough and the cycle duration is enough quick).
 
 So, parameters are
 
-* *ratio* : This define how much we would like to sell/buy electricity from public grid.
+* *ratio* : This define how much we would like to sell/buy electricity from public grid. This number doesn't correspond to a meaning. You can set outside range [-1,1] but it is probably useless.
 
-* *margin* : This define a margin to avoid sell/buy electricity. Considering, that a device can start/stop before the OpenHEMS react. So margin should be roughly the max consumption of a device.
+* *margin* : This define a margin to avoid sell/buy electricity. Considering, that a device can start/stop before the OpenHEMS react. So margin could be roughly the max consumption of a device for a good safety, but usually far less is enough.
+
+You should make your own test to adapt your parameters to your needs.
 
 
 Network

@@ -59,11 +59,14 @@ default:
       min_temp: 0.1
       max_no_improve: 100
     nosell:
-      ratio: 0
+      ratio: -1
+      margin: 300
     nobuy:
       ratio: 1
+      margin: 300
     ratiosellbuy:
-      ratio: 0.5
+      ratio: 0
+      margin: 200
   node:
     publicpowergrid:
       currentPower: null

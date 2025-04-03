@@ -53,10 +53,6 @@ class OpenHEMSServer:
 							mylogger, self.network, serverConf, strategyParams, strategyId)
 					)
 			elif strategy in ["nosell", "nobuy", "ratiosellbuy"]:
-				if strategy=="nosell":
-					strategyParams["ratio"] = 0
-				if strategy=="nobuy":
-					strategyParams["ratio"] = 1
 				self.strategies.append(
 						SolarNoSellStrategy(
 							mylogger, self.network, serverConf, strategyParams, strategyId)
