@@ -6,6 +6,8 @@ Case dual-source managed by controlled "hybrid inverter with security mode" :
 Strategy is to minimize load/unload battery and minimize grid consumption
 Advantages : 
 Disadvantages : 
+
+TODO : Implemented - Call - Conf - TestAuto - RunOk - InProd : 6/6
 """
 
 import logging
@@ -23,14 +25,14 @@ class HybridInverterStrategy(SolarBasedStrategy):
 	Disadvantages : 
 	"""
 
-	def __init__(self, network: OpenHEMSNetwork, geoposition: GeoPosition, offpeakHoursRanges=None):
-		del offpeakHoursRanges
-		super().__init__(network, geoposition)
+	def __init__(self, strategyId:str, network:OpenHEMSNetwork, geoposition:GeoPosition):
+		super().__init__(strategyId, network, geoposition)
 		logging.getLogger("HybridInverterStrategy")\
 			.error("SolarOnlyProductionStrategy() : TODO")
 		# TODO
 
-	def updateNetwork(self, cycleDuration:int, allowSleep:bool, now=None):
+	def updateNetwork(self, cycleDuration:int, now=None):
+		del cycleDuration, now
 		logging.getLogger("HybridInverterStrategy")\
 			.error("SolarOnlyProductionStrategy.updateNetwork() : TODO")
 		# TODO

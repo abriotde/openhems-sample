@@ -1,6 +1,16 @@
 # Changelog
 
-## 0.2.2 - 2024-04-01
+# 0.2.3 - 2024-04-03
+Want to extends possibilities. For the moment it do not run ok, but write down main ideas and try to determine main usable strategies.
+
+### Improvement
+- ADD SolarNoSellStrategy
+- ADD SimulatedAnnealing Strategy (do not work)
+- ADD first notions of variable device
+- Factorize code for strategy using an algo running not at each cycle : emhass & annealing
+- Update documentation
+
+# 0.2.2 - 2024-04-01
 ### Fix
 - FIX security against over-load problems + add devices deactivation to avoid ping-pong effect.
 

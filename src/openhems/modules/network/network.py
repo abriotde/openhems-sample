@@ -14,6 +14,7 @@ from .homestate_updater import HomeStateUpdater
 
 POWER_MARGIN: Final[int] = 10 # Margin of power consumption for security
 
+# pylint: disable=too-many-public-methods
 class OpenHEMSNetwork:
 	"""
 	This class aim to abstract home network of connected devices.
@@ -84,12 +85,12 @@ class OpenHEMSNetwork:
 		self._elemsCache = {}
 		return elem
 
-	def getCurrentPowerConsumption(self):
+	def getCurrentPower(self, filterId="inout"):
 		"""
-		Get current power consumption by all network..
+		Get current power consumption by all network.
 		"""
 		globalPower = 0
-		for elem in self.getAll("inout"):
+		for elem in self.getAll(filterId):
 			p = elem.getCurrentPower()
 			if isinstance(p, str):
 				self.logger.critical("Power as string '%s' for node '%s'", p, elem.id)
@@ -157,6 +158,9 @@ class OpenHEMSNetwork:
 		return self._sumNodesValues(filterId, "inout", (lambda x: x.getMaxPower()))
 
 	def getMaxPowerConsumption(self):
+		"""
+		Return how much the network could consume if all devices switched on consume at there max.
+		"""
 		return self._sumNodesValues("out", "out", (lambda x: x.isOn() and x.getMaxPower()))
 
 	def getMinPower(self, filterId=None):
@@ -182,7 +186,7 @@ class OpenHEMSNetwork:
 			maxPowerP = self.getMaxPowerProduction()
 			# The consumption if every switched on devices consume at max capability
 			maxPowerC = self.getMaxPowerConsumption()
-			currentPower = self.getCurrentPowerConsumption()
+			currentPower = self.getCurrentPower()
 			marginPower = self.getMarginPower()
 			# self.logger.debug(
 			#	"MaxPowerProduction:%s; MaxPowerConsumption:%s; CurrentPower:%s; MarginPower:%s;",
@@ -199,7 +203,7 @@ class OpenHEMSNetwork:
 		Get how many power we can remove safely (Case we do not want to over produce)
 		"""
 		minPower = self.getMinPower()
-		currentPower = self.getCurrentPowerConsumption()
+		currentPower = self.getCurrentPower()
 		marginPower = self.getMarginPower()
 		marginPowerOff = (currentPower-marginPower)-minPower
 		if marginPowerOff<0: # Need to switch on some elements
@@ -225,7 +229,7 @@ class OpenHEMSNetwork:
 		"""
 		self.logger.info("Network.switchOffAll()")
 		# self.print(logger.info)
-		# marginPower = self.getCurrentPowerConsumption()
+		# marginPower = self.getCurrentPower()
 		# self.print(logger.info)
 		ok = True
 		for elem in self.getAll("out"):
@@ -245,8 +249,7 @@ class OpenHEMSNetwork:
 		"""
 		Return true if grid source is available (even if no power is used)
 		"""
-		# TODO
-		return True
+		return self.getAll("publicpowergrid") != []
 
 	def getBattery(self) -> Battery:
 		"""
@@ -303,4 +306,13 @@ class OpenHEMSNetwork:
 		"""
 		for elem in self.getAll("publicpowergrid"):
 			cost = elem.getContract().getPrice(now, attime)
+			return cost
+
+	def getSellPrice(self, now=None, attime=None):
+		"""
+		Estimate what should be the electricity sell cost at a Time.
+		If time is None, set to now"
+		"""
+		for elem in self.getAll("publicpowergrid"):
+			cost = elem.getContract().getSellPrice(now, attime)
 			return cost

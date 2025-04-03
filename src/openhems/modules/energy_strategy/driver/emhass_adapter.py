@@ -7,7 +7,7 @@ import os
 import logging
 import json
 import sys
-import dataclasses
+import math
 from pathlib import Path
 import importlib
 # from importlib.metadata import version
@@ -38,19 +38,40 @@ import emhass.command_line as em
 import emhass.utils as em_utils
 
 
-@dataclasses.dataclass
 class Deferrable:
 	"""
 	Custom class to simplify emhass module live modifications.
 	"""
 	power: float # Nominal power
-	duration: float # Duration in hours? (In emhass granularity)
-	node:str = None
+	_duration: float # Duration in hours? (In emhass granularity)
+	node = None
 	startTimestep = 0
 	endTimestep = 0
 	constant = False
 	startPenalty: float = 0.0
 	asSemiCont: bool = True
+
+	def __init__(self, power:float, duration:float, node=None):
+		self.power = power
+		self._duration = duration
+		self.node = node
+
+	def getDuration(self):
+		"""
+		return: duration in seconds
+		"""
+		return self._duration
+	def getDurationInHours(self):
+		"""
+		Return duration in Emhass prevision granularity
+		"""
+		# TODO granularity can be less or more than hour...
+		return math.ceil(self._duration / 3600)
+	def setDuration(self, duration):
+		"""
+		param: duration: in seconds
+		"""
+		self._duration = duration
 
 class EmhassAdapter:
 	"""
@@ -120,7 +141,7 @@ class EmhassAdapter:
 		optimConf = inputDataDict['opt'].optim_conf
 		optimConf['num_def_loads'] = len(self.deferables)
 		optimConf['P_deferrable_nom'] = [d.power for d in self.deferables]
-		optimConf['def_total_hours'] = [d.duration for d in self.deferables]
+		optimConf['def_total_hours'] = [d.getDurationInHours() for d in self.deferables]
 		optimConf['def_start_timestep'] = [d.startTimestep for d in self.deferables]
 		optimConf['def_end_timestep'] = [d.endTimestep for d in self.deferables]
 		optimConf['set_def_constant'] = [d.constant for d in self.deferables]

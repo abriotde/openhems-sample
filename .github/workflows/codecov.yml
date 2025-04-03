@@ -27,7 +27,7 @@ jobs:
           echo "PYTHONPATH=$PYTHONPATH" >> $GITHUB_ENV
 
       - name: Run tests
-        run: pytest --cov --cov-report=xml --ignore=tests/test_emhass_adapter.py --ignore=tests/test_openhems.py
+        run: pytest --cov --cov-report=xml --ignore=tests/test_emhass_adapter.py
 
       - name: Upload results to Codecov
         uses: codecov/codecov-action@v4

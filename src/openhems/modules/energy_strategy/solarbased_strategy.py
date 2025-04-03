@@ -3,20 +3,20 @@ Super class for all solar-based strategy
 """
 
 import datetime
-import logging
+from dataclasses import dataclass
 import astral
 from openhems.modules.network.network import OpenHEMSNetwork
-from .offpeak_strategy import OffPeakStrategy
+from openhems.modules.util import ConfigurationManager
+from .energy_strategy import EnergyStrategy
 
-# pylint: disable=too-few-public-methods
+@dataclass
 class GeoPosition:
 	"""
 	Class to represent Geographical position 
 	"""
-	def __init__(self, lattitude, longitude, altitude):
-		self.lat = lattitude
-		self.lon = longitude
-		self.alt = altitude
+	lat:float
+	lon:float
+	alt:float
 
 	def getLatLon(self):
 		"""
@@ -24,31 +24,39 @@ class GeoPosition:
 		"""
 		return [self.lat, self.lon]
 
-class SolarBasedStrategy(OffPeakStrategy):
+class SolarBasedStrategy(EnergyStrategy):
 	"""
 	Super class for all solar-based strategy
+	:param strategyId: A string as nameid
+	:param network: An OpenHEMSNetwork representing the home electricity network
+	:param configurationGlobal: An ConfigurationManager representing the wall application configuration
 	"""
-	def  __init__(self, network: OpenHEMSNetwork, geoposition:GeoPosition):
-		logger = logging.getLogger("SolarBasedStrategy")
-		super().__init__(logger, network, "solarbased")
+	def  __init__(self, strategyId, network:OpenHEMSNetwork,
+			configurationGlobal:ConfigurationManager , myLogger=None):
+		super().__init__(strategyId, network, myLogger)
+		self.geoposition = GeoPosition(
+			configurationGlobal.get("localization.latitude"),
+			configurationGlobal.get("localization.longitude"),
+			configurationGlobal.get("localization.altitude")
+		)
 		self._nightime = False
 		self.isDayTime()
 		self.timezone = datetime.datetime.now(datetime.timezone.utc)\
 			.astimezone().tzinfo
 		self.location = astral\
 			.LocationInfo('Custom Name', 'My Region', \
-				str(self.timezone), geoposition.lat, geoposition.lon)
+				str(self.timezone), self.geoposition.lat, self.geoposition.lon)
 		self.gridTime = 0
 		self.solarTime = 0
 		self.lastAutonomousRatio = 0
 		self._sunrise = datetime.datetime.now() # TODO
 		self._sunset = datetime.datetime.now() # TODO
 
-	def updateNetwork(self, cycleDuration:int, allowSleep:bool, now=None):
+	def updateNetwork(self, cycleDuration:int, now=None):
 		"""
 		Update the OpenHEMSNetwork.
 		"""
-		del cycleDuration, allowSleep, now
+		del cycleDuration, now
 		self.logger.error("SolarBasedStrategy.updateNetwork() : \
 				To implement in sub-class")
 
@@ -100,5 +108,5 @@ class SolarBasedStrategy(OffPeakStrategy):
 		 all the time as we want nethermind.)
 		"""
 		hoursRange = self.network.getHoursRanges()
-		self.inOffpeakRange, _, _ = hoursRange.checkRange()
-		return self.inOffpeakRange
+		inOffpeakRange, _, _ = hoursRange.checkRange()
+		return inOffpeakRange

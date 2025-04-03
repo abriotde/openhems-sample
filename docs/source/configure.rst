@@ -54,6 +54,15 @@ After editing the configuration, save it and restart OpenHEMS server.
 
 To restart the server, the easiest way is to unplug/plug the server. Overwise, an advanced way , is to run `systemctl restart openhems.service` on the terminal, or `docker restrat openhems`.
 
+
+For all, the timeslot (offpeak-hours) are specified like this: : an array of time slots configuration. Each time slot configuration is a list of : The start time, the end time and the cost. Each unspecified timeslot are fill with the 'outrangeCost' defined in the 'contract' further. Times are defined like this : "10h" or "10h00" or "10:00:00". I hope you understand. We allow to link time start and time end with a dot "-".
+
+Example are easier to understand :
+
+* *[["22h-6h", 0.15], ["12h15", "16:15:33", 0.17]]* : From 22h to 6h (exclude), we pay 0.15/KWh, from 6h to 12h15, we pay offrange cost (define further in contract), from 12h 15min to 16h 15min 33s, we pay 0.17, from 
+
+NB: for optimizations, the currency as no importance. It doesn't matter if it's $0.17, or 0.17cts or 0.17€. What is important is to keep the ratio beetwen one range and the other. I mean, if 2 hours at 2000 W at midnght cost 0.10 and 1 hour at 2000 W cost 0.20 at midday, its the same price. But if prices where 10 and 20 the result would be the same.
+
 Api
 ~~~
 
@@ -92,13 +101,33 @@ This informations are very technical. Let it empty if you don't know what to set
 Strategies
 ~~~~~~~~~~
 
-1. *offpeak* : Use it if you want to switch on devices on specific rank hours during the day/night.
+Strategies define when and how OpenHEMS will start and stop devices.
 
-2. *swithoff* : Use it if you want to swith on/off some devices at precise time each day.
+offpeak
+_______
 
-3. *emhass* : Use it if you have solar-panels. There is lots of optionnal parameters. A limitation is that it can have only two differents price range in the day.
+This will switch on devices only during offpeak hours. If you set a deadline (timeout) to a device, it will choice the range with lowest price. This strategy is usefull when you have no solar panels. You can set many different range with as many cost you need.
 
-Those parameters are those from config_emhass.yaml from EMHASS project, please refer to the [documentation](https://emhass.readthedocs.io/en/latest/differences.html) incase of doubt.
+swithoff
+________
+
+Use it if you want to swith on/off some devices at precise time each day.
+
+Usually it's usefull as a second strategy for some specific cases. It's not the most usefull.
+
+Parameters:
+
+* *offhours* : You will specified the time slot when the device will be off. Pay attention, it will switch off at the begenning of the time slot if it was on, and then do not touch it. If you switch on it after, it will stay on. If device was off, it won't switch on it at the end considering it's you choice.
+
+* *reverse* : If True, it will swith on during the timeslot. It's not the same think as specified the opposite time slot.
+
+* *offconditions* : (default False)
+
+
+emhass
+______
+
+Use it if you have solar-panels especially if you have too offpeak-hours. There is lots of optionnal parameters. A limitation is that it can have only two differents price range in the day. Those parameters are those from config_emhass.yaml from EMHASS project, please refer to the [documentation](https://emhass.readthedocs.io/en/latest/differences.html) incase of doubt.
 
 * *freq* : Frequency when emhass analyzis is done. Must be greater than 'loopDelay' parameter
 
@@ -128,6 +157,31 @@ Those parameters are those from config_emhass.yaml from EMHASS project, please r
 
 * *battery_dynamic_min* : ""
 
+nosell
+______
+
+This is named too *nobuy* or *ratiosellbuy*. In fact, these are the same principle: start and stop devices only base on electricity production and consumption and the device consumption.
+
+This strategy is usefull if you have solar panel and you have a fixed price from public power grid. It can be used if for other reason if you don't want to avoid sell or buy electricity (to test your autonomy level for instance). Attention, even in nosell or nobuy, and good parameters, you will sell and buy due to the reaction time.
+
+The pseudo-algorithme is
+
+* Start the device when production > consommation + ratio * consommationDevice & add a ratio*margin for safety
+
+* Stop a device if production < consommation - (1-ratio) * consommationDevice & add a ratio*margin for safety
+
+If ratio==-1 we could never sell electricity (If there is enough device consumption and the cycle duration is enough quick).
+
+If ratio==1 we could never buy electricity (If produce enough and the cycle duration is enough quick).
+
+So, parameters are
+
+* *ratio* : This define how much we would like to sell/buy electricity from public grid. This number doesn't correspond to a meaning. You can set outside range [-1,1] but it is probably useless.
+
+* *margin* : This define a margin to avoid sell/buy electricity. Considering, that a device can start/stop before the OpenHEMS react. So margin could be roughly the max consumption of a device for a good safety, but usually far less is enough.
+
+You should make your own test to adapt your parameters to your needs.
+
 
 Network
 ~~~~~~~
@@ -146,7 +200,7 @@ Add as many line like bellow for all electrical source. Usually there is the pub
 
 * *id* : A name witch can be what you want without special caracters.
 
-* *class* : It is sensor type. 
+* *class* : It is sensor type. This define if it's a public power grid, battery, solar panel...
 
 * *currentPower* * : This is the currrent power delivered
 
@@ -161,6 +215,18 @@ Add as many line like bellow for all electrical source. Usually there is the pub
 * *maxPower* * : This is the maximum power we can get from that source.
 
 * *isOn* * : This is the "switch" button that we can test and use.
+
+
+The class attribute define some extra possibles attributes. Available classes are :
+
+* *publicpowergrid* : The public power grid : Most of us have one and only one. In this a important field is the contract witch define prices.
+
+* *solarpanel* : The solar panels, but if you have a wind turbine, define it as "solarpanel" should work well.
+
+* *battery* : The battery.
+
+* *switch* : This is the standard class for all electrical appliance witch can be switch on and off (pump, car charger).
+
 
 Localization
 ~~~~~~~~~~~~
@@ -179,5 +245,6 @@ This section contains sensitive informations. We suggest you to set apprioximati
 * *language* : Language abbreviation ('fr' for french, 'en' to english)
 
 
+To configure your file, you can start with a working file like https://github.com/abriotde/openhems-sample/blob/main/config/openhems.yaml.
 
 NB: In default YAML configuration file, witch can be seen on [Github](https://github.com/abriotde/openhems-sample/blob/main/data/openhems_default.yaml), there is a default section witch define what can be set precisely under network and strategy field. It can be used sometime but it's difficult 

@@ -4,10 +4,16 @@ This is the server thread witch aim to centralize information and take right dec
 """
 import time
 import datetime
-from openhems.modules.energy_strategy import OffPeakStrategy, SwitchoffStrategy, LOOP_DELAY_VIRTUAL
+from openhems.modules.energy_strategy import (
+	OffPeakStrategy, SwitchoffStrategy, SimulatedAnnealingStrategy,
+	SolarNoSellStrategy,
+	LOOP_DELAY_VIRTUAL
+)
 from openhems.modules.network import HomeStateUpdaterException
 from openhems.modules.util import CastUtililty
-from openhems.modules.util.configuration_manager import ConfigurationManager, ConfigurationException
+from openhems.modules.util.configuration_manager import (
+	ConfigurationManager, ConfigurationException
+)
 
 
 class OpenHEMSServer:
@@ -24,7 +30,7 @@ class OpenHEMSServer:
 		self.strategies = []
 		throwErr = None
 		for strategyParams in strategies:
-			strategy = strategyParams.get("class", "")
+			strategy = strategyParams.get("class", "").lower()
 			strategyId = strategyParams.get("id", strategy)
 			if strategy=="offpeak":
 				self.strategies.append(OffPeakStrategy(mylogger, self.network, strategyId))
@@ -41,6 +47,16 @@ class OpenHEMSServer:
 				from openhems.modules.energy_strategy.emhass_strategy import EmhassStrategy
 				self.strategies.append(
 					EmhassStrategy(mylogger, self.network, serverConf, strategyParams, strategyId))
+			elif strategy=="annealing":
+				self.strategies.append(
+						SimulatedAnnealingStrategy(
+							mylogger, self.network, serverConf, strategyParams, strategyId)
+					)
+			elif strategy in ["nosell", "nobuy", "ratiosellbuy"]:
+				self.strategies.append(
+						SolarNoSellStrategy(
+							mylogger, self.network, serverConf, strategyParams, strategyId)
+				)
 			else:
 				msg = f"OpenHEMSServer() : Unknown strategy '{strategy}'"
 				self.logger.critical(msg)
@@ -118,7 +134,7 @@ class OpenHEMSServer:
 		time2wait = 86400
 		allowSleep = self.allowSleep and loopDelay>LOOP_DELAY_VIRTUAL
 		for strategy in self.strategies:
-			t = strategy.updateNetwork(loopDelay, allowSleep, now)
+			t = strategy.updateNetwork(loopDelay, now)
 			time2wait = min(t, time2wait)
 		if allowSleep and time2wait > 0:
 			self.logger.info("Loop sleep(%d min)", round(time2wait/60))

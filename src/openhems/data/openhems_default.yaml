@@ -51,6 +51,22 @@ default:
       reverse: False
       offhours: []
       offconditions: False
+    annealing:
+      freq: 15
+      max_iteration_number: 1000
+      initial_temp: 1000
+      cooling_factor: 0.95
+      min_temp: 0.1
+      max_no_improve: 100
+    nosell:
+      ratio: -1
+      margin: 300
+    nobuy:
+      ratio: 1
+      margin: 300
+    ratiosellbuy:
+      ratio: 0
+      margin: 200
   node:
     publicpowergrid:
       currentPower: null
@@ -80,6 +96,7 @@ default:
           hoursRanges: []
           defaultPrice: 0.1
           outRangePrice: 1.0
+          sellprice: 0.0
     solarpanel:
       currentPower: None
       maxPower: 500

@@ -2,13 +2,15 @@
 This is in case we just base on "off-peak" range hours to control output.
 	 Classic use-case is some grid contract (Like Tempo on EDF).
 	The strategy is to switch on electric devices only on "off-peak" hours
+
+#DONE: Implemented - Call - Conf - TestAuto - RunOk - InProd : 6/6
 """
 
 import logging
 from datetime import datetime, timedelta
 from openhems.modules.network.network import OpenHEMSNetwork
 from openhems.modules.util import ConfigurationException, DATETIME_PRINT_FORMAT
-from .energy_strategy import EnergyStrategy, LOOP_DELAY_VIRTUAL
+from .energy_strategy import EnergyStrategy
 
 TIMEDELTA_0 = timedelta(0)
 
@@ -22,7 +24,7 @@ class OffPeakStrategy(EnergyStrategy):
 	"""
 
 	def __init__(self, mylogger, network: OpenHEMSNetwork, strategyId:str):
-		super().__init__(strategyId, network, mylogger, True)
+		super().__init__(strategyId, network, mylogger)
 		self.inOffpeakRange = False
 		self.rangeEnd = datetime.now()
 		self.hoursRanges = self.network.getHoursRanges()
@@ -69,25 +71,7 @@ class OffPeakStrategy(EnergyStrategy):
 				(self.inOffpeakRange, self.rangeEnd)
 			]
 
-	def switchOnMax(self, cycleDuration):
-		"""
-		Switch on nodes, but 
-		 - If there is no margin to switch on, do nothing.
-		 - Only one (To be sure to not switch on to much devices)
-		"""
-		self.logger.info("%s.switchOnMax()", self.strategyId)
-		marginPower = self.network.getMarginPowerOn()
-		if marginPower<=0:
-			self.logger.info("Can't switch on devices: not enough power margin : %s", marginPower)
-			return True
-		for elem in self.getNodes(True):
-			switchOn = self.switchSchedulable(elem.node, cycleDuration, True)
-			if switchOn and elem.changed(switchOn):
-				self.logger.info("Switch on just one device at each loop to ensure Network constraint.")
-				return True
-		return False
-
-	def updateNetwork(self, cycleDuration:int, allowSleep:bool, now=None) -> int:
+	def updateNetwork(self, cycleDuration:int, now=None) -> int:
 		"""
 		Decide what to do during the cycle:
 		 IF off-peak : switch on all
@@ -105,15 +89,12 @@ class OffPeakStrategy(EnergyStrategy):
 			if not self._rangeChangeDone:
 				self.logger.debug("OffpeakStrategy : not offpeak, switchOffAll()")
 				if self.switchOffAll():
-					if cycleDuration>LOOP_DELAY_VIRTUAL and allowSleep:
-						self.hoursRanges.sleepUntillNextRange(now)
-						self.checkRange() # To update self.rangeEnd (and should change self.inOffpeakRange)
-					else:
-						self._rangeChangeDone = True
-						time2Wait = self.hoursRanges.getTime2NextRange(now)
+					self._rangeChangeDone = True
+					time2Wait = self.hoursRanges.getTime2NextRange(now)
 				else:
 					self.logger.warning("Fail to switch off all. We will try again on next loop.")
-			# TODO : check time2Wait
+			# TODO : check time2Wait with check4MissingOffeakTime
+			# Even on peak hours, start devices with no other solutions to respect timeout
 			self.check4MissingOffeakTime(now, cycleDuration)
 		return time2Wait
 
@@ -263,7 +244,6 @@ class OffPeakStrategy(EnergyStrategy):
 		 - datetime of range end
 		"""
 		(offpeakTime, peakTime, previousRangeEnd) = times
-		print(type(schedule.timeout), type(previousRangeEnd))
 		if schedule.timeout>previousRangeEnd:
 			inoffpeak, rangeEnd = myrange
 			if schedule.timeout>rangeEnd:

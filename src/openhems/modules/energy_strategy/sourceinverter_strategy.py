@@ -4,10 +4,14 @@ Case dual-source managed by controlled "source inverter" :
 - Grid
 Strategy is to :
 - Use grid energy when battery level is low and solar production less than consumption
-- Reverse if battery level is medium and/or solar production higher than conumption
+- Reverse if battery level is medium and/or solar production higher
+	than conumption during a certain time : batteryCapacity enought for x minutes,
+	solarProductionPower>consomation from y minutes, x+y>z
 Advantages : No electricity goes in grid.
 Disadvantages : Could not charge battery on off-peak grid hours
  if there is not so much solar production
+
+#TODO : Implemented - Call - Conf - TestAuto - RunOk - InProd : 0/6
 """
 
 import logging
@@ -27,10 +31,10 @@ class SourceInverterStrategy(SolarBasedStrategy):
 	 if there is- not so much solar production
 	"""
 
-	def __init__(self, network: OpenHEMSNetwork, geoPosition: GeoPosition, config):
+	def __init__(self, strategyId:str, network: OpenHEMSNetwork, geoPosition: GeoPosition, config):
 		self.logger = logging.getLogger(__name__)
 		self.logger.info("SourceInverterStrategy({config})")
-		super().__init__(network, geoPosition)
+		super().__init__(strategyId, network, geoPosition)
 		self.inverterId = config.get("inverterId", "")
 
 	def switch2solarProduction(self, switch2solarProduction:bool= True):
@@ -50,7 +54,7 @@ class SourceInverterStrategy(SolarBasedStrategy):
 		solarProduction = self.network.getSolarProduction()
 		if self.isDayTime():
 			self.gridTime += 1
-		powerConsumption = self.network.getCurrentPowerConsumption()
+		powerConsumption = self.network.getCurrentPower()
 		if (battery.getLevel()>=battery.hightLevel) \
 				or (battery.getLevel()>battery.lowLevel \
 				and solarProduction>powerConsumption):
@@ -72,7 +76,7 @@ class SourceInverterStrategy(SolarBasedStrategy):
 		solarProduction = self.network.getSolarProduction()
 		if self.isDayTime():
 			self.solarTime += 1
-		powerConsumption = self.network.getCurrentPowerConsumption()
+		powerConsumption = self.network.getCurrentPower()
 		# if Critic battery level
 		if (battery.getLevel()<battery.lowLevel \
 					and solarProduction<powerConsumption\
@@ -91,10 +95,11 @@ class SourceInverterStrategy(SolarBasedStrategy):
 				elif solarProduction>powerConsumption+POWER_MARGIN:
 					self.network.switchOn(solarProduction-powerConsumption)
 
-	def updateNetwork(self, cycleDuration:int, allowSleep:bool, now=None):
+	def updateNetwork(self, cycleDuration:int, now=None):
 		"""
 		Update the OpenHEMSNetwork
 		"""
+		del now
 		if self.network.isGridSourceOn():
 			self.updateNetworkUsingPublicGridSource(cycleDuration)
 		else: # Grid source is off as it is an inverter
