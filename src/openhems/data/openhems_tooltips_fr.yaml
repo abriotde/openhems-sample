@@ -48,8 +48,9 @@ default:
           price: ""
         generic:
           offpeakhoursranges: "['22h - 6h']"
-          peakprice: ""
-          offpeakprice: ""
+          defaultPrice: 0.1
+          outRangePrice: 1.0
+          sellprice: 0.0
     solarpanel:
       currentPower: ""
       maxPower: ""

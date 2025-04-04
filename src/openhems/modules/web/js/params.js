@@ -1,3 +1,4 @@
+DEBUG = false;
 var objectLists = {};
 /**
  * Function to initiate page to the state of the VPN.
@@ -13,7 +14,7 @@ function connectedVPN(connect) {
 		fetch(url, { method: 'GET' })
 			.then(Result => Result.json())
 			.then(retVal => {
-				console.log('response :  '+retVal);
+				if(DEBUG) console.log('response :  '+retVal);
 				connectedVPN(retVal.connected);
 				waitImg.style.display = "none";
 				vpnButton.style.display = "inline";
@@ -28,7 +29,7 @@ function connectedVPN(connect) {
  * On change something in the form, change icon to set to save.
  */
 function changeSthg() {
-	// console.log("changeSthg()");
+	// if(DEBUG)  console.log("changeSthg()");
 		document.getElementById("submitYamlParams")
 			.src = "http://localhost:8000/img/save_32.ico";
 }
@@ -49,7 +50,7 @@ function setNetwork() {
  * Report IHM inputs change to network model in order to send it back.
  */
 function setNodes(mynodes, key, nodeType) {
-	// console.log("setNodes()");
+	// if(DEBUG)  console.log("setNodes()");
 	var nodes = document.getElementById(nodeType+"s").children;
 	var networkById = {};
 	// As id can be changed, search orginals ids
@@ -71,7 +72,7 @@ function setNodes(mynodes, key, nodeType) {
 						refs[j] = refs[j-1][ids[j]];
 					}
 					if (refs[ids.length-1]!=input.value && JSON.stringify(refs[ids.length-1])!=input.value) {
-						console.log("setNodes() : ",input.id," has changed from ",refs[ids.length-1] , " to ", input.value);
+						if(DEBUG)  console.log("setNodes() : ",input.id," has changed from ",refs[ids.length-1] , " to ", input.value);
 						refs[ids.length-1] = input.value;
 						for (j=ids.length-1; j>0; j--) {
 							refs[j-1][ids[j]] = refs[j];
@@ -86,7 +87,7 @@ function setNodes(mynodes, key, nodeType) {
 		myNetwork.push(networkById[i]);
 	}
 	document.getElementById(key).value = JSON.stringify(myNetwork);
-	console.log("setNodes(",nodeType,") => ", myNetwork);
+	if(DEBUG)  console.log("setNodes(",nodeType,") => ", myNetwork);
 	return mynodes;
 }
 /**
@@ -109,7 +110,7 @@ function deleteNode(index) {
  * @returns 
  */
 function getElement(index, attr, node, level=0) {
-	// console.log("getElement(",index,", ",attr,", ",node,", ",level,")")
+	// if(DEBUG)  console.log("getElement(",index,", ",attr,", ",node,", ",level,")")
 	var currentElement = document.createElement("div");
 	if (level>0) {
 		currentElement.classList.add("col-75");
@@ -172,16 +173,17 @@ const objectSelectKeys = [
  * @param {*} element 
  * @param {*} object 
  */
-function newNodeAddObject(elementId, element, object) {
-	console.log("newNodeAddObject(",elementId, element, object,")");
+function newNodeAddObject(elementId, element, object, key) {
+	if(DEBUG)  console.log("newNodeAddObject(",elementId, element, object,")");
 	for (caract in object) {
 		defaultValue = object[caract]
-		console.log("newNodeAddObject() : ",caract," : ",defaultValue)
+		if(DEBUG)  console.log("newNodeAddObject() : ",caract," : ",defaultValue)
 		var elem = document.createElement("div");
 		elem.classList.add("row");
 		elem.classList.add(caract);
 		
 		var sElementId = elementId+"-"+caract;
+		var sKey = key+"-"+caract;
 		if (defaultValue instanceof Array) {
 			defaultValue = JSON.stringify(defaultValue);
 		}
@@ -191,10 +193,11 @@ function newNodeAddObject(elementId, element, object) {
 				+'</div><div class="col-75" id="'+sElementId+'"></div>';
 			element.appendChild(elem);
 			elem2 = document.getElementById(sElementId);
-			if (objectSelectKeys.includes(sElementId)) {
+			if(DEBUG)  console.log("newNodeAddObject() : sElementId=",sElementId)
+			if (objectSelectKeys.includes(sKey)) {
 				displaySelectElement(sElementId, elem2, defaultValue);
 			} else {
-				newNodeAddObject(sElementId, elem2, defaultValue);
+				newNodeAddObject(sElementId, elem2, defaultValue, sKey);
 			}
 		} else {
 			elem.id = sElementId;
@@ -215,17 +218,18 @@ function newNodeAddObject(elementId, element, object) {
  */
 function newNodeSelectChange(selectElementId) {
 	var select = document.getElementById(selectElementId+"-select");
-	console.log("newNodeSelectChange(",selectElementId,") => ", select.value);
+	var classname = select.value;
+	if(DEBUG)  console.log("newNodeSelectChange(",selectElementId,") => ", classname);
 	objectList = objectLists[selectElementId];
 	// Warning : Should be better to remove sub-select from selectList but difficult 
 	//   We choice to let that memory-leak
-	nodeConfig = objectList[select.value];
+	nodeConfig = objectList[classname];
 	if(selectElementId=="newnode") {
 		nodeConfig["id"] = "id"+Object.keys(nodes).length+Object.keys(strategys).length
 	}
 	addNodeSelecForm = document.getElementById(selectElementId+"-form");
 	addNodeSelecForm.innerHTML = "";
-	newNodeAddObject(selectElementId, addNodeSelecForm, nodeConfig);
+	newNodeAddObject(selectElementId, addNodeSelecForm, nodeConfig, selectElementId+"-"+classname);
 }
 /**
  * Diplay a HTML select element based on Object model of the list.
@@ -255,7 +259,14 @@ function displaySelectElement(elementId, selectDiv, objectList) {
 	selectDiv.appendChild(form);
 }
 /**
- * 
+ * Convert dict key/values to object:
+ * {
+ *  a-b-c:1
+ *  a-b-f:4
+ *  a-d:2
+ *  a-e:3
+ * } => a:{b:{c:1, f:4}, d:2, e:3}
+ *
  * @param {*} id 
  * @param {*} node 
  * @param {*} model 
@@ -263,7 +274,7 @@ function displaySelectElement(elementId, selectDiv, objectList) {
  * @returns 
  */
 function populateNode(id, node, model, keyvalues) {
-	// console.log("populateNode(",id,", ",node,", ",model,", ",keyvalues,")");
+	// if(DEBUG)  console.log("populateNode(",id,", ",node,", ",model,", ",keyvalues,")");
 	model["id"] = "X";
 	for (caract in model) {
 		var caractId = caract;
@@ -272,14 +283,14 @@ function populateNode(id, node, model, keyvalues) {
 			var key = id+"-"+caractId;
 			var key2 = key+"-select";
 			if (key2 in keyvalues) {
-				var val = keyvalues[key2];
-				snode = {"class":val};
-				modelValue = modelValue[val];
+				var classname = keyvalues[key2];
+				snode = {"class":classname};
+				modelValue = modelValue[classname];
 			} else {
 				snode = {};
 			}
 			var value = populateNode(key, snode, modelValue, keyvalues);
-			// console.log(id," for node[",caractId,"] = ", value);
+			// if(DEBUG)  console.log(id," for node[",caractId,"] = ", value);
 			node[caractId] = value;
 		} else {
 			var key = id+"-"+caractId+"-value";
@@ -289,7 +300,7 @@ function populateNode(id, node, model, keyvalues) {
 			}
 		}
 	}
-	console.log("populateNode(",id,") => ", node);
+	if(DEBUG)  console.log("populateNode(",id,") => ", node);
 	return node;
 }
 /**
@@ -299,7 +310,8 @@ function populateNode(id, node, model, keyvalues) {
  */
 function addNode(addBtn) {
 	nodeType = addBtn.dataset.nodeType;
-	console.log("addNode(",nodeType,")");
+	if(DEBUG)  console.log("addNode(",nodeType,")");
+	// Search key/values in the popup form
 	var keyvalues = {};
 	var addNodePopup = document.getElementById("addNodePopup");
 	var inputs = addNodePopup.querySelectorAll('input');
@@ -312,18 +324,21 @@ function addNode(addBtn) {
 		select = selects[i]
 		keyvalues[select.id] = select.value;
 	}
-	console.log("addNode() : ",keyvalues);
-	var id = "newnode"
-	var value = keyvalues[id+"-select"];
-	var node = {"class":value};
-	var model = availableNodes[nodeType][value];
-	node = populateNode(id, node, model, keyvalues);
+	if(DEBUG)  console.log("addNode() : ",keyvalues);
+	// Convert keyvalues to object
+	var newnodeId = "newnode"
+	var classname = keyvalues[newnodeId+"-select"];
+	var newnode = {"class":classname};
+	if(DEBUG)  console.log("addNode() : ",classname, " = ", newnode);
+	var model = availableNodes[nodeType][classname];
+	node = populateNode(newnodeId, newnode, model, keyvalues);
 	if (nodeType=="node") {
-		nodes.push(node);
+		nodes.push(newnode);
 	} else {
-		strategys.push(node);
+		strategys.push(newnode);
 	}
-	displayNode(node, nodeType);
+	// display the object
+	displayNode(newnode, nodeType);
 	hideAddNodePopup();
 }
 var initAddNodePopup = "";
@@ -332,10 +347,10 @@ var initAddNodePopup = "";
  * diplay an appropriate popup.
  */
 function displayAddNodePopup(nodeType="node") {
-	console.log("displayAddNodePopup(",nodeType,")");
+	if(DEBUG)  console.log("displayAddNodePopup(",nodeType,")");
 	if (initAddNodePopup!=nodeType) {
 		var selectDiv = document.getElementById("newnode-class");
-		console.log("displayAddNodePopup() : initAddNodePopup", selectDiv);
+		if(DEBUG)  console.log("displayAddNodePopup() : initAddNodePopup", selectDiv);
 		selectDiv.innerHTML = "";
 		myAvailableNodes = availableNodes[nodeType]
 		displaySelectElement("newnode", selectDiv, myAvailableNodes);
@@ -351,7 +366,7 @@ function displayAddNodePopup(nodeType="node") {
  * Hide the "new node popup".
  */
 function hideAddNodePopup() {
-	// console.log("hideAddNodePopup()")
+	// if(DEBUG)  console.log("hideAddNodePopup()")
 	var popup = document.getElementById("addNodePopup");
 	popup.classList.remove("show");
 	popup.style.visibility = "hidden";
@@ -362,7 +377,7 @@ var defaultId = 0;
  * @param {object} node
  */
 function displayNode(node, nodeType="node") {
-	console.log("displayNode(",nodeType,",",node,")");
+	if(DEBUG)  console.log("displayNode(",nodeType,",",node,")");
 	if (node.id===undefined) {
 		node.id = "id"+defaultId;
 		defaultId+=1;

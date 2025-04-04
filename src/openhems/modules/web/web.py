@@ -122,8 +122,15 @@ def updateConfigurator(fields):
 		else:
 			currentValue = str(currentValue)
 		if currentValue!=newValue:
-			print(currentValue, type(currentValue), " != ", newValue, type(newValue), " for key = ", key)
-			configurator.add(key, newValue)
+			# print(currentValue, type(currentValue), " != ", newValue, type(newValue), " for key = ", key)
+			try:
+				configurator.add(key, newValue)
+			except ConfigurationException as e:
+				# NB : The real value can be None...
+				OPENHEMS_CONTEXT.logger.warning(
+					"/params : Unexpected parameter : %s!=%s for key=%s : %s",
+					currentValue, newValue, key, e.message
+				)
 			change = True
 	if change: # We update configurator
 		OPENHEMS_CONTEXT.configurator = configurator

@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 import re
 
 REGEXP_TIME = re.compile("^([0-9]{1,2})(h|:)([0-9]{1,2})((m|:)[0-9]{2}(s?))?")
+REGEXP_FLOAT = re.compile("^[0-9]+(.[0-9]*)??$")
 
 
 class CastException(Exception):
@@ -73,7 +74,8 @@ class CastUtililty:
 		if isinstance(value, (int, float)):
 			retValue = value
 		elif isinstance(value, str):
-			if value.isnumeric():
+			val = REGEXP_FLOAT.match(value)
+			if val:
 				retValue = float(value)
 			elif value=="unavailable":
 				raise CastException("No value for '"+value+"'", 0)
@@ -153,6 +155,8 @@ class CastUtililty:
 		retValue = None
 		if destType is None:
 			retValue = value
+		elif value is None or value=="None":
+			return None
 		elif destType=="int":
 			retValue = CastUtililty.toTypeInt(value)
 		elif destType=="bool":

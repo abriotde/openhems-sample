@@ -93,7 +93,7 @@ default:
         rtetarifbleu:
           price: 0.2516
         generic:
-          hoursRanges: []
+          offpeakhoursranges: []
           defaultPrice: 0.1
           outRangePrice: 1.0
           sellprice: 0.0
