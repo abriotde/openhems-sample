@@ -4,7 +4,6 @@ It is used to know devices and to switch on/off them.
 """
 
 from typing import Final
-import os
 import copy
 from openhems.modules.util.notification_manager import NotificationManager
 from .node import (
@@ -91,12 +90,7 @@ class OpenHEMSNetwork:
 		"""
 		globalPower = 0
 		for elem in self.getAll(filterId):
-			p = elem.getCurrentPower()
-			if isinstance(p, str):
-				self.logger.critical("Power as string '%s' for node '%s'", p, elem.id)
-				# Usually it's because we miss initiate something because Home-Assistant was off
-				os._exit(1)
-			globalPower += p
+			globalPower += elem.getCurrentPower()
 		return globalPower
 
 	def _getAll(self, filterId, elemFilter=None):

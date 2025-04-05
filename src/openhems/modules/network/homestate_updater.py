@@ -36,6 +36,12 @@ class HomeStateUpdater:
 		self.tmp = None # Used to avoid method argument repeated.
 		self.warningMessages = []
 
+	def getCacheId(self):
+		"""
+		Return the refresh Id of the network.
+		"""
+		return self.refreshId
+
 	def updateNetwork(self):
 		"""
 		A function witch update home network and return OpenHEMSNetwork.

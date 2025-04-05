@@ -160,7 +160,11 @@ class RTETempoContract(RTEContract):
 		curCall = now.strftime("%Y%m%d%H")
 		if self.lastCall!=curCall:
 			if self.color is not None:
-				self.lastColor = self.color.getValue().lower()
+				color = self.color.getValue()
+				if color is None or not isinstance(color, str):
+					self.logger.warning("RTETempoContract.getCurColor() : color is None, use the API")
+					color = self.callApiRteTempo("today")
+				self.lastColor = color.lower()
 			else:
 				self.lastColor = self.callApiRteTempo("today")
 			self.lastCall = curCall

@@ -49,12 +49,12 @@ class TestUtilModule(unittest.TestCase):
 		value = configurator.get("api.url")
 		self.assertEqual(value, 'http://192.168.1.202:8123/api')
 		value = configurator.get("server.logfile")
-		self.assertEqual(value, 'openhems.log')
+		self.assertEqual(value, '')
 
 		# Test overriden configurations values
 		configurator.addYamlConfig(ROOT_PATH / 'config/openhems.yaml')
 		value = configurator.get("server.logfile")
-		self.assertEqual(value, 'openhems.log')
+		self.assertEqual(value, '')
 
 		curFolder = Path(__file__).parents[0]
 		savedFile = curFolder / 'data/openhems_test_save.tmp.yaml'

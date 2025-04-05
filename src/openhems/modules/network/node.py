@@ -8,7 +8,7 @@ from typing import Final
 from collections import deque, OrderedDict
 from openhems.modules.web import OpenHEMSSchedule
 from openhems.modules.contract import Contract
-from openhems.modules.util import CastUtililty
+from openhems.modules.util import CastUtililty, ConfigurationException
 from .feeder import Feeder, ConstFeeder
 
 CYCLE_HISTORY: Final[int] = 10 # Number of cycle we keep history
@@ -36,6 +36,10 @@ class OpenHEMSNode:
 		self._controlledPowerValues = controlledPowerValues
 		self._initControlledPowerValues()
 		self.currentPower:Feeder = currentPower
+		try: # Test if currentPower is well configured
+			self.getCurrentPower()
+		except TypeError as e:
+			raise ConfigurationException(str(e)) from e
 		self.maxPower:Feeder = maxPower
 		if isOnFeeder is not None:
 			self._isOn = isOnFeeder
@@ -93,9 +97,15 @@ class OpenHEMSNode:
 		Get current power 
 		"""
 		currentPower = self.currentPower.getValue()
-		if self._isSwitchable and not self.isOn() and currentPower!=0:
-			logger.warning("'%s' is Off but current power=%d", self.id, currentPower)
-		logger.info("OpenHEMSNode.getCurrentPower(%s) = %d", self.id, currentPower)
+		if currentPower is None or not isinstance(currentPower, (int, float)):
+			errorMsg = (f"Invalid currentPower ({currentPower}) for node '{self.id}'. "
+			   "Usual causes are Home-Assistant service is not ready (restart latter),"
+			   " or it is a wrong configuration.")
+			logger.error(errorMsg)
+			raise TypeError(errorMsg)
+		if self._isSwitchable and currentPower!=0 and not self.isOn():
+			logger.warning("'%s' is off but current power=%d", self.id, currentPower)
+		logger.info("OpenHEMSNode.getCurrentPower(%s) = %s", self.id, currentPower)
 		return currentPower
 
 	def getMaxPower(self):
