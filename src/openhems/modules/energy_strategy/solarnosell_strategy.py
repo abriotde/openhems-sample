@@ -50,7 +50,7 @@ class SolarNoSellStrategy(SolarBasedStrategy):
 		for node in self.getNodes():
 			if not node.isOn():
 				# production > consommation + X * consommationDevice - powerMargin
-				#  = (production - consommation) > X * consommationDevice 
+				#  = (production - consommation) > X * consommationDevice
 				#  = powerMargin  > X * consommationDevice
 				# powerMargin+(((ratio-1)²-4)/4)*consommationDevice-ratio*margin>0
 				coef = powerMargin+((pow(self._ratio-1, 2)-4)/4)*node.getMaxPower() \
@@ -108,4 +108,3 @@ class SolarNoSellStrategy(SolarBasedStrategy):
 		#  to quicly react if it's not enough (or too much)
 		#  (more chances are the state will evolv after).
 		return cycleDuration
-

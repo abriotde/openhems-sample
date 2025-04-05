@@ -22,6 +22,46 @@ network:
   nodes: "Configure your home nodes"
 # All default values.
 default:
+  strategy:
+    emhass:
+      freq: 30
+      days_to_retrieve: 2
+      method_ts_round: nearest
+      delta_forecast: 1
+      weather_forecast_method: scrapper
+      load_cost_hp: 0.30
+      load_cost_hc: 0.15
+      prod_sell_price: 0.0
+      set_total_pv_sell: False
+      lp_solver: default
+      lp_solver_path: empty
+      set_nocharge_from_grid: False
+      set_nodischarge_to_grid: True
+      set_battery_dynamic: False
+      battery_dynamic_max: 0.9
+      battery_dynamic_min: -0.9
+    offpeak:
+      offpeakhours: None
+    switchoff:
+      reverse: False
+      offhours: []
+      offconditions: False
+    annealing:
+      freq: 15
+      max_iteration_number: 1000
+      initial_temp: 1000
+      cooling_factor: 0.95
+      min_temp: 0.1
+      max_no_improve: 100
+    nosell:
+      ratio: -1
+      margin: 300
+    nobuy:
+      ratio: 1
+      margin: 300
+    ratiosellbuy:
+      ratio: 0
+      margin: 200
   node:
     publicpowergrid:
       currentPower: ""
@@ -30,26 +70,28 @@ default:
       marginPower: ""
       contract:
         rtetempo:
-          color: ""
-          offpeakhoursranges: ": ["22h - 6h"]"
+          color: null
+          nextcolor: null
+          offpeakhoursranges: ["22h - 6h"]
           peakprice:
-            bleu: ""
-            blanc: ""
-            rouge: "
+            bleu: 0.1609
+            blanc: 0.1894
+            rouge: 0.7562
           offpeakprice:
-            bleu: ""
-            blanc: ""
-            rouge: ""
+            bleu: 0.1296
+            blanc: 0.1486
+            rouge: 0.1568
         rteheurescreuses:
-          offpeakhoursranges: "["22h - 6h"]"
-          peakprice: ""
-          offpeakprice: ""
+          offpeakhoursranges: ["22h - 6h"]
+          peakprice: 0.2700
+          offpeakprice: 0.2068
         rtetarifbleu:
-          price: ""
+          price: 0.2516
         generic:
-          offpeakhoursranges: "["22h - 6h"]"
-          peakprice: ""
-          offpeakprice: ""
+          offpeakhoursranges: []
+          defaultPrice: 0.1
+          outRangePrice: 1.0
+          sellprice: 0.0
     solarpanel:
       currentPower: ""
       maxPower: ""

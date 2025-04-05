@@ -55,7 +55,7 @@ class SourceInverterStrategy(SolarBasedStrategy):
 		if self.isDayTime():
 			self.gridTime += 1
 		powerConsumption = self.network.getCurrentPower()
-		if (battery.getLevel()>=battery.hightLevel) \
+		if (battery.getLevel()>=battery.highLevel) \
 				or (battery.getLevel()>battery.lowLevel \
 				and solarProduction>powerConsumption):
 			if self.switch2solarProduction():

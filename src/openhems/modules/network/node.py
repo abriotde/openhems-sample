@@ -8,8 +8,8 @@ from typing import Final
 from collections import deque, OrderedDict
 from openhems.modules.web import OpenHEMSSchedule
 from openhems.modules.contract import Contract
-from openhems.modules.util import CastUtililty
-from .feeder import Feeder
+from openhems.modules.util import CastUtililty, ConfigurationException
+from .feeder import Feeder, ConstFeeder
 
 CYCLE_HISTORY: Final[int] = 10 # Number of cycle we keep history
 logger = logging.getLogger(__name__)
@@ -400,25 +400,23 @@ class Battery(InOutNode):
 	"""
 	# pylint: disable=too-many-arguments
 	def __init__(self, nameid, capacity, currentPower, *, maxPowerIn=None,
-			maxPowerOut=None, marginPower=None,
-			currentLevel=None, lowLevel=None, hightLevel=None):
+			maxPowerOut=None, efficiencyIn:float=0.95, efficiencyOut:float=0.95,
+			targetLevel:float=0.70,
+			currentLevel=None, lowLevel:float=0.20, highLevel:float=0.80):
 		if maxPowerIn is None:
-			maxPowerIn = 2000
+			maxPowerIn = ConstFeeder(2300) # a standard electrical outlet
 		if maxPowerOut is None:
-			maxPowerOut = -1 * maxPowerIn
-		if lowLevel is None:
-			lowLevel = 0.2*capacity
-		if hightLevel is None:
-			hightLevel = 0.8*capacity
-		if marginPower is None:
-			marginPower = capacity*0.1
-		super().__init__(nameid, currentPower, maxPowerIn, maxPowerOut, marginPower)
+			maxPowerOut = ConstFeeder(-1*maxPowerIn.getValue())
+		super().__init__(nameid, currentPower, maxPowerIn, maxPowerOut, 0)
 		self.isControlable = True
 		self.isModulable = False
 		self.capacity = capacity
 		self.currentLevel = currentLevel
 		self.lowLevel = lowLevel
-		self.hightLevel = hightLevel
+		self.highLevel = highLevel
+		self.targetLevel = targetLevel
+		self.efficiencyIn = efficiencyIn
+		self.efficiencyOut = efficiencyOut
 
 	def getCapacity(self):
 		"""
@@ -435,8 +433,8 @@ class Battery(InOutNode):
 	def __str__(self):
 		return (f"Battery(capacity={self.capacity}, currentPower={self.currentPower},"
 			f" maxPowerIn={self.maxPower}, maxPowerOut={self.minPower},"
-			f" marginPower={self.marginPower}, level={self.currentLevel},"
-			f" lowLevel={self.lowLevel}, hightLevel={self.hightLevel})")
+			f" efficiencyIn={self.efficiencyIn}, level={self.currentLevel},"
+			f" lowLevel={self.lowLevel}, highLevel={self.highLevel})")
 
 	def __repr__(self):
 		return str(self)

@@ -121,15 +121,19 @@ class HomeStateUpdater:
 		self.tmp = "battery"
 		currentPower = self._getFeeder(nodeConf, "currentPower", "int")
 		capacity = self._getFeeder(nodeConf, "capacity", "int")
-		maxPowerIn = self._getFeeder(nodeConf, "maxPowerIn", "int")
-		maxPowerOut = self._getFeeder(nodeConf, "maxPowerOut", "int")
-		marginPower = self._getFeeder(nodeConf, "marginPower", "int")
 		currentLevel = self._getFeeder(nodeConf, "currentLevel", "float")
 		lowLevel = self._getFeeder(nodeConf, "lowLevel", "float")
-		hightLevel = self._getFeeder(nodeConf, "hightLevel", "float")
-		node = Battery(nameid, capacity, currentPower, maxPowerIn=maxPowerIn,
-			maxPowerOut=maxPowerOut, marginPower=marginPower,
-			currentLevel=currentLevel, lowLevel=lowLevel, hightLevel=hightLevel)
+		targetLevel = self._getFeeder(nodeConf, "targetLevel", "float")
+		highLevel = self._getFeeder(nodeConf, "highLevel", "float")
+		efficiencyIn = self._getFeeder(nodeConf, "efficiencyIn", "float")
+		maxPowerIn = self._getFeeder(nodeConf, "maxPowerIn", "int")
+		maxPowerOut = self._getFeeder(nodeConf, "maxPowerOut", "int")
+		efficiencyOut = self._getFeeder(nodeConf, "efficiencyOut", "float")
+		node = Battery(nameid, capacity, currentPower,
+			maxPowerOut=maxPowerOut, maxPowerIn=maxPowerIn,
+			currentLevel=currentLevel, lowLevel=lowLevel, highLevel=highLevel,
+			targetLevel=targetLevel,
+			efficiencyIn=efficiencyIn, efficiencyOut=efficiencyOut)
 		# self.logger.info(node)
 		return node
 
