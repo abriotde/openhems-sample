@@ -36,6 +36,10 @@ class OpenHEMSNode:
 		self._controlledPowerValues = controlledPowerValues
 		self._initControlledPowerValues()
 		self.currentPower:Feeder = currentPower
+		try: # Test if currentPower is well configured
+			self.getCurrentPower()
+		except TypeError as e:
+			raise ConfigurationException(str(e)) from e
 		self.maxPower:Feeder = maxPower
 		if isOnFeeder is not None:
 			self._isOn = isOnFeeder
@@ -95,7 +99,15 @@ class OpenHEMSNode:
 		currentPower = self.currentPower.getValue()
 		if self._isSwitchable and not self.isOn() and currentPower!=0:
 			logger.warning("'%s' is Off but current power=%d", self.id, currentPower)
-		logger.info("OpenHEMSNode.getCurrentPower(%s) = %d", self.id, currentPower)
+		if currentPower is None or not isinstance(currentPower, (int, float)):
+			errorMsg = (f"Invalid currentPower ({currentPower}) for node '{self.id}'. "
+			   "Usual causes are Home-Assistant service is not ready,"
+			   " or it's a wrong configuration.")
+			logger.error(errorMsg)
+			# Usually it's because we miss initiate something because Home-Assistant was off
+			# So we exit to force relaunch OpenHEMS, hopping Home-Assistant will be up
+			raise TypeError(errorMsg)
+		logger.info("OpenHEMSNode.getCurrentPower(%s) = %s", self.id, currentPower)
 		return currentPower
 
 	def getMaxPower(self):

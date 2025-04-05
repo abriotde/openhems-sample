@@ -7,6 +7,7 @@ the NetworkUpdater will really search to update the value.
 import random
 import logging
 from openhems.modules.util import CastUtililty
+# from .homestate_updater import HomeStateUpdater
 
 logger = logging.getLogger(__name__)
 
@@ -34,27 +35,29 @@ class Feeder:
 class SourceFeeder(Feeder):
 	"""
 	Get value from Network.
+	:source HomeStateUpdater: The source of the value
+	:typename str: The name of the expected type
 	"""
-	def __init__(self, nameid, source, valueParams):
+	def __init__(self, nameid, source, typename:str):
 		super().__init__()
 		self.nameid = nameid
 		self.source = source
-		if not nameid in self.source.cachedIds.keys():
-			self.source.cachedIds[nameid] = [None, valueParams]
-		self.sourceId = 0 # For cache
+		self.source.registerEntity(nameid, typename)
+		self.sourceId = -100 # For cache : Warning must be <0 : HomeStateUpdater start at 0
+
 	def getValue(self):
 		"""
 		getValue from the "source" if source.id has been updated.
 		"""
-		if self.source.refreshId==0:
-			logger.warning("SourceFeeder() : Need to refresh Network...")
-			self.source.updateNetwork()
-		if self.sourceId<self.source.refreshId:
+		# Check if need to update SourceFeeder cache
+		sourceId = self.source.getCacheId()
+		if self.sourceId<sourceId:
 			# Better to update sourceId before in case value is
 			# updated between the 2 next lines
-			self.sourceId = self.source.refreshId
-			self.value = self.source.cachedIds[self.nameid][0]
+			self.sourceId = sourceId
+			self.value = self.source.getEntityValue(self.nameid)
 		return self.value
+
 	def __str__(self):
 		return "SourceFeeder("+self.nameid+")"
 

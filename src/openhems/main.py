@@ -82,7 +82,7 @@ class OpenHEMSApplication:
 		Load YAML configuration, over load it with a secret file if exists.
 		Return a "Configurator"
 		"""
-		print("Load YAML configuration from '",yamlConfFilepath,"'")
+		# print("Load YAML configuration from '",yamlConfFilepath,"'")
 		path = Path(yamlConfFilepath)
 		configurator.addYamlConfig(path)
 		if path.suffix!="":
@@ -90,24 +90,24 @@ class OpenHEMSApplication:
 			secretPath = str(yamlConfFilepath).replace(path.suffix, ".secret"+path.suffix)
 			path = Path(secretPath)
 			if path.is_file():
-				print("Over load YAML configuration with '",str(path),"'")
+				# print("Over load YAML configuration with '",str(path),"'")
 				configurator.addYamlConfig(path)
-			else:
-				print("No '",str(path),"'")
+			# else: print("No '",str(path),"'")
 		configurator.completeWithDefaults()
 		return configurator
 
 	def __init__(self, yamlConfFilepath:str, *, port=0, logfilepath='', inDocker=False):
 		# Temporary logger
 		self.logger = logging.getLogger(__name__)
-		warnings = []
+		# Keep warnings for tests (self.server can be None if it raise Exception).
+		self.warnings = []
 		network = None
 		schedule = []
 		configurator = ConfigurationManager(self.logger)
 		try:
 			configurator = self.loadYamlConfiguration(configurator, yamlConfFilepath)
 		except ConfigurationException as e:
-			warnings.append(str(e))
+			self.warnings.append(str(e))
 		loglevel = configurator.get("server.loglevel")
 		logformat = configurator.get("server.logformat")
 		logfile = logfilepath if logfilepath!='' else configurator.get("server.logfile")
@@ -116,19 +116,19 @@ class OpenHEMSApplication:
 		self.server = None
 		try:
 			network = network_helper.getNetworkFromConfiguration(self.logger, configurator)
-			warnings = warnings + network.getWarningMessages()
+			self.warnings = self.warnings + network.getWarningMessages()
 			self.server = OpenHEMSServer(self.logger, network, configurator)
 			schedule = self.server.getSchedule()
 		except ConfigurationException as e:
 			self.logger.error(str(e))
-			warnings.append(str(e))
-		for warning in warnings:
+			self.warnings.append(str(e))
+		for warning in self.warnings:
 			self.logger.error(warning)
 		port = port if port>0 else configurator.get("server.port")
 		port = CastUtililty.toTypeInt(port)
 		root = configurator.get("server.htmlRoot")
 		inDocker = inDocker or configurator.get("server.inDocker", "bool")
-		self.webserver = OpenhemsHTTPServer(self.logger, schedule, warnings,
+		self.webserver = OpenhemsHTTPServer(self.logger, schedule, self.warnings,
 			port=port, htmlRoot=root, inDocker=inDocker, configurator=configurator)
 		if network is not None:
 			self.logger.info("OpenHEMS loaded.")

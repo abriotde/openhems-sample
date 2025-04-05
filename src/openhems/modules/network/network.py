@@ -4,7 +4,6 @@ It is used to know devices and to switch on/off them.
 """
 
 from typing import Final
-import os
 import copy
 from openhems.modules.util.notification_manager import NotificationManager
 from .node import (

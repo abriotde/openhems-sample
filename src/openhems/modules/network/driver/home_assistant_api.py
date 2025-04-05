@@ -38,7 +38,6 @@ class HomeAssistantAPI(HomeStateUpdater):
 			self.apiUrl = "http://supervisor/core/api"
 		self._elemsKeysCache = None
 		self.cachedIds = {}
-		self.refreshId = 0
 		# Time to sleep after wrong HomeAssistant call
 		self.sleepDurationOnerror = 2
 		self.network = None
@@ -78,6 +77,28 @@ class HomeAssistantAPI(HomeStateUpdater):
 		else:
 			feeder = None
 		return feeder
+
+	def registerEntity(self, nameid, typename):
+		"""
+		Register a Home-Assistant entity for the cache.
+		"""
+		if self.cachedIds.get(nameid, None) is None:
+			self.cachedIds[nameid] = [None, typename]
+
+	def getEntityValue(self, entityId):
+		"""
+		Return a entity value from its Id (Without cache and not limited to a pre-selected elements)
+		"""
+		entity = self.cachedIds.get(entityId, None)
+		if entity is not None and entity[0] is not None:
+			return entity[0]
+		response = self.callAPI("/states/"+entityId)
+		if response is not None:
+			val = response.get("state", None)
+			if entity is not None:
+				val = CastUtililty.toType(entity[1], val)
+			return val
+		return None
 
 	def updateNetwork(self):
 		"""

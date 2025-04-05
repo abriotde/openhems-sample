@@ -55,6 +55,28 @@ class TestOffpeakStrategy(utils.TestStrategy):
 		self.assertEqual(pump.getCurrentPower(), 280)
 		self.assertEqual(self.getNetwork().getMarginPowerOn(), -780)
 
+	def test_missingKeyParameters(self):
+		"""
+		Test behaviour when missing key parameters 
+		"""
+		# Test when missing currentPower of publicpowergrid
+		# publicpowergrid should not be present,
+		# but server must work with error message in GET /params
+		configFile = utils.ROOT_PATH / "tests/data/openhems_fake4tests_missingKeyParams.yaml"
+		self.init(configFile)
+		self.assertIsNone(self.app.server)
+		expectedWarnings = [
+			"Impossible to convert currentPower",
+			"OffPeak-strategy is useless without offpeak hours."
+		]
+		for warning in self.app.warnings:
+			self.assertTrue(
+				any(expectedWarning in warning for expectedWarning in expectedWarnings),
+				f"Warning not found: {warning}"
+			)
+			logger.warning(warning)
+		print(self.app.warnings)
+
 	# pylint: disable=invalid-name
 	def test_xxx(self):
 		"""

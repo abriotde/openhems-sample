@@ -3,15 +3,8 @@ api:
   url: http://192.168.1.202:8123/api
   long_lived_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJmOTM4ZTFmY2FjNTA0MWEyYWZkYjEyOGYyYTJlNGNmYiIsImlhdCI6MTcyNjU2NTU1NiwiZXhwIjoyMDQxOTI1NTU2fQ.3DdEXGsM3cg5NgMUKj2k5FsEG07p2AkRF_Ad-CljSTQ"
   ssl_certificate: /etc/letsencrypt/live/openproduct.freeboxos.fr/cert.pem
-localization:
-  latitude: 48.430883803968456
-  longitude: -2.2153649964972693
-  altitude: 100
-  timeZone: Europe/Paris
 server:
-  logfile: openhems.log
   loglevel: debug
-  loopDelay: 30
   network: homeassistant
   strategies:
     - {class: emhass, freq: 1, id: emhass}

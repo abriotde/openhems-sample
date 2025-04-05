@@ -5,7 +5,7 @@ server:
     - {class: offpeak, id: offpeak}
 network:
   nodes:
-    - {id: linky, currentPower: "SUM(out)", marginPower: 1000, maxPower: 3100, minPower: 0, class: PublicPowerGrid, contract: {
+    - {id: linky, currentPower: '', marginPower: 1000, maxPower: 3100, minPower: 0, class: PublicPowerGrid, contract: {
         class: generic, defaultPrice: 0.15, outRangePrice: 0.30, hoursRanges: ["22h-6h"]
       }
     }
