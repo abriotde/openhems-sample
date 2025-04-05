@@ -8,7 +8,6 @@ localization:
   altitude: 100
   timeZone: Europe/Paris
 server:
-  logfile: openhems.log # Optional, default is /var/log/openhems.log
   loglevel: debug
   loopDelay: 30
   network: homeassistant # Define the type of network API used to control the home energy.
