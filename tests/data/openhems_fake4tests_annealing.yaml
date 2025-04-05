@@ -1,5 +1,5 @@
 server:
-  loglevel: debug
+  loglevel: warning
   network: fake
   strategies: 
     - {class: annealing, id: annealing}

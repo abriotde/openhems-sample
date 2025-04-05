@@ -13,6 +13,7 @@ from datetime import datetime
 from threading import Thread
 import argparse
 from pathlib import Path
+from requests.exceptions import ConnectTimeout
 openhemsPath = Path(__file__).parents[1]
 sys.path.append(str(openhemsPath))
 # pylint: disable=wrong-import-position
@@ -53,7 +54,11 @@ class OpenHEMSApplication:
 		myHandlers = []
 		fileHandler = None
 		formatter = logging.Formatter(logformat)
-		if not inDocker:
+		# Case wrong logfile path : set to empty : no logging file
+		logfileparents = Path(logfile).parents
+		if len(logfileparents)==0 or not logfileparents[0].is_dir():
+			logfile = "" # No log file
+		if not inDocker and logfile!="":
 			fileHandler = handlers.TimedRotatingFileHandler(filename=logfile,
 	        	when='D',
 	        	interval=1,
@@ -119,7 +124,7 @@ class OpenHEMSApplication:
 			self.warnings = self.warnings + network.getWarningMessages()
 			self.server = OpenHEMSServer(self.logger, network, configurator)
 			schedule = self.server.getSchedule()
-		except ConfigurationException as e:
+		except (ConfigurationException, ConnectTimeout) as e:
 			self.logger.error(str(e))
 			self.warnings.append(str(e))
 		for warning in self.warnings:

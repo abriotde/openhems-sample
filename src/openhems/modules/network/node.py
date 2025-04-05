@@ -97,16 +97,14 @@ class OpenHEMSNode:
 		Get current power 
 		"""
 		currentPower = self.currentPower.getValue()
-		if self._isSwitchable and not self.isOn() and currentPower!=0:
-			logger.warning("'%s' is Off but current power=%d", self.id, currentPower)
 		if currentPower is None or not isinstance(currentPower, (int, float)):
 			errorMsg = (f"Invalid currentPower ({currentPower}) for node '{self.id}'. "
-			   "Usual causes are Home-Assistant service is not ready,"
-			   " or it's a wrong configuration.")
+			   "Usual causes are Home-Assistant service is not ready (restart latter),"
+			   " or it is a wrong configuration.")
 			logger.error(errorMsg)
-			# Usually it's because we miss initiate something because Home-Assistant was off
-			# So we exit to force relaunch OpenHEMS, hopping Home-Assistant will be up
 			raise TypeError(errorMsg)
+		if self._isSwitchable and currentPower!=0 and not self.isOn():
+			logger.warning("'%s' is off but current power=%d", self.id, currentPower)
 		logger.info("OpenHEMSNode.getCurrentPower(%s) = %s", self.id, currentPower)
 		return currentPower
 

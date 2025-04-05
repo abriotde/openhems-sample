@@ -74,14 +74,19 @@ class TestOffpeakStrategy(utils.TestStrategy):
 				any(expectedWarning in warning for expectedWarning in expectedWarnings),
 				f"Warning not found: {warning}"
 			)
-			logger.warning(warning)
-		print(self.app.warnings)
 
-	# pylint: disable=invalid-name
-	def test_xxx(self):
+	def test_fakeCallHomeAssistant(self):
 		"""
-		Test 
+		Test if server start well with HomeAssistant adapter with fake url
 		"""
+		configFile = utils.ROOT_PATH / "tests/data/openhems.yaml"
+		self.init(configFile)
+		expectedWarnings = ["Max retries exceeded with url: /api/states", " timed out"]
+		for warning in self.app.warnings:
+			self.assertTrue(
+				any(expectedWarning in warning for expectedWarning in expectedWarnings),
+				f"Warning not found: {warning}"
+			)
 
 if __name__ == '__main__':
 	unittest.main()

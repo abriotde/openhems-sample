@@ -1,5 +1,18 @@
 # Changelog
 
+# 0.2.4 - 2024-04-05
+### Fix
+- FIX web /params UI for editing configuration
+- FIX : Start even if a critical parameter of a node fail to get values.
+- FIX : Start even if logfile is unknown or Home-Assistant API unavailable.
+
+### Improvement
+- ADD SolarNoSellStrategy
+- ADD SimulatedAnnealing Strategy (do not work)
+- ADD first notions of variable device
+- Factorize code for strategy using an algo running not at each cycle : emhass & annealing
+- Update documentation
+
 # 0.2.3 - 2024-04-03
 Want to extends possibilities. For the moment it do not run ok, but write down main ideas and try to determine main usable strategies.
 

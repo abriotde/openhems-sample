@@ -1,5 +1,6 @@
 server:
   loglevel: warning
+  logfile: ""
   network: fake
   strategies: 
     - {class: offpeak, id: offpeak}
