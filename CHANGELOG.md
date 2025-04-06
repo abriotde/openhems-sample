@@ -1,12 +1,18 @@
 # Changelog
 
-# 0.2.4 - 2024-04-05
+## 0.2.4 - 2024-04-06
+To fix Home-Assistant addon, must upgrade version for so few.
+
+### Fix
+- FIX Start even if the classname is missing or miss configured.
+
+## 0.2.4 - 2024-04-05
 ### Fix
 - FIX web /params UI for editing configuration
 - FIX : Start even if a critical parameter of a node fail to get values.
 - FIX : Start even if logfile is unknown or Home-Assistant API unavailable.
 
-# 0.2.3 - 2024-04-03
+## 0.2.3 - 2024-04-03
 Want to extends possibilities. For the moment it do not run ok, but write down main ideas and try to determine main usable strategies.
 
 ### Improvement
@@ -16,7 +22,7 @@ Want to extends possibilities. For the moment it do not run ok, but write down m
 - Factorize code for strategy using an algo running not at each cycle : emhass & annealing
 - Update documentation
 
-# 0.2.2 - 2024-04-01
+## 0.2.2 - 2024-04-01
 ### Fix
 - FIX security against over-load problems + add devices deactivation to avoid ping-pong effect.
 
