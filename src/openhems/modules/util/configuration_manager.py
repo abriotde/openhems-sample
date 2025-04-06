@@ -111,16 +111,15 @@ class ConfigurationManager():
 		else:
 			classname = configuration.get("class")
 			if classname is None:
-				self.logger.error(
-					"ConfigurationManager._completeFromModel() : No 'class' defined in id='%s'.",
-					configuration.get('id',''))
-				return None
+				msg = f"ConfigurationManager._completeFromModel() : No 'class' defined for id='{id}' key={baseKey}."
+				self.logger.error(msg)
+				raise ConfigurationException(msg)
 			myModel = model.get(classname.lower())
 			if myModel is None:
-				self.logger.error(
-					"ConfigurationManager._completeFromModel() : Class='%s' not defined for id='%s' key=%s.",
-					classname, configuration.get('id',''), baseKey)
-				return None
+				id = configuration.get('id','')
+				msg = f"ConfigurationManager._completeFromModel() : Class='{classname}' not defined for id='{id}' key={baseKey}."
+				self.logger.error(msg)
+				raise ConfigurationException(msg)
 			configuration = self._completeFromModelCB(
 				configuration, myModel, baseKey+"."+classname, ["class"])
 		return configuration
