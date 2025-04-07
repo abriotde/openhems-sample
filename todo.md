@@ -8,6 +8,7 @@
 - IA to command OpenHEMS devices ("Start the washing machine") & as "Personnal Assistant"
 
 # Development
+- dev/general : Fix Call decreaseTime() from network.updateStates() and remove it from switchScedulable() (over wise it can be forgotten as in EnergyStrategy.switchOnMax().)
 - dev/strategy : Fix SimulatedAnnealingStrategy from https://github.com/jmcollin78/solar_optimizer
 - dev/strategy : Add over-production/no-sell strategy : Start a device when production + ratio of device concumption > consumpion (if ratio = 0: nosell strategy)
 - dev/publicpowergrid : Add variable maximum power consumption for time-slots.

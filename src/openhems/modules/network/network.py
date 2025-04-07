@@ -185,10 +185,9 @@ class OpenHEMSNetwork:
 			# self.logger.debug(
 			#	"MaxPowerProduction:%s; MaxPowerConsumption:%s; CurrentPower:%s; MarginPower:%s;",
 			#	maxPowerP, maxPowerC, currentPower, marginPower)
-			self._marginPowerOn = min(
-				maxPowerP-(currentPower+marginPower),
-				maxPowerP-maxPowerC # Maybe is it too safe?
-			)
+			marginA = maxPowerP-(currentPower+marginPower)
+			marginB = maxPowerP-maxPowerC # Maybe is it too safe?
+			self._marginPowerOn = min(marginA, marginB)
 			self._loopNbMarginPowerOn = self._loopNb
 		return self._marginPowerOn
 

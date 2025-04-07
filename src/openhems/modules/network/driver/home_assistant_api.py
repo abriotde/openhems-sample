@@ -96,7 +96,10 @@ class HomeAssistantAPI(HomeStateUpdater):
 		if response is not None:
 			val = response.get("state", None)
 			if entity is not None:
-				val = CastUtililty.toType(entity[1], val)
+				try:
+					val = CastUtililty.toType(entity[1], val)
+				except CastException as e:
+					raise HomeStateUpdaterException(e.message) from e
 			return val
 		return None
 
@@ -119,9 +122,7 @@ class HomeAssistantAPI(HomeStateUpdater):
 				try:
 					value = CastUtililty.toType(self.cachedIds[entityId][1], val)
 				except CastException as e:
-					self.logger.error("For '"+entityId+" : '"+e.message)
-					self.notify("For '"+entityId+" : '"+e.message)
-					value = e.defaultValue
+					raise HomeStateUpdaterException(e.message) from e
 				self.cachedIds[entityId][0] = value
 				self.logger.info("HomeAssistantAPI.updateNetwork(%s) = %s", \
 					entityId, value)
@@ -210,10 +211,11 @@ class HomeAssistantAPI(HomeStateUpdater):
 					headers=headers, json=data, timeout=5
 					# verify='/etc/letsencrypt/live/openproduct.freeboxos.fr/cert.pem'
 				)
-		except (requests.exceptions.HTTPError, requests.exceptions.ReadTimeout) as error:
-			msg = "Unable to access Home Assistance instance, check URL : %s"+str(error)
+		except (requests.exceptions.HTTPError,
+		  		requests.exceptions.ReadTimeout,
+				requests.exceptions.ConnectTimeout) as error:
+			msg = f"Unable to access Home Assistance instance, check URL : {url} ({data}) : {error}"
 			self.logger.error(msg)
-			self.logger.critical("HomeAssistantAPI.callAPI(%s, %s)", url, str(data))
 			raise HomeStateUpdaterException(msg) from error
 		errMsg = ""
 		errCodeMsg = {

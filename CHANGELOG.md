@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.6 - 2024-04-07
+To fix Home-Assistant addon, must upgrade version for so few.
+
+### Fix
+- FIX Start even if CastException or over at init.
+
 ## 0.2.5 - 2024-04-06
 To fix Home-Assistant addon, must upgrade version for so few.
 
