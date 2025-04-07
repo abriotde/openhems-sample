@@ -46,7 +46,7 @@ default:
       battery_dynamic_max: 0.9
       battery_dynamic_min: -0.9
     offpeak:
-      offpeakhours: None
+      offpeakhours: null
     switchoff:
       reverse: False
       offhours: []
@@ -98,7 +98,7 @@ default:
           outRangePrice: 1.0
           sellprice: 0.0
     solarpanel:
-      currentPower: None
+      currentPower: null
       maxPower: 500
       moduleModel: CSUN_Eurasia_Energy_Systems_Industry_and_Trade_CSUN295_60M
       inverterModel: Fronius_International_GmbH__Fronius_Primo_5_0_1_208_240__240V_
@@ -107,19 +107,19 @@ default:
       modulesPerString: 1
       stringsPerInverter: 1
     battery:
-      currentPower: None
+      currentPower: null
       maxPowerIn: 2000
       maxPowerOut: 2000
       efficiencyIn: 0.95
       efficiencyOut: 0.95
       capacity: 10000
-      currentLevel: None
+      currentLevel: null
       lowLevel: 0.20
       highLevel: 0.80
       targetLevel: 0.75
     switch:
-      currentPower: None
+      currentPower: null
       maxPower: 2000
-      isOn: None
-      strategy: None
+      isOn: null
+      strategy: null
       priority: 50

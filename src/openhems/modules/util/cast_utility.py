@@ -51,7 +51,7 @@ class CastUtililty:
 		elif isinstance(value, bool):
 			retValue = value
 		else:
-			raise CastException("Impossible cast to bool: Undefined algorythm : '"+type(value)+"'", 0)
+			raise CastException("Impossible cast to bool: Undefined algorythm : '"+str(type(value))+"'", 0)
 		return retValue
 	@staticmethod
 	def toTypeStr(value):

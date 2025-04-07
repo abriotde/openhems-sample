@@ -70,7 +70,7 @@ class TestOffpeakStrategy(utils.TestStrategy):
 		self.assertEqual(car.getSchedule().duration, 3592) # 8
 		self.assertEqual(machine.getSchedule().duration, 3598) # 2
 
-	def missingKeyParameters(self):
+	def test_missingKeyParameters(self):
 		"""
 		Test behaviour when missing key parameters 
 		"""
@@ -90,7 +90,7 @@ class TestOffpeakStrategy(utils.TestStrategy):
 				f"Warning not found: {warning}"
 			)
 
-	def fakeCallHomeAssistant(self):
+	def test_fakeCallHomeAssistant(self):
 		"""
 		Test if server start well with HomeAssistant adapter with fake url
 		"""

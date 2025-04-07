@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.7 - 2024-04-07
+### Fix
+- FIX Home-Assistant addon, create /etc/openhems/openhems.yaml (config file) if not exists.
+
 ## 0.2.6 - 2024-04-07
 To fix Home-Assistant addon, must upgrade version for so few.
 

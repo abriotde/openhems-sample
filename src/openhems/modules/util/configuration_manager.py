@@ -267,7 +267,7 @@ class ConfigurationManager():
 					val = None
 			else:
 				val = defaultValue
-		elif val is str and val=="None":
+		elif isinstance(val, str) and val=="None":
 			val = defaultValue
 		elif expectedType is not None:
 			val = CastUtililty.toType(expectedType, val)
@@ -280,8 +280,13 @@ class ConfigurationManager():
 		"""
 		if path is None:
 			path = self.defaultPath
-		if path is str:
+		if isinstance(path, str):
 			path = Path(path)
+		# It's not a good solution, but a try for HA addon
+		if len(path.parents)>=0 and not path.parents[0].exists():
+			next(iter(path.parents)).mkdir(parents=True, exist_ok=True)
+		if not path.exists():
+			path.touch()
 		with path.open('r', encoding="utf-8") as yamlfile:
 			return yaml.load(yamlfile, Loader=yaml.FullLoader)
 
