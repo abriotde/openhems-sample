@@ -266,6 +266,15 @@ class OutNode(OpenHEMSNode):
 		"""
 		return self.schedule
 
+	def decreaseTime(self, time:int) -> int:
+		"""
+		Decrease time of schedule and return remaining time.
+		"""
+		sch = self.getSchedule()
+		if sch is not None and self.isOn():
+			return sch.decreaseTime(time)
+		return 0
+
 	def getStrategyId(self):
 		"""
 		Return StrategyId

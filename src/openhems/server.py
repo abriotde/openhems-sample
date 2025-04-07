@@ -9,7 +9,7 @@ from openhems.modules.energy_strategy import (
 	SolarNoSellStrategy,
 	LOOP_DELAY_VIRTUAL
 )
-from openhems.modules.network import HomeStateUpdaterException
+# from openhems.modules.network import HomeStateUpdaterException
 from openhems.modules.util import CastUtililty
 from openhems.modules.util.configuration_manager import (
 	ConfigurationManager, ConfigurationException
@@ -151,9 +151,11 @@ class OpenHEMSServer:
 			loopDelay = self.loopDelay
 		nextloop = time.time() + loopDelay
 		while True:
+			# pylint: disable=broad-exception-caught
 			try:
 				self.loop(loopDelay)
-			except (HomeStateUpdaterException, ConfigurationException) as e:
+			except Exception as e:
+				# at least HomeStateUpdaterException, CastException, HomeStateUpdaterException
 				msg = ("Fail update network. Maybe Home-Assistant is down"
 					" or long_lived_token expired. "+str(e))
 				self.logger.error(msg)

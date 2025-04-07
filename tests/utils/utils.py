@@ -29,7 +29,7 @@ class TestStrategy(unittest.TestCase):
 		nodes = {}
 		for node in self.getNetwork().getAll("out"):
 			# logger.info("Node: %s is on:%s", node.id, node.isOn())
-			node.getSchedule().duration = 3600
+			node.getSchedule().setSchedule(3600)
 			self.assertFalse(node.isOn())
 			nodes[node.id] = node
 		self.app.server.loop(1, now)

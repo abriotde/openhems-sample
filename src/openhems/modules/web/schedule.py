@@ -13,7 +13,7 @@ class OpenHEMSSchedule:
 	"""
 	duration: int = 0
 	timeout = "00:00"
-	def __init__(self, haId: str, name:str, duration:int = 0, timeout:datetime = None):
+	def __init__(self, haId: str, name:str, duration:int = 0, timeout:datetime=None):
 		self.name = name
 		self.id = haId
 		self.timeout:datetime = timeout
@@ -37,7 +37,7 @@ class OpenHEMSSchedule:
 			": duration = %d", self.id, self.duration)
 		return self.duration>0
 
-	def setSchedule(self, duration:int, timeout:datetime):
+	def setSchedule(self, duration:int, timeout:datetime=None):
 		"""
 		Set duration for device to be on.
 		"""
