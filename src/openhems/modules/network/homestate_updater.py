@@ -5,7 +5,10 @@ It is used to know devices and to switch on/off them.
 
 from typing import Final
 import logging
-from openhems.modules.util.configuration_manager import ConfigurationManager, ConfigurationException
+from openhems.modules.util import (
+	ConfigurationManager, ConfigurationException,
+	CastException
+)
 from .node import (
 	OutNode, PublicPowerGrid, SolarPanel, Battery
 )
@@ -184,7 +187,7 @@ class HomeStateUpdater:
 					self.logger.critical(msg)
 					raise ConfigurationException(msg)
 				self.network.addNode(node)
-			except ConfigurationException as e:
+			except (ConfigurationException, CastException) as e:
 				msg = f"Impossible to load {classname}({nameid}) due to "+str(e)
 				self.logger.error(msg)
 				self.warningMessages.append(msg)
