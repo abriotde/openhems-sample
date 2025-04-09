@@ -20,20 +20,30 @@ class TestStrategy(unittest.TestCase):
 		"""
 		# pylint: disable=attribute-defined-outside-init
 		self.app = OpenHEMSApplication(configFile)
+		self.nodes = {}
 
 	def firstLoop(self, now=None):
 		"""
 		Used for first lopp and it's check
 		"""
 		self.app.server.loop(LOOP_DELAY_VIRTUAL, now)
-		nodes = {}
 		for node in self.getNetwork().getAll("out"):
 			# logger.info("Node: %s is on:%s", node.id, node.isOn())
 			node.getSchedule().setSchedule(3600)
 			self.assertFalse(node.isOn())
-			nodes[node.id] = node
+			self.nodes[node.id] = node
 		self.app.server.loop(1, now)
-		return nodes
+		return self.nodes
+
+	def checkValues(self, nodesIds, values, marginPower=None):
+		"""
+		Check values of nodes
+		"""
+		for i, nodeId in enumerate(nodesIds):
+			node = self.nodes.get(nodeId)
+			self.assertEqual(node.getCurrentPower(), values[i])
+		if marginPower is not None:
+			self.assertEqual(self.getNetwork().getMarginPowerOn(), marginPower)
 
 	def getNetwork(self):
 		"""

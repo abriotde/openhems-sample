@@ -24,18 +24,11 @@ class TestAnnealingStrategy(utils.TestStrategy):
 		"""
 		configFile = utils.ROOT_PATH / "tests/data/openhems_fake4tests_solarnosell.yaml"
 		self.init(configFile)
-		nodes = self.firstLoop()
-		car = nodes["car"]
-		machine = nodes["machine"]
-		pump = nodes["pump"]
-		self.assertEqual(car.getCurrentPower(), 0)
-		self.assertEqual(machine.getCurrentPower(), 0)
-		self.assertEqual(pump.getCurrentPower(), 0)
-		self.assertEqual(self.getNetwork().getMarginPowerOn(), 2100)
+		self.firstLoop()
+		nodesIds = ["pump", "car", "machine"]
+		self.checkValues(nodesIds, [0, 0, 0], marginPower=2100)
 		self.app.server.loop(1)
-		self.assertEqual(car.getCurrentPower(), 0)
-		self.assertEqual(machine.getCurrentPower(), 0)
-		self.assertEqual(pump.getCurrentPower(), 0)
+		self.checkValues(nodesIds, [0, 0, 0])
 
 
 	# pylint: disable=invalid-name
@@ -43,20 +36,14 @@ class TestAnnealingStrategy(utils.TestStrategy):
 		"""
 		Test without public power grid.
 		"""
-		configFile = utils.ROOT_PATH / "tests/data/openhems_fake4tests_solarnosell_withoutpublicpowergrid.yaml"
+		configFile = (utils.ROOT_PATH /
+			"tests/data/openhems_fake4tests_solarnosell_withoutpublicpowergrid.yaml")
 		self.init(configFile)
-		nodes = self.firstLoop()
-		car = nodes["car"]
-		machine = nodes["machine"]
-		pump = nodes["pump"]
-		self.assertEqual(car.getCurrentPower(), 0)
-		self.assertEqual(machine.getCurrentPower(), 0)
-		self.assertEqual(pump.getCurrentPower(), 0)
-		self.assertEqual(self.getNetwork().getMarginPowerOn(), -300)
+		self.firstLoop()
+		nodesIds = ["pump", "car", "machine"]
+		self.checkValues(nodesIds, [0, 0, 0], marginPower=-300)
 		self.app.server.loop(1)
-		self.assertEqual(car.getCurrentPower(), 0)
-		self.assertEqual(machine.getCurrentPower(), 0)
-		self.assertEqual(pump.getCurrentPower(), 0)
+		self.checkValues(nodesIds, [0, 0, 0])
 
 if __name__ == '__main__':
 	unittest.main()

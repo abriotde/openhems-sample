@@ -54,11 +54,11 @@ class SolarBasedStrategy(EnergyStrategy):
 		# Init self._sunset && self.location before calling isDayTime()
 		self.isDayTime()
 
-	def updateNetwork(self, cycleDuration:int, now=None):
-		"""
-		Update the OpenHEMSNetwork.
-		"""
-		return super().updateNetwork(cycleDuration, now)
+	# def updateNetwork(self, cycleDuration:int, now=None):
+	# 	"""
+	# 	Update the OpenHEMSNetwork.
+	# 	"""
+	# 	return super().updateNetwork(cycleDuration, now)
 
 	def getAutonomousRatio(self):
 		"""

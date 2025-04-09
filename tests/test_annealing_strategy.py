@@ -24,18 +24,11 @@ class TestAnnealingStrategy(utils.TestStrategy):
 		"""
 		configFile = utils.ROOT_PATH / "tests/data/openhems_fake4tests_annealing.yaml"
 		self.init(configFile)
-		nodes = self.firstLoop()
-		car = nodes["car"]
-		machine = nodes["machine"]
-		pump = nodes["pump"]
-		self.assertEqual(car.getCurrentPower(), 0)
-		self.assertEqual(machine.getCurrentPower(), 0)
-		self.assertEqual(pump.getCurrentPower(), 0)
-		self.assertEqual(self.getNetwork().getMarginPowerOn(), 2100)
+		self.firstLoop()
+		nodesIds = ["pump", "car", "machine"]
+		self.checkValues(nodesIds, [0, 0, 0], marginPower=2100)
 		self.app.server.loop(1)
-		self.assertEqual(car.getCurrentPower(), 0)
-		self.assertEqual(machine.getCurrentPower(), 0)
-		self.assertEqual(pump.getCurrentPower(), 0)
+		self.checkValues(nodesIds, [0, 0, 0], marginPower=2100)
 
 
 	# pylint: disable=invalid-name

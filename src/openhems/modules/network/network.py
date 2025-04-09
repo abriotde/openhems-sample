@@ -180,7 +180,6 @@ class OpenHEMSNetwork:
 			filterId = "inout"
 		vals = [x.getMarginPower() for x in self.getAll(filterId)]
 		return max(vals)
-		return self._sumNodesValues(filterId, "inout", (lambda x: x.getMarginPower()))
 
 	def getMarginPowerOn(self):
 		"""

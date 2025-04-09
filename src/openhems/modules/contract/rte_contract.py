@@ -53,7 +53,9 @@ class RTETempoContract(RTEContract):
 
 
 	def __str__(self):
-		return f"RTETempoContract({self.hoursRanges}, colorRanges={self.colorRanges}, color={self.color}, colorNext={self.colorNext})"
+		return (f"RTETempoContract({self.hoursRanges}, "
+			f"colorRanges={self.colorRanges}, "
+			f"color={self.color}, colorNext={self.colorNext})")
 
 	# idClient = "4c8e84ae-4c0a-4f00-838a-66ca6bc3a7b4"
 	# idSecret = "f1a76990-3e0c-4b03-bc5e-87f94afdb956"
