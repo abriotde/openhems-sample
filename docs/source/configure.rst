@@ -38,6 +38,8 @@ Configure OpenHEMS with web interface
 Open the web interface of OpenHEMS (http://192.168.1.202:8000/) and click on "params" menu.  Should be on http://192.168.1.202:8000/params. You will see a form with many fields to fill. Default are usually good enough. To have more informations about fields, see below at paragraph "Configure OpenHEMS with YAML file".
 "Strategies" and ""network" must be set and are quite difficult to set. Click on "+" button to see the popup with choices. See paragraph bellow "Configure OpenHEMS with YAML file" to have more informations.
 
+There is a video, in french, to show how to configure OpenHEMS with web interface. You can find it on [Youtube](https://www.youtube.com/watch?v=1rb9n-XyTsM).
+
 
 Configure OpenHEMS with YAML file
 ---------------------------------

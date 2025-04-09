@@ -30,7 +30,8 @@ class OffPeakStrategy(EnergyStrategy):
 		self.hoursRanges = self.network.getHoursRanges()
 		self.logger.info("OffPeakStrategy(%s) on %s", str(self.hoursRanges), str(self.getNodes()))
 		if not self.hoursRanges:
-			msg = "OffPeak-strategy is useless without offpeak hours. Check your configuration."
+			msg = ("OffPeak-strategy is useless without offpeak hours. "
+				"In Server configuration, add a node 'PublicPowerGrid' with a contract using offpeak time-slots.")
 			self.logger.critical(msg)
 			raise ConfigurationException(msg)
 		self._rangeChangeDone = False

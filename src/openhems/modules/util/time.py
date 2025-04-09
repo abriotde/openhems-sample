@@ -302,6 +302,9 @@ class HoursRanges:
 			return r
 		raise StopIteration
 
+	def __repr__(self):
+		return self.__str__()
+
 	def __str__(self):
 		offpeakHoursRanges = ""
 		sep =""

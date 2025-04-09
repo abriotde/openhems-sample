@@ -46,7 +46,7 @@ default:
       battery_dynamic_max: 0.9
       battery_dynamic_min: -0.9
     offpeak:
-      offpeakhours: null
+      improvedSecurity: true
     switchoff:
       reverse: False
       offhours: []

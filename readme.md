@@ -89,6 +89,8 @@ All contribution to the software are welcome. Please contact contact@openhomesys
 
 See the [documentation](https://openhems.readthedocs.io/en/latest/installation.html)
 
+There is a video, in French, to explain how to configure OpenHEMS on [Youtube](https://www.youtube.com/watch?v=1rb9n-XyTsM)
+
 # Configure
 
 See the [documentation](https://openhems.readthedocs.io/en/latest/configure.html)
