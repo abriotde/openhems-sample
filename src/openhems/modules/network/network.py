@@ -154,8 +154,15 @@ class OpenHEMSNetwork:
 	def getMaxPowerConsumption(self):
 		"""
 		Return how much the network could consume if all devices switched on consume at there max.
+		But we don't have all real nodes we must
+		- Add global power consumption
+		- Add nodes maxPower and substract there currentPower (count in global power)
 		"""
-		return self._sumNodesValues("out", "out", (lambda x: x.isOn() and x.getMaxPower()))
+		globalPower = self.getCurrentPower()
+		for elem in self.getAll("out"):
+			if elem.isOn():
+				globalPower += elem.getMaxPower() - elem.getCurrentPower()
+		return globalPower
 
 	def getMinPower(self, filterId=None):
 		"""
@@ -169,6 +176,10 @@ class OpenHEMSNetwork:
 		Return margin power
 		(Power to keep before considering extrem value)
 		"""
+		if filterId is None:
+			filterId = "inout"
+		vals = [x.getMarginPower() for x in self.getAll(filterId)]
+		return max(vals)
 		return self._sumNodesValues(filterId, "inout", (lambda x: x.getMarginPower()))
 
 	def getMarginPowerOn(self):
@@ -179,12 +190,9 @@ class OpenHEMSNetwork:
 			# The maximum production before black-out
 			maxPowerP = self.getMaxPowerProduction()
 			# The consumption if every switched on devices consume at max capability
-			maxPowerC = self.getMaxPowerConsumption()
 			currentPower = self.getCurrentPower()
+			maxPowerC = self.getMaxPowerConsumption()
 			marginPower = self.getMarginPower()
-			# self.logger.debug(
-			#	"MaxPowerProduction:%s; MaxPowerConsumption:%s; CurrentPower:%s; MarginPower:%s;",
-			#	maxPowerP, maxPowerC, currentPower, marginPower)
 			marginA = maxPowerP-(currentPower+marginPower)
 			marginB = maxPowerP-maxPowerC # Maybe is it too safe?
 			self._marginPowerOn = min(marginA, marginB)
