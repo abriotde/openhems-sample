@@ -61,6 +61,8 @@ default:
     nosell:
       ratio: -1
       margin: 300
+      cycleDuration: 1
+      refCoefficient: 1
     nobuy:
       ratio: 1
       margin: 300

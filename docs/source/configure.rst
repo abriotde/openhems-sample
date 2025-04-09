@@ -164,7 +164,7 @@ ______
 
 This is named too *nobuy* or *ratiosellbuy*. In fact, these are the same principle: start and stop devices only base on electricity production and consumption and the device consumption.
 
-This strategy is usefull if you have solar panel and you have a fixed price from public power grid. It can be used if for other reason if you don't want to avoid sell or buy electricity (to test your autonomy level for instance). Attention, even in nosell or nobuy, and good parameters, you will sell and buy due to the reaction time.
+This strategy is usefull if you have solar panel and you have a fixed price from public power grid. It can be used if for other reason if you don't want to avoid sell or buy electricity (to test your autonomy level for instance). Attention, even in nosell or nobuy, and good parameters, you will sell and buy due to the reaction time. An advantage of this strategy is that it is consum few CPU ressources compare to over solutions for solar-panels.
 
 The pseudo-algorithme is
 
@@ -182,7 +182,11 @@ So, parameters are
 
 * *margin* : This define a margin to avoid sell/buy electricity. Considering, that a device can start/stop before the OpenHEMS react. So margin could be roughly the max consumption of a device for a good safety, but usually far less is enough.
 
-You should make your own test to adapt your parameters to your needs.
+* cycleDuration : This is the number of cycle during witch previous assertions have to be right to start/stop the device. If you set it to 1, it will be very reactive but it could be not enough time to have a good estimation of the stability. Risk of "Yo-yo effect".
+
+* refCoefficient : This is the sum of an abtract coefficient witch will let act even if cycleDuration is not reached. It will avoid to wait to long id there is a good over-production. To have and idea of that coefficient, have a look to logs and search "SolarNoSellStrategy: coef". If you see "coef+" it's to start device. If you see "coef-" it's to stop it.
+
+You should make your own test to adapt parameters to your needs. cycleDuration and refCoefficient are a little bit tricky to set so start with default values.
 
 
 Network

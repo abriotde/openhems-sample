@@ -27,13 +27,20 @@ class SolarNoSellStrategy(SolarBasedStrategy):
 	- Ratio = 1, consumption<production : no buy
 	The good news is that for 0 it's something between, and even for 2 or -2.
 	"""
+
 	def __init__(self, mylogger, network: OpenHEMSNetwork,
 			configurationGlobal:ConfigurationManager, configurationStrategy:dict,
 			strategyId:str="nosell"):
 		super().__init__(strategyId, network, configurationGlobal, mylogger)
 		self._ratio = configurationStrategy.get("ratio")
 		self._margin = configurationStrategy.get("margin")
+		self._cycleDuration = configurationStrategy.get("cycleDuration")
+		self._refCoefficient = configurationStrategy.get("refCoefficient")
 		self.logger.info("SolarNoSellStrategy()")
+		self._cycleNb = 0 # determine the number of cycles.
+		# If cycleNb == +X, coef was positive during last X cycles
+		# If cycleNb == -X, coef was negative during last X cycles
+		self._coefs = [] # List of last cycleNb coefs
 
 	def check(self, now=None):
 		"""
@@ -45,7 +52,7 @@ class SolarNoSellStrategy(SolarBasedStrategy):
 		Switch on devices if production > consommation + X * consommationDevice
 		Can switch on many devices if there is enought power powerMargin
 		"""
-		assert powerMargin>0
+		assert powerMargin>self._margin
 		for node in self.getNodes():
 			if not node.isOn():
 				# production > consommation + X * consommationDevice - powerMargin
@@ -55,10 +62,19 @@ class SolarNoSellStrategy(SolarBasedStrategy):
 				coef = powerMargin+((pow(self._ratio-1, 2)-4)/4)*node.getMaxPower() \
 					-self._ratio*self._margin
 				if coef>0:
-					if self.switchSchedulable(node, cycleDuration, True):
-						powerMargin -= node.getMaxPower()
-						if powerMargin<=0:
-							return True
+					if self._cycleNb>=0:
+						self._cycleNb += 1
+					else:
+						self._cycleNb = 1
+					c = self._cycleNb
+					self._coefs[c-1] = coef
+					self.logger.info("SolarNoSellStrategy: coef+=%s", coef)
+					if (c>=self._cycleDuration
+							or sum(self._coefs[slice(0,c)])>self._refCoefficient):
+						if self.switchSchedulable(node, cycleDuration, True):
+							powerMargin -= node.getMaxPower()
+							if powerMargin<=0:
+								return True
 		return False
 
 	def switchOffDevices(self, cycleDuration, powerMargin):
@@ -77,10 +93,19 @@ class SolarNoSellStrategy(SolarBasedStrategy):
 				coef = powerMargin+(1+((pow(self._ratio-1, 2)-4)/4))*node.getCurrentPower() \
 					-self._ratio*self._margin
 				if coef<0:
-					if self.switchSchedulable(node, cycleDuration, False):
-						powerMargin += node.getMaxPower()
-						if powerMargin>=0:
-							return True
+					if self._cycleNb<=0:
+						self._cycleNb -= 1
+					else:
+						self._cycleNb = -1
+					c = -1*self._cycleNb
+					self._coefs[c-1] = coef
+					self.logger.info("SolarNoSellStrategy: coef-=%s", coef)
+					if (c>=self._cycleDuration
+							or sum(self._coefs[slice(0,c)])>self._refCoefficient):
+						if self.switchSchedulable(node, cycleDuration, False):
+							powerMargin += node.getMaxPower()
+							if powerMargin>=0:
+								return True
 		return False
 
 	def apply(self, cycleDuration, now):
