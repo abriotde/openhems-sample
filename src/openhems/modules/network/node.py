@@ -378,17 +378,22 @@ class SolarPanel(InOutNode):
 	# pylint: disable=too-many-arguments
 	def __init__(self, nameid, currentPower, maxPower, *,
 			moduleModel=None, inverterModel=None, tilt=45, azimuth=180,
-			modulesPerString=1, stringsPerInverter=1):
-		super().__init__(nameid, currentPower, maxPower, 0, 0)
+			modulesPerString=1, stringsPerInverter=1, marginPower=None):
+		if marginPower is None:
+			marginPower = ConstFeeder(0)
+		super().__init__(nameid, currentPower, maxPower, currentPower,  marginPower)
 		self.moduleModel = moduleModel
 		self.inverterModel = inverterModel
 		self.tilt = tilt
 		self.azimuth = azimuth
 		self.modulesPerString = modulesPerString
 		self.stringsPerInverter = stringsPerInverter
+
 	def getMaxPower(self):
 		"""
-		get current maximum power.
+		get current maximum power = current power.
+		value saved in maxPower, is the theorical maxPower (usefull to know efficiency).
+		But in fact even if we ask more power, solar panels can't give us more.
 		"""
 		return self.currentPower.getValue()
 

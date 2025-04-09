@@ -106,6 +106,7 @@ default:
       azimuth: 180
       modulesPerString: 1
       stringsPerInverter: 1
+      marginPower: 300
     battery:
       currentPower: null
       maxPowerIn: 2000

@@ -251,8 +251,16 @@ class SimulatedAnnealingAlgorithm:
 			)
 
 		forcedSellCost = self.sellCost * (1.0 - self.sellTax / 100.0)
-		importCoefficients = (self.buyCost) / (self.buyCost + forcedSellCost)
-		dischargeCoefficients = (forcedSellCost) / (self.buyCost + forcedSellCost)
+		if self.buyCost + forcedSellCost == 0:
+			self.logger.warning(
+				"Buy cost and forced sell cost are <= 0. "
+				"Objective is set to 0.0"
+			)
+			importCoefficients = 0.0
+			dischargeCoefficients = 0.0
+		else:
+			importCoefficients = (self.buyCost) / (self.buyCost + forcedSellCost)
+			dischargeCoefficients = (forcedSellCost) / (self.buyCost + forcedSellCost)
 
 		return importCoefficients * newImport + dischargeCoefficients * newDischarges
 

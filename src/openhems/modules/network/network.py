@@ -297,15 +297,19 @@ class OpenHEMSNetwork:
 		return : float: cost
 		 (should be allways the same so never mind for comparaison)
 		"""
+		cost = 0
 		for elem in self.getAll("publicpowergrid"):
 			cost = elem.getContract().getPrice(now, attime)
 			return cost
+		return cost
 
 	def getSellPrice(self, now=None, attime=None):
 		"""
 		Estimate what should be the electricity sell cost at a Time.
 		If time is None, set to now"
 		"""
+		cost = 0
 		for elem in self.getAll("publicpowergrid"):
 			cost = elem.getContract().getSellPrice(now, attime)
 			return cost
+		return cost

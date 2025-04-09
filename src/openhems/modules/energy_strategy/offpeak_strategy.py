@@ -191,8 +191,8 @@ class OffPeakStrategy(EnergyStrategy):
 				rangeEnd = schedule.timeout
 			if not inoffpeak:
 				availableTime = rangeEnd - previousRangeEnd
-				attime = rangeEnd - (availableTime/2)
-				self.logger.debug("OffpeakStrategy.getPeakPeriod().getPrice(%s) = %f", attime, cost)
+				# attime = rangeEnd - (availableTime/2)
+				# self.logger.debug("OffpeakStrategy.getPeakPeriod().getPrice(%s) = %f", attime, cost)
 				peakPeriods.append([previousRangeEnd, availableTime, rangeEnd, cost])
 			previousRangeEnd = rangeEnd
 			i += 1

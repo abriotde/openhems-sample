@@ -30,7 +30,6 @@ class SolarNoSellStrategy(SolarBasedStrategy):
 	def __init__(self, mylogger, network: OpenHEMSNetwork,
 			configurationGlobal:ConfigurationManager, configurationStrategy:dict,
 			strategyId:str="nosell"):
-		del configurationGlobal
 		super().__init__(strategyId, network, configurationGlobal, mylogger)
 		self._ratio = configurationStrategy.get("ratio")
 		self._margin = configurationStrategy.get("margin")
@@ -67,7 +66,7 @@ class SolarNoSellStrategy(SolarBasedStrategy):
 		Switch off devices if production < consommation - (1-X) * consommationDevice
 		Can switch off many devices if there is enought power powerMargin
 		"""
-		assert powerMargin<0
+		assert powerMargin<self._margin
 		# Reverse because begin to switch off nodes with lowest priority
 		for node in reversed(self.getNodes()):
 			if node.isOn():
@@ -92,7 +91,7 @@ class SolarNoSellStrategy(SolarBasedStrategy):
 		Chances are we avoid ping-pong effect because when start device, we use max power,*
 		  but usually the real power is lower, and it's this we use to switch off
 		"""
-		del cycleDuration, now
+		del now
 		self.logger.debug("SolarNoSellStrategy.apply()")
 		consumption = self.network.getCurrentPower()
 		consumptionBattery = self.network.getCurrentPower("battery")

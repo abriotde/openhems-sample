@@ -104,4 +104,4 @@ class SourceInverterStrategy(SolarBasedStrategy):
 			self.updateNetworkUsingPublicGridSource(cycleDuration)
 		else: # Grid source is off as it is an inverter
 			self.updateNetworkUsingPrivateSource()
-		return True
+		return cycleDuration

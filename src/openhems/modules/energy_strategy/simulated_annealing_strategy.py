@@ -63,7 +63,7 @@ class SimulatedAnnealingStrategy(EnergyStrategy):
 			batterySoc = 0
 		buyCost = self.network.getPrice()
 		sellCost = self.network.getSellPrice()
-		sellTaxPercent = 100 * (buyCost - sellCost) / buyCost
+		sellTaxPercent = 100 * (buyCost - sellCost) / buyCost if buyCost > 0 else 0
 
 		nodes = self.getNodes()
 		for node in nodes:

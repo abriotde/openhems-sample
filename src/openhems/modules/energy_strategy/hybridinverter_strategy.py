@@ -36,3 +36,4 @@ class HybridInverterStrategy(SolarBasedStrategy):
 		logging.getLogger("HybridInverterStrategy")\
 			.error("SolarOnlyProductionStrategy.updateNetwork() : TODO")
 		# TODO
+		return 0
