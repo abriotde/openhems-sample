@@ -22,7 +22,7 @@ class OpenHEMSServer:
 	 and take right deccisions to optimize consumption
 	"""
 
-	def __init__(self, mylogger, network, serverConf:ConfigurationManager) -> None:
+	def __init__(self, mylogger, network, serverConf:ConfigurationManager, allowSleep=False) -> None:
 		self.logger = mylogger
 		self.network = network
 		self.loopDelay = serverConf.get("server.loopDelay")
@@ -64,8 +64,9 @@ class OpenHEMSServer:
 		if throwErr is not None:
 			self.logger.error(str(throwErr))
 			raise ConfigurationException(throwErr)
-		self.allowSleep = len(self.strategies)==1
+		self.allowSleep = allowSleep
 		self.inOverLoadMode = False # in over load mode, we have node deactivate for safety
+		self.lastLoopTime = None
 
 	def getSchedule(self):
 		"""
@@ -121,22 +122,28 @@ class OpenHEMSServer:
 		return marginPowerOn
 
 
-	def loop(self, loopDelay, now=None):
+	def loop(self, now=None):
 		"""
 		It's the content of each loop.
 		If loop delay=0, we consider that we never sleep (For test or reactivity).
 		"""
 		if now is None:
 			now = datetime.datetime.now()
+		if self.lastLoopTime is None:
+			loopDelay = 0
+		else:
+			loopDelay = now - self.lastLoopTime
+			loopDelay = loopDelay.total_seconds()
+		# print("Loop(",loopDelay,")")
+		self.lastLoopTime = now
 		self.logger.debug("OpenHEMSServer.loop()")
 		self.network.updateStates()
 		self.check()
 		time2wait = 86400
-		allowSleep = self.allowSleep and loopDelay>LOOP_DELAY_VIRTUAL
 		for strategy in self.strategies:
 			t = strategy.updateNetwork(loopDelay, now)
 			time2wait = min(t, time2wait)
-		if allowSleep and time2wait > 0:
+		if self.allowSleep and time2wait > 0:
 			self.logger.info("Loop sleep(%d min)", round(time2wait/60))
 			time.sleep(time2wait)
 
@@ -153,7 +160,7 @@ class OpenHEMSServer:
 		while True:
 			# pylint: disable=broad-exception-caught
 			try:
-				self.loop(loopDelay)
+				self.loop()
 			except Exception as e:
 				# at least HomeStateUpdaterException, CastException, HomeStateUpdaterException
 				msg = ("Fail update network. Maybe Home-Assistant is down"

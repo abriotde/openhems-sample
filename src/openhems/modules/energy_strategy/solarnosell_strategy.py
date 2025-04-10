@@ -124,10 +124,10 @@ class SolarNoSellStrategy(SolarBasedStrategy):
 		powerMargin = productionSolarPanel - consumption + consumptionBattery
 		if powerMargin>self._margin:
 			if self.switchOnDevices(cycleDuration, powerMargin):
-				return max(cycleDuration/10, 3)
+				return max(cycleDuration/5, 3)
 		elif powerMargin<self._margin:
 			if self.switchOffDevices(cycleDuration, powerMargin):
-				return max(cycleDuration/10, 3)
+				return max(cycleDuration/5, 3)
 		# TODO : Return short timeout if we switch on a device,
 		#  to quicly react if it's not enough (or too much)
 		#  (more chances are the state will evolv after).

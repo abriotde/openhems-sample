@@ -26,7 +26,9 @@ class OffPeakStrategy(EnergyStrategy):
 	def __init__(self, mylogger, network: OpenHEMSNetwork, strategyId:str):
 		super().__init__(strategyId, network, mylogger)
 		self.inOffpeakRange = False
-		self.rangeEnd = datetime.now()
+		self._rangeChangeDone = False
+		# set a rangeEnd tobe sure, first loop will check inOffpeakRange
+		self.rangeEnd = datetime(2024, 5, 28) # First commit date ;)
 		self.hoursRanges = self.network.getHoursRanges()
 		self.logger.info("OffPeakStrategy(%s) on %s", str(self.hoursRanges), str(self.getNodes()))
 		if not self.hoursRanges:
@@ -35,10 +37,8 @@ class OffPeakStrategy(EnergyStrategy):
 				"with a contract using offpeak time-slots.")
 			self.logger.critical(msg)
 			raise ConfigurationException(msg)
-		self._rangeChangeDone = False
 		self.nextRanges = [] # List of tuples (inoffpeakTime, rangeEndDatetime)
 		# witch represent next offpeak periods
-		self.checkRange()
 
 	def checkRange(self, nowDatetime: datetime=None) -> int:
 		"""
@@ -47,31 +47,25 @@ class OffPeakStrategy(EnergyStrategy):
 		"""
 		if nowDatetime is None:
 			nowDatetime = datetime.now()
-		offpeakranges = self.hoursRanges
 		inoffpeakPrev = self.inOffpeakRange
-		self.hoursRanges = self.network.getHoursRanges()
 		useCache = False
-		if offpeakranges!=self.hoursRanges:
-			self.nextRanges = []
-		else:
-			# use cache
-			for myRange in self.nextRanges:
-				inoffpeak, rangeEnd = myRange
-				if rangeEnd>nowDatetime:
-					self.inOffpeakRange = inoffpeak
-					self.rangeEnd = rangeEnd
-					useCache = True
-					break
-		self.inOffpeakRange, self.rangeEnd, _ = self.hoursRanges.checkRange(nowDatetime)
+		# use cache
+		for (inoffpeak, rangeEnd, _) in self.nextRanges:
+			if rangeEnd>nowDatetime:
+				self.inOffpeakRange = inoffpeak
+				self.rangeEnd = rangeEnd
+				useCache = True
+				break
+		if not useCache:
+			myrange = self.hoursRanges.checkRange(nowDatetime)
+			self.nextRanges.append(myrange)
+			self.inOffpeakRange, self.rangeEnd, _ = myrange
 		if inoffpeakPrev!=self.inOffpeakRange:
 			self._rangeChangeDone = False
+			self.hoursRanges = self.network.getHoursRanges() # check if has changed
 			if useCache:
 				# Remove old ranges from self.nextRanges
 				self.nextRanges = list(filter(lambda r: nowDatetime>r[1], self.nextRanges))
-		if len(self.nextRanges)==0:
-			self.nextRanges = [
-				(self.inOffpeakRange, self.rangeEnd)
-			]
 
 	def updateNetwork(self, cycleDuration:int, now=None) -> int:
 		"""
@@ -89,7 +83,7 @@ class OffPeakStrategy(EnergyStrategy):
 			self.switchOnMax(cycleDuration)
 		else: # Sleep untill end.
 			if not self._rangeChangeDone:
-				self.logger.debug("OffpeakStrategy : not offpeak, switchOffAll()")
+				self.logger.debug("OffpeakStrategy : not offpeak (%s), switchOffAll()", now.strftime(DATETIME_PRINT_FORMAT))
 				if self.switchOffAll():
 					self._rangeChangeDone = True
 					time2Wait = self.hoursRanges.getTime2NextRange(now)

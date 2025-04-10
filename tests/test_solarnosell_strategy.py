@@ -24,10 +24,9 @@ class TestAnnealingStrategy(utils.TestStrategy):
 		"""
 		configFile = utils.ROOT_PATH / "tests/data/openhems_fake4tests_solarnosell.yaml"
 		self.init(configFile)
-		self.firstLoop()
 		nodesIds = ["pump", "car", "machine"]
 		self.checkValues(nodesIds, [0, 0, 0], marginPower=2100)
-		self.app.server.loop(1)
+		self.loop()
 		self.checkValues(nodesIds, [0, 0, 0])
 
 
@@ -39,10 +38,9 @@ class TestAnnealingStrategy(utils.TestStrategy):
 		configFile = (utils.ROOT_PATH /
 			"tests/data/openhems_fake4tests_solarnosell_withoutpublicpowergrid.yaml")
 		self.init(configFile)
-		self.firstLoop()
 		nodesIds = ["pump", "car", "machine"]
 		self.checkValues(nodesIds, [0, 0, 0], marginPower=-300)
-		self.app.server.loop(1)
+		self.loop()
 		self.checkValues(nodesIds, [0, 0, 0])
 
 if __name__ == '__main__':

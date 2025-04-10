@@ -4,7 +4,7 @@ The web server is the UI used to that.
 """
 import logging
 import datetime
-
+from openhems.modules.util import CastUtililty
 
 class OpenHEMSSchedule:
 	"""
@@ -21,14 +21,6 @@ class OpenHEMSSchedule:
 		self.logger = logging.getLogger(__name__)
 		self.strategyCache = {}
 
-	def schedule(self, timeout, duration):
-		"""
-		Set device duration to be on
-		 AND timeout until witch all duration should be elapsed
-		"""
-		self.timeout = timeout
-		self.duration = duration
-
 	def isScheduled(self):
 		"""
 		Return True, if device is schedule to be on
@@ -37,16 +29,23 @@ class OpenHEMSSchedule:
 			": duration = %d", self.id, self.duration)
 		return self.duration>0
 
-	def setSchedule(self, duration:int, timeout:datetime=None):
+	def setSchedule(self, duration:int=None, timeout:datetime=None):
 		"""
-		Set duration for device to be on.
+		Set device duration to be on
+		 AND timeout until witch all duration should be elapsed
 		"""
 		msg = ("OpenHEMSSchedule.setSchedule("
 			f"{duration} seconds, timeout={timeout})")
+		if duration is None:
+			duration = self.duration
 		if duration!=self.duration or self.timeout!=timeout:
 			self.logger.info(msg)
 		else:
-			self.logger.debug(msg)
+			self.logger.debug(msg+" (no change)")
+		if timeout is not None and not isinstance(timeout, datetime):
+			timeout = CastUtililty.toTypeDatetime(timeout)
+		if not isinstance(duration, int):
+			timeout = CastUtililty.toTypeInt(duration)
 		self.duration = duration
 		self.timeout = timeout
 		self.strategyCache = {}

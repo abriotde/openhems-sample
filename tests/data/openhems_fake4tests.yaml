@@ -1,5 +1,5 @@
 server:
-  loglevel: warning
+  loglevel: error
   logfile: ""
   network: fake
   strategies: 

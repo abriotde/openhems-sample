@@ -24,10 +24,11 @@ class TestAnnealingStrategy(utils.TestStrategy):
 		"""
 		configFile = utils.ROOT_PATH / "tests/data/openhems_fake4tests_annealing.yaml"
 		self.init(configFile)
-		self.firstLoop()
+		self.loop()
 		nodesIds = ["pump", "car", "machine"]
+		self.setNodesValues(nodesIds, scheduledDurations=[3600, 3600, 3600])
 		self.checkValues(nodesIds, [0, 0, 0], marginPower=2100)
-		self.app.server.loop(1)
+		self.loop()
 		self.checkValues(nodesIds, [0, 0, 0], marginPower=2100)
 
 
