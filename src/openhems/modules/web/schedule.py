@@ -41,8 +41,8 @@ class OpenHEMSSchedule:
 		if duration!=self.duration or self.timeout!=timeout:
 			self.logger.info(msg)
 		else:
-			self.logger.debug(msg+" (no change)")
-		if timeout is not None and not isinstance(timeout, datetime):
+			self.logger.debug("%s (no change)", msg)
+		if timeout is not None and not isinstance(timeout, datetime.datetime):
 			timeout = CastUtililty.toTypeDatetime(timeout)
 		if not isinstance(duration, int):
 			timeout = CastUtililty.toTypeInt(duration)
@@ -62,7 +62,7 @@ class OpenHEMSSchedule:
 		"""
 		self.strategyCache[strategyId] = value
 
-	def decreaseTime(self, duration):
+	def decrementTime(self, duration):
 		"""
 		decrease time to be on from elapsed time.
 		"""

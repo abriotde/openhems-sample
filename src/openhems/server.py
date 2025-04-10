@@ -6,8 +6,7 @@ import time
 import datetime
 from openhems.modules.energy_strategy import (
 	OffPeakStrategy, SwitchoffStrategy, SimulatedAnnealingStrategy,
-	SolarNoSellStrategy,
-	LOOP_DELAY_VIRTUAL
+	SolarNoSellStrategy
 )
 # from openhems.modules.network import HomeStateUpdaterException
 from openhems.modules.util import CastUtililty
@@ -25,11 +24,11 @@ class OpenHEMSServer:
 	def __init__(self, mylogger, network, serverConf:ConfigurationManager, allowSleep=False) -> None:
 		self.logger = mylogger
 		self.network = network
+		self.network.server = self
 		self.loopDelay = serverConf.get("server.loopDelay")
-		strategies = serverConf.get("server.strategies")
 		self.strategies = []
 		throwErr = None
-		for strategyParams in strategies:
+		for strategyParams in serverConf.get("server.strategies"):
 			strategy = strategyParams.get("class", "").lower()
 			strategyId = strategyParams.get("id", strategy)
 			if strategy=="offpeak":
@@ -67,6 +66,7 @@ class OpenHEMSServer:
 		self.allowSleep = allowSleep
 		self.inOverLoadMode = False # in over load mode, we have node deactivate for safety
 		self.lastLoopTime = None
+		self.decrementTimeList = {}
 
 	def getSchedule(self):
 		"""
@@ -81,6 +81,22 @@ class OpenHEMSServer:
 				if sc is not None:
 					schedule[myid] = sc
 		return schedule
+
+	def registerDecrementTime(self, node, register=True):
+		"""
+		Register a node witch will decrement time.
+		"""
+		if register:
+			self.decrementTimeList[id(node)] = node
+		else:
+			self.decrementTimeList.pop(id(node))
+
+	def decrementTime(self, duration):
+		"""
+		Decrement time from all objects neither the type (Thanks Python ;) )
+		"""
+		for node in self.decrementTimeList.values():
+			node.decrementTime(duration)
 
 	def check(self):
 		""""
@@ -139,6 +155,7 @@ class OpenHEMSServer:
 		self.logger.debug("OpenHEMSServer.loop()")
 		self.network.updateStates()
 		self.check()
+		self.decrementTime(loopDelay)
 		time2wait = 86400
 		for strategy in self.strategies:
 			t = strategy.updateNetwork(loopDelay, now)

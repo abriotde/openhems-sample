@@ -16,13 +16,17 @@ from pathlib import Path
 openhemsPath = Path(__file__).parents[1]
 sys.path.append(str(openhemsPath))
 # pylint: disable=wrong-import-position
-from openhems.modules.network import network_helper
+from openhems.modules.network.driver.home_assistant_api import HomeAssistantAPI
+from openhems.modules.network.driver.fake_network import FakeNetwork
+from openhems.modules.network import OpenHEMSNetwork, HomeStateUpdaterException
+
 from openhems.modules.web import OpenhemsHTTPServer
 from openhems.modules.util import (
 	ConfigurationManager, ConfigurationException,
-	CastUtililty
+	CastUtililty, CastException
 )
 from openhems.server import OpenHEMSServer
+
 class OpenHEMSApplication:
 	"""
 	This class is the main class to manage OpenHEMS as independant application.
@@ -75,6 +79,23 @@ class OpenHEMSApplication:
 		# self.logger.addHandler(watched_file_handler)
 		return self.logger
 
+	def getNetworkFromConfiguration(self, logger, configurator:ConfigurationManager):
+		"""
+		Method to instantiate a network from a ConfigurationManager 
+		"""
+		networkSource = configurator.get("server.network")
+		if networkSource=="homeassistant":
+			logger.info("Network: HomeAssistantAPI")
+			networkUpdater = HomeAssistantAPI(configurator)
+		elif networkSource=="fake":
+			logger.info("Network: FakeNetwork")
+			networkUpdater = FakeNetwork(configurator)
+		else:
+			raise ConfigurationException(f"Invalid server.network configuration '{networkSource}'")
+		network = OpenHEMSNetwork(logger, networkUpdater, configurator.get("network.nodes"))
+		return network
+
+
 	def getLogger(self):
 		"""
 		Return logger
@@ -120,12 +141,12 @@ class OpenHEMSApplication:
 		self.server = None
 		# pylint: disable=broad-exception-caught
 		try:
-			network = network_helper.getNetworkFromConfiguration(self.logger, configurator)
+			network = self.getNetworkFromConfiguration(self.logger, configurator)
 			self.warnings = self.warnings + network.getWarningMessages()
 			self.server = OpenHEMSServer(self.logger, network, configurator)
 			schedule = self.server.getSchedule()
-		except Exception as e:
-			# at least HomeStateUpdaterException, CastException, HomeStateUpdaterException
+		except (HomeStateUpdaterException, CastException, ConfigurationException) as e:
+			# at least HomeStateUpdaterException, CastException, ConfigurationException
 			self.logger.error(str(e))
 			self.warnings.append(str(e))
 		for warning in self.warnings:

@@ -25,6 +25,7 @@ class Feeder:
 	"""
 	def __init__(self, value=None):
 		self.value = value
+
 	def getValue(self):
 		"""
 		Return Value. Ths is default implementation

@@ -54,27 +54,26 @@ class SolarNoSellStrategy(SolarBasedStrategy):
 		"""
 		assert powerMargin>self._margin
 		for node in self.getNodes():
-			if not node.isOn():
-				# production > consommation + X * consommationDevice - powerMargin
-				#  = (production - consommation) > X * consommationDevice
-				#  = powerMargin  > X * consommationDevice
-				# powerMargin+(((ratio-1)²-4)/4)*consommationDevice-ratio*margin>0
-				coef = powerMargin+((pow(self._ratio-1, 2)-4)/4)*node.getMaxPower() \
-					-self._ratio*self._margin
-				if coef>0:
-					if self._cycleNb>=0:
-						self._cycleNb += 1
-					else:
-						self._cycleNb = 1
-					c = self._cycleNb
-					self._coefs[c-1] = coef
-					self.logger.info("SolarNoSellStrategy: coef+=%s", coef)
-					if (c>=self._cycleDuration
-							or sum(self._coefs[slice(0,c)])>self._refCoefficient):
-						if self.switchSchedulable(node, cycleDuration, True):
-							powerMargin -= node.getMaxPower()
-							if powerMargin<=0:
-								return True
+			if node.isOn():
+				continue
+			# production > consommation + X * consommationDevice - powerMargin
+			#  = (production - consommation) > X * consommationDevice
+			#  = powerMargin  > X * consommationDevice
+			# powerMargin+(((ratio-1)²-4)/4)*consommationDevice-ratio*margin>0
+			coef = powerMargin+((pow(self._ratio-1, 2)-4)/4)*node.getMaxPower() \
+				-self._ratio*self._margin
+			if coef<=0:
+				continue
+			self._cycleNb = self._cycleNb+1 if self._cycleNb>=0 else 1
+			c = self._cycleNb
+			self._coefs[c-1] = coef
+			self.logger.info("SolarNoSellStrategy: coef+=%s", coef)
+			if (c>=self._cycleDuration
+					or sum(self._coefs[slice(0,c)])>self._refCoefficient):
+				if self.switchSchedulable(node, cycleDuration, True):
+					powerMargin -= node.getMaxPower()
+					if powerMargin<=0:
+						return True
 		return False
 
 	def switchOffDevices(self, cycleDuration, powerMargin):
@@ -85,27 +84,26 @@ class SolarNoSellStrategy(SolarBasedStrategy):
 		assert powerMargin<self._margin
 		# Reverse because begin to switch off nodes with lowest priority
 		for node in reversed(self.getNodes()):
-			if node.isOn():
-				# production < consommation - (1-X) * consommationDevice
-				#  = (production - consommation) < (X-1) * consommationDevice
-				# Solution with coef between -1 and 1 : X = - (((ratio-1)²-4)/4)
-				# powerMargin+(1+(((ratio-1)²-4)/4))*consommationDevice-ratio*margin<0
-				coef = powerMargin+(1+((pow(self._ratio-1, 2)-4)/4))*node.getCurrentPower() \
-					-self._ratio*self._margin
-				if coef<0:
-					if self._cycleNb<=0:
-						self._cycleNb -= 1
-					else:
-						self._cycleNb = -1
-					c = -1*self._cycleNb
-					self._coefs[c-1] = coef
-					self.logger.info("SolarNoSellStrategy: coef-=%s", coef)
-					if (c>=self._cycleDuration
-							or sum(self._coefs[slice(0,c)])>self._refCoefficient):
-						if self.switchSchedulable(node, cycleDuration, False):
-							powerMargin += node.getMaxPower()
-							if powerMargin>=0:
-								return True
+			if not node.isOn():
+				continue
+			# production < consommation - (1-X) * consommationDevice
+			#  = (production - consommation) < (X-1) * consommationDevice
+			# Solution with coef between -1 and 1 : X = - (((ratio-1)²-4)/4)
+			# powerMargin+(1+(((ratio-1)²-4)/4))*consommationDevice-ratio*margin<0
+			coef = powerMargin+(1+((pow(self._ratio-1, 2)-4)/4))*node.getCurrentPower() \
+				-self._ratio*self._margin
+			if coef>=0:
+				continue
+			self._cycleNb = self._cycleNb-1 if self._cycleNb<=0 else -1
+			c = -1*self._cycleNb
+			self._coefs[c-1] = coef
+			self.logger.info("SolarNoSellStrategy: coef-=%s", coef)
+			if (c>=self._cycleDuration
+					or sum(self._coefs[slice(0,c)])>self._refCoefficient):
+				if self.switchSchedulable(node, cycleDuration, False):
+					powerMargin += node.getMaxPower()
+					if powerMargin>=0:
+						return True
 		return False
 
 	def apply(self, cycleDuration, now):

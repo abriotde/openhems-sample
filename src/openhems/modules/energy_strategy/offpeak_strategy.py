@@ -83,7 +83,8 @@ class OffPeakStrategy(EnergyStrategy):
 			self.switchOnMax(cycleDuration)
 		else: # Sleep untill end.
 			if not self._rangeChangeDone:
-				self.logger.debug("OffpeakStrategy : not offpeak (%s), switchOffAll()", now.strftime(DATETIME_PRINT_FORMAT))
+				self.logger.debug("OffpeakStrategy : not offpeak (%s), switchOffAll()",
+					now.strftime(DATETIME_PRINT_FORMAT))
 				if self.switchOffAll():
 					self._rangeChangeDone = True
 					time2Wait = self.hoursRanges.getTime2NextRange(now)

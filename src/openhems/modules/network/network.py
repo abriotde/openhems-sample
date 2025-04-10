@@ -46,6 +46,7 @@ class OpenHEMSNetwork:
 		self._loopNbMarginPowerOn = -1
 		self._marginPowerOn = -1
 		self.addNetworkUpdater(networkUpdater, nodesConf)
+		self.server = None
 
 	def addNetworkUpdater(self, networkUpdater: HomeStateUpdater, nodesConf):
 		"""

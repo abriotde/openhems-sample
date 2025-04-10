@@ -30,24 +30,18 @@ class OpenHEMSNode:
 		self.id = ""
 		self.setId(nameId)
 		self.network = None
-		self._isSwitchable = False
-		self._isOn:Feeder = None
 		self._controlledPower = controlledPowerFeeder
 		self._controlledPowerValues = controlledPowerValues
 		self._initControlledPowerValues()
 		self.currentPower:Feeder = currentPower
+		self.maxPower : Feeder = maxPower
+		self._isOn : Feeder = isOnFeeder
+		self.previousPower = deque()
+		self._isActivate = True
 		try: # Test if currentPower is well configured
 			self.getCurrentPower()
 		except TypeError as e:
 			raise ConfigurationException(str(e)) from e
-		self.maxPower:Feeder = maxPower
-		if isOnFeeder is not None:
-			self._isOn = isOnFeeder
-			self._isSwitchable = True
-		else:
-			self._isSwitchable = False
-		self.previousPower = deque()
-		self._isActivate = True
 
 	def _initControlledPowerValues(self):
 		"""
@@ -103,7 +97,7 @@ class OpenHEMSNode:
 			   " or it is a wrong configuration.")
 			logger.error(errorMsg)
 			raise TypeError(errorMsg)
-		if self._isSwitchable and currentPower!=0 and not self.isOn():
+		if self.isSwitchable() and currentPower!=0 and not self.isOn():
 			logger.warning("'%s' is off but current power=%d", self.id, currentPower)
 		logger.info("OpenHEMSNode.getCurrentPower(%s) = %s", self.id, currentPower)
 		return currentPower
@@ -202,12 +196,6 @@ class OpenHEMSNode:
 			return self._controlledPower.setValue(power)
 		return None
 
-	def isSwitchable(self):
-		"""
-			Return true if this OpenHEMSNode can be switch on/off.
-		"""
-		return self._isSwitchable
-
 	def setActivate(self, value:bool):
 		"""
 		Used to inhibate node when it is risking over-load electrical network.
@@ -221,23 +209,33 @@ class OpenHEMSNode:
 		"""
 		return self._isActivate
 
+	def isSwitchable(self):
+		"""
+			Return true if this OpenHEMSNode can be switch on/off.
+		"""
+		return self._isOn is not None
+
 	def isOn(self):
 		"""
 		Return true if the node is not switchable or is switch on.
 		"""
 		# print("OpenHEMSNode.isOn(",self.id,")")
-		if self._isSwitchable:
-			return self._isOn.getValue()
-		return True
+		if self._isOn is None:
+			logger.warning("'%s' is not switchable", self.id)
+			return False
+		return self._isOn.getValue()
 
-	def switchOn(self, connect: bool) -> bool:
+	def switchOn(self, connect:bool, register=None) -> bool:
 		"""
 		May not work if it is impossible (No relay) or if it failed.
 		
 		return bool: False if fail to switchOn/switchOff
 		"""
-		if self._isSwitchable and self._isActivate:
-			return self.network.networkUpdater.switchOn(connect, self)
+		if self.isSwitchable() and self._isActivate:
+			ok = self.network.networkUpdater.switchOn(connect, self)
+			if ok and register is not None:
+				self.network.server.registerDecrementTime(self, register)
+			return ok
 		logger.warning("Try to switchOn/Off a not switchable device : %s", self.id)
 		return connect # Consider node is always on network
 
@@ -266,13 +264,22 @@ class OutNode(OpenHEMSNode):
 		"""
 		return self.schedule
 
-	def decreaseTime(self, time:int) -> int:
+	def isScheduled(self):
+		"""
+		Return True, if device is schedule to be on
+		"""
+		sch = self.getSchedule()
+		if sch is not None:
+			return sch.isScheduled()
+		return False
+
+	def decrementTime(self, time:int) -> int:
 		"""
 		Decrease time of schedule and return remaining time.
 		"""
 		sch = self.getSchedule()
 		if sch is not None and self.isOn():
-			return sch.decreaseTime(time)
+			return sch.decrementTime(time)
 		return 0
 
 	def getStrategyId(self):
@@ -284,7 +291,7 @@ class OutNode(OpenHEMSNode):
 	def __str__(self):
 		return (f"OutNode(name={self.name}, strategy={self.strategyId}, priority={self._priority}"
 			f" currentPower={self.currentPower},"
-			f"maxPower={self.maxPower}, isOn={self._isOn})")
+			f"maxPower={self.maxPower}, isOn={self.isOn()})")
 	def __repr__(self):
 		return str(self)
 

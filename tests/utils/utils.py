@@ -9,12 +9,12 @@ from pathlib import Path
 ROOT_PATH = Path(__file__).parents[2]
 sys.path.append(str(ROOT_PATH / "src"))
 from openhems.main import OpenHEMSApplication
-from openhems.modules.energy_strategy.energy_strategy import LOOP_DELAY_VIRTUAL
 
 class TestStrategy(unittest.TestCase):
 	"""
 	Class to factorize code for test strategies
 	"""
+	# pylint: disable=attribute-defined-outside-init
 	def init(self, configFile, now=None):
 		"""
 		Init the application
