@@ -70,7 +70,6 @@ class GenericContract:
 		"""
 		:return float: the peak-price
 		"""
-		del now, attime
 		val = max(self.getHoursRanges(now, attime).ranges, key=lambda s: (print("SSSS",s), s[2]))
 		return val[2]
 
@@ -78,7 +77,6 @@ class GenericContract:
 		"""
 		:return float: the offpeak-price
 		"""
-		del now, attime
 		val = min(self.getHoursRanges(now, attime).ranges, key=lambda s: s[2])
 		return val[2]
 

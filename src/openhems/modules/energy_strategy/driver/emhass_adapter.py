@@ -98,7 +98,6 @@ class EmhassAdapter:
 			'associations_path' : associationsPath
 		}
 		self._secretsPath = configPath / 'secrets_emhass.yaml'
-		self.deferables = []
 		self.deferables = [] # List[Deferrable]
 		self._params = {}
 		self.initialyzeHEMASS()
@@ -323,7 +322,7 @@ Altitude: {altitude}
 		"""
 		datas = configurationEmhass
 		# P_from_grid_max / P_to_grid_max
-		datas['P_from_grid_max'] = network.getMaxPower("publicpowergrid")
+		datas['P_from_grid_max'] = network.getMaxPowerProduction("publicpowergrid")
 		datas['P_to_grid_max'] = network.getMinPower("publicpowergrid")
 		elems = network.getAll("inout")
 		zeroRelacementVars = [

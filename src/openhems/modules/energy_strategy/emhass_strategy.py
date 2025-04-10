@@ -63,7 +63,7 @@ class EmhassStrategy(EnergyStrategy):
 		self._data = data
 		return data
 
-	def getDeferrables(self, node, durationInSecs):
+	def getDeferrable(self, node, durationInSecs):
 		"""
 		Return a Deferrable representing the node (adding usefull informations for algo).
 		"""
@@ -122,6 +122,8 @@ class EmhassStrategy(EnergyStrategy):
 		del cycleDuration
 		if now is None:
 			now = datetime.now(self.timezone)
+		elif now.tzinfo is None:
+			now = self.timezone.localize(now)
 		timestamp, rows = self.getRowsAt(now)
 		if rows[1] is None: # Case no deferables
 			self.network.switchOffAll()
