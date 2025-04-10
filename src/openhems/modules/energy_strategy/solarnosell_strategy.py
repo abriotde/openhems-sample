@@ -47,7 +47,7 @@ class SolarNoSellStrategy(SolarBasedStrategy):
 		Nothing todo
 		"""
 
-	def switchOnDevices(self, cycleDuration, powerMargin):
+	def switchOnDevices(self, powerMargin):
 		"""
 		Switch on devices if production > consommation + X * consommationDevice
 		Can switch on many devices if there is enought power powerMargin
@@ -70,13 +70,13 @@ class SolarNoSellStrategy(SolarBasedStrategy):
 			self.logger.info("SolarNoSellStrategy: coef+=%s", coef)
 			if (c>=self._cycleDuration
 					or sum(self._coefs[slice(0,c)])>self._refCoefficient):
-				if self.switchSchedulable(node, cycleDuration, True):
+				if self.switchSchedulable(node, True):
 					powerMargin -= node.getMaxPower()
 					if powerMargin<=0:
 						return True
 		return False
 
-	def switchOffDevices(self, cycleDuration, powerMargin):
+	def switchOffDevices(self, powerMargin):
 		"""
 		Switch off devices if production < consommation - (1-X) * consommationDevice
 		Can switch off many devices if there is enought power powerMargin
@@ -100,7 +100,7 @@ class SolarNoSellStrategy(SolarBasedStrategy):
 			self.logger.info("SolarNoSellStrategy: coef-=%s", coef)
 			if (c>=self._cycleDuration
 					or sum(self._coefs[slice(0,c)])>self._refCoefficient):
-				if self.switchSchedulable(node, cycleDuration, False):
+				if self.switchSchedulable(node, False):
 					powerMargin += node.getMaxPower()
 					if powerMargin>=0:
 						return True
@@ -121,10 +121,10 @@ class SolarNoSellStrategy(SolarBasedStrategy):
 		productionSolarPanel = self.network.getCurrentPower("solarpanel")
 		powerMargin = productionSolarPanel - consumption + consumptionBattery
 		if powerMargin>self._margin:
-			if self.switchOnDevices(cycleDuration, powerMargin):
+			if self.switchOnDevices(powerMargin):
 				return max(cycleDuration/5, 3)
 		elif powerMargin<self._margin:
-			if self.switchOffDevices(cycleDuration, powerMargin):
+			if self.switchOffDevices(powerMargin):
 				return max(cycleDuration/5, 3)
 		# TODO : Return short timeout if we switch on a device,
 		#  to quicly react if it's not enough (or too much)

@@ -93,7 +93,7 @@ class SimulatedAnnealingStrategy(EnergyStrategy):
 			node = self.deferables.get(nodeId)
 			if node is None:
 				continue
-			self.switchSchedulable(node, cycleDuration, state)
+			self.switchSchedulable(node, state)
 
 			# Send change power if state is now on and change power is accepted and
 			#  (power have change or eqt is just activated)
@@ -104,16 +104,4 @@ class SimulatedAnnealingStrategy(EnergyStrategy):
 				self.logger.debug("Change power of %s to %s", equipment.name, requestedPower)
 				# TODO, there is no variable devices in OpenHEMS today
 				node.setControlledPower(requestedPower)
-
-	def updateNetwork(self, cycleDuration, now=None):
-		"""
-		Decide what to do during the cycle:
-		 IF off-peak : switch on all
-		 ELSE : Switch off all AND Sleep until off-peak
-		Now is used to get a fake 
-		"""
-		if now is None:
-			now = datetime.now()
-		self.check(now)
-		self.apply(cycleDuration, now=now)
 		return cycleDuration

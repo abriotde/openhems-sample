@@ -46,7 +46,7 @@ class SourceInverterStrategy(SolarBasedStrategy):
 		# TODO
 		return True
 
-	def updateNetworkUsingPublicGridSource(self, cycleDuration):
+	def updateNetworkUsingPublicGridSource(self):
 		"""
 		When we use public grid source
 		"""
@@ -64,7 +64,7 @@ class SourceInverterStrategy(SolarBasedStrategy):
 				self.logger.warning("Fail to switch to solar production.")
 		else: # If solar production shouldn't satisfy switchable consumption, switch on devices.
 			if self.itsStressyDay() and self.isOffPeakTime():
-				self.switchOnMax(cycleDuration)
+				self.switchOnMax()
 			else:
 				self.switchOnCriticDevices(switchOffOthers=True)
 
@@ -101,7 +101,7 @@ class SourceInverterStrategy(SolarBasedStrategy):
 		"""
 		del now
 		if self.network.isGridSourceOn():
-			self.updateNetworkUsingPublicGridSource(cycleDuration)
+			self.updateNetworkUsingPublicGridSource()
 		else: # Grid source is off as it is an inverter
 			self.updateNetworkUsingPrivateSource()
 		return cycleDuration

@@ -119,6 +119,7 @@ class EmhassStrategy(EnergyStrategy):
 		"""
 		This should apply emhass result (eval call) : self._data
 		"""
+		del cycleDuration
 		if now is None:
 			now = datetime.now(self.timezone)
 		timestamp, rows = self.getRowsAt(now)
@@ -146,5 +147,5 @@ class EmhassStrategy(EnergyStrategy):
 				switchOnRate = 100 * ( np.dot(vals, rates) ) / value
 			deferable = self.deferables[deferableName]
 			doSwitchOn = self.evaluatePertinenceSwitchOn(switchOnRate, deferable.node)
-			self.switchSchedulable(deferable.node, cycleDuration, doSwitchOn)
+			self.switchSchedulable(deferable.node, doSwitchOn)
 		return True

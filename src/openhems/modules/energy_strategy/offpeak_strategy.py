@@ -80,7 +80,7 @@ class OffPeakStrategy(EnergyStrategy):
 		time2Wait = 0
 		if self.inOffpeakRange:
 			# We are in off-peak range hours : switch on all
-			self.switchOnMax(cycleDuration)
+			self.switchOnMax()
 		else: # Sleep untill end.
 			if not self._rangeChangeDone:
 				self.logger.debug("OffpeakStrategy : not offpeak (%s), switchOffAll()",
@@ -92,7 +92,7 @@ class OffPeakStrategy(EnergyStrategy):
 					self.logger.warning("Fail to switch off all. We will try again on next loop.")
 			# TODO : check time2Wait with check4MissingOffeakTime
 			# Even on peak hours, start devices with no other solutions to respect timeout
-			self.check4MissingOffeakTime(now, cycleDuration)
+			self.check4MissingOffeakTime(now)
 		return time2Wait
 
 	def getMissingTime(self, schedule, now):
@@ -137,7 +137,7 @@ class OffPeakStrategy(EnergyStrategy):
 		self.logger.debug("OffpeakStrategy.getMissingTime(%s) = %s", schedule, missingTime)
 		return missingTime
 
-	def check4MissingOffeakTime(self, now, cycleDuration):
+	def check4MissingOffeakTime(self, now):
 		"""
 		Switch on nodes wich must be switch on during peak-periods
 		due to missing time during offpeak period to respect timeout
@@ -159,7 +159,7 @@ class OffPeakStrategy(EnergyStrategy):
 				start, end = onPeriod
 				if now>start:
 					if end>now:
-						if self.switchSchedulable(elem, cycleDuration, True):
+						if self.switchSchedulable(elem, True):
 							self.logger.info(
 							    "Switch on '%s' due to missing time on offpeak periods to respect constraints.",
 							    elem.id)

@@ -86,11 +86,10 @@ class EnergyStrategy:
 			return self._nodes
 		return self.network.getNodesForStrategy(self.strategyId)
 
-	def _switchSchedulableWitchIsOff(self, node, cycleDuration, doSwitchOn):
+	def _switchSchedulableWitchIsOff(self, node, doSwitchOn):
 		"""
 		Like switchSchedulable() but for node off and switchable
 		"""
-		del cycleDuration
 		if doSwitchOn and node.getSchedule().duration>0:
 			marginPower = node.network.getMarginPowerOn()
 			if node.getMaxPower()>marginPower:
@@ -112,13 +111,13 @@ class EnergyStrategy:
 				node.id)
 		return False
 
-	def switchSchedulable(self, node, cycleDuration, doSwitchOn):
+	def switchSchedulable(self, node, doSwitchOn):
 		"""
 		param node: Node to switch on
 		param doSwitchOn: Set if we want to switch on or off
 		return: True if node is on
 		"""
-		if node.isSwitchable:
+		if node.isSwitchable():
 			if node.isOn():
 				isScheduled = node.isScheduled()
 				if not isScheduled or not doSwitchOn:
@@ -132,12 +131,12 @@ class EnergyStrategy:
 						node.id, node.getSchedule().duration)
 					return True
 			else:
-				return self._switchSchedulableWitchIsOff(node, cycleDuration, doSwitchOn)
+				return self._switchSchedulableWitchIsOff(node, doSwitchOn)
 		else:
 			self.logger.debug("switchOn() : Node is not switchable : %s.", node.id)
 		return False
 
-	def switchOffAll(self, cycleDuration=1):
+	def switchOffAll(self):
 		"""
 		Switch of all connected devices with this strategy.
 		"""
@@ -145,7 +144,7 @@ class EnergyStrategy:
 		ok = True
 		for elem in self.getNodes():
 			# self.logger.debug("Switch off '%s'", elem.id)
-			if elem.isSwitchable and self.switchSchedulable(elem, cycleDuration, False):
+			if elem.isSwitchable() and self.switchSchedulable(elem, False):
 				self.logger.warning("Fail to switch off '%s'",elem.id)
 				ok = False
 		return ok
@@ -218,8 +217,9 @@ class EnergyStrategy:
 		"""
 		This function must be overload
 		"""
-		del cycleDuration, now
+		del now
 		self.logger.debug("EnergyStrategy.apply() must be overload")
+		return cycleDuration
 
 	def updateNetwork(self, cycleDuration, now=None):
 		"""
@@ -231,11 +231,10 @@ class EnergyStrategy:
 		if now is None:
 			now = datetime.datetime.now()
 		self.check(now)
-		self.apply(cycleDuration, now=now)
-		return cycleDuration
+		return self.apply(cycleDuration, now=now)
 
 
-	def switchOnMax(self, cycleDuration):
+	def switchOnMax(self):
 		"""
 		Switch on nodes, but 
 		 - If there is no margin to switch on, do nothing.
@@ -248,7 +247,7 @@ class EnergyStrategy:
 			return True
 		switchOn = False
 		for elem in self.getNodes(True):
-			isOn = self.switchSchedulable(elem.node, cycleDuration, True)
+			isOn = self.switchSchedulable(elem.node, True)
 			if isOn and elem.changed(switchOn):
 				marginPower -= elem.node.getMaxPower()
 				if marginPower<=0:

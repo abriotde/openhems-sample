@@ -4,11 +4,15 @@ Utils classes for tests
 import sys
 import unittest
 import datetime
+import logging
 from pathlib import Path
 # pylint: disable=wrong-import-position, import-error
 ROOT_PATH = Path(__file__).parents[2]
 sys.path.append(str(ROOT_PATH / "src"))
 from openhems.main import OpenHEMSApplication
+from openhems.modules.util import DATETIME_PRINT_FORMAT
+
+logger = logging.getLogger(__name__)
 
 class TestStrategy(unittest.TestCase):
 	"""
@@ -53,6 +57,8 @@ class TestStrategy(unittest.TestCase):
 			else:
 				self._loopDelay = (now - self._now).total_seconds()
 			self._now = now
+		logger.debug("Time: %s, lastloop: %s s",
+			self._now.strftime(DATETIME_PRINT_FORMAT), self._loopDelay)
 		self.app.server.loop(self._now)
 		self._loopDelay *= 2
 		return self.nodes
