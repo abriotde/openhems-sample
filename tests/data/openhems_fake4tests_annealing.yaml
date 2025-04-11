@@ -5,11 +5,11 @@ server:
     - {class: annealing, id: annealing}
 network:
   nodes:
-    - {id: linky, currentPower: "SUM(out)", marginPower: 1000, maxPower: 3100, minPower: 0, class: PublicPowerGrid, contract: {
-        class: generic, defaultPrice: 0.15, outRangePrice: 0.30, hoursRanges: ["22h-6h"]
+    - {id: linky, currentPower: -1000, marginPower: 1000, maxPower: 3100, minPower: 0, class: PublicPowerGrid, contract: {
+        class: generic, defaultPrice: 0.15, outRangePrice: 0.30, hoursRanges: ["22h-6h"], sellPrice: 0.05
       }
     }
-    - {id: solarpanel, class: solarpanel, currentPower: 600, maxPower: 3000}
+    - {id: solarpanel, class: solarpanel, currentPower: 1600, maxPower: 3000}
     - {id: pump, class: switch, currentPower: 280, maxPower: 300, priority: 60, strategy: annealing, isOn: false}
     - {id: car, class: switch, currentPower: 1800, maxPower: 2000, priority: 50, strategy: annealing, isOn: false}
     - {id: machine, class: switch, currentPower: 800, maxPower: 1200, priority: 40, strategy: annealing, isOn: false}

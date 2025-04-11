@@ -50,10 +50,8 @@ class SimulatedAnnealingStrategy(EnergyStrategy):
 		"""
 		Eval the best optimization plan using simulated annealing algorithm.
 		"""
-		powerConsumption = self.network.getCurrentPower()
-		solarPanel = self.network.getAll("solarpanel")
-		powerProduction = sum(node.getCurrentPower() for node in solarPanel)
-		powerProduction = 1000
+		powerConsumption = sum(node.getCurrentPower() for node in self.network.getAll("publicpowergrid"))
+		powerProduction = sum(node.getCurrentPower() for node in self.network.getAll("solarpanel"))
 		batteries = self.network.getAll("battery")
 		# TODO : create dedicated function for battery in network
 		if len(batteries):
@@ -63,7 +61,7 @@ class SimulatedAnnealingStrategy(EnergyStrategy):
 			batterySoc = 0
 		buyCost = self.network.getPrice()
 		sellCost = self.network.getSellPrice()
-		sellTaxPercent = 100 * (buyCost - sellCost) / buyCost if buyCost > 0 else 0
+		sellTaxPercent = 100 * (buyCost - sellCost) / buyCost if buyCost != 0 else 0
 
 		nodes = self.getNodes()
 		for node in nodes:
@@ -84,15 +82,16 @@ class SimulatedAnnealingStrategy(EnergyStrategy):
 		This apply what eval function computed.
 		"""
 		del now
-		print(self._bestSolution)
+		nodes = [(node.name+"="+str(node.requestedPower)) for node in self._bestSolution if node.isUsable]
+		self.logger.debug("Apply %s", nodes)
 		# Uses the result to turn on or off or change power
 		for equipment in self._bestSolution:
 			nodeId = equipment.name
 			requestedPower = equipment.requestedPower
-			state = equipment.state
 			node = self.deferables.get(nodeId)
 			if node is None:
 				continue
+			state = True if requestedPower>0 else False
 			self.switchSchedulable(node, state)
 
 			# Send change power if state is now on and change power is accepted and

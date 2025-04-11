@@ -157,7 +157,7 @@ class OpenHEMSNode:
 	def getControlledPower(self):
 		"""
 		Get current wanted controlled power for node with controlable power.
-		!!! Warning maybe we don't get power but an abstract value. !!!
+		!!! Warning maybe we don't get power but an abstract value (like power from 0 to 6). !!!
 		"""
 		if self._controlledPower is not None:
 			value = self._controlledPower.getValue()

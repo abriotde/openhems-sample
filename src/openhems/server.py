@@ -150,9 +150,8 @@ class OpenHEMSServer:
 		else:
 			loopDelay = now - self.lastLoopTime
 			loopDelay = loopDelay.total_seconds()
-		# print("Loop(",loopDelay,")")
 		self.lastLoopTime = now
-		self.logger.debug("OpenHEMSServer.loop()")
+		# self.logger.debug("OpenHEMSServer.loop()")
 		self.network.updateStates()
 		self.check()
 		self.decrementTime(loopDelay)
