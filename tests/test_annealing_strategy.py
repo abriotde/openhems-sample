@@ -27,9 +27,11 @@ class TestAnnealingStrategy(utils.TestStrategy):
 		self.loop()
 		nodesIds = ["pump", "car", "machine"]
 		self.setNodesValues(nodesIds, scheduledDurations=[3600, 3600, 3600])
-		# self.checkValues(nodesIds, [0, 0, 0], marginPower=3100) # Too random
+		# Simulated annealing is too random to check values.
+		# But Genetic algorithm isn't.
+		self.checkValues(nodesIds, [0, 0, 0], marginPower=3100)
 		self.loop()
-		# self.checkValues(nodesIds, [0, 0, 0], marginPower=3100)
+		self.checkValues(nodesIds, [0, 0, 800], marginPower=3100)
 
 	# pylint: disable=invalid-name
 	def test_xxx(self):

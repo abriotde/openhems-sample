@@ -18,7 +18,7 @@ class OpenHEMSNode:
 	"""
 	Represent device of home network
 	"""
-
+	MAXNUM_CONTROLED_POWER_VALUES = 256
 	def setId(self, haId):
 		"""
 		Set Home-Assistant id

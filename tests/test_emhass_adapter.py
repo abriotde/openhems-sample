@@ -9,6 +9,7 @@ from pathlib import Path
 import unittest
 import logging
 import pandas
+import utils
 # pylint: disable=wrong-import-position
 # pylint: disable=import-error
 ROOT_PATH = Path(__file__).parents[1]
@@ -19,7 +20,6 @@ from openhems.modules.energy_strategy.driver.emhass_adapter import (
 )
 # pylint: disable=wrong-import-position, import-error
 sys.path.append(str(Path(__file__).parents[0]))
-import utils
 
 EMHASS_CONFIG_FILE = ROOT_PATH / "tests/data/openhems_test_emhass.yaml"
 logger = logging.getLogger(__name__)

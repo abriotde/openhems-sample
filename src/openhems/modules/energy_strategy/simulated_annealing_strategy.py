@@ -11,7 +11,7 @@ It's inspired by https://github.com/jmcollin78/solar_optimizer.git
 from datetime import datetime, timedelta
 from openhems.modules.network.network import OpenHEMSNetwork
 from openhems.modules.util import ConfigurationManager
-from .simulated_annealing_algo import SimulatedAnnealingAlgorithm
+from .optimization_algorithm import OptimizationAlgorithm, Algorithme
 from .energy_strategy import EnergyStrategy
 
 TIMEDELTA_0 = timedelta(0)
@@ -33,8 +33,8 @@ class SimulatedAnnealingStrategy(EnergyStrategy):
 		minTemp = float(configurationAnnealing.get("min_temp"))
 		coolingFactor = float(configurationAnnealing.get("cooling_factor"))
 		maxIterationNumber = int(configurationAnnealing.get("max_iteration_number"))
-		self._algo = SimulatedAnnealingAlgorithm(
-			initTemp, minTemp, coolingFactor, maxIterationNumber, logger=self.logger
+		self._algo = OptimizationAlgorithm(
+			initTemp, minTemp, coolingFactor, maxIterationNumber, logger=self.logger, algo=Algorithme.GENETIC
 		)
 		self.network = network
 		freq = configurationAnnealing.get("freq")
@@ -61,20 +61,20 @@ class SimulatedAnnealingStrategy(EnergyStrategy):
 			batterySoc = 0
 		buyCost = self.network.getPrice()
 		sellCost = self.network.getSellPrice()
-		sellTaxPercent = 100 * (buyCost - sellCost) / buyCost if buyCost != 0 else 0
-
+		offpeakPrice = self.network.getHoursRanges().getOffpeakPrice()
+		# sellTaxPercent = 100 * (buyCost - sellCost) / buyCost if buyCost != 0 else 0
 		nodes = self.getNodes()
 		for node in nodes:
 			self.deferables[node.id] = node
 		self._bestSolution, self._bestGoal, self._totalPower \
-			= self._algo.simulatedAnnealing(
+			= self._algo.run(
 			nodes,
 			powerConsumption,
 			powerProduction,
 			sellCost,
 			buyCost,
-			sellTaxPercent,
-			batterySoc
+			batterySoc,
+			offpeakPrice
 		)
 
 	def apply(self, cycleDuration, now=None):
@@ -91,7 +91,7 @@ class SimulatedAnnealingStrategy(EnergyStrategy):
 			node = self.deferables.get(nodeId)
 			if node is None:
 				continue
-			state = True if requestedPower>0 else False
+			state = requestedPower>0
 			self.switchSchedulable(node, state)
 
 			# Send change power if state is now on and change power is accepted and
