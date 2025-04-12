@@ -30,7 +30,7 @@ dependencies = [
 	'requests', 'pandas', 'pyyaml', 'pyramid', 'pyramid-jinja2', 'packaging', 'astral', 
 	'GitPython',
 	# For genetic algorithm
-	'scikit-opt'
+	'scikit-opt',
 	# For EMHASS
 	'numpy', 'plotly', 'scikit-learn', 'skforecast', 'pvlib', 'beautifulsoup4', 'protobuf',
 	'pandas', 'scipy', 'h5py', 'pulp'
