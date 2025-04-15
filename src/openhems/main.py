@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 This is the OpenHEMS module. It aims to give
- Home Energy Management Automating System on house. 
- It is a back application of Home-Assistant.
+Home Energy Management Automating System on house. 
+It is a back application of Home-Assistant.
 More informations on https://openhomesystem.com/
 """
 
@@ -187,7 +187,11 @@ class OpenHEMSApplication:
 
 def main():
 	"""
-	Simple function to run wall OpenHEMS Application
+	Simple function to run wall OpenHEMS Application. Parse commandline:
+	* -p/--port : Set the HTML listening port
+	* -c/--conf : Set the YAML configuration file (default is ../../config/openhems.yaml)
+	* -l/--logfile : Set the log file path.
+	* -h/--help : Print help
 	"""
 	defaultConfFilepath = Path(__file__).parents[2] / "config/openhems.yaml"
 	parser = argparse.ArgumentParser()

@@ -1,10 +1,9 @@
 """
 This is in case we just base on "off-peak" range hours to control output.
-	 Classic use-case is some grid contract (Like Tempo on EDF).
-	The strategy is to switch on electric devices only on "off-peak" hours
-
-#DONE: Implemented - Call - Conf - TestAuto - RunOk - InProd : 6/6
+Classic use-case is some grid contract (Like Tempo on EDF).
+The strategy is to switch on electric devices only on "off-peak" hours
 """
+# DONE: Implemented - Call - Conf - TestAuto - RunOk - InProd : 6/6
 
 import logging
 from datetime import datetime, timedelta

@@ -27,9 +27,13 @@ In `Parameters`/`Dashboards`, you can click `Add a Dashboard` to add 2 dashboard
 
 * `Default Dashboard` to have a complete dashboard with all your devices watever you configured.
 
-* `Dashboard` witch will be the main. In it add a component `web page` and set the url to "http://192.168.1.202:8000/?n=1". This is the OpenHEMS component to schedule devices.
+* `Dashboard` witch will be the main. In it we will add the OpenHEMS widget. Add a component `web page` and set the url to "http://192.168.1.202:8000/?n=1". This is the OpenHEMS component to schedule devices.
+
+.. |Widget of OpenHEMS| image:: images/widget_OpenHEMS.png
+  :alt: Widget of OpenHEMS
 
 If OpenHEMS is not installed as add-on of Home-AssistantOS, you will need to generate an Home-Assistant long_lived_token in Menu: User profile / Security / long lived token / Create token. Save it preciously, it's like a password for OpenHEMS access.
+
 
 
 Configure OpenHEMS with web interface
@@ -40,6 +44,8 @@ Open the web interface of OpenHEMS (http://192.168.1.202:8000/) and click on "pa
 
 There is a video, in french, to show how to configure OpenHEMS with web interface. You can find it on [Youtube](https://www.youtube.com/watch?v=1rb9n-XyTsM).
 
+.. |Configuration GUI of OpenHEMS| image:: images/GUI_configuration_OpenHEMS.png
+  :alt: Configuration GUI of OpenHEMS
 
 Configure OpenHEMS with YAML file
 ---------------------------------

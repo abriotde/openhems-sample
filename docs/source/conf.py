@@ -7,6 +7,12 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 """
+import sys
+from pathlib import Path
+path = str(Path(__file__).resolve().parents[2]/"src")
+sys.path.insert(0, path)
+sys.path.insert(0, path+"/openhems")
+
 # pylint: disable=invalid-name, redefined-builtin
 project = 'OpenHEMS'
 copyright = 'GPLv3'
