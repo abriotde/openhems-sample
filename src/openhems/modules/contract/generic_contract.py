@@ -70,7 +70,6 @@ class GenericContract:
 		"""
 		:return float: the peak-price
 		"""
-		del now, attime
 		val = max(self.getHoursRanges(now, attime).ranges, key=lambda s: (print("SSSS",s), s[2]))
 		return val[2]
 
@@ -78,7 +77,6 @@ class GenericContract:
 		"""
 		:return float: the offpeak-price
 		"""
-		del now, attime
 		val = min(self.getHoursRanges(now, attime).ranges, key=lambda s: s[2])
 		return val[2]
 
@@ -118,7 +116,7 @@ class GenericContract:
 		return self.sellPrice
 
 	def __str__(self):
-		return "GenericContract("+str(self.hoursRanges)+", sellPrice={self.sellPrice})"
+		return f"GenericContract({self.hoursRanges}, sellPrice={self.sellPrice})"
 
 	def inOffpeakRange(self, now=None, attime=None, useCache=True):
 		"""
@@ -158,8 +156,8 @@ class GenericContract:
 				)
 				if value is None:
 					GenericContract.logger.warning(
-						"No default value for '%s.%s.%s'. Availables are %s",
-						baseKey, classname, key,
+						"No default value for '%s'/'%s'. Availables are %s",
+						completeKey, key,
 						configuration.get(baseKey, deepSearch=True)
 					)
 		elif defaultType is not None:

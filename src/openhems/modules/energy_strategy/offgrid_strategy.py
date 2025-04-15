@@ -24,8 +24,8 @@ class OffGridStrategy(SolarBasedStrategy):
 		self.minBatteryLevel = config.get("minBattery", 5)
 
 	def updateNetwork(self, cycleDuration:int, now=None):
-		del cycleDuration, now
+		del now
 		# batteryLevel = self.network.getBatteryLevel()
 		# solarProduction = self.network.getSolarProduction()
 		# TODO
-		return True
+		return cycleDuration

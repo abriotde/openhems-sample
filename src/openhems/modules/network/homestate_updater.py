@@ -102,6 +102,7 @@ class HomeStateUpdater:
 		"""
 		self.tmp = "solarpanel"
 		currentPower = self._getFeeder(nodeConf, "currentPower", "int")
+		marginPower = self._getFeeder(nodeConf, "marginPower", "int")
 		maxPower = self._getFeeder(nodeConf, "maxPower", "int")
 		moduleModel = self._getFeeder(nodeConf, "moduleModel", "str")
 		inverterModel = self._getFeeder(nodeConf, "inverterModel", "str")
@@ -113,7 +114,7 @@ class HomeStateUpdater:
 			moduleModel=moduleModel, inverterModel=inverterModel,
 			tilt=tilt, azimuth=azimuth,
 			modulesPerString=modulesPerString,
-			stringsPerInverter=stringsPerInverter)
+			stringsPerInverter=stringsPerInverter, marginPower=marginPower)
 		# self.logger.info(str(node))
 		return node
 

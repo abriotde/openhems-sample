@@ -49,7 +49,7 @@ class SwitchoffStrategy(EnergyStrategy):
 			self._rangeChangeDone = False
 			self._todo = self.getNodes()
 
-	def switchOn(self, node, cycleDuration, doSwitchOn:bool=True):
+	def switchOn(self, node, doSwitchOn:bool=True):
 		"""
 		Switch on/off the node depending on doSwitchOn.
 		IF the node is ever on:
@@ -58,9 +58,8 @@ class SwitchoffStrategy(EnergyStrategy):
 		    or strategy choice is to switch off
 		ELSE IF doSwitchOn=True: Switch on the node
 		"""
-		del cycleDuration
 		# print("SwitchoffStrategy.switchOn()")
-		if node.isSwitchable:
+		if node.isSwitchable():
 			isOn = node.isOn()
 			isOnStr = "on" if isOn else "off"
 			if doSwitchOn ^ isOn: # If we need to toogle switch (isOn!=doSwitchOn)
@@ -111,7 +110,7 @@ class SwitchoffStrategy(EnergyStrategy):
 				self.logger.info("SwitchoffStrategy(%s) : Nothing to do for '%s'. %s",
 				                  self.strategyId, elem.id, msg)
 			else:
-				if not self.switchOn(elem, 0, _switchOn):
+				if not self.switchOn(elem, _switchOn):
 					todo.append(elem)
 		self._todo = todo
 		return len(self._todo)==0

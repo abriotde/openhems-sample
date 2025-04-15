@@ -1,5 +1,5 @@
 server:
-  loglevel: warning
+  loglevel: error
   logfile: ""
   network: fake
   strategies: 
@@ -7,7 +7,7 @@ server:
 network:
   nodes:
     - {id: linky, currentPower: "SUM(out)", marginPower: 1000, maxPower: 3100, minPower: 0, class: PublicPowerGrid, contract: {
-        class: generic, defaultPrice: 0.15, outRangePrice: 0.30, hoursRanges: ["22h-6h"]
+        class: rteTempo
       }
     }
     - {id: car, class: switch, currentPower: 1800, maxPower: 2000, priority: 50, strategy: offpeak, isOn: false}

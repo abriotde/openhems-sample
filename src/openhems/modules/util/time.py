@@ -232,6 +232,12 @@ class HoursRanges:
 		self.minCost = min(self.ranges, key=lambda x:x[2])[2]
 		return self.ranges
 
+	def getOffpeakPrice(self):
+		"""
+		:return: minCost = off-peak price.
+		"""
+		return self.minCost
+
 	def checkRange(self, nowDatetime:datetime=None, attime:datetime=None):
 		"""
 		Check if nowDatetime (Default now) is in off-peak range (offpeakHoursRange)
@@ -301,6 +307,9 @@ class HoursRanges:
 			self._index += 1
 			return r
 		raise StopIteration
+
+	def __repr__(self):
+		return self.__str__()
 
 	def __str__(self):
 		offpeakHoursRanges = ""

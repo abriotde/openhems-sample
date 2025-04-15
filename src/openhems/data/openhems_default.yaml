@@ -46,7 +46,7 @@ default:
       battery_dynamic_max: 0.9
       battery_dynamic_min: -0.9
     offpeak:
-      offpeakhours: null
+      improvedSecurity: true
     switchoff:
       reverse: False
       offhours: []
@@ -61,6 +61,8 @@ default:
     nosell:
       ratio: -1
       margin: 300
+      cycleDuration: 1
+      refCoefficient: 1
     nobuy:
       ratio: 1
       margin: 300
@@ -106,6 +108,7 @@ default:
       azimuth: 180
       modulesPerString: 1
       stringsPerInverter: 1
+      marginPower: 300
     battery:
       currentPower: null
       maxPowerIn: 2000

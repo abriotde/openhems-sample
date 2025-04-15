@@ -1,10 +1,9 @@
 """
 This is in case we just base on "off-peak" range hours to control output.
-	 Classic use-case is some grid contract (Like Tempo on EDF).
-	The strategy is to switch on electric devices only on "off-peak" hours
-
-#DONE: Implemented - Call - Conf - TestAuto - RunOk - InProd : 6/6
+Classic use-case is some grid contract (Like Tempo on EDF).
+The strategy is to switch on electric devices only on "off-peak" hours
 """
+# DONE: Implemented - Call - Conf - TestAuto - RunOk - InProd : 6/6
 
 import logging
 from datetime import datetime, timedelta
@@ -26,17 +25,19 @@ class OffPeakStrategy(EnergyStrategy):
 	def __init__(self, mylogger, network: OpenHEMSNetwork, strategyId:str):
 		super().__init__(strategyId, network, mylogger)
 		self.inOffpeakRange = False
-		self.rangeEnd = datetime.now()
+		self._rangeChangeDone = False
+		# set a rangeEnd tobe sure, first loop will check inOffpeakRange
+		self.rangeEnd = datetime(2024, 5, 28) # First commit date ;)
 		self.hoursRanges = self.network.getHoursRanges()
 		self.logger.info("OffPeakStrategy(%s) on %s", str(self.hoursRanges), str(self.getNodes()))
 		if not self.hoursRanges:
-			msg = "OffPeak-strategy is useless without offpeak hours. Check your configuration."
+			msg = ("OffPeak-strategy is useless without offpeak hours. "
+				"In Server configuration, add a node 'PublicPowerGrid' "
+				"with a contract using offpeak time-slots.")
 			self.logger.critical(msg)
 			raise ConfigurationException(msg)
-		self._rangeChangeDone = False
 		self.nextRanges = [] # List of tuples (inoffpeakTime, rangeEndDatetime)
 		# witch represent next offpeak periods
-		self.checkRange()
 
 	def checkRange(self, nowDatetime: datetime=None) -> int:
 		"""
@@ -45,31 +46,25 @@ class OffPeakStrategy(EnergyStrategy):
 		"""
 		if nowDatetime is None:
 			nowDatetime = datetime.now()
-		offpeakranges = self.hoursRanges
 		inoffpeakPrev = self.inOffpeakRange
-		self.hoursRanges = self.network.getHoursRanges()
 		useCache = False
-		if offpeakranges!=self.hoursRanges:
-			self.nextRanges = []
-		else:
-			# use cache
-			for myRange in self.nextRanges:
-				inoffpeak, rangeEnd = myRange
-				if rangeEnd>nowDatetime:
-					self.inOffpeakRange = inoffpeak
-					self.rangeEnd = rangeEnd
-					useCache = True
-					break
-		self.inOffpeakRange, self.rangeEnd, _ = self.hoursRanges.checkRange(nowDatetime)
+		# use cache
+		for (inoffpeak, rangeEnd, _) in self.nextRanges:
+			if rangeEnd>nowDatetime:
+				self.inOffpeakRange = inoffpeak
+				self.rangeEnd = rangeEnd
+				useCache = True
+				break
+		if not useCache:
+			myrange = self.hoursRanges.checkRange(nowDatetime)
+			self.nextRanges.append(myrange)
+			self.inOffpeakRange, self.rangeEnd, _ = myrange
 		if inoffpeakPrev!=self.inOffpeakRange:
 			self._rangeChangeDone = False
+			self.hoursRanges = self.network.getHoursRanges() # check if has changed
 			if useCache:
 				# Remove old ranges from self.nextRanges
 				self.nextRanges = list(filter(lambda r: nowDatetime>r[1], self.nextRanges))
-		if len(self.nextRanges)==0:
-			self.nextRanges = [
-				(self.inOffpeakRange, self.rangeEnd)
-			]
 
 	def updateNetwork(self, cycleDuration:int, now=None) -> int:
 		"""
@@ -84,10 +79,11 @@ class OffPeakStrategy(EnergyStrategy):
 		time2Wait = 0
 		if self.inOffpeakRange:
 			# We are in off-peak range hours : switch on all
-			self.switchOnMax(cycleDuration)
+			self.switchOnMax()
 		else: # Sleep untill end.
 			if not self._rangeChangeDone:
-				self.logger.debug("OffpeakStrategy : not offpeak, switchOffAll()")
+				self.logger.debug("OffpeakStrategy : not offpeak (%s), switchOffAll()",
+					now.strftime(DATETIME_PRINT_FORMAT))
 				if self.switchOffAll():
 					self._rangeChangeDone = True
 					time2Wait = self.hoursRanges.getTime2NextRange(now)
@@ -95,7 +91,7 @@ class OffPeakStrategy(EnergyStrategy):
 					self.logger.warning("Fail to switch off all. We will try again on next loop.")
 			# TODO : check time2Wait with check4MissingOffeakTime
 			# Even on peak hours, start devices with no other solutions to respect timeout
-			self.check4MissingOffeakTime(now, cycleDuration)
+			self.check4MissingOffeakTime(now)
 		return time2Wait
 
 	def getMissingTime(self, schedule, now):
@@ -140,7 +136,7 @@ class OffPeakStrategy(EnergyStrategy):
 		self.logger.debug("OffpeakStrategy.getMissingTime(%s) = %s", schedule, missingTime)
 		return missingTime
 
-	def check4MissingOffeakTime(self, now, cycleDuration):
+	def check4MissingOffeakTime(self, now):
 		"""
 		Switch on nodes wich must be switch on during peak-periods
 		due to missing time during offpeak period to respect timeout
@@ -162,7 +158,7 @@ class OffPeakStrategy(EnergyStrategy):
 				start, end = onPeriod
 				if now>start:
 					if end>now:
-						if self.switchSchedulable(elem, cycleDuration, True):
+						if self.switchSchedulable(elem, True):
 							self.logger.info(
 							    "Switch on '%s' due to missing time on offpeak periods to respect constraints.",
 							    elem.id)
@@ -190,8 +186,8 @@ class OffPeakStrategy(EnergyStrategy):
 				rangeEnd = schedule.timeout
 			if not inoffpeak:
 				availableTime = rangeEnd - previousRangeEnd
-				attime = rangeEnd - (availableTime/2)
-				self.logger.debug("OffpeakStrategy.getPeakPeriod().getPrice(%s) = %f", attime, cost)
+				# attime = rangeEnd - (availableTime/2)
+				# self.logger.debug("OffpeakStrategy.getPeakPeriod().getPrice(%s) = %f", attime, cost)
 				peakPeriods.append([previousRangeEnd, availableTime, rangeEnd, cost])
 			previousRangeEnd = rangeEnd
 			i += 1

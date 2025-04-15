@@ -6,8 +6,6 @@ network:
   - class: PublicPowerGrid
     contract:
       class: RTETempo
-      color: sensor.rte_tempo_couleur_actuelle
-      nextcolor: sensor.rte_tempo_prochaine_couleur
     currentPower: sensor.lixee_zlinky_tic_puissance_apparente
     id: linky
     marginPower: 1000

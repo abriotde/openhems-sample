@@ -3,7 +3,7 @@ Module for choosing a energy management strategy.
  i.e. An algorythme for optimization.
 """
 
-from .energy_strategy import EnergyStrategy, LOOP_DELAY_VIRTUAL
+from .energy_strategy import EnergyStrategy
 from .offpeak_strategy import OffPeakStrategy
 from .switchoff_strategy import SwitchoffStrategy
 # from .emhass_strategy import EmhassStrategy

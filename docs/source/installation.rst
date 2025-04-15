@@ -12,7 +12,7 @@ You can bye a pre-installed system on [OpenHEMS server on OpenHomeSystem](https:
 Then plug theelectric power cable and the ethenet one. It should be available from local network on http://192.168.1.202:8123/ and http://192.168.1.202:8000/.
 
 Install on Home-AssistantOS as add-on
------------------------------------
+-------------------------------------
 
 This is the easiest way to install it manually. You need a installed Home-AssistantOS. On parameters menu, click on "Add-on store" (bottom right). On top right, click on parameters symbol (3 point button) and select "Store" to open a popup. In the field paste "https://github.com/abriotde/openhems-addon" aand click "Add" button. Close the popup and refresh the store page. You should see "OpenHEMS" in the list. Click on it and then install it.
 

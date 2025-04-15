@@ -6,8 +6,7 @@ import time
 import datetime
 from openhems.modules.energy_strategy import (
 	OffPeakStrategy, SwitchoffStrategy, SimulatedAnnealingStrategy,
-	SolarNoSellStrategy,
-	LOOP_DELAY_VIRTUAL
+	SolarNoSellStrategy
 )
 # from openhems.modules.network import HomeStateUpdaterException
 from openhems.modules.util import CastUtililty
@@ -22,14 +21,14 @@ class OpenHEMSServer:
 	 and take right deccisions to optimize consumption
 	"""
 
-	def __init__(self, mylogger, network, serverConf:ConfigurationManager) -> None:
+	def __init__(self, mylogger, network, serverConf:ConfigurationManager, allowSleep=False) -> None:
 		self.logger = mylogger
 		self.network = network
+		self.network.server = self
 		self.loopDelay = serverConf.get("server.loopDelay")
-		strategies = serverConf.get("server.strategies")
 		self.strategies = []
 		throwErr = None
-		for strategyParams in strategies:
+		for strategyParams in serverConf.get("server.strategies"):
 			strategy = strategyParams.get("class", "").lower()
 			strategyId = strategyParams.get("id", strategy)
 			if strategy=="offpeak":
@@ -64,8 +63,10 @@ class OpenHEMSServer:
 		if throwErr is not None:
 			self.logger.error(str(throwErr))
 			raise ConfigurationException(throwErr)
-		self.allowSleep = len(self.strategies)==1
+		self.allowSleep = allowSleep
 		self.inOverLoadMode = False # in over load mode, we have node deactivate for safety
+		self.lastLoopTime = None
+		self.decrementTimeList = {}
 
 	def getSchedule(self):
 		"""
@@ -80,6 +81,22 @@ class OpenHEMSServer:
 				if sc is not None:
 					schedule[myid] = sc
 		return schedule
+
+	def registerDecrementTime(self, node, register=True):
+		"""
+		Register a node witch will decrement time.
+		"""
+		if register:
+			self.decrementTimeList[id(node)] = node
+		else:
+			self.decrementTimeList.pop(id(node))
+
+	def decrementTime(self, duration):
+		"""
+		Decrement time from all objects neither the type (Thanks Python ;) )
+		"""
+		for node in self.decrementTimeList.values():
+			node.decrementTime(duration)
 
 	def check(self):
 		""""
@@ -121,22 +138,28 @@ class OpenHEMSServer:
 		return marginPowerOn
 
 
-	def loop(self, loopDelay, now=None):
+	def loop(self, now=None):
 		"""
 		It's the content of each loop.
 		If loop delay=0, we consider that we never sleep (For test or reactivity).
 		"""
 		if now is None:
 			now = datetime.datetime.now()
-		self.logger.debug("OpenHEMSServer.loop()")
+		if self.lastLoopTime is None:
+			loopDelay = 0
+		else:
+			loopDelay = now - self.lastLoopTime
+			loopDelay = loopDelay.total_seconds()
+		self.lastLoopTime = now
+		# self.logger.debug("OpenHEMSServer.loop()")
 		self.network.updateStates()
 		self.check()
+		self.decrementTime(loopDelay)
 		time2wait = 86400
-		allowSleep = self.allowSleep and loopDelay>LOOP_DELAY_VIRTUAL
 		for strategy in self.strategies:
 			t = strategy.updateNetwork(loopDelay, now)
 			time2wait = min(t, time2wait)
-		if allowSleep and time2wait > 0:
+		if self.allowSleep and time2wait > 0:
 			self.logger.info("Loop sleep(%d min)", round(time2wait/60))
 			time.sleep(time2wait)
 
@@ -153,7 +176,7 @@ class OpenHEMSServer:
 		while True:
 			# pylint: disable=broad-exception-caught
 			try:
-				self.loop(loopDelay)
+				self.loop()
 			except Exception as e:
 				# at least HomeStateUpdaterException, CastException, HomeStateUpdaterException
 				msg = ("Fail update network. Maybe Home-Assistant is down"

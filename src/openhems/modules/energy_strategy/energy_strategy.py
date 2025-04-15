@@ -15,18 +15,16 @@ List of todo list to integrate a strategy
 
 import logging
 import datetime
-from openhems.modules.network.network import OpenHEMSNetwork
+from dataclasses import dataclass
+from openhems.modules.network.network import OpenHEMSNetwork, OpenHEMSNode
 
-LOOP_DELAY_VIRTUAL = 0
-
+@dataclass
 class StrategyNode:
 	"""
 	Class to manage a node in a strategy: keep track of its state
 	"""
-	def  __init__(self, node, logger):
-		self.logger = logger
-		self.node = node
-		self.isOn = None
+	node:OpenHEMSNode
+	isOn:bool = False
 
 	def changed(self, isOn=None):
 		"""
@@ -37,25 +35,6 @@ class StrategyNode:
 			isOn = self.node.isOn()
 		self.isOn = isOn
 		return wasOn!=self.isOn
-
-	def decreaseTime(self, cycleDuration:int):
-		"""
-		Decrease the time of the schedule
-		"""
-		if self.isOn:
-			if not self.node.isOn(): # Was successfully switched off at previous cycle
-				self.isOn = False
-				return False
-			schedule = self.node.getSchedule()
-			remainingTime = schedule.decreaseTime(cycleDuration)
-			if remainingTime==0:
-				self.logger.info("Switch off '%s' due to elapsed time.", self.node.id)
-				if self.node.switchOn(False):
-					self.logger.warning("Fail switch off '%s'.", self.node.id)
-				else:
-					return False
-			return True
-		return False
 
 class DefaultDeferrable:
 	"""
@@ -107,11 +86,10 @@ class EnergyStrategy:
 			return self._nodes
 		return self.network.getNodesForStrategy(self.strategyId)
 
-	def _switchSchedulableWitchIsOff(self, node, cycleDuration, doSwitchOn):
+	def _switchSchedulableWitchIsOff(self, node, doSwitchOn):
 		"""
 		Like switchSchedulable() but for node off and switchable
 		"""
-		del cycleDuration
 		if doSwitchOn and node.getSchedule().duration>0:
 			marginPower = node.network.getMarginPowerOn()
 			if node.getMaxPower()>marginPower:
@@ -124,7 +102,7 @@ class EnergyStrategy:
 					"Can't switch on '%s' due to deactivation for margin power security.",
 					node.id)
 				return False
-			if node.switchOn(True):
+			if node.switchOn(True, register=True):
 				self.logger.info("Switch on '%s' successfully.", node.id)
 				return True
 			self.logger.warning("Fail switch on '%s'.", node.id)
@@ -133,32 +111,32 @@ class EnergyStrategy:
 				node.id)
 		return False
 
-	def switchSchedulable(self, node, cycleDuration, doSwitchOn):
+	def switchSchedulable(self, node, doSwitchOn):
 		"""
 		param node: Node to switch on
 		param doSwitchOn: Set if we want to switch on or off
 		return: True if node is on
 		"""
-		if node.isSwitchable:
+		if node.isSwitchable():
 			if node.isOn():
-				remainingTime = node.getSchedule().decreaseTime(cycleDuration)
-				if remainingTime==0 or not doSwitchOn:
+				isScheduled = node.isScheduled()
+				if not isScheduled or not doSwitchOn:
 					self.logger.info("Switch off '%s' due to %s.",
-						node.id, "elapsed time" if remainingTime==0 else "strategy")
-					if node.switchOn(False):
+						node.id, "elapsed time" if not isScheduled else "strategy")
+					if node.switchOn(False, register=False):
 						self.logger.warning("Fail switch off '%s'.", node.id)
 						return True
 				else:
 					self.logger.debug("Node %s isOn for %s more seconds", \
-						node.id, remainingTime)
+						node.id, node.getSchedule().duration)
 					return True
 			else:
-				return self._switchSchedulableWitchIsOff(node, cycleDuration, doSwitchOn)
+				return self._switchSchedulableWitchIsOff(node, doSwitchOn)
 		else:
 			self.logger.debug("switchOn() : Node is not switchable : %s.", node.id)
 		return False
 
-	def switchOffAll(self, cycleDuration=1):
+	def switchOffAll(self):
 		"""
 		Switch of all connected devices with this strategy.
 		"""
@@ -166,7 +144,7 @@ class EnergyStrategy:
 		ok = True
 		for elem in self.getNodes():
 			# self.logger.debug("Switch off '%s'", elem.id)
-			if elem.isSwitchable and self.switchSchedulable(elem, cycleDuration, False):
+			if elem.isSwitchable() and self.switchSchedulable(elem, False):
 				self.logger.warning("Fail to switch off '%s'",elem.id)
 				ok = False
 		return ok
@@ -187,8 +165,10 @@ class EnergyStrategy:
 
 	def updateDeferables(self):
 		"""
-		Update scheduled devices according to emhass
-		 to scheduled devices according to openhems
+		Update scheduled devices list.
+		It evolved if a node as been manually added
+		 or scheduled duration have been manually changed
+		 or duration evolved due to switched on
 		Return true if schedule has been updated
 		"""
 		# self.logger.debug("EnergyStrategy.updateDeferables()")
@@ -237,8 +217,9 @@ class EnergyStrategy:
 		"""
 		This function must be overload
 		"""
-		del cycleDuration, now
+		del now
 		self.logger.debug("EnergyStrategy.apply() must be overload")
+		return cycleDuration
 
 	def updateNetwork(self, cycleDuration, now=None):
 		"""
@@ -250,11 +231,10 @@ class EnergyStrategy:
 		if now is None:
 			now = datetime.datetime.now()
 		self.check(now)
-		self.apply(cycleDuration, now=now)
-		return cycleDuration
+		return self.apply(cycleDuration, now=now)
 
 
-	def switchOnMax(self, cycleDuration):
+	def switchOnMax(self):
 		"""
 		Switch on nodes, but 
 		 - If there is no margin to switch on, do nothing.
@@ -265,9 +245,13 @@ class EnergyStrategy:
 		if marginPower<=0:
 			self.logger.info("Can't switch on devices: not enough power margin : %s", marginPower)
 			return True
+		switchOn = False
 		for elem in self.getNodes(True):
-			switchOn = self.switchSchedulable(elem.node, cycleDuration, True)
-			if switchOn and elem.changed(switchOn):
-				self.logger.info("Switch on just one device at each loop to ensure Network constraint.")
-				return True
-		return False
+			isOn = self.switchSchedulable(elem.node, True)
+			if isOn and elem.changed(switchOn):
+				marginPower -= elem.node.getMaxPower()
+				if marginPower<=0:
+					self.logger.info("Stop switch on all for the moment because we could reach max power.")
+					return True
+				switchOn = True
+		return switchOn

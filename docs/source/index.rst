@@ -14,6 +14,7 @@ The software is developped by `OpenHomeSystem <https://openhomesystem.com/>` and
 .. Check out the :doc:`usage` section for further information, including
 .. how to :ref:`installation` the project.
 
+
 .. note::
 
    This project is under active development.
@@ -23,7 +24,9 @@ Contents
 
 .. toctree::
 
+   intro
    usage
    installation
    installation_from_scratch
    configure
+   api

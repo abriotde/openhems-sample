@@ -5,7 +5,23 @@ Usage
 
 In this paragraph we will see main use cases of OpenHEMS and how we can use it. We will introduce some notions.
 
-As said previously, you need to have controlable devices. But there is different contrallable devices:
+When to choose OpenHEMS
+-----------------------
+
+If you have solar panel, OpenHEMS is an excellent choice to controll them in order to increase profitability.
+
+If you don't have solar panel, you usually have devices you can manually programm. Maybe is it not necessary to set a complex home automation for this. But when there is lots of devices or if you have ever Home-Asistant installed (or would like to), OpenHEMS will empowered it.
+
+Wat OpenHEMS is not
+-------------------
+
+Althought OpenHEMS can automate home energy management, there is no warantly there is no bugs so it could start/stop a device in a wrong moment. It is not safe enough for critical cases.
+
+The system is not today very reactive. Common loop delay is 30 seconds and even if you put it to the minimum 1 seconds don't expect to react in less than 10 seconds. Reasons are Home-Assistant and home automation network as an approximativ 3 seconds reaction time. The server can suffer of slow down. The choice of the network architecture can impact too. For exemple Wi-Fi conection can go down for minutes.
+
+Prerequisites
+-------------
+
 
 
 Different devices
@@ -22,6 +38,9 @@ In this interface, for each devices, you can set
 
 * "Time out" : optionnally a time out. This time out is a time during the next 24 hours. If you not set, OpenHEMS can use many day to achieve it (Bu usually do it in 24h).
 
+.. |Widget of OpenHEMS| image:: images/widget_OpenHEMS.png
+  :alt: Widget of OpenHEMS
+
 This concern a waste majority of devices.
 
 Automatical devices
@@ -37,6 +56,12 @@ This is devices witch can be controlled "automatically" by one or many sensor. I
 For this there is usually an acceptable margin, with OpenHEMS we could play with this margin to reduce consumption. But there is few benefits to expect. The idea is to overload when there is electricity at low cost (or to much) and to let go down to minimum value at exepensive periods. The problem is that there is an overload during overload period witch is maybe not really economically interesting and maybe a loss of confort.
 
 For each devices you will affect a "strategy". This strategy will decide when to start & stop it. There is some different kind of strategy. Lets explore it.
+
+
+
+
+
+
 
 
 Different strategy

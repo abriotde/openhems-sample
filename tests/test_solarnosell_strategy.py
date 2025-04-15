@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 class TestAnnealingStrategy(utils.TestStrategy):
 	"""
-	Try test simulated annealing strategy
+	Try test wall core server (OpenHEMS part, not web part)
 	"""
 
 	# pylint: disable=invalid-name
@@ -22,22 +22,26 @@ class TestAnnealingStrategy(utils.TestStrategy):
 		"""
 		Test if server start well with FakeNetwork adapter
 		"""
-		configFile = utils.ROOT_PATH / "tests/data/openhems_fake4tests_annealing.yaml"
+		configFile = utils.ROOT_PATH / "tests/data/openhems_fake4tests_solarnosell.yaml"
 		self.init(configFile)
-		self.loop()
 		nodesIds = ["pump", "car", "machine"]
-		self.setNodesValues(nodesIds, scheduledDurations=[3600, 3600, 3600])
-		# Simulated annealing is too random to check values.
-		# But Genetic algorithm isn't.
-		self.checkValues(nodesIds, [0, 0, 0], marginPower=3100)
+		self.checkValues(nodesIds, [0, 0, 0], marginPower=2100)
 		self.loop()
-		self.checkValues(nodesIds, [0, 0, 800], marginPower=3100)
+		self.checkValues(nodesIds, [0, 0, 0])
+
 
 	# pylint: disable=invalid-name
-	def test_xxx(self):
+	def test_withoutPublicPowerGrid(self):
 		"""
-		TODO: more tests
+		Test without public power grid.
 		"""
+		configFile = (utils.ROOT_PATH /
+			"tests/data/openhems_fake4tests_solarnosell_withoutpublicpowergrid.yaml")
+		self.init(configFile)
+		nodesIds = ["pump", "car", "machine"]
+		self.checkValues(nodesIds, [0, 0, 0], marginPower=-300)
+		self.loop()
+		self.checkValues(nodesIds, [0, 0, 0])
 
 if __name__ == '__main__':
 	unittest.main()

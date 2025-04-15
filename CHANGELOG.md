@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.8 - 2024-04-15
+### Fix
+- FIX strategy/annealing : Use genetic algorythm for more reliable results.
+- FIX node/solarpanel :  add tests on it and complete class attributes.
+
+### Improvement
+- ADD dev : manage time by event subsuscription : registerDecrementTime
+- MOD strategy/solarnosell : Add some more complex parameters for finer configuration.
+- MOD doc : ADD autogeneration of docstring
+- MOD doc : Update configure/usage
+- MOD test : Improve
+
 ## 0.2.7 - 2024-04-07
 ### Fix
 - FIX Home-Assistant addon, create /etc/openhems/openhems.yaml (config file) if not exists.

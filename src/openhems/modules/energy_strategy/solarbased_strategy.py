@@ -5,6 +5,7 @@ Super class for all solar-based strategy
 import datetime
 from dataclasses import dataclass
 import astral
+from astral.sun import sun
 from openhems.modules.network.network import OpenHEMSNetwork
 from openhems.modules.util import ConfigurationManager
 from .energy_strategy import EnergyStrategy
@@ -40,7 +41,8 @@ class SolarBasedStrategy(EnergyStrategy):
 			configurationGlobal.get("localization.altitude")
 		)
 		self._nightime = False
-		self.isDayTime()
+		self._sunrise = datetime.datetime.now() # TODO
+		self._sunset = datetime.datetime.now() # TODO
 		self.timezone = datetime.datetime.now(datetime.timezone.utc)\
 			.astimezone().tzinfo
 		self.location = astral\
@@ -49,16 +51,14 @@ class SolarBasedStrategy(EnergyStrategy):
 		self.gridTime = 0
 		self.solarTime = 0
 		self.lastAutonomousRatio = 0
-		self._sunrise = datetime.datetime.now() # TODO
-		self._sunset = datetime.datetime.now() # TODO
+		# Init self._sunset && self.location before calling isDayTime()
+		self.isDayTime()
 
-	def updateNetwork(self, cycleDuration:int, now=None):
-		"""
-		Update the OpenHEMSNetwork.
-		"""
-		del cycleDuration, now
-		self.logger.error("SolarBasedStrategy.updateNetwork() : \
-				To implement in sub-class")
+	# def updateNetwork(self, cycleDuration:int, now=None):
+	# 	"""
+	# 	Update the OpenHEMSNetwork.
+	# 	"""
+	# 	return super().updateNetwork(cycleDuration, now)
 
 	def getAutonomousRatio(self):
 		"""
@@ -68,12 +68,13 @@ class SolarBasedStrategy(EnergyStrategy):
 			return 100 * self.solarTime / (self.solarTime+self.gridTime)
 		return 0
 
-	def isDayTime(self):
+	def isDayTime(self, now=None):
 		"""
 		Return True if it's daytime, else return false if it's nighttime
 		usefull for solar production management
 		"""
-		now = datetime.datetime.now()
+		if now is None:
+			now = datetime.datetime.now()
 		if self._nightime:
 			if now>self._sunrise:
 				self._nightime = False
@@ -81,9 +82,9 @@ class SolarBasedStrategy(EnergyStrategy):
 			if now>self._sunset:
 				self._nightime = True
 				tomorowDate = datetime.date.today() + datetime.timedelta(days=1)
-				sun = astral.sun.sun(self.location.observer, date=tomorowDate)
-				self._sunrise = sun['sunrise'].astimezone(self.timezone)
-				self._nightime = sun['sunset'].astimezone(self.timezone)
+				sunParams = sun(self.location.observer, date=tomorowDate)
+				self._sunrise = sunParams['sunrise'].astimezone(self.timezone)
+				self._nightime = sunParams['sunset'].astimezone(self.timezone)
 				self.lastAutonomousRatio = self.getAutonomousRatio()
 				self.solarTime = self.gridTime = 0
 

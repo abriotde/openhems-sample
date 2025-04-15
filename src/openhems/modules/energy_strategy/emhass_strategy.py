@@ -63,7 +63,7 @@ class EmhassStrategy(EnergyStrategy):
 		self._data = data
 		return data
 
-	def getDeferrables(self, node, durationInSecs):
+	def getDeferrable(self, node, durationInSecs):
 		"""
 		Return a Deferrable representing the node (adding usefull informations for algo).
 		"""
@@ -119,8 +119,11 @@ class EmhassStrategy(EnergyStrategy):
 		"""
 		This should apply emhass result (eval call) : self._data
 		"""
+		del cycleDuration
 		if now is None:
 			now = datetime.now(self.timezone)
+		elif now.tzinfo is None:
+			now = self.timezone.localize(now)
 		timestamp, rows = self.getRowsAt(now)
 		if rows[1] is None: # Case no deferables
 			self.network.switchOffAll()
@@ -146,5 +149,5 @@ class EmhassStrategy(EnergyStrategy):
 				switchOnRate = 100 * ( np.dot(vals, rates) ) / value
 			deferable = self.deferables[deferableName]
 			doSwitchOn = self.evaluatePertinenceSwitchOn(switchOnRate, deferable.node)
-			self.switchSchedulable(deferable.node, cycleDuration, doSwitchOn)
+			self.switchSchedulable(deferable.node, doSwitchOn)
 		return True

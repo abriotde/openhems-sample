@@ -1,0 +1,11 @@
+server:
+  loglevel: warning
+  network: fake
+  strategies: 
+    - {class: nosell, id: solarnosell}
+network:
+  nodes:
+    - {id: solarpanel, class: solarpanel, currentPower: "SUM(out)", maxPower: 3000}
+    - {id: car, class: switch, currentPower: 1800, maxPower: 2000, priority: 50, strategy: solarnosell, isOn: false}
+    - {id: machine, class: switch, currentPower: 800, maxPower: 1200, priority: 40, strategy: solarnosell, isOn: false}
+    - {id: pump, class: switch, currentPower: 280, maxPower: 300, priority: 60, strategy: solarnosell, isOn: false}

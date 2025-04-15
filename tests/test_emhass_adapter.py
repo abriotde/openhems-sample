@@ -9,6 +9,7 @@ from pathlib import Path
 import unittest
 import logging
 import pandas
+import utils
 # pylint: disable=wrong-import-position
 # pylint: disable=import-error
 ROOT_PATH = Path(__file__).parents[1]
@@ -17,13 +18,13 @@ from openhems.modules.energy_strategy.driver.emhass_adapter import (
 	Deferrable,
 	EmhassAdapter
 )
-from openhems.main import OpenHEMSApplication
-from openhems.modules.energy_strategy import LOOP_DELAY_VIRTUAL
+# pylint: disable=wrong-import-position, import-error
+sys.path.append(str(Path(__file__).parents[0]))
 
 EMHASS_CONFIG_FILE = ROOT_PATH / "tests/data/openhems_test_emhass.yaml"
 logger = logging.getLogger(__name__)
 
-class TestEmhassAdapter(unittest.TestCase):
+class TestEmhassAdapter(utils.TestStrategy):
 	"""
 	Check common functionnality
 	 of openhems.modules.energy_strategy.offpeak_strategy.OffPeakStrategy
@@ -72,11 +73,11 @@ class TestEmhassAdapter(unittest.TestCase):
 		Init from different kind off-peak range and test some off-peak hours.
 		"""
 		# print("test_applyEmhassStrategy")
-		app = OpenHEMSApplication(EMHASS_CONFIG_FILE)
-		app.server.loop(LOOP_DELAY_VIRTUAL)
-		schedule = app.server.network.getSchedule()
-		schedule['voiture'].setSchedule(90, "02:00")
-		app.server.loop(LOOP_DELAY_VIRTUAL)
+		self.init(EMHASS_CONFIG_FILE)
+		self.loop()
+		self.checkValues(["voiture"], [0])
+		self.setNodesValues(["voiture"], scheduledDurations=[3600])
+		self.loop()
 
 if __name__ == '__main__':
 	unittest.main()
