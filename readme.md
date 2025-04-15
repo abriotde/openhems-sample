@@ -75,6 +75,33 @@ This software is usefull to get an as smart as possible management of power cons
 Warning : This software is under activ developpment and is used on production but remain at early developpment.
 All contribution to the software are welcome. Please contact contact@openhomesystem.com for any questions.
 
+
+Features
+========
+
+:white_check_mark: Easy installation and UI configuration with HTML pages\
+:white_check_mark: Support multiple off-peak time-slots and even variable time-slots and cost (RTE Tempo contract).\
+:white_check_mark: Usefull if you don't have solar panel but only a contract with off-peak.\
+:white_check_mark: Solar panel management with EMHASS using AI\
+:white_check_mark: Basic solar panel management without AI for no sell or no buy strategy.\
+:white_check_mark: Home-Assistant widget to schedule devices (washing-machine, charging car... )\
+:white_check_mark: Time-out for scheduled devices.\
+:white_check_mark: Configurable priority handling between multiple appliances\
+:white_check_mark: Define an *On/Off switch interval* / solar power averaging interval\
+:white_check_mark: Always check maximum capacities to avoid black-out\
+:white_check_mark: Supports one- and three-phase appliances\
+:white_check_mark: Supports *Only-Switch-On* devices (like washing machines, dishwashers)\
+
+We are expected to add soon the following features. We need beta-tester for those features. If you are interested, please contact us.
+
+:x: Variable switch support (like solar router, car charger)\
+:x: Works with hybrid and standard inverters\
+
+What OpenHEMS is not.
+
+:warning: It will never guarantee a reaction time due to the performance of the home automation network and OpenHEMS (the worst is WiFi).\
+:warning: Due to the licence, we do not garentee there is no bugs or problems. For garentee like this please contact us for a comercial support.\
+
 Prerequisites
 =============
 

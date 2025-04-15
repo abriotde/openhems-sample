@@ -22,6 +22,8 @@ from openhems.modules.network.node import OutNode
 # - DEAP (flexible evolutionary algorithms):
 # - Optuna (hyperparameter optimization, supports discrete spaces):
 
+# [PV-Excess-Control](https://github.com/InventoCasa/ha-advanced-blueprints/tree/main/PV_Excess_Control)
+# [Solar-Optimizer](https://github.com/jmcollin78/solar_optimizer.git)
 
 class Algorithme(Enum):
 	"""

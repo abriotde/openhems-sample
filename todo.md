@@ -21,3 +21,6 @@
 - dev/rust : re-implement it as Rust or Go? Warning for IA...
 - dev/maintenance : Package Python app as runable without venv : Nuitka or UV, cf branch "packaging"
 - dev/admin : Run openhems as user 'openhems' instead root
+
+# To Check
+- Works with hybrid and standard inverters
