@@ -66,7 +66,7 @@ class OpenHEMSSchedule:
 			raise ConfigurationException(e) from e
 		self.logger.debug("OpenHEMSSchedule.isScheduled(%s)"
 			": duration = %d", self.id, self.duration)
-		return self.duration>0
+		return self.duration is not None and self.duration>0
 
 	def setSchedule(self, duration:int=None, timeout:datetime=None):
 		"""

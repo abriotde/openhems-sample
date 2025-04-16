@@ -90,7 +90,7 @@ class EnergyStrategy:
 		"""
 		Like switchSchedulable() but for node off and switchable
 		"""
-		if doSwitchOn and node.getSchedule().duration>0:
+		if doSwitchOn and node.isScheduled():
 			marginPower = node.network.getMarginPowerOn()
 			if node.getMaxPower()>marginPower:
 				self.logger.info(
@@ -176,19 +176,19 @@ class EnergyStrategy:
 		self.deferables = {}
 		for node in self.getNodes():
 			nodeId = node.id
-			durationInSecs = node.getSchedule().duration
+			isScheduled = node.isScheduled()
 			deferable = self.deferables.get(nodeId, None)
 			if deferable is None:
-				if durationInSecs>0: # Add a new deferrable
+				if isScheduled: # Add a new deferrable
 					update = True
-					self.deferables[nodeId] = self.getDeferrable(node, durationInSecs)
+					self.deferables[nodeId] = self.getDeferrable(node, node.getSchedule().duration)
 			else:
-				if durationInSecs<=0: # Remove a deferrable
+				if not isScheduled: # Remove a deferrable
 					del self.deferables[nodeId]
 					update = True
-				elif deferable.getDuration()!=durationInSecs: # update a deferrable
+				elif deferable.getDuration()!=node.getSchedule().duration: # update a deferrable
 					update = True
-					deferable.setDuration(durationInSecs)
+					deferable.setDuration(node.getSchedule().duration)
 		self.logger.debug("EnergyStrategy.updateDeferables() => %s : %s", update, self.deferables)
 		return update
 
