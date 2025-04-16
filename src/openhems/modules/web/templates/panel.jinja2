@@ -22,12 +22,13 @@
 const DATE_FORMAT = "%d/%m/%Y";
 var nodes = {{ nodes|tojson }};
 var network;
+var DEBUG = false;
 function setDevicesProgramm(nodes) {
 	network.innerHTML="";
 	var i = 0;
-	console.log("nodes : ",nodes);
+	// if(DEBUG) console.log("nodes : ",nodes);
 	for (const [nodeid, node] of Object.entries(nodes)) {
-		console.log("node : ",nodeid," => ",node);
+		if(DEBUG) console.log("node : ",nodeid," => ",node);
 		let nodeDiv = document.createElement("div");
 		var id ="node"+nodeid;
 		nodeDiv.id = "div"+id;
@@ -92,7 +93,7 @@ function changeSthg() {
 	document.getElementById("valid").src="{{request.static_url('openhems.modules.web:img/save_32.ico')}}";
 }
 function getBeforeDate(timeout) {
-	console.log("getBeforeDate(",timeout,")");
+	if(DEBUG) console.log("getBeforeDate(",timeout,")");
 	var dateStr = "17/04";
 	const now = new Date();
 	var date2 = new Date();
@@ -101,25 +102,22 @@ function getBeforeDate(timeout) {
 	date2.setMinutes(d[1]);
 	var dateStr;
 	if (date2<now) {
-		console.log("Tomorow");
 		let tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 		dateStr = formatDate(tomorrow)
 	} else {
-		console.log("Today");
 		dateStr = formatDate(now)
 	}
 	return dateStr;
 }
 function updateBeforeDate(idNode) {
-	console.log("Hello")
 	let timeout = document.getElementById(idNode+"_timeout").value;
 	let dateStr = getBeforeDate(timeout);
-	console.log("Date:", dateStr);
+	if(DEBUG) console.log("updateBeforeDate(", dateStr,") : ", dateStr);
 	document.getElementById(idNode+"_beforeDate").innerHTML = dateStr;
 	changeSthg();
 }
 function onSave() {
-	console.log("onSave()");
+	if(DEBUG) console.log("onSave()");
 	var nodes = {};
 	for (const divnode of network.children) {
 		// console.log(divnode);
@@ -147,7 +145,7 @@ function onSave() {
 		}
 		nodes[id] = {name: label, duration: duration*60, timeout: timeout}; // Convert minutes to seconds
 	}
-	console.log("onSave() : nodes=",nodes);
+	// console.log("onSave() : nodes=",nodes);
 	var xhr = new XMLHttpRequest();
 	var url = "/states";
 	xhr.open("POST", url, true);
@@ -157,7 +155,7 @@ function onSave() {
 	xhr.onreadystatechange = function () {
     	if (xhr.readyState === 4 && xhr.status === 200) {
         	var json = JSON.parse(xhr.responseText);
-        	console.log("Response : ",json);
+        	// console.log("Response : ",json);
         	setDevicesProgramm(json);
         	document.getElementById("valid").src="{{request.static_url('openhems.modules.web:img/correct_32.ico')}}";
     	}
