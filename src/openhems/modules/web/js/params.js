@@ -174,10 +174,10 @@ const objectSelectKeys = [
  * @param {*} object 
  */
 function newNodeAddObject(elementId, element, object, key) {
-	if(DEBUG)  console.log("newNodeAddObject(",elementId, element, object,")");
+	if(DEBUG) console.log("newNodeAddObject(",elementId, element, object, key,")");
 	for (caract in object) {
 		defaultValue = object[caract]
-		if(DEBUG)  console.log("newNodeAddObject() : ",caract," : ",defaultValue)
+		if(DEBUG) console.log("newNodeAddObject() : ",caract," : ",defaultValue)
 		var elem = document.createElement("div");
 		elem.classList.add("row");
 		elem.classList.add(caract);
@@ -187,6 +187,11 @@ function newNodeAddObject(elementId, element, object, key) {
 		if (defaultValue instanceof Array) {
 			defaultValue = JSON.stringify(defaultValue);
 		}
+		tooltipKey=sKey.replace('newnode-', 'default.node.').replaceAll("-","."); //.toLowerCase();
+		if (tooltipKey in tooltips) {
+			tooltipValue = tooltips[tooltipKey];
+		} else { tooltipValue = ""; }
+		// console.log("sKey:", sKey);
 		if (defaultValue instanceof Object) {
 			elem.innerHTML = '<div class="col-25">'
 				+'<label for="'+sElementId+'">'+caract+'</label>'
@@ -195,17 +200,18 @@ function newNodeAddObject(elementId, element, object, key) {
 			elem2 = document.getElementById(sElementId);
 			if(DEBUG)  console.log("newNodeAddObject() : sElementId=",sElementId)
 			if (objectSelectKeys.includes(sKey)) {
-				displaySelectElement(sElementId, elem2, defaultValue);
+				displaySelectElement(sElementId, elem2, defaultValue, tooltipValue, sKey);
 			} else {
 				newNodeAddObject(sElementId, elem2, defaultValue, sKey);
 			}
 		} else {
 			elem.id = sElementId;
+			// console.log("tooltip",tooltipKey,":",tooltipValue)
 			elem.innerHTML = '<div class="col-25">'
 				+'<label for="newNode-'+caract+'">'+caract+'</label>'
 				+'</div><div class="col-75">'
 				+'<input type="text" id="'+sElementId+'-value"'
-					+' value="" /></div>';
+					+' value="" title="'+tooltipValue+'" /></div>';
 			element.appendChild(elem);
 			 // To avoid encode problems.
 			document.getElementById(sElementId+'-value').value = defaultValue;
@@ -216,7 +222,7 @@ function newNodeAddObject(elementId, element, object, key) {
  * In a newNode popup, when a select change, populate corresponding sub-object.
  * @param {*} selectElementId 
  */
-function newNodeSelectChange(selectElementId) {
+function newNodeSelectChange(selectElementId, key) {
 	var select = document.getElementById(selectElementId+"-select");
 	var classname = select.value;
 	if(DEBUG)  console.log("newNodeSelectChange(",selectElementId,") => ", classname);
@@ -229,7 +235,7 @@ function newNodeSelectChange(selectElementId) {
 	}
 	addNodeSelecForm = document.getElementById(selectElementId+"-form");
 	addNodeSelecForm.innerHTML = "";
-	newNodeAddObject(selectElementId, addNodeSelecForm, nodeConfig, selectElementId+"-"+classname);
+	newNodeAddObject(selectElementId, addNodeSelecForm, nodeConfig, key+"-"+classname);
 }
 /**
  * Diplay a HTML select element based on Object model of the list.
@@ -237,12 +243,13 @@ function newNodeSelectChange(selectElementId) {
  * @param {*} selectDiv : The select div
  * @param {*} objectList : Object model of the list
  */
-function displaySelectElement(elementId, selectDiv, objectList) {
+function displaySelectElement(elementId, selectDiv, objectList, tooltipValue, key) {
 	var selectElement = document.createElement("select");
 	selectElement.id = elementId+"-select";
+	selectElement.title = tooltipValue
 	objectLists[elementId] = objectList;
 	selectElement.onchange = function() {
-		newNodeSelectChange(elementId);
+		newNodeSelectChange(elementId, key);
 	};
 	var optionElement = document.createElement("option");
 	optionElement.value = "";
@@ -353,7 +360,7 @@ function displayAddNodePopup(nodeType="node") {
 		if(DEBUG)  console.log("displayAddNodePopup() : initAddNodePopup", selectDiv);
 		selectDiv.innerHTML = "";
 		myAvailableNodes = availableNodes[nodeType]
-		displaySelectElement("newnode", selectDiv, myAvailableNodes);
+		displaySelectElement("newnode", selectDiv, myAvailableNodes, "newnode", "newnode");
 		addBtn = document.getElementById("addNodeBtn");
 		addBtn.dataset.nodeType = nodeType;
 		initAddNodePopup = nodeType;

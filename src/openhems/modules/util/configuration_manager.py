@@ -13,7 +13,6 @@ from yaml.scanner import ScannerError
 from openhems.modules.util.cast_utility import CastUtililty, CastException
 
 rootPath = Path(__file__).parents[2]
-DEFAULT_PATH = rootPath / "data/openhems_default.yaml"
 
 class ConfigurationException(Exception):
 	"""
@@ -31,6 +30,7 @@ class ConfigurationManager():
 	2. Overload with user defined configuration value (If key defined as default)
 	3. get the value by key/value dict
 	"""
+	DEFAULT_PATH = rootPath / "data/openhems_default.yaml"
 	HOOKS = { # Those key are list of class-types following model define in key "default."+hook.
 		"network.nodes": "node",
 		"server.strategies": "strategy"
@@ -42,7 +42,7 @@ class ConfigurationManager():
 		self._conf = {}
 		self._cache = {}
 		if defaultPath  is None:
-			self.defaultPath = DEFAULT_PATH
+			self.defaultPath = ConfigurationManager.DEFAULT_PATH
 		else:
 			self.defaultPath = defaultPath
 		self.addYamlConfig(self.defaultPath, True)

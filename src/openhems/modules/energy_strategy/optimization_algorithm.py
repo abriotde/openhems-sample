@@ -7,7 +7,6 @@ from dataclasses import dataclass
 from enum import Enum
 import scipy.optimize
 import numpy as np
-from sko.GA import GA # pip install scikit-opt
 from openhems.modules.network.node import OutNode
 
 
@@ -114,6 +113,8 @@ class OptimizationAlgorithm:
 		)
 		self.algo = algo
 		self.prices = None
+		from sko.GA import GA # pip install scikit-opt
+		self.GA = GA
 
 	def takeStep(self, x):
 		"""
@@ -558,7 +559,7 @@ class OptimizationAlgorithm:
 		"""
 		Use genetic algorythm to find the best solution
 		"""
-		ga = GA(
+		ga = self.GA(
 			func=self.evalTarget3,
 			n_dim=len(self._equipments),
 			size_pop=50,      # Population size

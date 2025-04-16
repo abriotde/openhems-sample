@@ -10,6 +10,7 @@ import json
 from pathlib import Path
 from json import JSONEncoder
 import re
+import copy
 from wsgiref.simple_server import make_server
 import yaml
 from pyramid.config import Configurator
@@ -245,10 +246,12 @@ class OpenhemsHTTPServer():
 			configurator = ConfigurationManager(self.logger)
 		if isinstance(configurator, str):
 			self.yamlConfFilepath = configurator
+			configurator.defaultPath = ConfigurationManager.DEFA
 			configurator = ConfigurationManager(self.logger)
 			configurator.addYamlConfig(Path(self.yamlConfFilepath))
 		else:
 			self.yamlConfFilepath = configurator.getLastYamlConfFilepath()
+		self.defaultConfFilepath = configurator.defaultPath
 		self.configurator = configurator
 		lang = configurator.get("localization.language")
 		self.translations = {}
@@ -334,17 +337,41 @@ class OpenhemsHTTPServer():
 				htmlTabsBody += '<script>'+hook+'s = {{ '+jinja2Id+'|tojson }};</script>\n'
 			lastElems = elems
 		htmlTabsBody += ("</div>\n"*(len(lastElems)-1))
-		return "<ul>"+htmlTabsMenu+"</ul>"+htmlTabsBody
+		htmlTabs = "<ul>"+htmlTabsMenu+"</ul>"+htmlTabsBody
+		htmlTabs += "\n<script>var tooltips = "+json.dumps(tooltips)+";</script>"
+		return htmlTabs
+
+	def getTooltips(self, lang="en"):
+		"""
+		Get tooltips from configuration in right language and add default values.
+		"""
+		self.logger.debug("getTooltips(%s)", lang)
+		tooltipPath = ROOT_PATH / ("data/openhems_tooltips_"+lang+".yaml")
+		configurator = ConfigurationManager(self.logger, defaultPath=tooltipPath)
+		tooltips = configurator.get("", deepSearch=True)
+		defaultConfig = ConfigurationManager(self.defaultConfFilepath)
+		tooltips2 = copy.deepcopy(tooltips)
+		tooltipWithDefault = self.translations["web"].get("defaultTooltip")
+		for key, tooltip in tooltips.items():
+			# self.logger.debug("Tooltip: %s : %s", key, tooltip)
+			defaultValue = defaultConfig.get(key)
+			if defaultValue is not None and str(defaultValue)!="":
+				localVars = locals()
+				localVars["tooltip"] = tooltip # else tooltip seam not used by Python checker.
+				value = tooltipWithDefault.format(**localVars)
+				# self.logger.debug("Tooltip with default: %s : %s", key, value)
+				tooltips2[key] = value
+		return tooltips2
+
 
 	def generateTemplateYamlParams(self, lang="en"):
 		"""
 		Generate the template file for /params page based on YAML configuration file.
 		"""
+		self.logger.debug("generateTemplateYamlParams(%s)", lang)
 		OPENHEMS_CONTEXT.logger.info("Generate template for /params page")
+		tooltips = self.getTooltips(lang)
 		templatesPath = Path(__file__).parents[0]/"templates"
-		tooltipPath = ROOT_PATH / ("data/openhems_tooltips_"+lang+".yaml")
-		configurator = ConfigurationManager(self.logger, defaultPath=tooltipPath)
-		tooltips = configurator.get("", deepSearch=True)
 		frameworkPath = templatesPath / "params.framework.jinja2"
 		with frameworkPath.open("r", encoding="utf-8") as infile:
 			datas = infile.read()

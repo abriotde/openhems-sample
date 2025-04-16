@@ -5,3 +5,5 @@ htmlTitleDescriptions:
   network: "Here you set your network. This is very important you  update it when you have new devices."
   emhass: "This informations are quite technical."
   default: "This informations are for default configuration of network nodes. Ther is no need to fill it. But maybe you think it's easier to feel it here for all."
+web:
+  defaultTooltip: "{tooltip} (default is '{defaultValue}')"
