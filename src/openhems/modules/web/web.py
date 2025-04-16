@@ -48,7 +48,9 @@ def panel(request):
 	Web-service to get schedled devices.
 	"""
 	del request
-	return { "nodes": OPENHEMS_CONTEXT.schedule }
+	params = OPENHEMS_CONTEXT.translations["web"]
+	params["nodes"] = OPENHEMS_CONTEXT.schedule
+	return params
 
 # pylint: disable=too-many-branches
 def getNode(node, model):

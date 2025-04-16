@@ -7,3 +7,7 @@ htmlTitleDescriptions:
   default: "Ces informations sont les configurations par defaut des appareils du réseau. Il n'y a pas vraiment de nécéssité a les remplir mais cela peut vous éviter de les mettre pour tous."
 web:
   defaultTooltip: "{tooltip} (par défaut '{defaultValue}')"
+  text_for: "Durant "
+  text_before: "Prêt avant le "
+  tooltip_duration: "pour une durée (hh:mm)"
+  tooltip_timeout: "à échéance (hh:mm)"

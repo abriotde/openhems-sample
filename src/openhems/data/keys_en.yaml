@@ -7,3 +7,7 @@ htmlTitleDescriptions:
   default: "This informations are for default configuration of network nodes. Ther is no need to fill it. But maybe you think it's easier to feel it here for all."
 web:
   defaultTooltip: "{tooltip} (default is '{defaultValue}')"
+  text_for: "During "
+  text_before: "Ready before "
+  tooltip_duration: "Duration (hh:mm)"
+  tooltip_timeout: "Timeout (hh:mm)"

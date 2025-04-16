@@ -15,9 +15,11 @@
 <div class="page">
 	<h1>Devices program</h1>
 	<div id="network"></div>
-	<input id="valid" type="image" src="{{request.static_url('openhems.modules.web:img/correct_32.ico')}}" onclick="onSave()" ></input>
+	<input id="valid" type="image" src="{{request.static_url('openhems.modules.web:img/correct_32.ico')}}" onclick="onSave()" >
 </div>
 <script>
+/*jshint esversion: 6 */
+const DATE_FORMAT = "%d/%m/%Y";
 var nodes = {{ nodes|tojson }};
 var network;
 function setDevicesProgramm(nodes) {
@@ -30,27 +32,31 @@ function setDevicesProgramm(nodes) {
 		var id ="node"+nodeid;
 		nodeDiv.id = "div"+id;
 		nodeDiv.classList.add("device");
-		duration = Math.floor(node.duration/60); // Keep only minutes, forget seconds.
+		nodeDiv.classList.add("row");
+		var duration = Math.floor(node.duration/60); // Keep only minutes, forget seconds.
+		var checked, display;
 		if (duration=="0") {
 			checked	= "";
 			display = " style=\"display:none\"";
 		} else {
 			checked	= " checked ";
-			display = ""
-			min = duration%60;
-			hour = (duration-min)/60;
+			display = "";
+			let min = duration%60;
+			let hour = (duration-min)/60;
 			duration=(""+hour).padStart(2,'0')+":"+(""+min).padStart(2,'0');
 			// console.log("Duration:", duration)
 		}
-		nodeDiv.innerHTML='<div class="col-25"><label for="'+id+'"> '+node.name+'</label>'
-			+'<input type="checkbox" name="'+id+'" id="'+id+'" " onclick="showMe(\''+id+'_conf\', this)"'+ checked+'>'
-			+'</div><div class="col-75">'
-			+'<span id="'+id+'_conf" '+display+'>'
-			+	'<span class="col-25"><img title="Duration (hr:min)" src="{{request.static_url('openhems.modules.web:img/hourglass.svg')}}" /></span>'
-			+   '<span class="col-25"><input type="time" id="'+id+'_duration" name="'+id+'_duration" value="'+duration+'" onchange="changeSthg()"></span>'
-			+	'<span class="col-25"><img title="Timeout (Next hr:min)" src="{{request.static_url('openhems.modules.web:img/alarm.svg')}}" /></span>'
-			+   '<span class="col-25"><input type="time" id="'+id+'_timeout" name="'+id+'_timeout" value="'+node.timeout+'" onchange="changeSthg()"></span>'
-			+'</span></div>';
+		nodeDiv.innerHTML='<div class="col-25"><label for="'+id+'"> '+node.name+'</label>' +
+			'<input type="checkbox" name="'+id+'" id="'+id+'" " onclick="showMe(\''+id+'_conf\', this)"'+ checked+'>' +
+			'</div><div class="col-75">' +
+			'<span id="'+id+'_conf" '+display+'>' +
+				'<span class="col-50"><img title="{{translate_tooltip_duration}}" src="{{request.static_url('openhems.modules.web:img/hourglass.svg')}}" />' +
+					'{{text_for}} <input type="time" title="{{tooltip_duration}}" id="'+id+'_duration" name="'+id+'_duration" value="'+duration+'" onchange="changeSthg()">' +
+				'</span><span class="col-50"><img title="{{translate_tooltip_timeout}}" src="{{request.static_url('openhems.modules.web:img/alarm.svg')}}" />' +
+					'{{text_before}} <span id="'+id+'_beforeDate">'+node.date+'</span> '+
+					'<input type="time" title="{{tooltip_timeout}}" id="'+id+'_timeout" name="'+id+'_timeout" value="'+node.timeout+'" onchange="updateBeforeDate(\''+id+'\')">' +
+				'</span>' +
+			'</span></div>';
 		network.appendChild(nodeDiv);
 		i++;
 	}
@@ -73,26 +79,62 @@ function initMainPage() {
 	}
 	setDevicesProgramm(nodes);
 }
+function formatDate(today) {
+	const yyyy = today.getFullYear();
+	let mm = today.getMonth() + 1; // Months start at 0!
+	let dd = today.getDate();
+	if (dd < 10) dd = '0' + dd;
+	if (mm < 10) mm = '0' + mm;
+	return dd + '/' + mm + '/' + yyyy;
+}
 function changeSthg() {
 	// console.log("changeSthg()");
 	document.getElementById("valid").src="{{request.static_url('openhems.modules.web:img/save_32.ico')}}";
 }
+function getBeforeDate(timeout) {
+	console.log("getBeforeDate(",timeout,")");
+	var dateStr = "17/04";
+	const now = new Date();
+	var date2 = new Date();
+	d = timeout.split(":");
+	date2.setHours(d[0]);
+	date2.setMinutes(d[1]);
+	var dateStr;
+	if (date2<now) {
+		console.log("Tomorow");
+		let tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+		dateStr = formatDate(tomorrow)
+	} else {
+		console.log("Today");
+		dateStr = formatDate(now)
+	}
+	return dateStr;
+}
+function updateBeforeDate(idNode) {
+	console.log("Hello")
+	let timeout = document.getElementById(idNode+"_timeout").value;
+	let dateStr = getBeforeDate(timeout);
+	console.log("Date:", dateStr);
+	document.getElementById(idNode+"_beforeDate").innerHTML = dateStr;
+	changeSthg();
+}
 function onSave() {
 	console.log("onSave()");
-	nodes = {};
+	var nodes = {};
 	for (const divnode of network.children) {
 		// console.log(divnode);
 		const id = divnode.id.substring(7);
 		// console.log("id:",id);
 		const col0 = divnode.children[0];
-		const col1 = divnode.children[1];
+		// const col1 = divnode.children[1];
 		const label = col0.children[0].innerHTML;
 		// console.log("label:",label);
 		const checkbox = col0.children[1];
 		// console.log("checkbox:",checkbox);
 		const nodeid = "node"+id;
+		var duration = 0, timeout = 0;
 		if (checkbox.checked) {
-			durationVal = document.getElementById(nodeid+"_duration").value;
+			let durationVal = document.getElementById(nodeid+"_duration").value;
 			// console.log("durationVal:",durationVal);
 			if (durationVal=="") duration = 0;
 			else {
@@ -102,11 +144,8 @@ function onSave() {
 			timeout = document.getElementById(nodeid+"_timeout").value;
 			// console.log("timeout:",timeout);
 			if (timeout=="") timeout = 0;
-		} else {
-			duration = 0;
-			timeout = 0;
 		}
-		nodes[id] = {name: label, duration: duration*60, timeout: timeout} // Convert minutes to seconds
+		nodes[id] = {name: label, duration: duration*60, timeout: timeout}; // Convert minutes to seconds
 	}
 	console.log("onSave() : nodes=",nodes);
 	var xhr = new XMLHttpRequest();
