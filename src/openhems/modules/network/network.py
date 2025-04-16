@@ -19,8 +19,6 @@ class OpenHEMSNetwork:
 	This class aim to abstract home network of connected devices.
 	It is used to know devices and to switch on/off them.
 	"""
-	networkUpdater: HomeStateUpdater = None
-
 	def print(self, printer=None):
 		"""
 		Print OpenHEMSNetwork as human readable string
@@ -37,7 +35,7 @@ class OpenHEMSNetwork:
 		printer(")")
 
 	def __init__(self, logger, networkUpdater, nodesConf):
-		self.networkUpdater = None
+		self.networkUpdater: HomeStateUpdater = None
 		self.nodes = []
 		self.notificationManager = None
 		self._elemsCache = {}
@@ -54,8 +52,8 @@ class OpenHEMSNetwork:
 		"""
 		# print("addNetworkUpdater()")
 		networkUpdater.initNetwork(self)
-		networkUpdater.getNetwork(nodesConf)
 		self.networkUpdater = networkUpdater
+		networkUpdater.getNetwork(nodesConf)
 		self.notificationManager = NotificationManager(self.networkUpdater)
 		self.print(self.logger.info)
 

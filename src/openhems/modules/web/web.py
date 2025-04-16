@@ -48,9 +48,9 @@ def panel(request):
 	Web-service to get schedled devices.
 	"""
 	del request
-	params = OPENHEMS_CONTEXT.translations["web"]
-	params["nodes"] = OPENHEMS_CONTEXT.schedule
-	return params
+	panelParams = OPENHEMS_CONTEXT.translations["web"]
+	panelParams["nodes"] = OPENHEMS_CONTEXT.schedule
+	return panelParams
 
 # pylint: disable=too-many-branches
 def getNode(node, model):
@@ -248,7 +248,7 @@ class OpenhemsHTTPServer():
 			configurator = ConfigurationManager(self.logger)
 		if isinstance(configurator, str):
 			self.yamlConfFilepath = configurator
-			configurator.defaultPath = ConfigurationManager.DEFA
+			configurator.defaultPath = ConfigurationManager.DEFAULT_PATH
 			configurator = ConfigurationManager(self.logger)
 			configurator.addYamlConfig(Path(self.yamlConfFilepath))
 		else:

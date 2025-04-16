@@ -101,7 +101,7 @@ class OffPeakStrategy(EnergyStrategy):
 		"""
 		self.logger.debug("OffpeakStrategy.getMissingTime(%s)", schedule)
 		missingTime = TIMEDELTA_0
-		if schedule.duration>0 and schedule.timeout is not None:
+		if schedule.isScheduled() and schedule.timeout is not None:
 			i = 0
 			previousRangeEnd = now
 			times = (timedelta(), timedelta(), previousRangeEnd) # Tuple of time in seconds during offpeak

@@ -4,7 +4,8 @@ The web server is the UI used to that.
 """
 import logging
 import datetime
-from openhems.modules.util import CastUtililty
+from jinja2 import Template
+from openhems.modules.util import CastUtililty, ConfigurationException
 
 class OpenHEMSSchedule:
 	"""
@@ -13,18 +14,56 @@ class OpenHEMSSchedule:
 	"""
 	duration: int = 0
 	timeout = "00:00"
-	def __init__(self, haId: str, name:str, duration:int = 0, timeout:datetime=None):
+	def __init__(self, haId: str, name:str, node=None):
 		self.name = name
 		self.id = haId
-		self.timeout:datetime = timeout
-		self.duration:int = duration
+		self.timeout:datetime = None
+		self.duration:int = None
 		self.logger = logging.getLogger(__name__)
 		self.strategyCache = {}
+		self._condition = None
+		self.node = node
+
+	def _getVal(self, haId):
+		"""
+		Method used when eval(_condition) to get HA value of an HA id.
+		"""
+		return self.node.network.networkUpdater.getEntityValue(haId)
+
+	def setVal(self, haId, typename="str"):
+		"""
+		Method used with Jinja2 to register an HA id for later call _getVal().
+		Like an __init__()
+		"""
+		if self.node is not None:
+			self.node.network.networkUpdater.registerEntity(haId, typename)
+			return "self._getVal('"+haId+"')"
+		raise ConfigurationException(
+			f"A node is necessary to register an HA id ({haId}, {typename})")
+
+	def setCondition(self, condition):
+		"""
+		Set a condition to switch on device.
+		Exp: "{{ getVal('sensor.carcharge') }}<80"
+		"""
+		if condition is not None:
+			template = Template(condition)
+			condition = template.render(getVal=self.setVal)
+		self._condition = condition
+		return self._condition
 
 	def isScheduled(self):
 		"""
 		Return True, if device is schedule to be on
 		"""
+		try:
+			# pylint: disable=eval-used
+			if self._condition is not None and eval(self._condition):
+				return True
+		except NameError as e:
+			self.logger.error("isScheduled(%s) = ERROR : %s : Ignore this condition.",
+			                  self._condition, str(e))
+			raise ConfigurationException(e) from e
 		self.logger.debug("OpenHEMSSchedule.isScheduled(%s)"
 			": duration = %d", self.id, self.duration)
 		return self.duration>0

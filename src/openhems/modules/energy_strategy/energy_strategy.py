@@ -255,3 +255,12 @@ class EnergyStrategy:
 					return True
 				switchOn = True
 		return switchOn
+
+	def getVal(self, key:str):
+		"""
+		Function for eval in self.testCondition to get Home-Assistant entity value.
+		"""
+		# self.logger.debug("SwitchOffStrategy.getVal(%s)",key)
+		val = self.network.networkUpdater.getValue(key)
+		self.logger.debug("SwitchOffStrategy.getVal(%s) = %s", key, val)
+		return val

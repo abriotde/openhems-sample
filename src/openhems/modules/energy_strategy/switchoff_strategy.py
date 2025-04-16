@@ -132,15 +132,6 @@ class SwitchoffStrategy(EnergyStrategy):
 			self.logger.warning("Fail to switch all. We will try again on next loop.")
 		return 0
 
-	def getVal(self, key:str):
-		"""
-		Function for eval in self.testCondition to get Home-Assistant entity value.
-		"""
-		self.logger.debug("SwitchOffStrategy.getVal(%s)",key)
-		val = self.network.networkUpdater.getValue(key)
-		self.logger.debug("SwitchOffStrategy.getVal(%s) = %s", key, val)
-		return val
-
 	def testCondition(self):
 		"""
 		Test optional additional condition to enter switoff period.
@@ -152,14 +143,6 @@ class SwitchoffStrategy(EnergyStrategy):
 		"""
 		if not isinstance(self.condition, str):
 			return True
-		# env = {
-		# 	"locals": locals(),
-		# 	"globals" : None,
-		# 	"__name__" :  None,
-		# 	"__file__" :  None,
-		# 	"__builtins__" :  None
-		# }
-		# print(locals())
 		# pylint: disable=eval-used
 		try:
 			a = eval(self.condition) # , env)
