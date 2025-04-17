@@ -35,7 +35,7 @@ dependencies = [
 	'numpy', 'plotly', 'scikit-learn', 'skforecast', 'pvlib', 'beautifulsoup4', 'protobuf',
 	'pandas', 'scipy', 'h5py', 'pulp'
 ]
-license = { file = "LICENSE" }
+license = { file = "LICENSE", "expression" = "GPL-3.0-or-later" }
 # license = "GPL-3.0-or-later"
 # license-files = ["LICENSE"]
 

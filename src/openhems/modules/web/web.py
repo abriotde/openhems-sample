@@ -18,7 +18,7 @@ from pyramid.httpexceptions import exception_response
 # from pyramid.response import Response
 from pyramid.view import view_config
 from openhems.modules.util import (
-	ConfigurationManager, ConfigurationException, CastUtililty, CastException
+	ConfigurationManager, ConfigurationException, CastUtililty, CastException, ProjectConfiguration
 )
 from .driver_vpn import VpnDriverWireguard, VpnDriverIncronClient
 # from .schedule import OpenHEMSSchedule
@@ -138,6 +138,25 @@ def updateConfigurator(fields):
 	if change: # We update configurator
 		OPENHEMS_CONTEXT.configurator = configurator
 	return change, configurator
+
+@view_config(
+	route_name='about',
+	renderer='templates/about.jinja2'
+)
+def about(request):
+	"""
+	Web-page get all general informations.
+	"""
+	conf = ProjectConfiguration()
+	vals = {
+		"name":conf.getName(),
+		"version":conf.getVersion(),
+		"licence":conf.getLicence(),
+		"urls":conf.getUrls(),
+	}
+	return vals
+
+
 
 @view_config(
 	route_name='params',
@@ -393,6 +412,7 @@ class OpenhemsHTTPServer():
 			config.add_route('panel', '/')
 			config.add_route('states', '/states')
 			config.add_route('params', '/params')
+			config.add_route('about', '/about')
 			config.add_route('vpn', '/vpn')
 			# config.add_route('favicon.ico', '/favicon.ico')
 			imgUrl = (self.htmlRoot+'/img').replace('//','/')

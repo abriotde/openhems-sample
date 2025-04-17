@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>OpenHEMS</title>
+    <link rel="stylesheet" href="{{request.static_url('openhems.modules.web:css/openhems.css')}}">
+		<link rel="shortcut icon" href="{{request.static_url('openhems.modules.web:img/favicon.ico')}}" />
+</head>
+<body>
+<nav class="menu">
+  <ul>
+    <li><a href="/">Devices program</a></li>
+    <li><a href="/params">Parameters</a></li>
+  </ul>
+</nav>
+<div class="page">
+	<h1>About</h1>
+	<table>
+		<tr><td>Name</td><td>{{ name }}</td></tr>
+		<tr><td>Version</td><td>{{ version }}</td></tr>
+		<tr><td>Licence</td><td>{{ licence }}</td></tr>
+		{% for name,url in urls.items() %}
+			<tr><td>{{ name }}</td><td><a href="{{ url }}">{{ url }}</a></td></tr>
+		{% endfor %}
+	</table>
+</div>
+</body>
+</html>
