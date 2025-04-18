@@ -28,3 +28,5 @@ waitress>=2.1.1
 plotly>=5.6.0
 # configuration_project
 toml>=0.10
+# annealing strategy
+scikit-learn>=1.5.0

@@ -9,9 +9,9 @@
 """
 import sys
 from pathlib import Path
-path = str(Path(__file__).resolve().parents[2]/"src")
-sys.path.insert(0, path)
-sys.path.insert(0, path+"/openhems")
+PATH = str(Path(__file__).resolve().parents[2]/"src")
+sys.path.insert(0, PATH)
+sys.path.insert(0, PATH+"/openhems")
 
 # pylint: disable=invalid-name, redefined-builtin
 project = 'OpenHEMS'

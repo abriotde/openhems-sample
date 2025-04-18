@@ -2,8 +2,8 @@
 Usefull to get informations from pyproject.toml
 """
 
-import toml
 from pathlib import Path
+import toml
 
 
 class ProjectConfiguration:
