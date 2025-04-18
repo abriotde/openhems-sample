@@ -11,25 +11,28 @@
   
   <p align="center">
     <a style="text-decoration:none" href="https://github.com/abriotde/openhems-sample/releases">
-      <img alt="GitHub release (latest by date)" src="https://img.shields.io/github/v/release/abriotde/openhems-sample">
+      <img alt="GitHub release" src="https://img.shields.io/github/v/release/abriotde/openhems-sample">
     </a>
+    <!-- a style="text-decoration:none" href="https://github.com/abriotde/openhems-sample/actions">
+      <img alt="Workflow docker push" src="https://img.shields.io/github/actions/workflow/status/abriotde/openhems-sample/docker_push.yml?branch=main">
+    </a -->
     <a style="text-decoration:none" href="https://github.com/abriotde/openhems-sample/actions">
-      <img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/abriotde/openhems-sample/python-test.yml?branch=main">
+      <img alt="Workflow tests" src="https://img.shields.io/github/actions/workflow/status/abriotde/openhems-sample/codecov.yml?branch=main">
     </a>
     <a hstyle="text-decoration:none" ref="https://codecov.io/github/abriotde/openhems-sample" >
       <img src="https://codecov.io/github/abriotde/openhems-sample/branch/main/graph/badge.svg?token=4Y5ANTFLW7"/>
     </a>
     <a style="text-decoration:none" href="https://github.com/abriotde/openhems-sample/blob/main/LICENSE">
-      <img alt="GitHub" src="https://img.shields.io/github/license/abriotde/openhems-sample">
+      <img alt="Licence" src="https://img.shields.io/github/license/abriotde/openhems-sample">
     </a>
-    <!-- a style="text-decoration:none" href="https://pypi.org/project/openhems-sample/">
-      <img alt="PyPI - Python Version" src="https://img.shields.io/pypi/pyversions/openhems-sample">
+    <a style="text-decoration:none" href="https://pypi.org/project/openhems-sample/">
+      <img alt="PyPI - Python Version" src="https://img.shields.io/pypi/pyversions/openhems">
     </a>
     <a style="text-decoration:none" href="https://pypi.org/project/openhems/">
       <img alt="PyPI - Status" src="https://img.shields.io/pypi/status/openhems">
-    </a -->
+    </a>
     <a style="text-decoration:none" href="https://openhems.readthedocs.io/en/latest/">
-      <img alt="Read the Docs" src="https://img.shields.io/readthedocs/openhems-sample">
+      <img alt="Read the Docs" src="https://img.shields.io/readthedocs/openhems">
     </a>
   </p>
   

@@ -11,8 +11,13 @@ class ProjectConfiguration:
 	Usefull function to do something like a cast : Convertion of types
 	"""
 
-	def __init__(self):
-		openHemsProjectConfPath = Path(__file__).parents[4] / "pyproject.toml"
+	def __init__(self, openHemsProjectConfPath=None):
+		if openHemsProjectConfPath is None:
+			# openHemsProjectConfPath = Path(__file__).parents[4] / "pyproject.toml"
+			for path in Path(__file__).parents:
+				openHemsProjectConfPath = path / "pyproject.toml"
+				if openHemsProjectConfPath.is_file():
+					break
 		with openHemsProjectConfPath.open('r', encoding="utf-8") as file:
 			self._conf = toml.loads(file.read())
 
