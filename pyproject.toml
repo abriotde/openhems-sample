@@ -104,10 +104,7 @@ directory = "coverage_html_report"
 include-package-data = true
 
 [tool.setuptools.packages]
-find = [
-	{ where=["src", "emhass", "data"], include=["openhems*"] },
-	{ where=["pyproject.toml"]}
-]
+find = { where=["src", "emhass", "data"], include=["openhems*"] }
 
 [tool.setuptools.package-data]
 openhems = [
