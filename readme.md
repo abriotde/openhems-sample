@@ -10,32 +10,34 @@
   <br>
   
   <p align="center">
-    <a style="text-decoration:none" href="https://github.com/abriotde/openhems-sample/releases">
-      <img alt="GitHub release" src="https://img.shields.io/github/v/release/abriotde/openhems-sample">
-    </a>
-    <!-- a style="text-decoration:none" href="https://github.com/abriotde/openhems-sample/actions">
-      <img alt="Workflow docker push" src="https://img.shields.io/github/actions/workflow/status/abriotde/openhems-sample/docker_push.yml?branch=main">
-    </a -->
-    <a style="text-decoration:none" href="https://github.com/abriotde/openhems-sample/actions">
-      <img alt="Workflow tests" src="https://img.shields.io/github/actions/workflow/status/abriotde/openhems-sample/codecov.yml?branch=main">
-    </a>
-    <a hstyle="text-decoration:none" ref="https://codecov.io/github/abriotde/openhems-sample" >
-      <img src="https://codecov.io/github/abriotde/openhems-sample/branch/main/graph/badge.svg?token=4Y5ANTFLW7"/>
-    </a>
     <a style="text-decoration:none" href="https://github.com/abriotde/openhems-sample/blob/main/LICENSE">
       <img alt="Licence" src="https://img.shields.io/github/license/abriotde/openhems-sample">
     </a>
     <a style="text-decoration:none" href="https://pypi.org/project/openhems-sample/">
-      <img alt="PyPI - Python Version" src="https://img.shields.io/pypi/pyversions/openhems">
-    </a>
-    <a style="text-decoration:none" href="https://pypi.org/project/openhems/">
-      <img alt="PyPI - Status" src="https://img.shields.io/pypi/status/openhems">
+      <img alt="Python Version" src="https://img.shields.io/pypi/pyversions/openhems">
     </a>
     <a style="text-decoration:none" href="https://openhems.readthedocs.io/en/latest/">
       <img alt="Read the Docs" src="https://img.shields.io/readthedocs/openhems">
     </a>
+    <a style="text-decoration:none" href="https://pypi.org/project/openhems/">
+      <img alt="PyPI - Status" src="https://img.shields.io/pypi/status/openhems">
+    </a>
   </p>
-  
+  <p align="center">
+    <a style="text-decoration:none" href="https://github.com/abriotde/openhems-sample/releases">
+      <img alt="GitHub release" src="https://img.shields.io/github/v/release/abriotde/openhems-sample">
+    </a>
+    <a style="text-decoration:none" href="https://github.com/abriotde/openhems-sample/actions">
+      <img alt="Workflow tests" src="https://img.shields.io/github/actions/workflow/status/abriotde/openhems-sample/codecov.yml?branch=main">
+    </a>
+    <a hstyle="text-decoration:none" ref="https://codecov.io/github/abriotde/openhems-sample" >
+      <img alt="CodeCov status" src="https://codecov.io/github/abriotde/openhems-sample/branch/main/graph/badge.svg?token=4Y5ANTFLW7"/>
+    </a>
+    <a style="text-decoration:none" href="https://github.com/abriotde/openhems-addon">
+       <img src="https://img.shields.io/github/v/release/abriotde/openhems-addon" alt="Home-Assistant add-on">
+    </a>
+  </p>
+
   <div align="center">
     <a style="text-decoration:none" href="https://openhems.readthedocs.io/en/latest/">
         <img src="https://raw.githubusercontent.com/abriotde/openhems-sample/main/docs/images/Documentation_button.svg" alt="Documentation">
@@ -46,12 +48,9 @@
     <a style="text-decoration:none" href="https://github.com/abriotde/openhems-sample/issues">
         <img src="https://raw.githubusercontent.com/abriotde/openhems-sample/main/docs/images/Issues_button.svg" alt="Issues">
     </a>
-    <!-- a style="text-decoration:none" href="https://github.com/abriotde/openhems-sample-add-on">
-       <img src="https://raw.githubusercontent.com/abriotde/openhems-sample/main/docs/images/EMHASS_Add_on_button.svg" alt="OpenHEMS Add-on">
-    </a -->
   </div>
-  
-  <br>
+
+<br>
   
   <p align="center">
   If you like this work please consider buying a coffee ;-) 
