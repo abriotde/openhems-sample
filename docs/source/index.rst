@@ -29,4 +29,5 @@ Contents
    installation
    installation_from_scratch
    configure
+   configure_nodes
    api

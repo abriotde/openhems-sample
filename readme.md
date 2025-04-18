@@ -82,19 +82,17 @@ Features
 :white_check_mark: Easy installation and UI configuration with HTML pages\
 :white_check_mark: Support multiple off-peak time-slots and even variable time-slots and cost (RTE Tempo contract).\
 :white_check_mark: Usefull if you don't have solar panel but only a contract with off-peak.\
-:white_check_mark: Solar panel management with EMHASS using AI\
-:white_check_mark: Basic solar panel management without AI for no sell or no buy strategy.\
+:white_check_mark: Support solar panel management with EMHASS using AI\
+:white_check_mark: Support basic solar panel management without AI for no sell or no buy strategy.\
 :white_check_mark: Home-Assistant widget to schedule devices (washing-machine, charging car... )\
-:white_check_mark: Time-out for scheduled devices.\
-:white_check_mark: Configurable priority handling between multiple appliances\
-:white_check_mark: Define an *On/Off switch interval* / solar power averaging interval\
+:white_check_mark: Time-out for scheduled devices (to force run even if not good to get ready on time).\
+:white_check_mark: Set the appliance to run automatically until X\
+:white_check_mark: Set priority handling between multiple appliances\
 :white_check_mark: Always check maximum capacities to avoid black-out\
-:white_check_mark: Supports one- and three-phase appliances\
-:white_check_mark: Supports *Only-Switch-On* devices (like washing machines, dishwashers)\
 
 We are expected to add soon the following features. We need beta-tester for those features. If you are interested, please contact us.
 
-:x: Variable switch support (like solar router, car charger)\
+:x: Variable switch support (like solar router, wall-box)\
 :x: Works with hybrid and standard inverters\
 
 What OpenHEMS is not.

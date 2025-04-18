@@ -10,21 +10,20 @@ from openhems.modules.util import ConfigurationManager
 from .solarbased_strategy import SolarBasedStrategy
 
 class SolarNoSellStrategy(SolarBasedStrategy):
-	"""
-	Could be named too NoBuy
-	- Start the device when production > consommation + X * consommationDevice (during Y cycles?)
-	- Stop a device if production < consommation - (1-X) * consommationDevice (during Y cycles?)
+	"""Could be named too NoBuy
+	* Start the device when production > consommation + X * consommationDevice (during Y cycles?)
+	* Stop a device if production < consommation - (1-X) * consommationDevice (during Y cycles?)
 	If X==0 we could never sell electricity
-	 (If there is enough device consumption and the cycle duration is enough quick).
+	(If there is enough device consumption and the cycle duration is enough quick).
 	If X==1 we could never buy electricity
-	 (If produce enough and the cycle duration is enough quick).
+	(If produce enough and the cycle duration is enough quick).
 	But with a margin every thing get harder because we want "+ margin" for no-sell
-	 and "- margin" for no-buy.
+	and "- margin" for no-buy.
 	We found a solution using "- ratio*margin" and ratio between on interval [-1 ; 1]
 	Problem is that precedent solutions do not whork with X = -1, So X = - (((ratio-1)²-4)/4)
-	 then even if ratio is in [-1 ; 1] X stay in [0 ; 1]
-	- Ratio = -1, production<consumption : no sell
-	- Ratio = 1, consumption<production : no buy
+	then even if ratio is in [-1 ; 1] X stay in [0 ; 1]
+	* Ratio = -1, production<consumption : no sell
+	* Ratio = 1, consumption<production : no buy
 	The good news is that for 0 it's something between, and even for 2 or -2.
 	"""
 
@@ -46,6 +45,7 @@ class SolarNoSellStrategy(SolarBasedStrategy):
 		"""
 		Nothing todo
 		"""
+		del now
 
 	def switchOnDevices(self, powerMargin):
 		"""

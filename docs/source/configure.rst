@@ -200,8 +200,6 @@ Network
 
 Here you set your network. This is very important you  update it when you have new devices.
 
-This is a list of "nodes"
-
 For this part, value can be a `recoverable value` notice with an asterisk, in that case the value can be:
 
 * A number if it is a static value that will never change. It can be so if value really never change or it can be a solution if you have no sensor for it.
@@ -209,6 +207,8 @@ For this part, value can be a `recoverable value` notice with an asterisk, in th
 * A Home-Assistant complete `entity ID` witch you can get on Home-Assistant dashboard. To do so, click on the device line you want to get on the dashboard. You will get a popup window, on top right, click on parameter buttons and copy complete `entity ID` (Click on the icon, will copy it).
 
 Add as many line like bellow for all electrical source. Usually there is the public grid and/or solar panel
+
+This is a list of "nodes". We detail it on ::doc:`configure_nodes` but here is the common part of nodes attributes.
 
 * *id* : A name witch can be what you want without special caracters.
 
@@ -225,9 +225,6 @@ Add as many line like bellow for all electrical source. Usually there is the pub
 * *currentPower* * : This is the currrent power delivered
 
 * *maxPower* * : This is the maximum power we can get from that source.
-
-* *isOn* * : This is the "switch" button that we can test and use.
-
 
 The class attribute define some extra possibles attributes. Available classes are :
 
