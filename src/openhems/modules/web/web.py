@@ -10,6 +10,7 @@ import json
 from pathlib import Path
 from json import JSONEncoder
 import re
+import copy
 from wsgiref.simple_server import make_server
 import yaml
 from pyramid.config import Configurator
@@ -17,7 +18,7 @@ from pyramid.httpexceptions import exception_response
 # from pyramid.response import Response
 from pyramid.view import view_config
 from openhems.modules.util import (
-	ConfigurationManager, ConfigurationException, CastUtililty, CastException
+	ConfigurationManager, ConfigurationException, CastUtililty, CastException, ProjectConfiguration
 )
 from .driver_vpn import VpnDriverWireguard, VpnDriverIncronClient
 # from .schedule import OpenHEMSSchedule
@@ -47,7 +48,9 @@ def panel(request):
 	Web-service to get schedled devices.
 	"""
 	del request
-	return { "nodes": OPENHEMS_CONTEXT.schedule }
+	panelParams = OPENHEMS_CONTEXT.translations["web"]
+	panelParams["nodes"] = OPENHEMS_CONTEXT.schedule
+	return panelParams
 
 # pylint: disable=too-many-branches
 def getNode(node, model):
@@ -135,6 +138,25 @@ def updateConfigurator(fields):
 	if change: # We update configurator
 		OPENHEMS_CONTEXT.configurator = configurator
 	return change, configurator
+
+@view_config(
+	route_name='about',
+	renderer='templates/about.jinja2'
+)
+def about(request):
+	"""
+	Web-page get all general informations.
+	"""
+	conf = ProjectConfiguration()
+	vals = {
+		"name":conf.getName(),
+		"version":conf.getVersion(),
+		"licence":conf.getLicence(),
+		"urls":conf.getUrls(),
+	}
+	return vals
+
+
 
 @view_config(
 	route_name='params',
@@ -245,10 +267,12 @@ class OpenhemsHTTPServer():
 			configurator = ConfigurationManager(self.logger)
 		if isinstance(configurator, str):
 			self.yamlConfFilepath = configurator
+			configurator.defaultPath = ConfigurationManager.DEFAULT_PATH
 			configurator = ConfigurationManager(self.logger)
 			configurator.addYamlConfig(Path(self.yamlConfFilepath))
 		else:
 			self.yamlConfFilepath = configurator.getLastYamlConfFilepath()
+		self.defaultConfFilepath = configurator.defaultPath
 		self.configurator = configurator
 		lang = configurator.get("localization.language")
 		self.translations = {}
@@ -334,17 +358,41 @@ class OpenhemsHTTPServer():
 				htmlTabsBody += '<script>'+hook+'s = {{ '+jinja2Id+'|tojson }};</script>\n'
 			lastElems = elems
 		htmlTabsBody += ("</div>\n"*(len(lastElems)-1))
-		return "<ul>"+htmlTabsMenu+"</ul>"+htmlTabsBody
+		htmlTabs = "<ul>"+htmlTabsMenu+"</ul>"+htmlTabsBody
+		htmlTabs += "\n<script>var tooltips = "+json.dumps(tooltips)+";</script>"
+		return htmlTabs
+
+	def getTooltips(self, lang="en"):
+		"""
+		Get tooltips from configuration in right language and add default values.
+		"""
+		self.logger.debug("getTooltips(%s)", lang)
+		tooltipPath = ROOT_PATH / ("data/openhems_tooltips_"+lang+".yaml")
+		configurator = ConfigurationManager(self.logger, defaultPath=tooltipPath)
+		tooltips = configurator.get("", deepSearch=True)
+		defaultConfig = ConfigurationManager(self.defaultConfFilepath)
+		tooltips2 = copy.deepcopy(tooltips)
+		tooltipWithDefault = self.translations["web"].get("defaultTooltip")
+		for key, tooltip in tooltips.items():
+			# self.logger.debug("Tooltip: %s : %s", key, tooltip)
+			defaultValue = defaultConfig.get(key)
+			if defaultValue is not None and str(defaultValue)!="":
+				localVars = locals()
+				localVars["tooltip"] = tooltip # else tooltip seam not used by Python checker.
+				value = tooltipWithDefault.format(**localVars)
+				# self.logger.debug("Tooltip with default: %s : %s", key, value)
+				tooltips2[key] = value
+		return tooltips2
+
 
 	def generateTemplateYamlParams(self, lang="en"):
 		"""
 		Generate the template file for /params page based on YAML configuration file.
 		"""
+		self.logger.debug("generateTemplateYamlParams(%s)", lang)
 		OPENHEMS_CONTEXT.logger.info("Generate template for /params page")
+		tooltips = self.getTooltips(lang)
 		templatesPath = Path(__file__).parents[0]/"templates"
-		tooltipPath = ROOT_PATH / ("data/openhems_tooltips_"+lang+".yaml")
-		configurator = ConfigurationManager(self.logger, defaultPath=tooltipPath)
-		tooltips = configurator.get("", deepSearch=True)
 		frameworkPath = templatesPath / "params.framework.jinja2"
 		with frameworkPath.open("r", encoding="utf-8") as infile:
 			datas = infile.read()
@@ -364,6 +412,7 @@ class OpenhemsHTTPServer():
 			config.add_route('panel', '/')
 			config.add_route('states', '/states')
 			config.add_route('params', '/params')
+			config.add_route('about', '/about')
 			config.add_route('vpn', '/vpn')
 			# config.add_route('favicon.ico', '/favicon.ico')
 			imgUrl = (self.htmlRoot+'/img').replace('//','/')

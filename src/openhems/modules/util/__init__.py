@@ -8,3 +8,4 @@ from .cast_utility import CastUtililty, CastException
 from .configuration_manager import ConfigurationManager, ConfigurationException
 from .time import Time, HoursRanges, DATETIME_PRINT_FORMAT
 from .notification_manager import NotificationManager, MessageHistory
+from .project_configuration import ProjectConfiguration

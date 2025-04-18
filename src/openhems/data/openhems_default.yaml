@@ -24,8 +24,6 @@ network:
 # - class=battery: currentPower, level (current_battery_level), maxPowerIn (max_discharge_power_watt), maxPowerOut (max_charge_power_watt), efficiencyIn (discharge_efficiency:0.95), efficiencyOut (charge_efficiency:0.95), capacity (watt), lowLevel (state_of_charge_min), highLevel (state_of_charge_max), targetLevel (state_of_charge_target)
 # - class=solarpanel: currentPower, maxPower (max_discharge_power_watt), moduleModel (CSUN_Eurasia_Energy_Systems_Industry_and_Trade_CSUN295_60M), inverterModel: (Fronius_International_GmbH__Fronius_Primo_5_0_1_208_240__240V_), tilt, azimuth, modules_per_string, strings_per_inverter
 # - class=switch: id, isOn, currentPower, maxPower
-
-# All default values.
 default:
   strategy:
     emhass:
@@ -34,9 +32,6 @@ default:
       method_ts_round: nearest
       delta_forecast: 1
       weather_forecast_method: scrapper
-      load_cost_hp: 0.30
-      load_cost_hc: 0.15
-      prod_sell_price: 0.0
       set_total_pv_sell: False
       lp_solver: default
       lp_solver_path: empty

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.9 - 2024-04-18
+## FIX
+- MOD Avoid import sko.GA (witch need pip) when not used (not using annealing strategy)
+
+### Improvement
+- ADD web page to get basic informations : The most important is 'version'
+- ADD automatic switch : switch on when you can until X occured.
+- MOD readme : add white_check_mark.
+- ADD web tooltips on dynamic popup (for nodes/strategies) and update translations
+
 ## 0.2.8 - 2024-04-15
 ### Fix
 - FIX strategy/annealing : Use genetic algorythm for more reliable results.

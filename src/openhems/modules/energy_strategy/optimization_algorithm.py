@@ -7,7 +7,6 @@ from dataclasses import dataclass
 from enum import Enum
 import scipy.optimize
 import numpy as np
-from sko.GA import GA # pip install scikit-opt
 from openhems.modules.network.node import OutNode
 
 
@@ -22,6 +21,9 @@ from openhems.modules.network.node import OutNode
 # - DEAP (flexible evolutionary algorithms):
 # - Optuna (hyperparameter optimization, supports discrete spaces):
 
+# [PV-Excess-Control]
+#   (https://github.com/InventoCasa/ha-advanced-blueprints/tree/main/PV_Excess_Control)
+# [Solar-Optimizer](https://github.com/jmcollin78/solar_optimizer.git)
 
 class Algorithme(Enum):
 	"""
@@ -112,6 +114,9 @@ class OptimizationAlgorithm:
 		)
 		self.algo = algo
 		self.prices = None
+		# pylint: disable=import-error, import-outside-toplevel
+		from sko.GA import GA # pip install scikit-opt
+		self.skoGa = GA
 
 	def takeStep(self, x):
 		"""
@@ -556,7 +561,7 @@ class OptimizationAlgorithm:
 		"""
 		Use genetic algorythm to find the best solution
 		"""
-		ga = GA(
+		ga = self.skoGa(
 			func=self.evalTarget3,
 			n_dim=len(self._equipments),
 			size_pop=50,      # Population size

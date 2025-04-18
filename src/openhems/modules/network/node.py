@@ -26,10 +26,10 @@ class OpenHEMSNode:
 		self.id = haId.strip().replace(" ", "_")
 
 	def __init__(self, nameId, currentPower, maxPower, isOnFeeder=None,
-			  controlledPowerFeeder=None, controlledPowerValues=None):
+			  controlledPowerFeeder=None, controlledPowerValues=None, network=None):
 		self.id = ""
 		self.setId(nameId)
-		self.network = None
+		self.network = network
 		self._controlledPower = controlledPowerFeeder
 		self._controlledPowerValues = controlledPowerValues
 		self._initControlledPowerValues()
@@ -245,10 +245,11 @@ class OutNode(OpenHEMSNode):
 	:param int priority: A device with higth priority is more important than a low priority one.
 		Usually priority is a number between 0 and 100
 	"""
-	def __init__(self, nameId, strategyId, currentPower, maxPower, isOnFeeder=None, priority=50):
-		super().__init__(nameId, currentPower, maxPower, isOnFeeder)
+	def __init__(self, nameId, strategyId, currentPower, maxPower, isOnFeeder=None,
+			priority=50, network=None):
+		super().__init__(nameId, currentPower, maxPower, isOnFeeder, network=network)
 		self.name = nameId
-		self.schedule = OpenHEMSSchedule(self.id, nameId)
+		self.schedule = OpenHEMSSchedule(self.id, nameId, self)
 		self.strategyId = strategyId
 		self._priority = priority
 
@@ -263,6 +264,14 @@ class OutNode(OpenHEMSNode):
 		Return schedule
 		"""
 		return self.schedule
+
+	def setCondition(self, condition):
+		"""
+		Set a condition to switchOn
+		even if the node is  not manually schedule.
+		"""
+		self.schedule.setCondition(condition)
+		return condition
 
 	def isScheduled(self):
 		"""

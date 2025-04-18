@@ -30,13 +30,15 @@ Different devices
 Human controlled devices
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-This is devices witch usually we need to press a button. Instead of doing this, for those devices, OpenHEMS offer an interface in Home-Assistant to ask OpenHEMS to start it in the futur. This interface is accessible from any web brower (Firefox, Chromium, Safari...) and from the Android and iOS application Home-Assistant.
+This is devices witch usually we need to press a button. Instead of doing this, for those devices, OpenHEMS offer an interface in Home-Assistant (widget) to ask OpenHEMS to start it in the futur. This interface is accessible from any web brower (Firefox, Chromium, Safari...) and from the Android and iOS application Home-Assistant.
 
-In this interface, for each devices, you can set 
+Today, OpenHEMS support 2 way to set up a switch node:
 
-* "Duration" : how-long you want the device to be up, precise to the minute. If it's a cycle, no time is needed, just a start. 
+* With the widget/web interface, you can set a "duration" : how-long you want the device to be up. In that case, the system will switch on the device during the period of time but only during the optimal periods. So it can take time (up to 24h) to achieve it. It can be a problem. In that case, you can, if needed, specify a "timeout". If set, the system will ensure that the device will have been switched on during the "duration" period before the "timeout" occured. OpenHEMS will try to optimize the range.
 
-* "Time out" : optionnally a time out. This time out is a time during the next 24 hours. If you not set, OpenHEMS can use many day to achieve it (Bu usually do it in 24h).
+* You can configure an appliance to be switched on at the best time until a condition occured.
+
+Both methods can be used together. For example to charge a car at 80% usually, but once you set up a long "duration" to reach 100% because tomorow you will travel a lot.
 
 .. |Widget of OpenHEMS| image:: images/widget_OpenHEMS.png
   :alt: Widget of OpenHEMS
