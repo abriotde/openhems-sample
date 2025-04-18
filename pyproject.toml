@@ -53,7 +53,7 @@ Repository = "https://github.com/abriotde/openhems-sample.git"
 [build-system]
 requires = [
 	'requests', "pandas", "pyyaml", "pyramid", "pyramid-jinja2", 'packaging', 'astral',
-	'GitPython',
+	'GitPython','toml', 'scikit-opt',
 	# For EMHASS
 	'numpy', 'plotly', 'scikit-learn', 'skforecast', 'pvlib', 'beautifulsoup4' , 'protobuf',
 	'pandas', 'scipy', 'h5py', 'pulp',
