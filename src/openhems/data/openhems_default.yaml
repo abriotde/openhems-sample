@@ -68,7 +68,7 @@ default:
     publicpowergrid:
       currentPower: null
       maxPower: 6000
-      minPower: 0
+      minPower: null
       marginPower: 1000
       contract:
         rtetempo:
@@ -121,3 +121,6 @@ default:
       isOn: null
       strategy: null
       priority: 50
+    out:
+      currentPower: null
+      maxPower: 2000

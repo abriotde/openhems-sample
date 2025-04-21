@@ -7,10 +7,13 @@ from typing import Final
 import logging
 from openhems.modules.util import (
 	ConfigurationManager, ConfigurationException,
-	CastException
+	CastException, CastUtililty
 )
-from .node import (
-	OutNode, PublicPowerGrid, SolarPanel, Battery
+from .outnode import (
+	OutNode, Switch
+)
+from .inoutnode import (
+	PublicPowerGrid, SolarPanel, Battery
 )
 from .feeder import Feeder, SourceFeeder
 
@@ -32,24 +35,23 @@ class HomeStateUpdater:
 	"""
 	def __init__(self, conf:ConfigurationManager) -> None:
 		self.cachedIds = {}
-		self.refreshId = 0
 		self.logger = logging.getLogger(__name__)
 		self.network = None
 		self.conf = conf
 		self.tmp = None # Used to avoid method argument repeated.
 		self.warningMessages = []
 
-	def getCacheId(self):
+	def getCycleId(self):
 		"""
 		Return the refresh Id of the network.
 		"""
-		return self.refreshId
+		return self.network.getCycleId()
 
 	def updateNetwork(self):
 		"""
 		A function witch update home network and return OpenHEMSNetwork.
 		"""
-		self.refreshId += 1
+		# self.refreshId += 1 # useless : self.network.getCycleId() replaceIt?
 
 	def switchOn(self, isOn, _):
 		"""
@@ -175,7 +177,9 @@ class HomeStateUpdater:
 				node = None
 				nameid = e.get("id", f"node_{i}")
 				i += 1
-				if classname == "switch":
+				if classname == "out":
+					node = node = self.getOutNode(nameid, e)
+				elif classname == "switch":
 					node = node = self.getSwitch(nameid, e)
 				elif classname == "publicpowergrid":
 					node = self.getPublicPowerGrid(nameid, e)
@@ -207,9 +211,23 @@ class HomeStateUpdater:
 		isOn = self._getFeeder(nodeConf, "isOn", "bool")
 		condition = nodeConf.get('condition', None)
 		priority = nodeConf.get("priority", 50)
-		node = OutNode(nameid, strategyId, currentPower, maxPower, isOn,
+		node = Switch(nameid, strategyId, currentPower, maxPower, isOn,
 				priority=priority, network=self.network)
 		if condition is not None:
 			node.setCondition(condition)
+		# self.logger.info(node)
+		return node
+
+	def getOutNode(self, nameid, nodeConf):
+		"""
+		Return a OpenHEMSNode representing a switch
+		 according to it's YAML configuration.
+		"""
+		self.tmp = "outnode"
+		currentPower = self._getFeeder(nodeConf, "currentPower", "int")
+		maxPower = self._getFeeder(nodeConf, "maxPower", "int")
+		nbCycleWithoutPowerForOff = CastUtililty.toTypeInt(nodeConf.get("nbCycleWithoutPowerForOff", 1))
+		node = OutNode(nameid, currentPower, maxPower, network=self.network
+				 , nbCycleWithoutPowerForOff=nbCycleWithoutPowerForOff)
 		# self.logger.info(node)
 		return node

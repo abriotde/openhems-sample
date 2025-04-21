@@ -16,6 +16,7 @@ import requests
 from packaging.version import Version
 PATH_ROOT = Path(__file__).parents[1]
 sys.path.append(str(PATH_ROOT))
+#pylint: disable=wrong-import-position, import-error
 from openhems.modules.util import ProjectConfiguration
 
 postupdateScriptRegexp = re.compile('postupdate-(?P<version>[0-9.]*)\\.py')

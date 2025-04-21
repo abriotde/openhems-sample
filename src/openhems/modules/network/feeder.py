@@ -51,7 +51,7 @@ class SourceFeeder(Feeder):
 		getValue from the "source" if source.id has been updated.
 		"""
 		# Check if need to update SourceFeeder cache
-		sourceId = self.source.getCacheId()
+		sourceId = self.source.getCycleId()
 		if self.sourceId<sourceId:
 			# Better to update sourceId before in case value is
 			# updated between the 2 next lines
@@ -91,14 +91,14 @@ class RandomFeeder(Feeder):
 		if averageStep is None:
 			averageStep = (maximum - minimum)/10
 		self.avgStep = averageStep
-		self.lastRefreshId = self.source.refreshId-1
+		self.lastRefreshId = self.source.getCycleId()-1
 
 	def getValue(self):
 		"""
 		The return 'value' is a random value between a 'minimum' and 'maximum',
 		But each step is a gaussian step between the current value.
 		"""
-		if self.lastRefreshId < self.source.refreshId:
+		if self.lastRefreshId < self.source.getCycleId():
 			self.value = min(max(
 					self.value + random.gauss(0, 2*self.avgStep),
 				self.min), self.max)
@@ -125,10 +125,10 @@ class RotationFeeder(Feeder):
 	def getValue(self):
 		"""
 		The return 'value' rotate on a list of predefined 'values'.
-		On each OpenHEMS server loop, self.source.refreshId should increment,
+		On each OpenHEMS server loop, self.source.cylceId should increment,
 		 witch occure the change, 
 		"""
-		i = self.source.refreshId % self.len
+		i = self.source.getCycleId() % self.len
 		return self.values[i]
 	def __str__(self):
 		return "RotationFeeder("+str(self.values)+")"
@@ -161,7 +161,7 @@ class FakeSwitchFeeder(Feeder):
 	def getValue(self):
 		"""
 		The return 'value' rotate on a list of predefined 'values'.
-		On each OpenHEMS server loop, self.source.refreshId should increment,
+		On each OpenHEMS server loop, self.source.cycleId should increment,
 		 witch occure the change, 
 		"""
 		if self.isOn.getValue():
@@ -181,7 +181,7 @@ class SumFeeder(Feeder):
 	def getValue(self):
 		"""
 		The return 'value' rotate on a list of predefined 'values'.
-		On each OpenHEMS server loop, self.source.refreshId should increment,
+		On each OpenHEMS server loop, self.source.cycleId should increment,
 		 witch occure the change, 
 		"""
 		mysum = sum(

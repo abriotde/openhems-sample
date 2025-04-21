@@ -6,11 +6,11 @@ This is a fake network for tests.
 
 import re
 from openhems.modules.util.cast_utility import CastUtililty
-from openhems.modules.network.network import HomeStateUpdater
-from openhems.modules.network.feeder import (
-	Feeder, RandomFeeder, ConstFeeder, RotationFeeder, FakeSwitchFeeder, StateFeeder, SumFeeder
+from openhems.modules.network import (
+	HomeStateUpdater,
+	Feeder, RandomFeeder, ConstFeeder, RotationFeeder, FakeSwitchFeeder, StateFeeder, SumFeeder,
+	Switch
 )
-from openhems.modules.network.node import OutNode
 
 RANDOM_FEEDER = r'^RANDOM\( *([0-9]+(.[0-9]+)?) *, *([0-9]+(.[0-9]+)?) *, *([0-9]+(.[0-9]+)?) *\)$'
 REGEXP_RANDOM_FEEDER = re.compile(RANDOM_FEEDER)
@@ -64,7 +64,7 @@ class FakeNetwork(HomeStateUpdater):
 		strategy = nodeConf.get("strategy", "default")
 		priority = nodeConf.get("priority", 50)
 		currentPowerRealisttic = FakeSwitchFeeder(currentPower, isOn)
-		node = OutNode(nameid, currentPower=currentPowerRealisttic,
+		node = Switch(nameid, currentPower=currentPowerRealisttic,
 				maxPower=maxPower, isOnFeeder=isOn,
 				strategyId=strategy, priority=priority)
 		return node

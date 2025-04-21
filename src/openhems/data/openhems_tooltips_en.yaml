@@ -117,3 +117,6 @@ default:
       isOn: "The HA identifier to know if device is on or off."
       strategy: "The strategy id used for this device."
       priority: "A number between 0 and 100 to determine if this device is important. Higher it is, more it is important."
+    out:
+      currentPower: "The HA identifier to get power, in Kw consumed by the appliance"
+      maxPower: "The maximum power, in Kw, we expect the devices behind the switch will pull. (It's used to determin margin power : security)."

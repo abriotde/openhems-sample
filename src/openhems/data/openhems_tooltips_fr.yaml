@@ -118,3 +118,6 @@ default:
       isOn: "ID HA de l'état (on/off)"
       strategy: "ID de la stratégie associée."
       priority: "Priorité (0-100) : plus élevée = plus critique."
+    out:
+      currentPower: "ID HA de la puissance consommée (kW)"
+      maxPower: "Puissance maximale attendue (kW)"

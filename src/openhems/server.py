@@ -27,6 +27,7 @@ class OpenHEMSServer:
 		self.network.server = self
 		self.loopDelay = serverConf.get("server.loopDelay")
 		self.strategies = []
+		self._cycleId = -1 # used for cache (if loopNb didn't move, get from cache)
 		throwErr = None
 		for strategyParams in serverConf.get("server.strategies"):
 			strategy = strategyParams.get("class", "").lower()
@@ -65,7 +66,7 @@ class OpenHEMSServer:
 			raise ConfigurationException(throwErr)
 		self.allowSleep = allowSleep
 		self.inOverLoadMode = False # in over load mode, we have node deactivate for safety
-		self.lastLoopTime = None
+		self._now = None
 		self.decrementTimeList = {}
 
 	def getSchedule(self):
@@ -90,6 +91,18 @@ class OpenHEMSServer:
 			self.decrementTimeList[id(node)] = node
 		else:
 			self.decrementTimeList.pop(id(node))
+
+	def getTime(self):
+		"""
+		Return current time
+		"""
+		return self._now
+
+	def getCycleId(self):
+		"""
+		Return cycle id.
+		"""
+		return self._cycleId
 
 	def decrementTime(self, duration):
 		"""
@@ -145,13 +158,14 @@ class OpenHEMSServer:
 		"""
 		if now is None:
 			now = datetime.datetime.now()
-		if self.lastLoopTime is None:
+		if self._now is None:
 			loopDelay = 0
 		else:
-			loopDelay = now - self.lastLoopTime
+			loopDelay = now - self._now
 			loopDelay = loopDelay.total_seconds()
-		self.lastLoopTime = now
-		# self.logger.debug("OpenHEMSServer.loop()")
+		self._cycleId += 1
+		self._now = now
+		# self.logger.debug("OpenHEMSServer.loop(%s)", now)
 		self.network.updateStates()
 		self.check()
 		self.decrementTime(loopDelay)
