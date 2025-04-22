@@ -238,6 +238,21 @@ class HoursRanges:
 		"""
 		return self.minCost
 
+	def getNextRange(self, nowDatetime:datetime=None):
+		"""
+		Get next range (end time) and cost
+		"""
+		if nowDatetime is None:
+			nowDatetime = datetime.now()
+		now = Time(nowDatetime)
+		nextTime = now.time+Time.MIDNIGHT
+		for hoursRange in self.ranges:
+			begin, end, cost = hoursRange
+			wait = now.getTimeToWait(end)
+			if wait<nextTime:
+				nextTime = hoursRange
+		return nextTime
+
 	def checkRange(self, nowDatetime:datetime=None, attime:datetime=None):
 		"""
 		Check if nowDatetime (Default now) is in off-peak range (offpeakHoursRange)
@@ -245,7 +260,7 @@ class HoursRanges:
 		"""
 		if nowDatetime is None:
 			nowDatetime = datetime.now()
-		# Check range validity of this housRange
+		# Check range validity of this hoursRange
 		if ( (self.timeStart is not None and nowDatetime<self.timeStart)
 				or (self.timeout is not None and self.timeout<nowDatetime)):
 			return self._timeoutCallBack.getHoursRanges(nowDatetime, attime) \
@@ -278,7 +293,7 @@ class HoursRanges:
 		"""
 		Return True if there is no range.
 		"""
-		return len(self.ranges)<=0
+		return len(self.ranges)<=1
 
 	def getTime2NextRange(self, now) -> int:
 		"""

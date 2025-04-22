@@ -12,6 +12,78 @@ from .feeder import Feeder
 CYCLE_HISTORY: Final[int] = 10 # Number of cycle we keep history
 logger = logging.getLogger(__name__)
 
+class ApplianceConstraints():
+	"""
+	Appliance constraints : Constraints to always chek when the appliance is on or before switching on/off.
+	"""
+	def __init__(self, node, configuration:dict):
+		self.minPower = configuration.get('minPower', None)
+		self.maxPower = configuration.get('maxPower', None)
+		# durations are in seconds
+		self.node = node
+		self.minDurationOn = configuration.get('minDurationOn', None)
+		self.minDurationOff = configuration.get('minDurationOff', None)
+		self.maxDurationOn = configuration.get('maxDurationOn', None)
+		self.maxDurationOff = configuration.get('maxDurationOff', None)
+		self._duration = 0
+		self._isOn = None
+
+	def check(self):
+		"""
+		:return: max power of the appliance
+		"""
+		if self.minPower is not None or self.maxPower is not None:
+			currentPower = self.node.getCurrentPower()
+			if currentPower is None:
+				self.node.logger.warning("ApplianceConstraints.check() : currentPower is None")
+				return False
+			if self.minPower is not None and currentPower<self.minPower:
+				self.node.logger.warning("Offending minPower (%d) > currentPower (%d)", self.minPower, currentPower)
+				self.node.switchOn(False)
+				return False
+			if self.maxPower is not None and currentPower>self.maxPower:
+				self.node.logger.warning("Offending maxPower (%d) < currentPower (%d)", self.maxPower, currentPower)
+				self.node.switchOn(False)
+				return False
+		if self._isOn:
+			if self._duration>self.maxDurationOn:
+				self.node.logger.warning("Offending maxDurationOn (%d) < currentDuration (%d)", self.maxDurationOn, self._duration)
+				self.node.switchOn(False)
+				return False
+		else:
+			if self._duration>self.maxDurationOff:
+				self.node.logger.warning("Offending maxDurationOff (%d) < currentDuration (%d)", self.maxDurationOff, self._duration)
+				self.node.switchOn(True)
+				return False
+		return True
+
+	def switch(self, on):
+		"""
+		Reset durations
+		"""
+		if self._isOn:
+			if self._duration<self.minDurationOn and not on:
+				self.node.logger.warning("Offending minDurationOn (%d) > currentDuration (%d)", self.maxDurationOn, self._duration)
+				self.node.switchOn(False)
+				return False
+		else:
+			if self._duration<self.minDurationOff and on:
+				self.node.logger.warning("Offending minDurationOff (%d) > currentDuration (%d)", self.maxDurationOff, self._duration)
+				self.node.switchOn(True)
+				return False
+		self._isOn = on
+		self._duration = 0
+		return True
+
+	def decrementTime(self):
+		"""
+		Decrease time of schedule and return remaining time.
+		"""
+		self._duration += 1
+
+	def __str__(self):
+		return f"ApplianceConstraints(minPower={self.minPower}, maxPower={self.maxPower})"
+
 class OpenHEMSNode:
 	"""
 	Represent device of home network
@@ -25,7 +97,7 @@ class OpenHEMSNode:
 		self.id = haId.strip().replace(" ", "_")
 
 	def __init__(self, nameId, currentPower, maxPower, isOnFeeder=None,
-			  controlledPowerFeeder=None, controlledPowerValues=None, network=None):
+			  controlledPowerFeeder=None, controlledPowerValues=None, network=None, constraints=None):
 		self.id = ""
 		self.setId(nameId)
 		self.network = network
@@ -41,6 +113,7 @@ class OpenHEMSNode:
 			self.getCurrentPower()
 		except TypeError as e:
 			raise ConfigurationException(str(e)) from e
+		self.constraints = constraints
 
 	def _initControlledPowerValues(self):
 		"""
@@ -220,17 +293,21 @@ class OpenHEMSNode:
 		"""
 		# print("OpenHEMSNode.isOn(",self.id,")")
 		if self._isOn is None:
-			logger.warning("'%s' is not switchable", self.id)
+			logger.error("'%s' unable to know if on.", self.id)
 			return False
 		return self._isOn.getValue()
 
 	def switchOn(self, connect:bool, register=None) -> bool:
 		"""
 		May not work if it is impossible (No relay) or if it failed.
-		
+
 		return bool: False if fail to switchOn/switchOff
 		"""
 		if self.isSwitchable() and self._isActivate:
+			if self.constraints is not None and not self.constraints.switch(connect):
+				logger.warning("Cancel switch %s '%s' due to constraints",
+					"on" if connect else "off", self.id)
+				return not connect
 			ok = self.network.networkUpdater.switchOn(connect, self)
 			if ok and register is not None:
 				self.network.server.registerDecrementTime(self, register)
