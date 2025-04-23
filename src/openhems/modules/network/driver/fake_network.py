@@ -8,8 +8,7 @@ import re
 from openhems.modules.util.cast_utility import CastUtililty
 from openhems.modules.network import (
 	HomeStateUpdater,
-	Feeder, RandomFeeder, ConstFeeder, RotationFeeder, FakeSwitchFeeder, StateFeeder, SumFeeder,
-	Switch
+	Feeder, RandomFeeder, ConstFeeder, RotationFeeder, StateFeeder, SumFeeder
 )
 
 RANDOM_FEEDER = r'^RANDOM\( *([0-9]+(.[0-9]+)?) *, *([0-9]+(.[0-9]+)?) *, *([0-9]+(.[0-9]+)?) *\)$'
@@ -24,13 +23,18 @@ class FakeNetwork(HomeStateUpdater):
 #	def __init__(self, conf) -> None:
 #		super().__init__(conf)
 
-	def getFeeder(self, value, expectedType=None, defaultValue=None) -> Feeder:
+	def getFeeder(self, value, expectedType=None, defaultValue=None, nameid="", node=None) -> Feeder:
 		"""
 		Return a feeder considering
 		 if the "key" can be a Home-Assistant element id.
 		 Otherwise, it consider it as constant.
 		"""
 		feeder = None
+		if nameid=="switch.isOn":
+			_isOn = CastUtililty.toTypeBool(value)
+			feeder = StateFeeder(_isOn)
+			node.setFakeSwitchFeeder(feeder)
+			return feeder
 		# print("getFeeder(",value, expectedType, defaultValue, ")")
 		if isinstance(value, str):
 			value = value.strip().upper()
@@ -55,19 +59,6 @@ class FakeNetwork(HomeStateUpdater):
 			# self.logger.debug("ConstFeeder(%s) - default", value)
 			feeder = ConstFeeder(value, None, expectedType)
 		return feeder
-
-	def getSwitch(self, nameid, nodeConf):
-		currentPower = self._getFeeder(nodeConf, "currentPower")
-		_isOn = CastUtililty.toTypeBool(nodeConf.get('isOn', True))
-		isOn = StateFeeder(_isOn)
-		maxPower = self._getFeeder(nodeConf, "maxPower")
-		strategy = nodeConf.get("strategy", "default")
-		priority = nodeConf.get("priority", 50)
-		currentPowerRealisttic = FakeSwitchFeeder(currentPower, isOn)
-		node = Switch(nameid, currentPower=currentPowerRealisttic,
-				maxPower=maxPower, isOnFeeder=isOn,
-				strategyId=strategy, priority=priority)
-		return node
 
 	def switchOn(self, isOn:bool, node):
 		"""

@@ -58,12 +58,13 @@ class HomeAssistantAPI(HomeStateUpdater):
 		self.network = network
 		# print("getHANodes() = ", self.haElements)
 
-	def getFeeder(self, value, expectedType=None, defaultValue=None) -> Feeder:
+	def getFeeder(self, value, expectedType=None, defaultValue=None, nameid="", node=None) -> Feeder:
 		"""
 		Return a feeder considering
 		 if the "key" can be a Home-Assistant element id.
 		 Otherwise, it consider it as constant.
 		"""
+		del nameid, node
 		feeder = None
 		if value is not None:
 			if isinstance(value, str) and value in self.haElements:

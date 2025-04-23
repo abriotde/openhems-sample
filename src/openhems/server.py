@@ -9,11 +9,12 @@ from openhems.modules.energy_strategy import (
 	SolarNoSellStrategy
 )
 # from openhems.modules.network import HomeStateUpdaterException
-from openhems.modules.util import CastUtililty
-from openhems.modules.util.configuration_manager import (
-	ConfigurationManager, ConfigurationException
+from openhems.modules.util import (
+	CastUtililty, ConfigurationManager, ConfigurationException
 )
-
+from openhems.modules.network import (
+	FeedbackSwitch
+)
 
 class OpenHEMSServer:
 	"""
@@ -25,17 +26,21 @@ class OpenHEMSServer:
 		self.logger = mylogger
 		self.network = network
 		self.network.server = self
-		self.loopDelay = serverConf.get("server.loopDelay")
+		self._loopDelay = serverConf.get("server.loopDelay")
 		self.strategies = []
 		self._cycleId = -1 # used for cache (if loopNb didn't move, get from cache)
-		self.allowSleep = allowSleep
-		self.inOverLoadMode = False # in over load mode, we have node deactivate for safety
-		self._now = None
-		self.decrementTimeList = {}
-		for node in self.network.getAll("switch"):
-			constraints = node.getConstraints()
-			if constraints is not None:
-				self.registerDecrementTime(constraints)
+		self._allowSleep = allowSleep
+		self._inOverLoadMode = False # in over load mode, we have node deactivate for safety
+		self._now = None # Current timestamp: Can be fake on simulation/tests mode.
+		# "Nodes" to call decrementTime() to manage their time/constraints
+		self._decrementTimeCallbacks = {}
+		self._initDecrementTimeCallbacks()
+		self._initStrategies(mylogger, serverConf)
+
+	def _initStrategies(self, mylogger, serverConf):
+		"""
+		Initialize the strategies.
+		"""
 		throwErr = None
 		for strategyParams in serverConf.get("server.strategies"):
 			strategy = strategyParams.get("class", "").lower()
@@ -73,6 +78,20 @@ class OpenHEMSServer:
 			self.logger.error(str(throwErr))
 			raise ConfigurationException(throwErr)
 
+	def _initDecrementTimeCallbacks(self):
+		"""
+		Initialize the decrement time callbacks with node we can't initialize before.
+		"""
+		for node in self.network.getAll("switch"):
+			if isinstance(node, FeedbackSwitch):
+				# We need to always check min/max sensor value
+				self.registerDecrementTime(node)
+			constraints = node.getConstraints()
+			if constraints is not None:
+				# We need to always check specific contraints like min/maxPower, maxDurationOn/Off
+				self.registerDecrementTime(constraints)
+
+
 	def getSchedule(self):
 		"""
 		Return scheduled planning.
@@ -93,10 +112,10 @@ class OpenHEMSServer:
 		"""
 		if register:
 			self.logger.debug("Register decrement time for node '%s'", node)
-			self.decrementTimeList[id(node)] = node
+			self._decrementTimeCallbacks[id(node)] = node
 		else:
 			self.logger.debug("Unregister decrement time for node '%s'", node)
-			self.decrementTimeList.pop(id(node))
+			self._decrementTimeCallbacks.pop(id(node))
 
 	def getTime(self):
 		"""
@@ -115,7 +134,7 @@ class OpenHEMSServer:
 		Decrement time from all objects neither the type (Thanks Python ;) )
 		"""
 		self.logger.debug("decrementTime(%s)", duration)
-		for node in self.decrementTimeList.values():
+		for node in self._decrementTimeCallbacks.values():
 			self.logger.debug(" - for '%s'", node)
 			node.decrementTime(duration)
 
@@ -143,8 +162,8 @@ class OpenHEMSServer:
 					else:
 						marginPowerOn += power
 						elem.setActivate(False)
-						self.inOverLoadMode = True
-		elif self.inOverLoadMode and marginPowerOn>0: # Try to re-activate nodes
+						self._inOverLoadMode = True
+		elif self._inOverLoadMode and marginPowerOn>0: # Try to re-activate nodes
 			inOverLoadMode = False
 			# start from the bigest priority (default order)
 			elems = self.network.getAll("out")
@@ -155,7 +174,7 @@ class OpenHEMSServer:
 						# Do just one at each loop for safety
 						return marginPowerOn
 					inOverLoadMode = True
-			self.inOverLoadMode = inOverLoadMode
+			self._inOverLoadMode = inOverLoadMode
 		return marginPowerOn
 
 
@@ -181,7 +200,7 @@ class OpenHEMSServer:
 		for strategy in self.strategies:
 			t = strategy.updateNetwork(loopDelay, now)
 			time2wait = min(t, time2wait)
-		if self.allowSleep and time2wait > 0:
+		if self._allowSleep and time2wait > 0:
 			self.logger.info("Loop sleep(%d min)", round(time2wait/60))
 			time.sleep(time2wait)
 
@@ -193,7 +212,7 @@ class OpenHEMSServer:
 		If loop delay=0, we consider that we never sleep (For test or reactivity).
 		"""
 		if loopDelay==0:
-			loopDelay = self.loopDelay
+			loopDelay = self._loopDelay
 		nextloop = time.time() + loopDelay
 		while True:
 			# pylint: disable=broad-exception-caught

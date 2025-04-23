@@ -247,7 +247,7 @@ class HoursRanges:
 		now = Time(nowDatetime)
 		nextTime = now.time+Time.MIDNIGHT
 		for hoursRange in self.ranges:
-			begin, end, cost = hoursRange
+			_, end, _ = hoursRange
 			wait = now.getTimeToWait(end)
 			if wait<nextTime:
 				nextTime = hoursRange

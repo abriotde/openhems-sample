@@ -22,46 +22,70 @@ class Recorder():
 			Recorder._INSTANCE = Recorder()
 		return Recorder._INSTANCE
 
-	def __init__(self, tablename=None, step=None):
-		self.con = sqlite3.connect("openhems.db")
-		self.step = step
-		if tablename is not None:
-			self.cur = self.con.cursor()
-			self.tablename = tablename
-			self.cur.execute(f"Create table if not exists {tablename} ("
-				"i integer primary key,"
-				"deviceId text,"
-				"stepType text, step text,"
-				"ts timestamp,"
-				"value number(10))"
-			)
+	def __init__(self, tablename=None):
+		self._connection = None
+		self._cursor = None
+		self._stepId = 0
+		self.stepType = None
+		self.deviceId = None
+		self.tablename = tablename
+		self._count = 0
+
 
 	def __del__(self):
 		self.close()
 
-	def setStep(self, deviceId, stepType, step):
+	def newStep(self, deviceId, stepType):
 		"""
 		Set the step of the recorder.
 		"""
 		self.deviceId = deviceId
 		self.stepType = stepType
-		self.step = step
+		self._stepId += 1
+
+	def connect(self):
+		if self._connection is None:
+			# If done at __init__() it would have been done in a different thread (Error).
+			self._connection = sqlite3.connect("openhems.db")
+			if self.tablename is not None:
+				self._cursor = self._connection.cursor()
+				self.tablename = self.tablename
+				self._cursor.execute(f"Create table if not exists {self.tablename} ("
+					"i integer primary key,"
+					"deviceId text,"
+					"stepType text, step text,"
+					"ts timestamp,"
+					"value number(10))"
+				)
+				self._cursor.execute(f"Select count(*) from {self.tablename}")
+				row = self._cursor.fetchone()
+				self._count = row[0]
 
 	def record(self, value):
 		"""
 		Record the sensor value in a database.
 		"""
-		if self.step is not None:
-			now = datetime.datetime.now()
-			record = (self.deviceId, self.stepType, self.step, now, value)
-			logger.debug("Register : %s", record)
-			self.cur.execute(f"Insert into {self.tablename} (deviceId, stepType, step, ts, value)"
-					"values (?, ?, ?, ?, ?)", record
-				)
-			self.con.commit()
+		self.connect()
+		now = datetime.datetime.now()
+		self._stepId += 1
+		record = (self.deviceId, self.stepType, self._stepId, now, value)
+		logger.debug("Register : %s", record)
+		self._cursor.execute(f"Insert into {self.tablename} (deviceId, stepType, step, ts, value)"
+				"values (?, ?, ?, ?, ?)", record
+			)
+		self.commit()
+		self._count += 1
+		self._cursor.execute(f"Select * from {self.tablename}")
+		row=self._cursor.fetchone()
+		while row is not None:
+			print("Row:", row)
+			row=self._cursor.fetchone()
+
+	def commit(self):
+		self._connection.commit()
 
 	def close(self):
 		"""
 		Close the database connection.
 		"""
-		self.con.close()
+		self._connection.close()

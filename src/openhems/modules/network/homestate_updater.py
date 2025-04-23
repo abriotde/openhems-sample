@@ -75,12 +75,12 @@ class HomeStateUpdater:
 		"""
 		self.network = network
 
-	def getFeeder(self, value, expectedType=None, defaultValue=None) -> Feeder:
+	def getFeeder(self, value, expectedType=None, defaultValue=None, nameid="", node=None) -> Feeder:
 		"""
 		Return a feeder considering
 		 This function should be overiden by sub-class
 		"""
-		del defaultValue
+		del defaultValue, nameid, node
 		return SourceFeeder(value, self, expectedType)
 
 	def getPublicPowerGrid(self, nameid, nodeConf):
@@ -144,7 +144,7 @@ class HomeStateUpdater:
 		# self.logger.info(node)
 		return node
 
-	def _getFeeder(self, conf, key, expectedType=None) -> Feeder:
+	def _getFeeder(self, conf, key, expectedType=None, node=None) -> Feeder:
 		"""
 		Return a feeder, search in configuration for default value if not set. 
 		"""
@@ -154,7 +154,7 @@ class HomeStateUpdater:
 		if value=='': # Like None but for not mandatory fields
 			return None
 		try:
-			feeder = self.getFeeder(value, expectedType)
+			feeder = self.getFeeder(value, expectedType, nameid=self.tmp+"."+key, node=node)
 		except ValueError as e:
 			raise ConfigurationException(
 				"Impossible to convert "+key+" = '"+value
@@ -206,32 +206,29 @@ class HomeStateUpdater:
 		self.tmp = "switch"
 		currentPower = self._getFeeder(nodeConf, "currentPower", "int")
 		maxPower = self._getFeeder(nodeConf, "maxPower", "int")
-		isOn = self._getFeeder(nodeConf, "isOn", "bool")
-		if isOn is None:
-			nbCycleWithoutPowerForOff = CastUtililty.toTypeInt(nodeConf.get("nbCycleWithoutPowerForOff", 1))
-			return OutNode(nameid, currentPower, maxPower, network=self.network
+		nbCycleWithoutPowerForOff = CastUtililty.toTypeInt(nodeConf.get("nbCycleWithoutPowerForOff", 1))
+		node = OutNode(nameid, currentPower, maxPower, network=self.network
 				, nbCycleWithoutPowerForOff=nbCycleWithoutPowerForOff)
-		priority = nodeConf.get("priority", 50)
-		strategyId = nodeConf.get("strategy", None)
-		if strategyId is None:
-			strategyId = self.network.getDefaultStrategy().id
-		sensor = self._getFeeder(nodeConf, "sensor", "int")
-		if sensor is None:
-			node = Switch(nameid, strategyId, currentPower, maxPower, isOn,
-					priority=priority, network=self.network)
-		else:
-			target = nodeConf.get("target", None)
-			if target is not None:
-				target = HoursRanges(target)
-			node = FeedbackSwitch(nameid, strategyId, currentPower, maxPower, isOn,
-					priority=priority, network=self.network,
-					sensorFeeder=sensor, targeter=target, direction=1)
-		condition = nodeConf.get('condition', None)
-		if condition is not None:
-			node.setCondition(condition)
-		constraints = nodeConf.get("constraints", None)
-		if constraints is not None:
-			constraints = ApplianceConstraints(constraints)
-			node.setConstraints(constraints)
+		isOn = self._getFeeder(nodeConf, "isOn", "bool")
+		if isOn is not None:
+			priority = nodeConf.get("priority", 50)
+			strategyId = nodeConf.get("strategy", None)
+			if strategyId is None:
+				strategyId = self.network.getDefaultStrategy().id
+			node = Switch(node, isOn, strategyId, priority=priority)
+			sensor = self._getFeeder(nodeConf, "sensor", "int")
+			if sensor is not None:
+				target = nodeConf.get("target", None)
+				if target is not None:
+					target = HoursRanges(target)
+				node = FeedbackSwitch(node, sensorFeeder=sensor, targeter=target,
+						direction=FeedbackSwitch.Direction.UP)
+			condition = nodeConf.get('condition', None)
+			if condition is not None:
+				node.setCondition(condition)
+			constraints = nodeConf.get("constraints", None)
+			if constraints is not None:
+				constraints = ApplianceConstraints(constraints)
+				node.setConstraints(constraints)
 		# self.logger.info(node)
 		return node

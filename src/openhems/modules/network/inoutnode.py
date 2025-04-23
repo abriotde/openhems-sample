@@ -2,9 +2,6 @@
 Represent device of home network
 """
 
-import logging
-
-from openhems.modules.web import OpenHEMSSchedule
 from openhems.modules.contract import Contract
 from .feeder import ConstFeeder
 from .node import OpenHEMSNode
@@ -19,7 +16,6 @@ class InOutNode(OpenHEMSNode):
 	def __init__(self, nameid, currentPower, maxPower, minPower, marginPower) -> None:
 		# isAutoAdatative: bool, isControlable: bool, isModulable: bool, isCyclic: bool
 		super().__init__(nameid, currentPower, maxPower)
-		self.currentPower = currentPower
 		self.marginPower = marginPower
 		self.minPower = minPower
 
@@ -30,7 +26,7 @@ class InOutNode(OpenHEMSNode):
 		return bool: true if 'power' respects constraints
 		"""
 		if power is None:
-			power = self.currentPower.getValue()
+			power = self._currentPower.getValue()
 		marginPower = self.marginPower.getValue()
 		maxPower = self.getMaxPower()
 		if maxPower is not None and power+marginPower>maxPower:
@@ -57,24 +53,24 @@ class InOutNode(OpenHEMSNode):
 		# logger.debug("MarginPower of Node %s is %s", self.id, margin)
 		return margin
 
-	def _getSafetyLevel(self):
-		"""
-		Get a int value representing how safe is the current power value
-
-		return int:
-			- 0: unsafe
-			- 1: respect constraints but shouldn't on next loop
-			- 2: respect constraints but could be out of constraints next loop
-			- 3: Safe values
-		"""
-		if not self.respectConstraints():
-			return 0
-		_min, avg, _max = self._estimateNextPower()
-		if not self.respectConstraints(avg):
-			return 1
-		if not (self.respectConstraints(_min) or self.respectConstraints(_max)):
-			return 2
-		return 3
+	# def _getSafetyLevel(self):
+	# 	"""
+	# 	Get a int value representing how safe is the current power value
+	#
+	# 	return int:
+	# 		- 0: unsafe
+	# 		- 1: respect constraints but shouldn't on next loop
+	# 		- 2: respect constraints but could be out of constraints next loop
+	# 		- 3: Safe values
+	# 	"""
+	# 	if not self.respectConstraints():
+	# 		return 0
+	# 	# _min, avg, _max = self._estimateNextPower()
+	# 	# if not self.respectConstraints(avg):
+	# 	# 	return 1
+	# 	# if not (self.respectConstraints(_min) or self.respectConstraints(_max)):
+	# 	# 	return 2
+	# 	return 3
 
 class PublicPowerGrid(InOutNode):
 	"""
@@ -86,7 +82,7 @@ class PublicPowerGrid(InOutNode):
 		self.contract = Contract.getContract(contract, networkUpdater.conf, networkUpdater)
 
 	def __str__(self):
-		return (f"PublicPowerGrid({self.currentPower}, maxPower={self.maxPower},"
+		return (f"PublicPowerGrid({self._currentPower}, maxPower={self._maxPower},"
 			f" minPower={self.minPower}, marginPower={self.marginPower}, contract={self.contract})")
 
 	def getContract(self):
@@ -122,10 +118,10 @@ class SolarPanel(InOutNode):
 		value saved in maxPower, is the theorical maxPower (usefull to know efficiency).
 		But in fact even if we ask more power, solar panels can't give us more.
 		"""
-		return self.currentPower.getValue()
+		return self._currentPower.getValue()
 
 	def __str__(self):
-		return (f"SolarPanel({self.currentPower}, {self.maxPower},"
+		return (f"SolarPanel({self._currentPower}, {self._maxPower},"
 		f" moduleModel={self.moduleModel}, inverterModel={self.inverterModel},"
 		f" tilt={self.tilt}, azimuth={self.azimuth},"
 		f" modulesPerString={self.modulesPerString},"
@@ -170,8 +166,8 @@ class Battery(InOutNode):
 		return self.currentLevel.getValue()
 
 	def __str__(self):
-		return (f"Battery(capacity={self.capacity}, currentPower={self.currentPower},"
-			f" maxPowerIn={self.maxPower}, maxPowerOut={self.minPower},"
+		return (f"Battery(capacity={self.capacity}, currentPower={self._currentPower},"
+			f" maxPowerIn={self._maxPower}, maxPowerOut={self.minPower},"
 			f" efficiencyIn={self.efficiencyIn}, level={self.currentLevel},"
 			f" lowLevel={self.lowLevel}, highLevel={self.highLevel})")
 

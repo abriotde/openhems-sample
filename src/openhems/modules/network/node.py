@@ -5,7 +5,7 @@ Represent device of home network
 import logging
 
 from typing import Final
-from collections import deque, OrderedDict
+from collections import OrderedDict # , deque
 from openhems.modules.util import CastUtililty, ConfigurationException
 from .feeder import Feeder
 
@@ -14,7 +14,8 @@ logger = logging.getLogger(__name__)
 
 class ApplianceConstraints():
 	"""
-	Appliance constraints : Constraints to always chek when the appliance is on or before switching on/off.
+	Appliance constraints : Constraints to always chek when the appliance is on
+	or before switching on/off.
 	"""
 	def __init__(self, configuration:dict):
 		self.minPower = configuration.get('minPower', None)
@@ -26,6 +27,7 @@ class ApplianceConstraints():
 		self.maxDurationOff = configuration.get('maxDurationOff', None)
 		self._duration = 0
 		self._isOn = None
+		self.node = None
 
 	def setNode(self, node):
 		"""
@@ -38,45 +40,52 @@ class ApplianceConstraints():
 		:return: max power of the appliance
 		"""
 		# logger.debug("ApplianceConstraints.check(%s)", self.node.id)
+		# TODO : need a warning on HA network.notify()?
+		message = ""
 		if self.minPower is not None or self.maxPower is not None:
 			currentPower = self.node.getCurrentPower()
 			if currentPower is None:
-				logger.warning("ApplianceConstraints.check() : currentPower is None")
-				return False
+				message += f"Unable to get currentPower (None) for node {self.node.id}."
 			if self.minPower is not None and currentPower<self.minPower:
-				logger.warning("Offending minPower (%d) > currentPower (%d)", self.minPower, currentPower)
-				self.node.switchOn(False)
-				return False
+				message += f"Offending minPower ({self.minPower}) > currentPower ({currentPower})"
+				# self.node.switchOn(False) # Maybe is just starting, if switch off,
+				# we may offend minDurationOn
 			if self.maxPower is not None and currentPower>self.maxPower:
-				logger.warning("Offending maxPower (%d) < currentPower (%d)", self.maxPower, currentPower)
+				message += f"Offending maxPower ({self.maxPower}) < currentPower ({currentPower})"
 				self.node.switchOn(False)
-				return False
 		if self._isOn:
 			if self.maxDurationOn is not None and self._duration>self.maxDurationOn:
-				logger.warning("Offending maxDurationOn (%d) < currentDuration (%d)", self.maxDurationOn, self._duration)
+				message += ("Offending maxDurationOn "
+					f"({self.maxDurationOn}) < currentDuration ({self._duration})")
 				self.node.switchOn(False)
-				return False
 		else:
 			if self.maxDurationOff is not None and self._duration>self.maxDurationOff:
-				logger.warning("Offending maxDurationOff (%d) < currentDuration (%d)", self.maxDurationOff, self._duration)
+				message += ("Offending maxDurationOff "
+					f"({self.maxDurationOff}) < currentDuration ({self._duration})")
 				self.node.switchOn(True)
-				return False
+		if message!="":
+			logger.error(message)
+			self.node.network.notify(message)
+			return False
 		return True
 
 	def switch(self, on):
 		"""
-		Reset durations
+		Check durations constraints and reset durations
 		"""
+		message = ""
 		if self._isOn:
 			if self.minDurationOn is not None and self._duration<self.minDurationOn and not on:
-				logger.warning("Offending minDurationOn (%d) > currentDuration (%d)", self.maxDurationOn, self._duration)
-				self.node.switchOn(False)
-				return False
+				message += ("Offending minDurationOn "
+					f"({self.minDurationOn}) > currentDuration ({self._duration}).")
 		else:
 			if self.minDurationOff is not None and self._duration<self.minDurationOff and on:
-				logger.warning("Offending minDurationOff (%d) > currentDuration (%d)", self.maxDurationOff, self._duration)
-				self.node.switchOn(True)
-				return False
+				message += ("Offending minDurationOff "
+					f"({self.minDurationOff}) > currentDuration ({self._duration}).")
+		if message!="":
+			logger.error(message)
+			self.node.network.notify(message)
+			return False
 		self._isOn = on
 		self._duration = 0
 		return True
@@ -89,31 +98,31 @@ class ApplianceConstraints():
 		self.check()
 
 	def __str__(self):
-		str = "ApplianceConstraints("
+		retValue = "ApplianceConstraints("
 		sep =""
 		if self.minPower is not None:
-			str += sep+f"minPower={self.minPower}"
+			retValue += sep+f"minPower={self.minPower}"
 			sep=", "
 		if self.maxPower is not None:
-			str += sep+f"maxPower={self.maxPower}"
+			retValue += sep+f"maxPower={self.maxPower}"
 			sep=", "
 		if self.minDurationOn is not None:
-			str += sep+f"minDurationOn={self.minDurationOn}"
+			retValue += sep+f"minDurationOn={self.minDurationOn}"
 			sep=", "
 		if self.minDurationOff is not None:
-			str += sep+f"minDurationOff={self.minDurationOff}"
+			retValue += sep+f"minDurationOff={self.minDurationOff}"
 			sep=", "
 		if self.maxDurationOn is not None:
-			str += sep+f"maxDurationOn={self.maxDurationOn}"
+			retValue += sep+f"maxDurationOn={self.maxDurationOn}"
 			sep=", "
 		if self.maxDurationOff is not None:
-			str += sep+f"maxDurationOff={self.maxDurationOff}"
+			retValue += sep+f"maxDurationOff={self.maxDurationOff}"
 			sep=", "
-		str += ")"
+		retValue += ")"
 		if self._isOn is not None:
-			str += f" _isOn={self._isOn}"
-		str += f" for node={self.node.id}"
-		return str
+			retValue += f" _isOn={self._isOn}"
+		retValue += f" for node={self.node.id}"
+		return retValue
 
 class OpenHEMSNode:
 	"""
@@ -135,11 +144,13 @@ class OpenHEMSNode:
 		self._controlledPower = controlledPowerFeeder
 		self._controlledPowerValues = controlledPowerValues
 		self._initControlledPowerValues()
-		self.currentPower:Feeder = currentPower
-		self.maxPower : Feeder = maxPower
-		self._isOn : Feeder = isOnFeeder
-		self.previousPower = deque()
-		self._isActivate = True
+		self._currentPower:Feeder = currentPower
+		self._maxPower:Feeder = maxPower
+		self._isOn:Feeder = isOnFeeder
+		# To try predict power. Useless today.
+		# self._previousPower = deque()
+		# Security
+		self._isActivate = True # Can inactivate node for security reasons.
 		self._constraints = None
 		try: # Test if currentPower is well configured
 			self.getCurrentPower()
@@ -186,20 +197,20 @@ class OpenHEMSNode:
 				controlledPowerValues = controlledPowerValues | dict(zip(keys, values))
 			self._controlledPowerValues = OrderedDict(sorted(controlledPowerValues))
 
-	def _setCurrentPower(self, currentPower):
-		"""
-		Set current power.
-		"""
-		if len(self.previousPower)>=CYCLE_HISTORY:
-			self.previousPower.popleft()
-		self.previousPower.append(self.currentPower)
-		self.currentPower = currentPower
+	# def _setCurrentPower(self, currentPower):
+	# 	"""
+	# 	Set current power.
+	# 	"""
+	# 	if len(self._previousPower)>=CYCLE_HISTORY:
+	# 		self._previousPower.popleft()
+	# 	self._previousPower.append(self._currentPower)
+	# 	self._currentPower = currentPower
 
 	def getCurrentPower(self):
 		"""
 		Get current power 
 		"""
-		currentPower = self.currentPower.getValue()
+		currentPower = self._currentPower.getValue()
 		if currentPower is None or not isinstance(currentPower, (int, float)):
 			errorMsg = (f"Invalid currentPower ({currentPower}) for node '{self.id}'. "
 			   "Usual causes are Home-Assistant service is not ready (restart latter),"
@@ -215,38 +226,38 @@ class OpenHEMSNode:
 		"""
 		Get max power 
 		"""
-		return self.maxPower.getValue()
+		return self._maxPower.getValue()
 
-	def _estimateNextPower(self):
-		"""
-		Estimate what could be the next value of currentPower if there is no change
-
-		This function would like to know if there is a constant
-		 growing/decreasing value or a random one or oscilating one...
-		:return list[int]: [minValue, bestBet, maxValue]
-		"""
-		p0 = self.currentPower
-		maxi = len(self.previousPower)
-		summ = 0
-		lastDiff = 0
-		maxDiff = 0
-		for i in reversed(range(0, maxi)):
-			p1 = self.previousPower[i]
-			diff = p1-p0
-			if i==maxi:
-				lastDiff = diff
-			maxDiff = max(maxDiff, abs(diff))
-			summ += diff
-			p0 = p1
-		avgDiff = summ/maxi
-		if avgDiff>0 and lastDiff>2*avgDiff \
-				or avgDiff<0 and lastDiff<2*avgDiff:
-			curDiff = lastDiff
-		else:
-			curDiff = avgDiff
-		return [self.currentPower-abs(maxDiff),\
-			self.currentPower+curDiff,\
-			self.currentPower+abs(maxDiff)]
+	# def _estimateNextPower(self):
+	# 	"""
+	# 	Estimate what could be the next value of currentPower if there is no change
+	#
+	# 	This function would like to know if there is a constant
+	# 	 growing/decreasing value or a random one or oscilating one...
+	# 	:return list[int]: [minValue, bestBet, maxValue]
+	# 	"""
+	# 	p0 = self._currentPower
+	# 	maxi = len(self._previousPower)
+	# 	summ = 0
+	# 	lastDiff = 0
+	# 	maxDiff = 0
+	# 	for i in reversed(range(0, maxi)):
+	# 		p1 = self._previousPower[i]
+	# 		diff = p1-p0
+	# 		if i==maxi:
+	# 			lastDiff = diff
+	# 		maxDiff = max(maxDiff, abs(diff))
+	# 		summ += diff
+	# 		p0 = p1
+	# 	avgDiff = summ/maxi
+	# 	if avgDiff>0 and lastDiff>2*avgDiff \
+	# 			or avgDiff<0 and lastDiff<2*avgDiff:
+	# 		curDiff = lastDiff
+	# 	else:
+	# 		curDiff = avgDiff
+	# 	return [self._currentPower-abs(maxDiff),\
+	# 		self._currentPower+curDiff,\
+	# 		self._currentPower+abs(maxDiff)]
 
 	def isControlledPower(self):
 		"""
