@@ -4,6 +4,7 @@ This is the server thread witch aim to centralize information and take right dec
 """
 import time
 import datetime
+import logging
 from openhems.modules.energy_strategy import (
 	OffPeakStrategy, SwitchoffStrategy, SimulatedAnnealingStrategy,
 	SolarNoSellStrategy
@@ -149,7 +150,7 @@ class OpenHEMSServer:
 			self.logger.warning(
 				"Margin power On is negativ (%f): Need to sitch off devices.",
 				marginPowerOn)
-			elems = self.network.getAll("out")
+			elems = self.network.getAll("switch")
 			elems.sort( # start from the less priority
 				key=lambda x:x.getPriority()
 			)
@@ -166,7 +167,7 @@ class OpenHEMSServer:
 		elif self._inOverLoadMode and marginPowerOn>0: # Try to re-activate nodes
 			inOverLoadMode = False
 			# start from the bigest priority (default order)
-			elems = self.network.getAll("out")
+			elems = self.network.getAll("switch")
 			for elem in elems:
 				if not elem.isActivate():
 					if elem.getMaxPower()>marginPowerOn: # re-activate the node
@@ -220,9 +221,9 @@ class OpenHEMSServer:
 				self.loop()
 			except Exception as e:
 				# at least HomeStateUpdaterException, CastException, HomeStateUpdaterException
-				msg = ("Fail update network. Maybe Home-Assistant is down"
-					" or long_lived_token expired. "+str(e))
-				self.logger.error(msg)
+				self.logger.error("Fail update network : %s",e)
+				if self.logger.isEnabledFor(logging.DEBUG):
+					self.logger.exception(e)
 			t = time.time()
 			if t<nextloop:
 				self.logger.debug("OpenHEMSServer.run() : sleep(%.2f min)", (nextloop-t)/60)

@@ -284,6 +284,7 @@ class FeedbackSwitch(Switch):
 		now = self.network.server.getTime()
 		if now>self._rangeEnd:
 			self.defineOptimums()
+		retValue = False
 		if sensorValue>self.max:
 			retValue = self.switchOn(self._direction==FeedbackSwitch.Direction.DOWN)
 			retValue = retValue and self._direction==FeedbackSwitch.Direction.DOWN

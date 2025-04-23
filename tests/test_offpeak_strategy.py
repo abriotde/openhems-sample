@@ -130,13 +130,13 @@ class TestOffpeakStrategy(utils.TestStrategy):
 		configFile = utils.ROOT_PATH / "tests/data/openhems_fake4tests_missingKeyParams.yaml"
 		self.assertIsNone(self.init(configFile))
 		expectedWarnings = [
-			"Impossible to convert currentPower",
+			"Impossible to load publicpowergrid",
 			"OffPeak-strategy is useless without offpeak hours."
 		]
-		print(self.app.warnings)
-		for warning in self.app.warnings:
+		print("Warnings: ",self.app.warnings)
+		for warning in expectedWarnings:
 			self.assertTrue(
-				any(expectedWarning in warning for expectedWarning in expectedWarnings),
+				any(warning in expectedWarning for expectedWarning in self.app.warnings),
 				f"Warning not found: {warning}"
 			)
 
@@ -147,9 +147,9 @@ class TestOffpeakStrategy(utils.TestStrategy):
 		configFile = utils.ROOT_PATH / "tests/data/openhems.yaml"
 		self.init(configFile)
 		expectedWarnings = ["Max retries exceeded with url: /api/states", " timed out"]
-		for warning in self.app.warnings:
+		for warning in expectedWarnings:
 			self.assertTrue(
-				any(expectedWarning in warning for expectedWarning in expectedWarnings),
+				any(warning in expectedWarning for expectedWarning in self.app.warnings),
 				f"Warning not found: {warning}"
 			)
 

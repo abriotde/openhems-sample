@@ -12,12 +12,21 @@ network:
     maxPower: 5000
     minPower: 0
   - class: switch
+    constraints:
+      maxDurationOn: 600
+      maxPower: 2300
     currentPower: sensor.tz3000_2putqrmw_ts011f_puissance_2
     id: voiture
     isOn: switch.tz3000_2putqrmw_ts011f_commutateur_2
     maxPower: 2300
+    sensor: sensor.tz3000_2putqrmw_ts011f_puissance
     strategy: offpeak
-  - class: out
+    target:
+    - - 22h-6h
+      - 16
+    - - 6h-22h
+      - 19
+  - class: switch
     currentPower: sensor.tz3000_2putqrmw_ts011f_puissance
     id: box
     strategy: redDay

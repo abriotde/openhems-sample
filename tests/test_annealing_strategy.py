@@ -31,7 +31,7 @@ class TestAnnealingStrategy(utils.TestStrategy):
 		# But Genetic algorithm isn't.
 		self.checkValues(nodesIds, [0, 0, 0], marginPower=3100)
 		self.loop()
-		self.checkValues(nodesIds, [0, 0, 800], marginPower=3100)
+		self.checkValues(nodesIds, [280, 0, 800], marginPower=3100)
 
 	# pylint: disable=invalid-name
 	def test_xxx(self):

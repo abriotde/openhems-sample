@@ -149,10 +149,9 @@ class HomeStateUpdater:
 		Return a feeder, search in configuration for default value if not set. 
 		"""
 		value = conf.get(key)
-		if value is None:
+		if value is None\
+			or value=='': # Like None but for not mandatory fields.
 			value = self.conf.get( "default.node."+self.tmp+"."+key)
-		if value=='': # Like None but for not mandatory fields
-			return None
 		try:
 			feeder = self.getFeeder(value, expectedType, nameid=self.tmp+"."+key, node=node)
 		except ValueError as e:
@@ -209,15 +208,17 @@ class HomeStateUpdater:
 		nbCycleWithoutPowerForOff = CastUtililty.toTypeInt(nodeConf.get("nbCycleWithoutPowerForOff", 1))
 		node = OutNode(nameid, currentPower, maxPower, network=self.network
 				, nbCycleWithoutPowerForOff=nbCycleWithoutPowerForOff)
-		isOn = self._getFeeder(nodeConf, "isOn", "bool")
-		if isOn is not None:
+		isOn = nodeConf.get("isOn")
+		if isOn is not None and isOn!='':
+			isOn = self._getFeeder(nodeConf, "isOn", "bool", node=node)
 			priority = nodeConf.get("priority", 50)
 			strategyId = nodeConf.get("strategy", None)
 			if strategyId is None:
 				strategyId = self.network.getDefaultStrategy().id
 			node = Switch(node, isOn, strategyId, priority=priority)
-			sensor = self._getFeeder(nodeConf, "sensor", "int")
-			if sensor is not None:
+			sensor = nodeConf.get("sensor")
+			if sensor is not None and sensor!='':
+				sensor = self._getFeeder(nodeConf, "sensor", "int")
 				target = nodeConf.get("target", None)
 				if target is not None:
 					target = HoursRanges(target)

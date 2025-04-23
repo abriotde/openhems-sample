@@ -44,6 +44,9 @@ class Recorder():
 		self._stepId += 1
 
 	def connect(self):
+		"""
+		Connect to database if needed + create table
+		"""
 		if self._connection is None:
 			# If done at __init__() it would have been done in a different thread (Error).
 			self._connection = sqlite3.connect("openhems.db")
@@ -65,23 +68,31 @@ class Recorder():
 		"""
 		Record the sensor value in a database.
 		"""
+		if self._stepId==0:
+			logger.debug("Do not record, _stepId==0.")
+			return # deviceId/stepType are not set
 		self.connect()
 		now = datetime.datetime.now()
 		self._stepId += 1
 		record = (self.deviceId, self.stepType, self._stepId, now, value)
 		logger.debug("Register : %s", record)
-		self._cursor.execute(f"Insert into {self.tablename} (deviceId, stepType, step, ts, value)"
-				"values (?, ?, ?, ?, ?)", record
-			)
+		self._cursor.execute(
+			f"Insert into {self.tablename} (deviceId, stepType, step, ts, value)"
+			"values (?, ?, ?, ?, ?)", record)
 		self.commit()
 		self._count += 1
-		self._cursor.execute(f"Select * from {self.tablename}")
+		sql = f"Select * from {self.tablename}"
+		self._cursor.execute(sql)
 		row=self._cursor.fetchone()
+		logger.debug("Row: %s", row)
 		while row is not None:
-			print("Row:", row)
+			logger.debug("Row: %s", row)
 			row=self._cursor.fetchone()
 
 	def commit(self):
+		"""
+		Sqlite3 commit
+		"""
 		self._connection.commit()
 
 	def close(self):
