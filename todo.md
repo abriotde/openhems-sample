@@ -8,10 +8,12 @@
 - IA to command OpenHEMS devices ("Start the washing machine") & as "Personnal Assistant"
 
 # Development
+- dev/node : When get curentPower, check maxPower and update it if needed.
+- dev/debug : check why sometime OpenHEMS restart.
 - dev/publicpowergrid : Add variable maximum power consumption for time-slots.
 - dev/updater : Add HomeStateUpdater from OpenHAB, Jeedom, Domoticz.
 - dev/strategy : Add solar panel without internet, use Python skyfield module or pvlib module
-- dev/datas : Script to get EDF datas
+- dev/datas : Script to get EDF datas to update default values.
 - dev/schedule : Set available schedule by power (Kwh) instead of time.
 - dev/maintenance Add remote SSH maintenance (on 'dev')
 - dev/admin : PyPi : https://pypi.org/project/emhass/

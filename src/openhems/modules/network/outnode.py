@@ -5,14 +5,15 @@ Represent device of home network
 import logging
 import datetime
 from openhems.modules.web import OpenHEMSSchedule
-from openhems.modules.util import ConfigurationException, HoursRanges
+from openhems.modules.util import (
+	ConfigurationException, HoursRanges, Recorder
+)
 from .feeder import Feeder
-from .node import OpenHEMSNode
-import sqlite3
+from .node import OpenHEMSNode, ApplianceConstraints
 
 class GuessIsOnFeeder(Feeder):
 	"""
-	Guess if node is on with currentPower.
+	Guess if node is on with currentPower. Usefull for not home-automationable devices. We can just add a connected plug.
 	"""
 	def __init__(self, source, nbCycleWithoutPowerForOff=1):
 		"""
@@ -72,14 +73,13 @@ class Switch(OutNode):
 	wich can be switch on/off.
 	"""
 	def __init__(self, nameId, strategyId, currentPower, maxPower, isOnFeeder=None,
-			priority=50, network=None, constraints=None):
+			priority=50, network=None):
 		if isOnFeeder is None:
 			raise ConfigurationException("Declare a Switch() but without seting isOn.")
 		super(OutNode, self).__init__(nameId, currentPower, maxPower, isOnFeeder=isOnFeeder, network=network)
 		self.schedule = OpenHEMSSchedule(self.id, nameId, self)
 		self.strategyId = strategyId
 		self._priority = priority
-		self._constraints = constraints
 
 	def isSwitchable(self):
 		return True
@@ -102,12 +102,6 @@ class Switch(OutNode):
 		Return schedule
 		"""
 		return self.schedule
-
-	def getConstraints(self):
-		"""
-		Return schedule
-		"""
-		return self._constraints
 
 	def setCondition(self, condition):
 		"""
@@ -133,9 +127,6 @@ class Switch(OutNode):
 		sch = self.getSchedule()
 		if sch is not None and self.isOn():
 			return sch.decrementTime(time)
-		constraints = self.getConstraints()
-		if constraints is not None:
-			return constraints.decrementTime(time)
 		return 0
 
 	def getStrategyId(self):
@@ -169,53 +160,6 @@ class FeedbackSwitchMinMax():
 	def __lt__(self, other):
 		return self.min<other.min if self.direction>0 else self.max>other.max
 
-class Recorder():
-	"""
-	Recorder of a sensor value.
-	"""
-	_INSTANCE = None
-	@staticmethod
-	def getInstance():
-		"""
-		Static access method.
-		"""
-		if Recorder._INSTANCE is None:
-			Recorder._INSTANCE = Recorder()
-		return Recorder._INSTANCE
-
-	def __init__(self, tablename=None, step=None):
-		self._recordTimeStart = datetime.datetime.now()
-		self.con = sqlite3.connect("openhems.db")
-		self.step = step
-		if tablename is not None:
-			self.cur = self.con.cursor()
-			self.tablename = tablename
-			self.cur.execute(f"Create table if not exists {tablename} ("
-				"i integer primary key,"
-				"deviceId text,"
-				"stepType text, step text,"
-				"ts timestamp,"
-				"value number(10))"
-			)
-
-	def setStep(self, deviceId, stepType, step):
-		"""
-		Set the step of the recorder.
-		"""
-		self.deviceId = deviceId
-		self.stepType = stepType
-		self.step = step
-	
-	def record(self, value):
-		"""
-		Record the sensor value in a database.
-		"""
-		if self.step is not None:
-			self.cur.execute(f"Insert into {self.tablename} (deviceId, stepType, step, ts, value)"
-					"values (?, ?, ?, ?, ?)",
-				(self.deviceId, self.stepType, self.step, datetime.datetime.now(), value))
-			self.con.commit()
-
 class FeedbackSwitch(Switch):
 	"""
 	Electricity consumer (hotwater tank, pump)
@@ -230,14 +174,14 @@ class FeedbackSwitch(Switch):
 		OFF = 4 # Device is off and record the behavior Evaluate it
 
 	def __init__(self, nameId, strategyId, currentPower, maxPower, isOnFeeder=None,
-			priority=50, network=None, sensorFeeder=None, targeter=None, direction:int=1, applianceConstraints:ApplianceConstraints=None):
+			priority=50, network=None, sensorFeeder=None, targeter=None, direction:int=1):
 		"""
 		:param targeter HoursRanges: Define min/max range of sensor target. Should be a HoursRanges with tuple (min/max) sit in place of cost.
 		TODO : direction=0 when the sensor can increase or decrease value when the device is on.
 		"""
 		if sensorFeeder is None:
 			raise ConfigurationException("Declare a FeedbackSwitch() but without seting sensor.")
-		super().__init__(self, nameId, strategyId, currentPower, maxPower, isOnFeeder=isOnFeeder,
+		super().__init__(nameId, strategyId, currentPower, maxPower, isOnFeeder=isOnFeeder,
 			priority=priority, network=network)
 		if targeter is None:
 			targeter = HoursRanges(outRangeCost=FeedbackSwitchMinMax(-2**32,2**32, direction))
@@ -251,18 +195,23 @@ class FeedbackSwitch(Switch):
 			raise ConfigurationException("targeter should be a HoursRanges(of tuple) or tuple of 2 int or int.")
 		self.targeter:HoursRanges = targeter
 		self.sensor:Feeder = sensorFeeder
-		now = self.network.server.getTime()
-		_, self.rangeEnd, self.minmax = self.targeter.checkRange(now)
-		self.min = self.minmax.min # Current min value. Should be in [self.minmax.min; self.minmax.max[
-		self.max = self.minmax.max # Current max value. Should be in ]self.minmax.min; self.minmax.max]
+		self.rangeEnd = datetime.datetime(2024, 5, 28) # First commit date ;)
+		self.minmax = None
+		self.min = None # Current min value. Should be in [self.minmax.min; self.minmax.max[
+		self.max = None # Current max value. Should be in ]self.minmax.min; self.minmax.max]
 		self.direction = direction
 		self.mode = FeedbackSwitch.Mode.EVAL # Mode used to evaluate the characterisctics.
 		self._recorder = Recorder("FeedbackSwitch")
-		self._isOn = False
+		self._wasOn = False
 		self._stepId = 0
+
+	def __del__(self):
+		self._recorder.close()
 
 	def record(self, sensorValue):
 		"""
+		Record the sensor value in a database. Used to evaluate the FeedbackSwitch capacities.
+		:param sensorValue: value of the sensor
 		"""
 		self._recorder.record(sensorValue)
 		pass
@@ -271,10 +220,10 @@ class FeedbackSwitch(Switch):
 		"""
 		Switch on the device.
 		"""
-		if self.mode!=FeedbackSwitch.Mode.RUN and self._isOn!=on:
+		if self.mode!=FeedbackSwitch.Mode.RUN and self._wasOn!=on:
 			sensorValue = self.sensor.getValue()
 			self.record(sensorValue)
-			self._isOn = on
+			self._wasOn = on
 			if self.mode==FeedbackSwitch.Mode.ON and not on  \
 					or self.mode==FeedbackSwitch.Mode.OFF and on:
 				# It was one (or 2 if on/off) shot
@@ -298,13 +247,23 @@ class FeedbackSwitch(Switch):
 		sensorValue = self.sensor.getValue()
 		if self.mode != FeedbackSwitch.Mode.RUN:
 			self.record(sensorValue)
+		now = self.network.server.getTime()
+		if now>self.rangeEnd:
+			self.defineOptimums()
 		if sensorValue>self.max:
 			retValue = self.switchOn(self.direction<0) and self.direction<0
 		elif sensorValue<self.min:
 			retValue = self.switchOn(self.direction>0) and self.direction>0
-		if self.network.server.getTime()>self.rangeEnd:
-			self.defineOptimums()
 		return retValue
+
+	def decrementTime(self, time:int=0) -> bool:
+		"""
+		Decrease time of schedule and return remaining time.
+		"""
+		del time
+		self.check()
+		return 0
+
 
 	def isScheduled(self):
 		return False
@@ -382,7 +341,12 @@ class FeedbackSwitch(Switch):
 		pass
 		return 0
 
-class HeaterCooler(FeedbackSwitch):
+	def __str__(self):
+		return (f"FeedbackSwitch(name={self.name}, strategy={self.strategyId}, priority={self._priority}"
+			f" currentPower={self.currentPower}, maxPower={self.maxPower}, isOn={self.isOn()},"
+			f" sensor={self.sensor}, targeter={self.targeter}, constraints={self._constraints})")
+
+class HeatingSystem(FeedbackSwitch):
 	"""
 	Electricity consumer (like heater, fridge, hotwater tank)
 	wich are controled by a sensor.
@@ -393,3 +357,9 @@ class HeaterCooler(FeedbackSwitch):
 			isOnFeeder=isOnFeeder, priority=priority,
 			network=network, sensorFeeder=sensorFeeder,
 			targeter=targeter)
+		self._recorder = Recorder("HeatingSystem")
+
+	def __str__(self):
+		return (f"HeatingSystem(name={self.name}, strategy={self.strategyId}, priority={self._priority}"
+			f" currentPower={self.currentPower}, maxPower={self.maxPower}, isOn={self.isOn()},"
+			f" sensor={self.sensor}, targeter={self.targeter}, constraints={self._constraints})")

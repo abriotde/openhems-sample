@@ -118,9 +118,15 @@ default:
     switch:
       currentPower: null
       maxPower: 2000
-      isOn: null
-      strategy: null
+      isOn: ''
+      strategy: ''
       priority: 50
-    out:
-      currentPower: null
-      maxPower: 2000
+      sensor: ''
+      target: ''
+      constraint:
+        minPower: null
+        maxPower: null
+        minDurationOn: null
+        minDurationOff: null
+        maxDurationOn: null
+        maxDurationOff: null

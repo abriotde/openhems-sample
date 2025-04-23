@@ -16,11 +16,10 @@ class ApplianceConstraints():
 	"""
 	Appliance constraints : Constraints to always chek when the appliance is on or before switching on/off.
 	"""
-	def __init__(self, node, configuration:dict):
+	def __init__(self, configuration:dict):
 		self.minPower = configuration.get('minPower', None)
 		self.maxPower = configuration.get('maxPower', None)
 		# durations are in seconds
-		self.node = node
 		self.minDurationOn = configuration.get('minDurationOn', None)
 		self.minDurationOff = configuration.get('minDurationOff', None)
 		self.maxDurationOn = configuration.get('maxDurationOn', None)
@@ -28,31 +27,38 @@ class ApplianceConstraints():
 		self._duration = 0
 		self._isOn = None
 
+	def setNode(self, node):
+		"""
+		Set the parent node
+		"""
+		self.node = node
+
 	def check(self):
 		"""
 		:return: max power of the appliance
 		"""
+		# logger.debug("ApplianceConstraints.check(%s)", self.node.id)
 		if self.minPower is not None or self.maxPower is not None:
 			currentPower = self.node.getCurrentPower()
 			if currentPower is None:
-				self.node.logger.warning("ApplianceConstraints.check() : currentPower is None")
+				logger.warning("ApplianceConstraints.check() : currentPower is None")
 				return False
 			if self.minPower is not None and currentPower<self.minPower:
-				self.node.logger.warning("Offending minPower (%d) > currentPower (%d)", self.minPower, currentPower)
+				logger.warning("Offending minPower (%d) > currentPower (%d)", self.minPower, currentPower)
 				self.node.switchOn(False)
 				return False
 			if self.maxPower is not None and currentPower>self.maxPower:
-				self.node.logger.warning("Offending maxPower (%d) < currentPower (%d)", self.maxPower, currentPower)
+				logger.warning("Offending maxPower (%d) < currentPower (%d)", self.maxPower, currentPower)
 				self.node.switchOn(False)
 				return False
 		if self._isOn:
-			if self._duration>self.maxDurationOn:
-				self.node.logger.warning("Offending maxDurationOn (%d) < currentDuration (%d)", self.maxDurationOn, self._duration)
+			if self.maxDurationOn is not None and self._duration>self.maxDurationOn:
+				logger.warning("Offending maxDurationOn (%d) < currentDuration (%d)", self.maxDurationOn, self._duration)
 				self.node.switchOn(False)
 				return False
 		else:
-			if self._duration>self.maxDurationOff:
-				self.node.logger.warning("Offending maxDurationOff (%d) < currentDuration (%d)", self.maxDurationOff, self._duration)
+			if self.maxDurationOff is not None and self._duration>self.maxDurationOff:
+				logger.warning("Offending maxDurationOff (%d) < currentDuration (%d)", self.maxDurationOff, self._duration)
 				self.node.switchOn(True)
 				return False
 		return True
@@ -62,27 +68,52 @@ class ApplianceConstraints():
 		Reset durations
 		"""
 		if self._isOn:
-			if self._duration<self.minDurationOn and not on:
-				self.node.logger.warning("Offending minDurationOn (%d) > currentDuration (%d)", self.maxDurationOn, self._duration)
+			if self.minDurationOn is not None and self._duration<self.minDurationOn and not on:
+				logger.warning("Offending minDurationOn (%d) > currentDuration (%d)", self.maxDurationOn, self._duration)
 				self.node.switchOn(False)
 				return False
 		else:
-			if self._duration<self.minDurationOff and on:
-				self.node.logger.warning("Offending minDurationOff (%d) > currentDuration (%d)", self.maxDurationOff, self._duration)
+			if self.minDurationOff is not None and self._duration<self.minDurationOff and on:
+				logger.warning("Offending minDurationOff (%d) > currentDuration (%d)", self.maxDurationOff, self._duration)
 				self.node.switchOn(True)
 				return False
 		self._isOn = on
 		self._duration = 0
 		return True
 
-	def decrementTime(self):
+	def decrementTime(self, time:int):
 		"""
 		Decrease time of schedule and return remaining time.
 		"""
-		self._duration += 1
+		self._duration += time
+		self.check()
 
 	def __str__(self):
-		return f"ApplianceConstraints(minPower={self.minPower}, maxPower={self.maxPower})"
+		str = "ApplianceConstraints("
+		sep =""
+		if self.minPower is not None:
+			str += sep+f"minPower={self.minPower}"
+			sep=", "
+		if self.maxPower is not None:
+			str += sep+f"maxPower={self.maxPower}"
+			sep=", "
+		if self.minDurationOn is not None:
+			str += sep+f"minDurationOn={self.minDurationOn}"
+			sep=", "
+		if self.minDurationOff is not None:
+			str += sep+f"minDurationOff={self.minDurationOff}"
+			sep=", "
+		if self.maxDurationOn is not None:
+			str += sep+f"maxDurationOn={self.maxDurationOn}"
+			sep=", "
+		if self.maxDurationOff is not None:
+			str += sep+f"maxDurationOff={self.maxDurationOff}"
+			sep=", "
+		str += ")"
+		if self._isOn is not None:
+			str += f" _isOn={self._isOn}"
+		str += f" for node={self.node.id}"
+		return str
 
 class OpenHEMSNode:
 	"""
@@ -97,7 +128,7 @@ class OpenHEMSNode:
 		self.id = haId.strip().replace(" ", "_")
 
 	def __init__(self, nameId, currentPower, maxPower, isOnFeeder=None,
-			  controlledPowerFeeder=None, controlledPowerValues=None, network=None, constraints=None):
+			  controlledPowerFeeder=None, controlledPowerValues=None, network=None):
 		self.id = ""
 		self.setId(nameId)
 		self.network = network
@@ -109,11 +140,17 @@ class OpenHEMSNode:
 		self._isOn : Feeder = isOnFeeder
 		self.previousPower = deque()
 		self._isActivate = True
+		self._constraints = None
 		try: # Test if currentPower is well configured
 			self.getCurrentPower()
 		except TypeError as e:
 			raise ConfigurationException(str(e)) from e
-		self.constraints = constraints
+
+	def getTime(self):
+		"""
+		Get current time
+		"""
+		return self.network.getTime()
 
 	def _initControlledPowerValues(self):
 		"""
@@ -171,7 +208,7 @@ class OpenHEMSNode:
 			raise TypeError(errorMsg)
 		if self.isSwitchable() and currentPower!=0 and not self.isOn():
 			logger.warning("'%s' is off but current power=%d", self.id, currentPower)
-		logger.info("OpenHEMSNode.getCurrentPower(%s) = %s", self.id, currentPower)
+		# logger.debug("OpenHEMSNode.getCurrentPower(%s) = %s", self.id, currentPower)
 		return currentPower
 
 	def getMaxPower(self):
@@ -304,7 +341,8 @@ class OpenHEMSNode:
 		return bool: False if fail to switchOn/switchOff
 		"""
 		if self.isSwitchable() and self._isActivate:
-			if self.constraints is not None and not self.constraints.switch(connect):
+			constraints = self.getConstraints()
+			if constraints is not None and not constraints.switch(connect):
 				logger.warning("Cancel switch %s '%s' due to constraints",
 					"on" if connect else "off", self.id)
 				return not connect
@@ -314,3 +352,18 @@ class OpenHEMSNode:
 			return ok
 		logger.warning("Try to switchOn/Off a not switchable device : %s", self.id)
 		return connect # Consider node is always on network
+
+	def getConstraints(self):
+		"""
+		Return schedule
+		"""
+		return self._constraints
+
+	def setConstraints(self, constraints:ApplianceConstraints):
+		"""
+		Set constraints to the device.
+		"""
+		self._constraints = constraints
+		if constraints is not None:
+			constraints.setNode(self)
+		return constraints

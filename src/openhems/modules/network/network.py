@@ -36,7 +36,7 @@ class OpenHEMSNetwork:
 			printer("  - "+str(elem))
 		printer(")")
 
-	def __init__(self, logger, networkUpdater, nodesConf):
+	def __init__(self, logger, networkUpdater, nodesConf, server=None):
 		self.networkUpdater: HomeStateUpdater = None
 		self.nodes = []
 		self.notificationManager = None
@@ -45,7 +45,7 @@ class OpenHEMSNetwork:
 		self._loopNb = 0 # used for cache (if loopNb didn't move, get from cache)
 		self._loopNbMarginPowerOn = -1
 		self._marginPowerOn = -1
-		self.server = None
+		self.server = server
 		self.addNetworkUpdater(networkUpdater, nodesConf)
 
 	def getCycleId(self):
@@ -330,3 +330,9 @@ class OpenHEMSNetwork:
 			cost = elem.getContract().getSellPrice(now, attime)
 			return cost
 		return cost
+
+	def getTime(self):
+		"""
+		Get current time
+		"""
+		return self.server.getTime()

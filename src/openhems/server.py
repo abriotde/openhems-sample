@@ -28,6 +28,14 @@ class OpenHEMSServer:
 		self.loopDelay = serverConf.get("server.loopDelay")
 		self.strategies = []
 		self._cycleId = -1 # used for cache (if loopNb didn't move, get from cache)
+		self.allowSleep = allowSleep
+		self.inOverLoadMode = False # in over load mode, we have node deactivate for safety
+		self._now = None
+		self.decrementTimeList = {}
+		for node in self.network.getAll("switch"):
+			constraints = node.getConstraints()
+			if constraints is not None:
+				self.registerDecrementTime(constraints)
 		throwErr = None
 		for strategyParams in serverConf.get("server.strategies"):
 			strategy = strategyParams.get("class", "").lower()
@@ -35,7 +43,7 @@ class OpenHEMSServer:
 			if strategy=="offpeak":
 				self.strategies.append(OffPeakStrategy(mylogger, self.network, strategyId))
 			elif strategy=="switchoff":
-				offhoursrange = strategyParams.get('offrange', "[22h-6h]")
+				offhoursrange = strategyParams.get('offhours', "[22h-6h]")
 				condition = strategyParams.get('condition', True)
 				reverse = CastUtililty.toTypeBool(strategyParams.get('reverse', False))
 				strategyObj = SwitchoffStrategy(mylogger, self.network, strategyId,
@@ -64,10 +72,6 @@ class OpenHEMSServer:
 		if throwErr is not None:
 			self.logger.error(str(throwErr))
 			raise ConfigurationException(throwErr)
-		self.allowSleep = allowSleep
-		self.inOverLoadMode = False # in over load mode, we have node deactivate for safety
-		self._now = None
-		self.decrementTimeList = {}
 
 	def getSchedule(self):
 		"""
@@ -88,8 +92,10 @@ class OpenHEMSServer:
 		Register a node witch will decrement time.
 		"""
 		if register:
+			self.logger.debug("Register decrement time for node '%s'", node)
 			self.decrementTimeList[id(node)] = node
 		else:
+			self.logger.debug("Unregister decrement time for node '%s'", node)
 			self.decrementTimeList.pop(id(node))
 
 	def getTime(self):
@@ -108,7 +114,9 @@ class OpenHEMSServer:
 		"""
 		Decrement time from all objects neither the type (Thanks Python ;) )
 		"""
+		self.logger.debug("decrementTime(%s)", duration)
 		for node in self.decrementTimeList.values():
+			self.logger.debug(" - for '%s'", node)
 			node.decrementTime(duration)
 
 	def check(self):
@@ -198,7 +206,7 @@ class OpenHEMSServer:
 				self.logger.error(msg)
 			t = time.time()
 			if t<nextloop:
-				self.logger.debug("OpenHEMSServer.run() : sleep(%f min)", (nextloop-t)/60)
+				self.logger.debug("OpenHEMSServer.run() : sleep(%.2f min)", (nextloop-t)/60)
 				time.sleep(nextloop-t)
 				t = time.time()
 			elif t>nextloop:

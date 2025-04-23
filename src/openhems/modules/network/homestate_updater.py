@@ -7,10 +7,11 @@ from typing import Final
 import logging
 from openhems.modules.util import (
 	ConfigurationManager, ConfigurationException,
-	CastException, CastUtililty
+	CastException, CastUtililty, HoursRanges
 )
+from .node import ApplianceConstraints
 from .outnode import (
-	OutNode, Switch
+	OutNode, Switch, FeedbackSwitch
 )
 from .inoutnode import (
 	PublicPowerGrid, SolarPanel, Battery
@@ -150,6 +151,8 @@ class HomeStateUpdater:
 		value = conf.get(key)
 		if value is None:
 			value = self.conf.get( "default.node."+self.tmp+"."+key)
+		if value=='': # Like None but for not mandatory fields
+			return None
 		try:
 			feeder = self.getFeeder(value, expectedType)
 		except ValueError as e:
@@ -177,9 +180,7 @@ class HomeStateUpdater:
 				node = None
 				nameid = e.get("id", f"node_{i}")
 				i += 1
-				if classname == "out":
-					node = node = self.getOutNode(nameid, e)
-				elif classname == "switch":
+				if classname == "switch":
 					node = node = self.getSwitch(nameid, e)
 				elif classname == "publicpowergrid":
 					node = self.getPublicPowerGrid(nameid, e)
@@ -204,30 +205,33 @@ class HomeStateUpdater:
 		"""
 		self.tmp = "switch"
 		currentPower = self._getFeeder(nodeConf, "currentPower", "int")
+		maxPower = self._getFeeder(nodeConf, "maxPower", "int")
+		isOn = self._getFeeder(nodeConf, "isOn", "bool")
+		if isOn is None:
+			nbCycleWithoutPowerForOff = CastUtililty.toTypeInt(nodeConf.get("nbCycleWithoutPowerForOff", 1))
+			return OutNode(nameid, currentPower, maxPower, network=self.network
+				, nbCycleWithoutPowerForOff=nbCycleWithoutPowerForOff)
+		priority = nodeConf.get("priority", 50)
 		strategyId = nodeConf.get("strategy", None)
 		if strategyId is None:
 			strategyId = self.network.getDefaultStrategy().id
-		maxPower = self._getFeeder(nodeConf, "maxPower", "int")
-		isOn = self._getFeeder(nodeConf, "isOn", "bool")
+		sensor = self._getFeeder(nodeConf, "sensor", "int")
+		if sensor is None:
+			node = Switch(nameid, strategyId, currentPower, maxPower, isOn,
+					priority=priority, network=self.network)
+		else:
+			target = nodeConf.get("target", None)
+			if target is not None:
+				target = HoursRanges(target)
+			node = FeedbackSwitch(nameid, strategyId, currentPower, maxPower, isOn,
+					priority=priority, network=self.network,
+					sensorFeeder=sensor, targeter=target, direction=1)
 		condition = nodeConf.get('condition', None)
-		priority = nodeConf.get("priority", 50)
-		node = Switch(nameid, strategyId, currentPower, maxPower, isOn,
-				priority=priority, network=self.network)
 		if condition is not None:
 			node.setCondition(condition)
-		# self.logger.info(node)
-		return node
-
-	def getOutNode(self, nameid, nodeConf):
-		"""
-		Return a OpenHEMSNode representing a switch
-		 according to it's YAML configuration.
-		"""
-		self.tmp = "outnode"
-		currentPower = self._getFeeder(nodeConf, "currentPower", "int")
-		maxPower = self._getFeeder(nodeConf, "maxPower", "int")
-		nbCycleWithoutPowerForOff = CastUtililty.toTypeInt(nodeConf.get("nbCycleWithoutPowerForOff", 1))
-		node = OutNode(nameid, currentPower, maxPower, network=self.network
-				 , nbCycleWithoutPowerForOff=nbCycleWithoutPowerForOff)
+		constraints = nodeConf.get("constraints", None)
+		if constraints is not None:
+			constraints = ApplianceConstraints(constraints)
+			node.setConstraints(constraints)
 		# self.logger.info(node)
 		return node
