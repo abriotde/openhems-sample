@@ -75,7 +75,7 @@ class ConstFeeder(Feeder):
 			nameid = str(value)
 		self.nameid = nameid
 	def __str__(self):
-		return "'"+self.nameid+"'"
+		return f"ConstFeeder({self.value})"
 
 class RandomFeeder(Feeder):
 	"""
@@ -168,7 +168,7 @@ class FakeSwitchFeeder(Feeder):
 			return self.value.getValue()
 		return self.defaultValue
 	def __str__(self):
-		return "FakeSwitchFeeder()"
+		return f"FakeSwitchFeeder({self.defaultValue})"
 
 class SumFeeder(Feeder):
 	"""

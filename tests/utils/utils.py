@@ -33,11 +33,11 @@ class TestStrategy(unittest.TestCase):
 		if self.app is None or self.app.server is None:
 			return None
 		self.app.server.allowSleep = False
-		self.app.server.loop(now)
 		for node in self.getNetwork().getAll("out"):
 			# logger.info("Node: %s is on:%s", node.id, node.isOn())
 			self.assertFalse(node.isOn())
 			self.nodes[node.id] = node
+		self.app.server.loop(now)
 		return self.nodes
 
 	def loop(self, loopDelay=None, now=None):
@@ -85,7 +85,8 @@ class TestStrategy(unittest.TestCase):
 
 	def checkValues(self, nodesIds, values,
 			marginPower=None,
-			scheduledDurations=None):
+			scheduledDurations=None,
+			isOn=None):
 		"""
 		Check values of nodes
 		"""
@@ -95,6 +96,8 @@ class TestStrategy(unittest.TestCase):
 			if scheduledDurations is not None:
 				schedule = node.getSchedule()
 				self.assertEqual(schedule.duration, scheduledDurations[i])
+			if isOn is not None:
+				self.assertEqual(node.isOn(), isOn[i])
 		if marginPower is not None:
 			self.assertEqual(self.getNetwork().getMarginPowerOn(), marginPower)
 

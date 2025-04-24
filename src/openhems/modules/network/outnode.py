@@ -4,12 +4,17 @@ Represent appliance of home network: Devices consumming electricity.
 
 import datetime
 from enum import Enum
+import logging
+import numpy as np
+import matplotlib.pyplot as plt
 from openhems.modules.web import OpenHEMSSchedule
 from openhems.modules.util import (
 	ConfigurationException, HoursRanges, Recorder
 )
 from .feeder import Feeder, FakeSwitchFeeder
 from .node import OpenHEMSNode
+
+logger = logging.getLogger(__name__)
 
 class GuessIsOnFeeder(Feeder):
 	"""
@@ -151,14 +156,153 @@ class Switch(OutNode):
 			f" currentPower={self._currentPower},"
 			f"maxPower={self._maxPower}, isOn={self.isOn()})")
 
-class FeedbackSwitch(Switch):
+class TimeModelization:
 	"""
-	Electricity consumer (hotwater tank, pump)
-	wich are controled by a sensor.
+	This is the most simple modelization of the feeedbackSensor.
+	We use a polynomial regression from numpy (No IA nor genetics).
+	The X is the time, Y is the sensor value. But 
+	- All don't start at the same sensor value. So readjust it.
+	- It doesn't take in account the latency at the begenning/end
+	- It would be better to set time in X (for possibly duplicate sensor value (like boiling water))
+	but this would be more difficult to do the reverse for getTime().
+	"""
+	def __init__(self):
+		self._model = {}
+		self._datas = {}
+		self._degree = 1
+		self._tmp = {}
 
-	:param direction: Direction.UP if the sensor is increasing
-		when the device is on, Direction.DOWN if decreasing
+	def plot(self, step):
+		"""
+		Display a popup with the curve. Usefull for manual DEBUG (And for demo ;) ).
+		"""
+		axes = plt.axes()
+		axes.grid()
+		plt.xlabel('Time')
+		plt.ylabel('Sensor value')
+		plt.scatter(self._datas[step][0], self._datas[step][1])
+		mymin = min(self._datas[step][0])*0.9
+		mymax = max(self._datas[step][0])*1.1
+		xp = np.linspace(mymin, mymax, 100)
+		plt.plot(xp, self.applyModel(step, xp), c='r')
+		plt.show()
+
+	def applyModel(self, step, x, model=None):
+		"""
+		Function 'reverse' of generateModel()
+		"""
+		if model is None:
+			model = self._model[step]
+		value = 0
+		degree = len(model)
+		for deg,coef in enumerate(model):
+			p = degree-deg
+			xVals = pow(x, p)
+			# print("applyModel() : ",coef," x ",x,"^",p)
+			value += coef * xVals
+		# print("applyModel(",step,",",x,") : ",value)
+		return value
+
+	def getCost(self, step, model):
+		"""
+		:return: an abstract number representing the cost of a model choice
+		Use the square distance. Greater is the number, worst is the model.
+		But too hight is not so good if it reproduce source datas errors.
+		"""
+		cost = 0
+		datas = self._datas[step]
+		for i,x in enumerate(datas[0]): # For all X
+			y0 = self.applyModel("", x, model=model)
+			y1 = datas[1][i]
+			cost += pow(y0-y1, 2)
+		logger.debug("getCost(%s, %s) : %s", step, model, cost)
+		return cost
+
+	def generateModel(self, step):
+		"""
+		Here it is a polynomial regression.
+		https://mrmint.fr/regression-polynomiale
+
+		:degree: The degree of final polynom
+		"""
+		lowestCost = 2**32
+		for degree in range(1, 5):
+			model = np.poly1d(np.polyfit(self._datas[step][0], self._datas[step][1], degree))
+			cost = self.getCost(step, model)
+			if cost<lowestCost:
+				self._degree = degree
+				self._model[step] = model
+				lowestCost = cost
+		# TODO : Check for greater _degree if they better fit datas
+		logger.debug("Model : %s", self._model[step])
+		# For DEBUG but mannually self.plot(step)
+
+	def _storeRecord(self, recordList):
+		"""
+		Store a record. But as a record not always start from the same sensor value,
+		we don't always start at '0'.
+		"""
+		datasX = []
+		datasY = []
+		timeStart = recordList[0][0]
+		deltaTime = 0
+		# Find the "time" i.e. the i to start from.
+		closestDist = 2**32
+		value0 = recordList[0][1]
+		for value1,timeStart1 in self._tmp.items():
+			dist = pow(value1-value0, 2)
+			if dist<closestDist:
+				deltaTime=timeStart1-timeStart
+				# print("deltaTime:",deltaTime, dist, " for value=",value0)
+				closestDist=dist
+
+		for time,value in recordList:
+			time += deltaTime
+			if self._tmp.get(value) is None:
+				self._tmp[value] = time
+			datasX.append(time)
+			datasY.append(value)
+		# print("DatasX : ", datasX); print("DatasY : ", datasY)
+		return datasX, datasY
+
+	def storeDatas(self, step, datas):
+		"""
+		try remove some latency?
+		Exp datas = [ [(0,0),(1,1),(2,2)],
+					  [(0,1),(1,2),(2, 3),(3,3.5)]]
+		"""
+		datasX = []
+		datasY = []
+		firstRecord = datas[0]
+		first = firstRecord[0][1]
+		last = firstRecord[len(firstRecord)-1][1]
+		self._tmp = {}
+		if first<last:# Growing list
+			# print("growing list")
+			datas.sort(key=lambda x: x[0][1]) # Sort record list by first sensor value
+		else: # going down list
+			# print("descending list")
+			datas.sort(reverse=True, key=lambda x: x[0][1]) # Sort record list by first sensor value
+		for recordList in datas:
+			dx, dy = self._storeRecord(recordList)
+			datasX += dx
+			datasY += dy
+		logger.debug("DatasX : %s", datasX)
+		logger.debug("DatasY : %s", datasY)
+		self._datas[step] = (datasY, datasX)
+
+# class SpeedModelization:
+# 	"""
+# 	The X is the sensor value, Y is the slope of the function wich give the time
+# 	(Skip first, ignore latency).
+# 	TODO
+# 	"""
+
+class FeedbackModelizer:
 	"""
+	The goal is to be able to predict futur value of the sensor in function the device is on/off.
+	"""
+	EVAL_NUM_CYCLES = 4
 	class Mode(Enum):
 		"""
 		Represent recording mode of the FeedbackSwitch
@@ -168,6 +312,96 @@ class FeedbackSwitch(Switch):
 		ON = 3 # Device is on and try to reach a target: Evaluate it
 		OFF = 4 # Device is off and record the behavior Evaluate it
 
+	def __init__(self, switch, tablename):
+		self._mode = FeedbackModelizer.Mode.EVAL # Mode used to evaluate the characterisctics.
+		self._recorder:Recorder = Recorder(tablename)
+		self._wasOn:bool = switch.isOn()
+		self.node:OpenHEMSNode = switch
+		self._model:TimeModelization = TimeModelization()
+
+	def __del__(self):
+		self._recorder.close()
+
+	def getMode(self) -> Mode:
+		"""
+		:return: the current mode of the modelizer.
+		"""
+		return self._mode
+
+	def record(self, sensorValue):
+		"""
+		Record the sensor value in a database. Used to evaluate the FeedbackSwitch capacities.
+
+		:param sensorValue: value of the sensor
+		"""
+		if self._mode != FeedbackModelizer.Mode.RUN:
+			now = self.node.network.server.getTime()
+			self._recorder.record(sensorValue, now)
+
+	def switch(self, connect):
+		"""
+		Switch on the device. Add a registration (to get devices caracteristics).
+		"""
+		if self._mode!=FeedbackModelizer.Mode.RUN and self._wasOn!=connect:
+			sensorValue = self.node.getSensorValue()
+			self.record(sensorValue)
+			self._wasOn = connect
+			# Determine if we stop EVAL
+			match self._mode:
+				case FeedbackModelizer.Mode.ON:
+					ok = not connect # It was one (or 2 if on/off) shot
+				case FeedbackModelizer.Mode.OFF:
+					ok = connect # It was one (or 2 if on/off) shot
+				case FeedbackModelizer.Mode.EVAL:
+					ok = self._recorder.getId()>=self.EVAL_NUM_CYCLES
+				case _:
+					ok = False
+			if ok: # stop EVAL
+				logger.info("FeedbackModelizer : DB trace : inactivation, use Mode.RUN")
+				if self._mode==FeedbackModelizer.Mode.EVAL:
+					logger.info("FeedbackModelizer : DB trace : analyze datas")
+					self.analyzeDatas()
+				self._mode = FeedbackModelizer.Mode.RUN
+			else: # self._mode==FeedbackModelizer.Mode.EVAL
+				step = "ON" if connect else "OFF"
+				logger.info("FeedbackModelizer : DB trace : new step '%s' (%s)", step, self._recorder.getId())
+				self._recorder.newStep(self.node.id, step)
+				self.record(sensorValue)
+
+	def getTimeToReach(self, fromValue:float, toValue:float) -> float:
+		"""
+		Estimate time to switchOn device to go from fromValue to toValue.
+		Use statistics
+
+		:fromValue float: Value of the sensor at the begenning
+		:toValue float: Value of the sensor at the end
+		:return: time in seconds
+		"""
+		if fromValue==toValue:
+			return 0
+		step = "ON" if fromValue<toValue else "OFF"
+		t0 = self._model.applyModel(step, fromValue)
+		t1 = self._model.applyModel(step, toValue)
+		return t1-t0
+
+	def analyzeDatas(self):
+		"""
+		Difficult part ;)
+		"""
+		for step in ["ON", "OFF"]:
+			datas = self._recorder.getDatas(self.node.id, step)
+			print(datas)
+			self._model.storeDatas(step, datas)
+			self._model.generateModel(step)
+
+class FeedbackSwitch(Switch):
+	"""
+	Electricity consumer (hotwater tank, pump)
+	wich are controled by a sensor.
+
+	:param direction: Direction.UP if the sensor is increasing
+		when the device is on, Direction.DOWN if decreasing
+	"""
 	class Direction(Enum):
 		"""
 		Represent the direction in witch the sensor value is going when the device is on
@@ -199,6 +433,8 @@ class FeedbackSwitch(Switch):
 
 		def __lt__(self, other):
 			return self.min<other.min if self._direction==FeedbackSwitch.Direction.UP else self.max>other.max
+		def __str__(self):
+			return f"MinMax({self.min},{self.max})"
 
 	DEFAULT_MAX = 2**32 # Default max value of the sensor
 	DEFAULT_MIN = -2**32 # Default min value of the sensor
@@ -237,36 +473,16 @@ class FeedbackSwitch(Switch):
 		# Represent the direction in witch the sensor value is going when the device is on
 		self._direction:FeedbackSwitch.Direction = direction
 		# Variables to store the sensor value (To eval caracteristics)
-		self.mode = FeedbackSwitch.Mode.EVAL # Mode used to evaluate the characterisctics.
-		self._recorder = Recorder(tablename)
-		self._wasOn = False
+		self._model = FeedbackModelizer(self, tablename)
 
 	def __del__(self):
-		self._recorder.close()
-
-	def record(self, sensorValue):
-		"""
-		Record the sensor value in a database. Used to evaluate the FeedbackSwitch capacities.
-		:param sensorValue: value of the sensor
-		"""
-		self._recorder.record(sensorValue)
+		del self._model
 
 	def switchOn(self, connect, register=None):
 		"""
 		Switch on the device. Add a registration (to get devices caracteristics).
 		"""
-		if self.mode!=FeedbackSwitch.Mode.RUN and self._wasOn!=connect:
-			sensorValue = self._sensor.getValue()
-			self.record(sensorValue)
-			self._wasOn = connect
-			if self.mode==FeedbackSwitch.Mode.ON and not connect  \
-					or self.mode==FeedbackSwitch.Mode.OFF and connect:
-				# It was one (or 2 if on/off) shot
-				self.mode = FeedbackSwitch.Mode.RUN
-			else:
-				step = "ON" if connect else "OFF"
-				self._recorder.newStep(self.id, step)
-				self.record(sensorValue)
+		self._model.switch(connect)
 		super().switchOn(connect, register)
 		return True
 
@@ -279,8 +495,7 @@ class FeedbackSwitch(Switch):
 			exp: duration<minDurationOn but sensorValue>self.minmax.max
 		"""
 		sensorValue = self._sensor.getValue()
-		if self.mode != FeedbackSwitch.Mode.RUN:
-			self.record(sensorValue)
+		self._model.record(sensorValue)
 		now = self.network.server.getTime()
 		if now>self._rangeEnd:
 			self.defineOptimums()
@@ -300,7 +515,6 @@ class FeedbackSwitch(Switch):
 		del time
 		self.check()
 		return 0
-
 
 	def isScheduled(self):
 		return False
@@ -335,10 +549,15 @@ class FeedbackSwitch(Switch):
 		"""
 		Set target to use the maximum amount of energy to preserve next range.
 		"""
+		assert mymin<mymax
 		if self._direction==FeedbackSwitch.Direction.UP:
-			self.getTimeToReach(self.min, mymin)
+			time = self._model.getTimeToReach(self.min, mymin)
 		else:
-			self.getTimeToReach(self.max, mymax)
+			time = self._model.getTimeToReach(self.max, mymax)
+		time *= 1.1 # a 10% margin
+		dt = self._rangeEnd - datetime.timedelta(seconds=time)
+		del dt
+		# TODO
 
 	def defineOptimums(self):
 		"""
@@ -377,19 +596,16 @@ class FeedbackSwitch(Switch):
 		else:
 			self.setEndToReach(self.minmax.min, self.minmax.min + 1)
 
-	def getTimeToReach(self, fromValue, toValue):
-		"""
-		Estimate time to switchOn device to go from fromValue to toValue.
-		Use statistics
-		"""
-		del fromValue, toValue
-		# TODO
-		return 0
-
 	def __str__(self):
 		return (f"FeedbackSwitch(name={self.name}, strategy={self.strategyId}, priority={self._priority}"
 			f" currentPower={self._currentPower}, maxPower={self._maxPower}, isOn={self.isOn()},"
 			f" sensor={self._sensor}, targeter={self._targeter}, constraints={self._constraints})")
+
+	def getSensorValue(self):
+		"""
+		:return: The value of the feedback sensor.
+		"""
+		return self._sensor.getValue()
 
 class HeatingSystem(FeedbackSwitch):
 	"""

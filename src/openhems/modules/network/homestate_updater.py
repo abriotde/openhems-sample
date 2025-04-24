@@ -220,10 +220,20 @@ class HomeStateUpdater:
 			if sensor is not None and sensor!='':
 				sensor = self._getFeeder(nodeConf, "sensor", "int")
 				target = nodeConf.get("target", None)
+				direction = FeedbackSwitch.Direction.UP
 				if target is not None:
-					target = HoursRanges(target)
+					if isinstance(target, list) and len(target)==2 and isinstance(target[0], (int, float)):
+						# case min/max couple : Exp: [16, 23]
+						minmax = FeedbackSwitch.MinMax(target[0], target[1], direction)
+						target = HoursRanges(hoursRangesList=[], outRangeCost=minmax)
+					elif isinstance(target, (int, float)):
+						# case target value : Exp: 16
+						target = HoursRanges(hoursRangesList=[], outRangeCost=target)
+					else:
+						# case complex : [["16h-23h", 15], ["23h-16h", [16, 18]]]
+						target = HoursRanges(target)
 				node = FeedbackSwitch(node, sensorFeeder=sensor, targeter=target,
-						direction=FeedbackSwitch.Direction.UP)
+						direction=direction)
 			condition = nodeConf.get('condition', None)
 			if condition is not None:
 				node.setCondition(condition)
