@@ -6,7 +6,6 @@ import datetime
 from enum import Enum
 import logging
 import numpy as np
-import matplotlib.pyplot as plt
 from openhems.modules.web import OpenHEMSSchedule
 from openhems.modules.util import (
 	ConfigurationException, HoursRanges, Recorder
@@ -176,6 +175,8 @@ class TimeModelization:
 		"""
 		Display a popup with the curve. Usefull for manual DEBUG (And for demo ;) ).
 		"""
+		# pylint: disable=import-outside-toplevel
+		import matplotlib.pyplot as plt # because not used on prod
 		axes = plt.axes()
 		axes.grid()
 		plt.xlabel('Time')
