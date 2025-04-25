@@ -4,7 +4,7 @@ api:
   ssl_certificate: "Your SSL Certificate"
 server:
   logfile: /toto/openhems.log
-  loglevel: warning
+  loglevel: error
   network: homeassistant
   strategies:
     - {class: offpeak, id: offpeak}

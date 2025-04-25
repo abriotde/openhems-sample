@@ -328,14 +328,15 @@ class FeedbackModelizer:
 		"""
 		return self._mode
 
-	def record(self, sensorValue):
+	def record(self, sensorValue, now=None):
 		"""
 		Record the sensor value in a database. Used to evaluate the FeedbackSwitch capacities.
 
 		:param sensorValue: value of the sensor
 		"""
 		if self._mode != FeedbackModelizer.Mode.RUN:
-			now = self.node.network.server.getTime()
+			if now is None:
+				now = self.node.network.server.getTime()
 			self._recorder.record(sensorValue, now)
 
 	def switch(self, connect):
@@ -390,7 +391,7 @@ class FeedbackModelizer:
 		"""
 		for step in ["ON", "OFF"]:
 			datas = self._recorder.getDatas(self.node.id, step)
-			print(datas)
+			# print(datas)
 			self._model.storeDatas(step, datas)
 			self._model.generateModel(step)
 
@@ -467,13 +468,16 @@ class FeedbackSwitch(Switch):
 		self._sensor:Feeder = sensorFeeder
 		# Offpeak and wanted taget can change during the day. This allow to wait for the next range
 		self._rangeEnd = datetime.datetime(2024, 5, 28) # First commit date ;)
-		self.minmax = None # The required min/max value.
-		self.min = None # Current min value. Should be in [self.minmax.min; self.minmax.max[
-		self.max = None # Current max value. Should be in ]self.minmax.min; self.minmax.max]
+		self._minmax = None # The required min/max value.
+		self._min = None # Current min value. Should be in [self._minmax.min; self._minmax.max[
+		self._max = None # Current max value. Should be in ]self._minmax.min; self._minmax.max]
 		# Represent the direction in witch the sensor value is going when the device is on
 		self._direction:FeedbackSwitch.Direction = direction
+		self._sensorMinStep = 1 # The minimal step between a min and max value
 		# Variables to store the sensor value (To eval caracteristics)
 		self._model = FeedbackModelizer(self, tablename)
+		self._nextTargets = []
+
 
 	def __del__(self):
 		del self._model
@@ -492,18 +496,19 @@ class FeedbackSwitch(Switch):
 
 		:return: True if we switch on successfully the device false else
 		TODO set a level in constraints to avoid break device:
-			exp: duration<minDurationOn but sensorValue>self.minmax.max
+			exp: duration<minDurationOn but sensorValue>self._minmax.max
 		"""
 		sensorValue = self._sensor.getValue()
-		self._model.record(sensorValue)
 		now = self.network.server.getTime()
+		self._model.record(sensorValue, now)
+		self.checkTarget(now)
 		if now>self._rangeEnd:
 			self.defineOptimums()
 		retValue = False
-		if sensorValue>self.max:
+		if sensorValue>self._max:
 			retValue = self.switchOn(self._direction==FeedbackSwitch.Direction.DOWN)
 			retValue = retValue and self._direction==FeedbackSwitch.Direction.DOWN
-		elif sensorValue<self.min:
+		elif sensorValue<self._min:
 			retValue = self.switchOn(self._direction==FeedbackSwitch.Direction.UP)
 			retValue = retValue and self._direction==FeedbackSwitch.Direction.UP
 		return retValue
@@ -523,58 +528,112 @@ class FeedbackSwitch(Switch):
 		"""
 		:return: minmax range of the sensor for current time-slot
 		"""
-		return self.minmax
+		return self._minmax
 
 	def setMinMaxRange(self, mymin=None, mymax=None):
 		"""
 		:return: minmax range of the sensor for current time-slot
 		"""
 		if mymin is not None:
-			assert self.minmax.min<=mymin<self.minmax.max
-			self.min = mymin
+			self._min = mymin
 		if mymax is not None:
-			assert self.minmax.min<mymax<=self.minmax.max
-			self.max = mymax
+			self._max = mymax
+		assert self._minmax.min<=self._min<self._max<=self._minmax.max
 
 	def setLowestMinMax(self):
 		"""
 		Set target to use the minimum amount of energy.
 		"""
 		if self._direction==FeedbackSwitch.Direction.UP:
-			self.setMinMaxRange(self.minmax.min, self.minmax.min + 1)
+			self.setMinMaxRange(self._minmax.min, self._minmax.min + 1)
 		else:
-			self.setMinMaxRange(self.minmax.max - 1, self.minmax.max)
+			self.setMinMaxRange(self._minmax.max - 1, self._minmax.max)
 
-	def setEndToReach(self, mymin, mymax):
+	def setToMin(self):
 		"""
-		Set target to use the maximum amount of energy to preserve next range.
+		Considering we are in a starving energy state
 		"""
-		assert mymin<mymax
 		if self._direction==FeedbackSwitch.Direction.UP:
-			time = self._model.getTimeToReach(self.min, mymin)
+			mymin = self._minmax.min
+			mymax = self._minmax.min + self._sensorMinStep
 		else:
-			time = self._model.getTimeToReach(self.max, mymax)
-		time *= 1.1 # a 10% margin
-		dt = self._rangeEnd - datetime.timedelta(seconds=time)
-		del dt
-		# TODO
+			mymin = self._minmax.max - self._sensorMinStep
+			mymax = self._minmax.max
+		self._min = mymin
+		self._max = mymax
+
+	def setToMax(self, atEnd=True):
+		"""
+		Considering we are in a aboundant energy state
+		Set target to use the maximum amount of energy to use it as "battery"
+		 - only at range end if 'atEnd' (For offpeak) Forcing high energy always 
+		 will switch on/off often the device witch could damage it.
+		 - Else now (With solar panel, we don't know when it will end)
+		"""
+		if self._direction==FeedbackSwitch.Direction.UP:
+			mymin = self._minmax.max - self._sensorMinStep
+			mymax = self._minmax.max
+			fromValue = mymin
+			toValue = mymax
+		else:
+			mymin = self._minmax.min
+			mymax = self._minmax.min + self._sensorMinStep
+			fromValue = mymax
+			toValue = mymin
+		if atEnd:
+			self._min = self._minmax.min
+			self._max = self._minmax.max
+			time = self._model.getTimeToReach(fromValue, toValue)
+			time *= 1.1 # a 10% margin
+			reachModeTime = self._rangeEnd - datetime.timedelta(seconds=time)
+			self.addNexTarget(reachModeTime, FeedbackSwitch.MinMax(mymin, mymax))
+		else:
+			self._min = mymin
+			self._max = mymax
+
+	def addNexTarget(self, reachModeTime, minmax):
+		"""
+		Add a targeting min/max wich occured at reachModeTime
+		"""
+		if self.network.server.getTime()>reachModeTime:
+			self._min = minmax.min
+			self._max = minmax.max
+		else:
+			self._nextTargets.append((reachModeTime, minmax))
+			# Sort by reachModeTime
+			self._nextTargets.sort(key=lambda x:x[0])
+
+	def checkTarget(self, now=None):
+		"""
+		Check if time elapsed and we reach a target (self._nextTargets).
+		"""
+		if len(self._nextTargets)>0:
+			reachModeTime, minmax = self._nextTargets[0]
+			if now is None:
+				now = self.network.server.getTime()
+			if now>reachModeTime:
+				self._min = minmax.min
+				self._max = minmax.max
+				self._nextTargets.pop(0)
+
+
 
 	def defineOptimums(self):
 		"""
 		define min/max and rangeEnd according to min/max allowed and strategy.
 		"""
 		now = self.network.server.getTime()
-		_, self._rangeEnd, self.minmax = self._targeter.checkRange(now)
-		if isinstance(self.minmax, (float, int)):
+		_, self._rangeEnd, self._minmax = self._targeter.checkRange(now)
+		if isinstance(self._minmax, (float, int)):
 			if self._direction==FeedbackSwitch.Direction.UP:
-				mymin = self.minmax
+				mymin = self._minmax
 				mymax = FeedbackSwitch.DEFAULT_MAX
 			else: # if self._direction==FeedbackSwitch.Direction.DOWN:
 				mymin = FeedbackSwitch.DEFAULT_MIN
-				mymax = self.minmax
-			self.minmax = FeedbackSwitch.MinMax(mymin, mymax, self._direction)
-		self.min = self.minmax.min
-		self.max = self.minmax.max
+				mymax = self._minmax
+			self._minmax = FeedbackSwitch.MinMax(mymin, mymax, self._direction)
+		self._min = self._minmax.min
+		self._max = self._minmax.max
 		prices = self.network.getHoursRanges()
 		if prices is not None and not prices.isEmpty():
 			_, rangeEnd, cost = prices.checkRange(now)
@@ -590,11 +649,8 @@ class FeedbackSwitch(Switch):
 		Set target to use the maximum amount of energy to preserve next range.
 		Default for just offpeak strategy.
 		"""
-		del cost, nextCost
-		if self._direction==FeedbackSwitch.Direction.UP:
-			self.setEndToReach(self.minmax.max - 1, self.minmax.max)
-		else:
-			self.setEndToReach(self.minmax.min, self.minmax.min + 1)
+		if cost<nextCost:
+			self.setToMax()
 
 	def __str__(self):
 		return (f"FeedbackSwitch(name={self.name}, strategy={self.strategyId}, priority={self._priority}"
