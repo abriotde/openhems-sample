@@ -7,10 +7,14 @@ from typing import Final
 import logging
 from openhems.modules.util import (
 	ConfigurationManager, ConfigurationException,
-	CastException
+	CastException, CastUtililty, HoursRanges
 )
-from .node import (
-	OutNode, PublicPowerGrid, SolarPanel, Battery
+from .node import ApplianceConstraints
+from .outnode import (
+	OutNode, Switch, FeedbackSwitch
+)
+from .inoutnode import (
+	PublicPowerGrid, SolarPanel, Battery
 )
 from .feeder import Feeder, SourceFeeder
 
@@ -32,24 +36,23 @@ class HomeStateUpdater:
 	"""
 	def __init__(self, conf:ConfigurationManager) -> None:
 		self.cachedIds = {}
-		self.refreshId = 0
 		self.logger = logging.getLogger(__name__)
 		self.network = None
 		self.conf = conf
 		self.tmp = None # Used to avoid method argument repeated.
 		self.warningMessages = []
 
-	def getCacheId(self):
+	def getCycleId(self):
 		"""
 		Return the refresh Id of the network.
 		"""
-		return self.refreshId
+		return self.network.getCycleId()
 
 	def updateNetwork(self):
 		"""
 		A function witch update home network and return OpenHEMSNetwork.
 		"""
-		self.refreshId += 1
+		# self.refreshId += 1 # useless : self.network.getCycleId() replaceIt?
 
 	def switchOn(self, isOn, _):
 		"""
@@ -72,12 +75,12 @@ class HomeStateUpdater:
 		"""
 		self.network = network
 
-	def getFeeder(self, value, expectedType=None, defaultValue=None) -> Feeder:
+	def getFeeder(self, value, expectedType=None, defaultValue=None, nameid="", node=None) -> Feeder:
 		"""
 		Return a feeder considering
 		 This function should be overiden by sub-class
 		"""
-		del defaultValue
+		del defaultValue, nameid, node
 		return SourceFeeder(value, self, expectedType)
 
 	def getPublicPowerGrid(self, nameid, nodeConf):
@@ -141,15 +144,16 @@ class HomeStateUpdater:
 		# self.logger.info(node)
 		return node
 
-	def _getFeeder(self, conf, key, expectedType=None) -> Feeder:
+	def _getFeeder(self, conf, key, expectedType=None, node=None) -> Feeder:
 		"""
 		Return a feeder, search in configuration for default value if not set. 
 		"""
 		value = conf.get(key)
-		if value is None:
+		if value is None\
+			or value=='': # Like None but for not mandatory fields.
 			value = self.conf.get( "default.node."+self.tmp+"."+key)
 		try:
-			feeder = self.getFeeder(value, expectedType)
+			feeder = self.getFeeder(value, expectedType, nameid=self.tmp+"."+key, node=node)
 		except ValueError as e:
 			raise ConfigurationException(
 				"Impossible to convert "+key+" = '"+value
@@ -200,16 +204,42 @@ class HomeStateUpdater:
 		"""
 		self.tmp = "switch"
 		currentPower = self._getFeeder(nodeConf, "currentPower", "int")
-		strategyId = nodeConf.get("strategy", None)
-		if strategyId is None:
-			strategyId = self.network.getDefaultStrategy().id
 		maxPower = self._getFeeder(nodeConf, "maxPower", "int")
-		isOn = self._getFeeder(nodeConf, "isOn", "bool")
-		condition = nodeConf.get('condition', None)
-		priority = nodeConf.get("priority", 50)
-		node = OutNode(nameid, strategyId, currentPower, maxPower, isOn,
-				priority=priority, network=self.network)
-		if condition is not None:
-			node.setCondition(condition)
+		nbCycleWithoutPowerForOff = CastUtililty.toTypeInt(nodeConf.get("nbCycleWithoutPowerForOff", 1))
+		node = OutNode(nameid, currentPower, maxPower, network=self.network
+				, nbCycleWithoutPowerForOff=nbCycleWithoutPowerForOff)
+		isOn = nodeConf.get("isOn")
+		if isOn is not None and isOn!='':
+			isOn = self._getFeeder(nodeConf, "isOn", "bool", node=node)
+			priority = nodeConf.get("priority", 50)
+			strategyId = nodeConf.get("strategy", None)
+			if strategyId is None:
+				strategyId = self.network.getDefaultStrategy().id
+			node = Switch(node, isOn, strategyId, priority=priority)
+			sensor = nodeConf.get("sensor")
+			if sensor is not None and sensor!='':
+				sensor = self._getFeeder(nodeConf, "sensor", "int")
+				target = nodeConf.get("target", None)
+				direction = FeedbackSwitch.Direction.UP
+				if target is not None:
+					if isinstance(target, list) and len(target)==2 and isinstance(target[0], (int, float)):
+						# case min/max couple : Exp: [16, 23]
+						minmax = FeedbackSwitch.MinMax(target[0], target[1], direction)
+						target = HoursRanges(hoursRangesList=[], outRangeCost=minmax)
+					elif isinstance(target, (int, float)):
+						# case target value : Exp: 16
+						target = HoursRanges(hoursRangesList=[], outRangeCost=target)
+					else:
+						# case complex : [["16h-23h", 15], ["23h-16h", [16, 18]]]
+						target = HoursRanges(target)
+				node = FeedbackSwitch(node, sensorFeeder=sensor, targeter=target,
+						direction=direction)
+			condition = nodeConf.get('condition', None)
+			if condition is not None:
+				node.setCondition(condition)
+			constraints = nodeConf.get("constraints", None)
+			if constraints is not None:
+				constraints = ApplianceConstraints(constraints)
+				node.setConstraints(constraints)
 		# self.logger.info(node)
 		return node

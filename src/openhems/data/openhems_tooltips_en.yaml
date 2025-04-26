@@ -114,6 +114,15 @@ default:
     switch:
       currentPower: "The HA identifier to get power, in Kw consumed by the switch"
       maxPower: "The maximum power, in Kw, we expect the devices behind the switch will pull. (It's used to determin margin power : security)."
-      isOn: "The HA identifier to know if device is on or off."
-      strategy: "The strategy id used for this device."
-      priority: "A number between 0 and 100 to determine if this device is important. Higher it is, more it is important."
+      isOn: "The HA identifier to know if device is on or off and to switch it. (if None, the node is only for security on black-out)."
+      strategy: "The strategy id used for this device (useless if no 'isOn' attribute)."
+      priority: "A number between 0 and 100 to determine if this device is important. Higher it is, more it is important (useless if no 'isOn' attribute)."
+      sensor: "If one, the HA identifier of a sensor for feedback : auto-switch on/off."
+      target: "Sensor target if one. Can configure variable value during the day. Configured like offhours."
+      constraint:
+        minPower: "If set: if the device's consumption falls below this value, the device is turned off."
+        maxPower: "If set: if the device's consumption rise upper this value, the device is turned off."
+        minDurationOn: "Duration, in seconds: do not switch off device before it has been on during that duration."
+        minDurationOff: "Duration, in seconds: do not switch on device before it has been off during that duration."
+        maxDurationOn: "Duration, in seconds: switch off device if it has been on during that duration."
+        maxDurationOff: "Duration, in seconds: switch on device if it has been off during that duration."

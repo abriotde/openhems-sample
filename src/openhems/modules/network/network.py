@@ -6,8 +6,10 @@ It is used to know devices and to switch on/off them.
 from typing import Final
 import copy
 from openhems.modules.util.notification_manager import NotificationManager
-from .node import (
-	OpenHEMSNode, InOutNode, OutNode, PublicPowerGrid, SolarPanel, Battery
+from .node import OpenHEMSNode
+from .outnode import OutNode, Switch
+from .inoutnode import (
+	InOutNode, PublicPowerGrid, SolarPanel, Battery
 )
 from .homestate_updater import HomeStateUpdater
 
@@ -34,7 +36,7 @@ class OpenHEMSNetwork:
 			printer("  - "+str(elem))
 		printer(")")
 
-	def __init__(self, logger, networkUpdater, nodesConf):
+	def __init__(self, logger, networkUpdater, nodesConf, server=None):
 		self.networkUpdater: HomeStateUpdater = None
 		self.nodes = []
 		self.notificationManager = None
@@ -43,8 +45,16 @@ class OpenHEMSNetwork:
 		self._loopNb = 0 # used for cache (if loopNb didn't move, get from cache)
 		self._loopNbMarginPowerOn = -1
 		self._marginPowerOn = -1
+		self.server = server
 		self.addNetworkUpdater(networkUpdater, nodesConf)
-		self.server = None
+
+	def getCycleId(self):
+		"""
+		Return the refresh Id of the network.
+		"""
+		if self.server is None:
+			return -1
+		return self.server.getCycleId()
 
 	def addNetworkUpdater(self, networkUpdater: HomeStateUpdater, nodesConf):
 		"""
@@ -103,6 +113,7 @@ class OpenHEMSNetwork:
 				filters = {
 					"inout" : (lambda x: isinstance(x, InOutNode)),
 					"out" : (lambda x: isinstance(x, OutNode)),
+					"switch" : (lambda x: isinstance(x, Switch)),
 					"publicpowergrid" : (lambda x: isinstance(x, PublicPowerGrid)),
 					"battery" : (lambda x: isinstance(x, Battery)),
 					"solarpanel" : (lambda x: isinstance(x, SolarPanel)),
@@ -110,7 +121,7 @@ class OpenHEMSNetwork:
 				elemFilter = filters.get(filterId, None)
 			if elemFilter is not None:
 				out = list(filter(elemFilter, self.nodes))
-				if filterId=="out":
+				if filterId=="switch":
 					out.sort(
 						reverse=True, key=lambda x:x.getPriority()
 					)
@@ -275,7 +286,7 @@ class OpenHEMSNetwork:
 		if nodes is None:
 			# self.logger.debug("getNodesForStrategy() : generate cache")
 			nodes = []
-			for node in self.getAll("out"):
+			for node in self.getAll("switch"):
 				strategy = node.getStrategyId()
 				if strategy is None or strategy==strategyId:
 					nodes.append(node)
@@ -319,3 +330,9 @@ class OpenHEMSNetwork:
 			cost = elem.getContract().getSellPrice(now, attime)
 			return cost
 		return cost
+
+	def getTime(self):
+		"""
+		Get current time
+		"""
+		return self.server.getTime()

@@ -17,3 +17,5 @@ config/openhems.secret.yaml
 src/openhems.egg-info/
 docs/OpenHemsUMLDiagram.puml
 docs/source/generated
+src/openhems/openhems.db
+tests/openhems.db

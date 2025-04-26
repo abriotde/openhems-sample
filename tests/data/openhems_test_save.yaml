@@ -9,21 +9,30 @@ network:
     currentPower: sensor.lixee_zlinky_tic_puissance_apparente
     id: linky
     marginPower: 1000
-    maxPower: 10000
+    maxPower: 5000
     minPower: 0
   - class: switch
+    constraints:
+      maxDurationOn: 600
+      maxPower: 2300
     currentPower: sensor.tz3000_2putqrmw_ts011f_puissance_2
     id: voiture
     isOn: switch.tz3000_2putqrmw_ts011f_commutateur_2
-    maxPower: 2000
+    maxPower: 2300
+    sensor: sensor.tz3000_2putqrmw_ts011f_puissance
     strategy: offpeak
+    target:
+    - - 22h-6h
+      - 16
+    - - 6h-22h
+      - 19
   - class: switch
     currentPower: sensor.tz3000_2putqrmw_ts011f_puissance
     id: box
-    isOn: switch.tz3000_2putqrmw_ts011f_commutateur
     strategy: redDay
 server:
   loglevel: debug
+  loopDelay: 10
   strategies:
   - class: offpeak
     id: offpeak

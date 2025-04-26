@@ -5,14 +5,124 @@ Represent device of home network
 import logging
 
 from typing import Final
-from collections import deque, OrderedDict
-from openhems.modules.web import OpenHEMSSchedule
-from openhems.modules.contract import Contract
+from collections import OrderedDict # , deque
 from openhems.modules.util import CastUtililty, ConfigurationException
-from .feeder import Feeder, ConstFeeder
+from .feeder import Feeder
 
 CYCLE_HISTORY: Final[int] = 10 # Number of cycle we keep history
 logger = logging.getLogger(__name__)
+
+class ApplianceConstraints():
+	"""
+	Appliance constraints : Constraints to always chek when the appliance is on
+	or before switching on/off.
+	"""
+	def __init__(self, configuration:dict):
+		self.minPower = configuration.get('minPower', None)
+		self.maxPower = configuration.get('maxPower', None)
+		# durations are in seconds
+		self.minDurationOn = configuration.get('minDurationOn', None)
+		self.minDurationOff = configuration.get('minDurationOff', None)
+		self.maxDurationOn = configuration.get('maxDurationOn', None)
+		self.maxDurationOff = configuration.get('maxDurationOff', None)
+		self._duration = 0
+		self._isOn = None
+		self.node = None
+
+	def setNode(self, node):
+		"""
+		Set the parent node
+		"""
+		self.node = node
+
+	def check(self):
+		"""
+		:return: max power of the appliance
+		"""
+		# logger.debug("ApplianceConstraints.check(%s)", self.node.id)
+		# TODO : need a warning on HA network.notify()?
+		message = ""
+		if self.minPower is not None or self.maxPower is not None:
+			currentPower = self.node.getCurrentPower()
+			if currentPower is None:
+				message += f"Unable to get currentPower (None) for node {self.node.id}."
+			if self.minPower is not None and currentPower<self.minPower:
+				message += f"Offending minPower ({self.minPower}) > currentPower ({currentPower})"
+				# self.node.switchOn(False) # Maybe is just starting, if switch off,
+				# we may offend minDurationOn
+			if self.maxPower is not None and currentPower>self.maxPower:
+				message += f"Offending maxPower ({self.maxPower}) < currentPower ({currentPower})"
+				self.node.switchOn(False)
+		if self._isOn:
+			if self.maxDurationOn is not None and self._duration>self.maxDurationOn:
+				message += ("Offending maxDurationOn "
+					f"({self.maxDurationOn}) < currentDuration ({self._duration})")
+				self.node.switchOn(False)
+		else:
+			if self.maxDurationOff is not None and self._duration>self.maxDurationOff:
+				message += ("Offending maxDurationOff "
+					f"({self.maxDurationOff}) < currentDuration ({self._duration})")
+				self.node.switchOn(True)
+		if message!="":
+			logger.error(message)
+			self.node.network.notify(message)
+			return False
+		return True
+
+	def switch(self, on):
+		"""
+		Check durations constraints and reset durations
+		"""
+		message = ""
+		if self._isOn:
+			if self.minDurationOn is not None and self._duration<self.minDurationOn and not on:
+				message += ("Offending minDurationOn "
+					f"({self.minDurationOn}) > currentDuration ({self._duration}).")
+		else:
+			if self.minDurationOff is not None and self._duration<self.minDurationOff and on:
+				message += ("Offending minDurationOff "
+					f"({self.minDurationOff}) > currentDuration ({self._duration}).")
+		if message!="":
+			logger.error(message)
+			self.node.network.notify(message)
+			return False
+		self._isOn = on
+		self._duration = 0
+		return True
+
+	def decrementTime(self, time:int):
+		"""
+		Decrease time of schedule and return remaining time.
+		"""
+		self._duration += time
+		self.check()
+
+	def __str__(self):
+		retValue = "ApplianceConstraints("
+		sep =""
+		if self.minPower is not None:
+			retValue += sep+f"minPower={self.minPower}"
+			sep=", "
+		if self.maxPower is not None:
+			retValue += sep+f"maxPower={self.maxPower}"
+			sep=", "
+		if self.minDurationOn is not None:
+			retValue += sep+f"minDurationOn={self.minDurationOn}"
+			sep=", "
+		if self.minDurationOff is not None:
+			retValue += sep+f"minDurationOff={self.minDurationOff}"
+			sep=", "
+		if self.maxDurationOn is not None:
+			retValue += sep+f"maxDurationOn={self.maxDurationOn}"
+			sep=", "
+		if self.maxDurationOff is not None:
+			retValue += sep+f"maxDurationOff={self.maxDurationOff}"
+			sep=", "
+		retValue += ")"
+		if self._isOn is not None:
+			retValue += f" _isOn={self._isOn}"
+		retValue += f" for node={self.node.id}"
+		return retValue
 
 class OpenHEMSNode:
 	"""
@@ -23,6 +133,7 @@ class OpenHEMSNode:
 		"""
 		Set Home-Assistant id
 		"""
+		self.name = haId
 		self.id = haId.strip().replace(" ", "_")
 
 	def __init__(self, nameId, currentPower, maxPower, isOnFeeder=None,
@@ -33,15 +144,24 @@ class OpenHEMSNode:
 		self._controlledPower = controlledPowerFeeder
 		self._controlledPowerValues = controlledPowerValues
 		self._initControlledPowerValues()
-		self.currentPower:Feeder = currentPower
-		self.maxPower : Feeder = maxPower
-		self._isOn : Feeder = isOnFeeder
-		self.previousPower = deque()
-		self._isActivate = True
+		self._currentPower:Feeder = currentPower
+		self._maxPower:Feeder = maxPower
+		self._isOn:Feeder = isOnFeeder
+		# To try predict power. Useless today.
+		# self._previousPower = deque()
+		# Security
+		self._isActivate = True # Can inactivate node for security reasons.
+		self._constraints = None
 		try: # Test if currentPower is well configured
 			self.getCurrentPower()
 		except TypeError as e:
 			raise ConfigurationException(str(e)) from e
+
+	def getTime(self):
+		"""
+		Get current time
+		"""
+		return self.network.getTime()
 
 	def _initControlledPowerValues(self):
 		"""
@@ -77,20 +197,20 @@ class OpenHEMSNode:
 				controlledPowerValues = controlledPowerValues | dict(zip(keys, values))
 			self._controlledPowerValues = OrderedDict(sorted(controlledPowerValues))
 
-	def _setCurrentPower(self, currentPower):
-		"""
-		Set current power.
-		"""
-		if len(self.previousPower)>=CYCLE_HISTORY:
-			self.previousPower.popleft()
-		self.previousPower.append(self.currentPower)
-		self.currentPower = currentPower
+	# def _setCurrentPower(self, currentPower):
+	# 	"""
+	# 	Set current power.
+	# 	"""
+	# 	if len(self._previousPower)>=CYCLE_HISTORY:
+	# 		self._previousPower.popleft()
+	# 	self._previousPower.append(self._currentPower)
+	# 	self._currentPower = currentPower
 
 	def getCurrentPower(self):
 		"""
 		Get current power 
 		"""
-		currentPower = self.currentPower.getValue()
+		currentPower = self._currentPower.getValue()
 		if currentPower is None or not isinstance(currentPower, (int, float)):
 			errorMsg = (f"Invalid currentPower ({currentPower}) for node '{self.id}'. "
 			   "Usual causes are Home-Assistant service is not ready (restart latter),"
@@ -99,45 +219,45 @@ class OpenHEMSNode:
 			raise TypeError(errorMsg)
 		if self.isSwitchable() and currentPower!=0 and not self.isOn():
 			logger.warning("'%s' is off but current power=%d", self.id, currentPower)
-		logger.info("OpenHEMSNode.getCurrentPower(%s) = %s", self.id, currentPower)
+		# logger.debug("OpenHEMSNode.getCurrentPower(%s) = %s", self.id, currentPower)
 		return currentPower
 
 	def getMaxPower(self):
 		"""
 		Get max power 
 		"""
-		return self.maxPower.getValue()
+		return self._maxPower.getValue()
 
-	def _estimateNextPower(self):
-		"""
-		Estimate what could be the next value of currentPower if there is no change
-
-		This function would like to know if there is a constant
-		 growing/decreasing value or a random one or oscilating one...
-		:return list[int]: [minValue, bestBet, maxValue]
-		"""
-		p0 = self.currentPower
-		maxi = len(self.previousPower)
-		summ = 0
-		lastDiff = 0
-		maxDiff = 0
-		for i in reversed(range(0, maxi)):
-			p1 = self.previousPower[i]
-			diff = p1-p0
-			if i==maxi:
-				lastDiff = diff
-			maxDiff = max(maxDiff, abs(diff))
-			summ += diff
-			p0 = p1
-		avgDiff = summ/maxi
-		if avgDiff>0 and lastDiff>2*avgDiff \
-				or avgDiff<0 and lastDiff<2*avgDiff:
-			curDiff = lastDiff
-		else:
-			curDiff = avgDiff
-		return [self.currentPower-abs(maxDiff),\
-			self.currentPower+curDiff,\
-			self.currentPower+abs(maxDiff)]
+	# def _estimateNextPower(self):
+	# 	"""
+	# 	Estimate what could be the next value of currentPower if there is no change
+	#
+	# 	This function would like to know if there is a constant
+	# 	 growing/decreasing value or a random one or oscilating one...
+	# 	:return list[int]: [minValue, bestBet, maxValue]
+	# 	"""
+	# 	p0 = self._currentPower
+	# 	maxi = len(self._previousPower)
+	# 	summ = 0
+	# 	lastDiff = 0
+	# 	maxDiff = 0
+	# 	for i in reversed(range(0, maxi)):
+	# 		p1 = self._previousPower[i]
+	# 		diff = p1-p0
+	# 		if i==maxi:
+	# 			lastDiff = diff
+	# 		maxDiff = max(maxDiff, abs(diff))
+	# 		summ += diff
+	# 		p0 = p1
+	# 	avgDiff = summ/maxi
+	# 	if avgDiff>0 and lastDiff>2*avgDiff \
+	# 			or avgDiff<0 and lastDiff<2*avgDiff:
+	# 		curDiff = lastDiff
+	# 	else:
+	# 		curDiff = avgDiff
+	# 	return [self._currentPower-abs(maxDiff),\
+	# 		self._currentPower+curDiff,\
+	# 		self._currentPower+abs(maxDiff)]
 
 	def isControlledPower(self):
 		"""
@@ -221,17 +341,22 @@ class OpenHEMSNode:
 		"""
 		# print("OpenHEMSNode.isOn(",self.id,")")
 		if self._isOn is None:
-			logger.warning("'%s' is not switchable", self.id)
+			logger.error("'%s' unable to know if on.", self.id)
 			return False
 		return self._isOn.getValue()
 
 	def switchOn(self, connect:bool, register=None) -> bool:
 		"""
 		May not work if it is impossible (No relay) or if it failed.
-		
+
 		return bool: False if fail to switchOn/switchOff
 		"""
 		if self.isSwitchable() and self._isActivate:
+			constraints = self.getConstraints()
+			if constraints is not None and not constraints.switch(connect):
+				logger.warning("Cancel switch %s '%s' due to constraints",
+					"on" if connect else "off", self.id)
+				return not connect
 			ok = self.network.networkUpdater.switchOn(connect, self)
 			if ok and register is not None:
 				self.network.server.registerDecrementTime(self, register)
@@ -239,232 +364,17 @@ class OpenHEMSNode:
 		logger.warning("Try to switchOn/Off a not switchable device : %s", self.id)
 		return connect # Consider node is always on network
 
-class OutNode(OpenHEMSNode):
-	"""
-	Electricity consumer (like washing-machine, water-heater).
-	:param int priority: A device with higth priority is more important than a low priority one.
-		Usually priority is a number between 0 and 100
-	"""
-	def __init__(self, nameId, strategyId, currentPower, maxPower, isOnFeeder=None,
-			priority=50, network=None):
-		super().__init__(nameId, currentPower, maxPower, isOnFeeder, network=network)
-		self.name = nameId
-		self.schedule = OpenHEMSSchedule(self.id, nameId, self)
-		self.strategyId = strategyId
-		self._priority = priority
-
-	def getPriority(self):
-		"""
-		:return int: number representing the level of priority
-		"""
-		return self._priority
-
-	def getSchedule(self):
+	def getConstraints(self):
 		"""
 		Return schedule
 		"""
-		return self.schedule
+		return self._constraints
 
-	def setCondition(self, condition):
+	def setConstraints(self, constraints:ApplianceConstraints):
 		"""
-		Set a condition to switchOn
-		even if the node is  not manually schedule.
+		Set constraints to the device.
 		"""
-		self.schedule.setCondition(condition)
-		return condition
-
-	def isScheduled(self):
-		"""
-		Return True, if device is schedule to be on
-		"""
-		sch = self.getSchedule()
-		if sch is not None:
-			return sch.isScheduled()
-		return False
-
-	def decrementTime(self, time:int) -> int:
-		"""
-		Decrease time of schedule and return remaining time.
-		"""
-		sch = self.getSchedule()
-		if sch is not None and self.isOn():
-			return sch.decrementTime(time)
-		return 0
-
-	def getStrategyId(self):
-		"""
-		Return StrategyId
-		"""
-		return self.strategyId
-
-	def __str__(self):
-		return (f"OutNode(name={self.name}, strategy={self.strategyId}, priority={self._priority}"
-			f" currentPower={self.currentPower},"
-			f"maxPower={self.maxPower}, isOn={self.isOn()})")
-	def __repr__(self):
-		return str(self)
-
-class InOutNode(OpenHEMSNode):
-	"""
-	It is electricity source, it may consume electricity over-production
-	 if possible (Battery with MPPT or Sell on public-grid)
-	param maxPower: positive value, max power we can consume at a time.
-	param minPower: negative value if we can sell or ther is battery, 0 overwise.
-	"""
-	def __init__(self, nameid, currentPower, maxPower, minPower, marginPower) -> None:
-		# isAutoAdatative: bool, isControlable: bool, isModulable: bool, isCyclic: bool
-		super().__init__(nameid, currentPower, maxPower)
-		self.currentPower = currentPower
-		self.marginPower = marginPower
-		self.minPower = minPower
-
-	def respectConstraints(self, power=None):
-		"""
-		Check min/max constraints for power
-		
-		return bool: true if 'power' respects constraints
-		"""
-		if power is None:
-			power = self.currentPower.getValue()
-
-		if power+self.marginPower.getValue()>self.maxPower.getValue():
-			return False
-		if power-self.marginPower.getValue()<self.minPower.getValue():
-			return False
-		return True
-
-	def getMinPower(self):
-		"""
-		Return current minimal power
-		"""
-		return self.minPower.getValue()
-	def getMarginPower(self):
-		"""
-		Return current margin power
-		"""
-		margin = self.marginPower.getValue()
-		# logger.debug("MarginPower of Node %s is %s", self.id, margin)
-		return margin
-
-	def _getSafetyLevel(self):
-		"""
-		Get a int value representing how safe is the current power value
-
-		return int:
-			- 0: unsafe
-			- 1: respect constraints but shouldn't on next loop
-			- 2: respect constraints but could be out of constraints next loop
-			- 3: Safe values
-		"""
-		if not self.respectConstraints():
-			return 0
-		_min, avg, _max = self._estimateNextPower()
-		if not self.respectConstraints(avg):
-			return 1
-		if not (self.respectConstraints(_min) or self.respectConstraints(_max)):
-			return 2
-		return 3
-
-class PublicPowerGrid(InOutNode):
-	"""
-	This represent Public power grid. Just one should be possible.
-	"""
-	def __init__(self, nameid, currentPower, maxPower, minPower, marginPower,
-	             contract, networkUpdater):
-		super().__init__(nameid, currentPower, maxPower, minPower, marginPower)
-		self.contract = Contract.getContract(contract, networkUpdater.conf, networkUpdater)
-
-	def __str__(self):
-		return (f"PublicPowerGrid({self.currentPower}, maxPower={self.maxPower},"
-			f" minPower={self.minPower}, marginPower={self.marginPower}, contract={self.contract})")
-
-	def getContract(self):
-		"""
-		Return the contract. Usefull to get specificities witch can imply on strategy.
-		Like offpeak-hours, prices.
-		"""
-		return self.contract
-
-class SolarPanel(InOutNode):
-	"""
-	This represent photovoltaïc solar panels. 
-	We can have many, but one can represent many solar panel.
-	It depends of sensors number.
-	"""
-	# pylint: disable=too-many-arguments
-	def __init__(self, nameid, currentPower, maxPower, *,
-			moduleModel=None, inverterModel=None, tilt=45, azimuth=180,
-			modulesPerString=1, stringsPerInverter=1, marginPower=None):
-		if marginPower is None:
-			marginPower = ConstFeeder(0)
-		super().__init__(nameid, currentPower, maxPower, currentPower,  marginPower)
-		self.moduleModel = moduleModel
-		self.inverterModel = inverterModel
-		self.tilt = tilt
-		self.azimuth = azimuth
-		self.modulesPerString = modulesPerString
-		self.stringsPerInverter = stringsPerInverter
-
-	def getMaxPower(self):
-		"""
-		get current maximum power = current power.
-		value saved in maxPower, is the theorical maxPower (usefull to know efficiency).
-		But in fact even if we ask more power, solar panels can't give us more.
-		"""
-		return self.currentPower.getValue()
-
-	def __str__(self):
-		return (f"SolarPanel({self.currentPower}, {self.maxPower},"
-		f" moduleModel={self.moduleModel}, inverterModel={self.inverterModel},"
-		f" tilt={self.tilt}, azimuth={self.azimuth},"
-		f" modulesPerString={self.modulesPerString},"
-		f"stringsPerInverter={self.stringsPerInverter})")
-	def __repr__(self):
-		return str(self)
-
-class Battery(InOutNode):
-	"""
-	This represent battery.
-	"""
-	# pylint: disable=too-many-arguments
-	def __init__(self, nameid, capacity, currentPower, *, maxPowerIn=None,
-			maxPowerOut=None, efficiencyIn:float=0.95, efficiencyOut:float=0.95,
-			targetLevel:float=0.70,
-			currentLevel=None, lowLevel:float=0.20, highLevel:float=0.80):
-		if maxPowerIn is None:
-			maxPowerIn = ConstFeeder(2300) # a standard electrical outlet
-		if maxPowerOut is None:
-			maxPowerOut = ConstFeeder(-1*maxPowerIn.getValue())
-		super().__init__(nameid, currentPower, maxPowerIn, maxPowerOut, 0)
-		self.isControlable = True
-		self.isModulable = False
-		self.capacity = capacity
-		self.currentLevel = currentLevel
-		self.lowLevel = lowLevel
-		self.highLevel = highLevel
-		self.targetLevel = targetLevel
-		self.efficiencyIn = efficiencyIn
-		self.efficiencyOut = efficiencyOut
-
-	def getCapacity(self):
-		"""
-		Get battery max capacity.
-		"""
-		return self.capacity.getValue()
-
-	def getLevel(self):
-		"""
-		Get battery level.
-		"""
-		return self.currentLevel.getValue()
-
-	def __str__(self):
-		return (f"Battery(capacity={self.capacity}, currentPower={self.currentPower},"
-			f" maxPowerIn={self.maxPower}, maxPowerOut={self.minPower},"
-			f" efficiencyIn={self.efficiencyIn}, level={self.currentLevel},"
-			f" lowLevel={self.lowLevel}, highLevel={self.highLevel})")
-
-	def __repr__(self):
-		return str(self)
-# class CarCharger(Switch):
-# class WaterHeater(InOutNode):
+		self._constraints = constraints
+		if constraints is not None:
+			constraints.setNode(self)
+		return constraints

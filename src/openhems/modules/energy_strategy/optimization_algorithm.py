@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from enum import Enum
 import scipy.optimize
 import numpy as np
-from openhems.modules.network.node import OutNode
+from openhems.modules.network import OutNode
 
 
 # Study of solutions:

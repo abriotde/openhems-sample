@@ -118,3 +118,13 @@ default:
       isOn: "ID HA de l'état (on/off)"
       strategy: "ID de la stratégie associée."
       priority: "Priorité (0-100) : plus élevée = plus critique."
+      sensor: "Si présent, l'identifiant HA d'un capteur pour le retour d'information : activation/désactivation automatique."
+      target: "Cible du capteur, le cas échéant. Possibilité de configurer la valeur de la variable pendant la journée. Configuré comme 'offHours'."
+      constraint:
+        minPower: "Si défini : si la consommation de l'appareil, passe dessous cette valeur, l'appareil est éteind."
+        maxPower: "Si défini : si la consommation de l'appareil dépasse cette valeur, l'appareil s'éteint."
+        minDurationOn: "Durée, en secondes : ne pas éteindre l'appareil avant qu'il ait été allumé pendant cette durée."
+        minDurationOff: "Durée, en secondes : ne pas allumer l'appareil avant qu'il ait été éteint pendant cette durée."
+        maxDurationOn: "Durée, en secondes : éteindre l'appareil s'il a été allumé pendant cette durée."
+        maxDurationOff: "Durée, en secondes : allumer l'appareil s'il a été éteint pendant cette durée."
+

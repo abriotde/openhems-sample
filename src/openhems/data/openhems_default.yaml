@@ -68,7 +68,7 @@ default:
     publicpowergrid:
       currentPower: null
       maxPower: 6000
-      minPower: 0
+      minPower: null
       marginPower: 1000
       contract:
         rtetempo:
@@ -118,6 +118,15 @@ default:
     switch:
       currentPower: null
       maxPower: 2000
-      isOn: null
-      strategy: null
+      isOn: ''
+      strategy: ''
       priority: 50
+      sensor: ''
+      target: ''
+      constraint:
+        minPower: null
+        maxPower: null
+        minDurationOn: null
+        minDurationOff: null
+        maxDurationOn: null
+        maxDurationOff: null

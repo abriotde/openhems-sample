@@ -1,0 +1,14 @@
+server:
+  loglevel: debug
+  logfile: ""
+  network: fake
+  strategies:
+    - {class: offpeak, id: offpeak}
+network:
+  nodes:
+    - {id: linky, currentPower: "SUM(out)", marginPower: 1000, maxPower: 3100, minPower: 0, class: PublicPowerGrid, contract: {
+        class: rteTempo
+      }
+    }
+    - {id: pump, class: switch, currentPower: 280, maxPower: 300, priority: 60, isOn: false,
+      sensor: 12, target: [16, 23]}

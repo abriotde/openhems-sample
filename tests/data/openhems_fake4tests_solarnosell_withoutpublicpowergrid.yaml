@@ -1,5 +1,5 @@
 server:
-  loglevel: warning
+  loglevel: error
   network: fake
   strategies: 
     - {class: nosell, id: solarnosell}

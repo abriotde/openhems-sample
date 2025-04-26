@@ -6,33 +6,35 @@
     <h1>OpenHEMS</h1>
     <strong>A simple Home Energy Management System</strong>
   </div>
-  
   <br>
-  
   <p align="center">
-    <a style="text-decoration:none" href="https://github.com/abriotde/openhems-sample/releases">
-      <img alt="GitHub release (latest by date)" src="https://img.shields.io/github/v/release/abriotde/openhems-sample">
-    </a>
-    <a style="text-decoration:none" href="https://github.com/abriotde/openhems-sample/actions">
-      <img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/abriotde/openhems-sample/python-test.yml?branch=main">
-    </a>
-    <a hstyle="text-decoration:none" ref="https://codecov.io/github/abriotde/openhems-sample" >
-      <img src="https://codecov.io/github/abriotde/openhems-sample/branch/main/graph/badge.svg?token=4Y5ANTFLW7"/>
-    </a>
     <a style="text-decoration:none" href="https://github.com/abriotde/openhems-sample/blob/main/LICENSE">
-      <img alt="GitHub" src="https://img.shields.io/github/license/abriotde/openhems-sample">
+      <img alt="Licence" src="https://img.shields.io/github/license/abriotde/openhems-sample">
     </a>
-    <!-- a style="text-decoration:none" href="https://pypi.org/project/openhems-sample/">
-      <img alt="PyPI - Python Version" src="https://img.shields.io/pypi/pyversions/openhems-sample">
+    <a style="text-decoration:none" href="https://pypi.org/project/openhems-sample/">
+      <img alt="Python Version" src="https://img.shields.io/pypi/pyversions/openhems">
+    </a>
+    <a style="text-decoration:none" href="https://openhems.readthedocs.io/en/latest/">
+      <img alt="Read the Docs" src="https://img.shields.io/readthedocs/openhems">
     </a>
     <a style="text-decoration:none" href="https://pypi.org/project/openhems/">
       <img alt="PyPI - Status" src="https://img.shields.io/pypi/status/openhems">
-    </a -->
-    <a style="text-decoration:none" href="https://openhems.readthedocs.io/en/latest/">
-      <img alt="Read the Docs" src="https://img.shields.io/readthedocs/openhems-sample">
     </a>
   </p>
-  
+  <p align="center">
+    <a style="text-decoration:none" href="https://github.com/abriotde/openhems-sample/releases">
+      <img alt="GitHub release" src="https://img.shields.io/github/v/release/abriotde/openhems-sample">
+    </a>
+    <a style="text-decoration:none" href="https://github.com/abriotde/openhems-sample/actions">
+      <img alt="Workflow tests" src="https://img.shields.io/github/actions/workflow/status/abriotde/openhems-sample/codecov.yml?branch=main">
+    </a>
+    <a hstyle="text-decoration:none" ref="https://codecov.io/github/abriotde/openhems-sample" >
+      <img alt="CodeCov status" src="https://codecov.io/github/abriotde/openhems-sample/branch/main/graph/badge.svg?token=4Y5ANTFLW7"/>
+    </a>
+    <a style="text-decoration:none" href="https://github.com/abriotde/openhems-addon">
+       <img src="https://img.shields.io/github/v/release/abriotde/openhems-addon" alt="Home-Assistant add-on">
+    </a>
+  </p>
   <div align="center">
     <a style="text-decoration:none" href="https://openhems.readthedocs.io/en/latest/">
         <img src="https://raw.githubusercontent.com/abriotde/openhems-sample/main/docs/images/Documentation_button.svg" alt="Documentation">
@@ -43,13 +45,8 @@
     <a style="text-decoration:none" href="https://github.com/abriotde/openhems-sample/issues">
         <img src="https://raw.githubusercontent.com/abriotde/openhems-sample/main/docs/images/Issues_button.svg" alt="Issues">
     </a>
-    <!-- a style="text-decoration:none" href="https://github.com/abriotde/openhems-sample-add-on">
-       <img src="https://raw.githubusercontent.com/abriotde/openhems-sample/main/docs/images/EMHASS_Add_on_button.svg" alt="OpenHEMS Add-on">
-    </a -->
   </div>
-  
   <br>
-  
   <p align="center">
   If you like this work please consider buying a coffee ;-) 
   </p>
@@ -63,8 +60,7 @@
 Presentation
 ============
 
-This software is an Open-Source Home Energy Management System based on [Home-Assistant](https://www.home-assistant.io/) installation. It all run locally witch is good for privacy and is customizable.
-A packaged product, is avalable on https://openhomesystem.com/product/openhems-server/
+This software is an Open-Source Home Energy Management System based on [Home-Assistant](https://www.home-assistant.io/) installation. It all run locally witch is good for privacy and is customizable. It will launch heavy consumption appliance at the best time.
 
 This software is usefull to get an as smart as possible management of power consumption and production. This should lead to cost reduction. 
 
@@ -74,6 +70,18 @@ This software is usefull to get an as smart as possible management of power cons
 
 Warning : This software is under activ developpment and is used on production but remain at early developpment.
 All contribution to the software are welcome. Please contact contact@openhomesystem.com for any questions.
+
+
+Overview
+========
+
+You could insert it in Home-Assistant like this.
+
+![Screenshot](docs/images/dashboard_openhems.png)
+
+And here we ask the "voiture" to start for 2 hours (Here configured in french).
+
+![Screenshot configured](docs/images/dashboard_openhems_filled.png)
 
 
 Features
@@ -120,18 +128,15 @@ Prerequisites
 Install this software
 =====================
 
-See the [documentation](https://openhems.readthedocs.io/en/latest/installation.html)
+It is integrate to Home-Assistant as an add-on on HAOS. Please in addon-modules add a store url "https://github.com/abriotde/openhems-addon". Then refresh the store annd click to add OpenHEMS.
 
-There is a video, in French, to explain how to configure OpenHEMS on [Youtube](https://www.youtube.com/watch?v=1rb9n-XyTsM)
+Once install, you have to configure it. Open the "web interface" and choice "parameters" in the menu. There is a video, in French, to explain how to install and configure OpenHEMS on [Youtube](https://www.youtube.com/watch?v=1rb9n-XyTsM). You can to read the documentation (RTFM) the [documentation](https://openhems.readthedocs.io/en/latest/installation.html) or see example in `config/openhems.yaml` or `tests/data/*.yaml` or `src/openhems/data/openhems_default.yaml`. Please contact us if you have problems.
 
-Configure
-=========
+Once configured, you will add a tile in your Home-Asssitant dashboard. Add a web-page tile. To know the url, open the "web interface" of OpenHEMS and copy the URL and add "/?n=1" at end. You will obtain something like "http://192.168.1.202:8000/?n=1". You should just change "192.168.1.202" part.
 
-See the [documentation](https://openhems.readthedocs.io/en/latest/configure.html)
+Additional documentation
+========================
 
-usefull documentation
-=====================
-
-- https://developers.home-assistant.io/docs/development_environment
-- https://www.home-assistant.io/installation/linux
-- https://emhass.readthedocs.io/en/latest/
+- [Installation of Home-Assisant](https://www.home-assistant.io/installation/linux)
+- [For those who want to developp](https://developers.home-assistant.io/docs/development_environment)
+- [For those who will use "emhass" strategy](https://emhass.readthedocs.io/en/latest/)

@@ -16,7 +16,9 @@ List of todo list to integrate a strategy
 import logging
 import datetime
 from dataclasses import dataclass
-from openhems.modules.network.network import OpenHEMSNetwork, OpenHEMSNode
+from openhems.modules.network import (
+	OpenHEMSNetwork, OpenHEMSNode, Switch, FeedbackSwitch
+)
 
 @dataclass
 class StrategyNode:
@@ -144,9 +146,15 @@ class EnergyStrategy:
 		ok = True
 		for elem in self.getNodes():
 			# self.logger.debug("Switch off '%s'", elem.id)
-			if elem.isSwitchable() and self.switchSchedulable(elem, False):
-				self.logger.warning("Fail to switch off '%s'",elem.id)
-				ok = False
+			mytype = type(elem)
+			if mytype is StrategyNode:
+				mytype = type(elem.node)
+			if mytype is Switch:
+				if elem.isSwitchable() and self.switchSchedulable(elem, False):
+					self.logger.warning("Fail to switch off '%s'",elem.id)
+					ok = False
+			elif mytype is FeedbackSwitch:
+				elem.setToMin()
 		return ok
 
 	def getSchedulableNodes(self):
@@ -247,13 +255,19 @@ class EnergyStrategy:
 			return True
 		switchOn = False
 		for elem in self.getNodes(True):
-			isOn = self.switchSchedulable(elem.node, True)
-			if isOn and elem.changed(switchOn):
-				marginPower -= elem.node.getMaxPower()
-				if marginPower<=0:
-					self.logger.info("Stop switch on all for the moment because we could reach max power.")
-					return True
-				switchOn = True
+			mytype = type(elem)
+			if mytype is StrategyNode:
+				mytype = type(elem.node)
+			if mytype is Switch:
+				isOn = self.switchSchedulable(elem.node, True)
+				if isOn and elem.changed(switchOn):
+					marginPower -= elem.node.getMaxPower()
+					if marginPower<=0:
+						self.logger.info("Stop switch on all for the moment because we could reach max power.")
+						return True
+					switchOn = True
+			elif mytype is FeedbackSwitch:
+				elem.setToMax()
 		return switchOn
 
 	def getVal(self, key:str):
