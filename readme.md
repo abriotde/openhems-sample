@@ -65,8 +65,7 @@
 Presentation
 ============
 
-This software is an Open-Source Home Energy Management System based on [Home-Assistant](https://www.home-assistant.io/) installation. It all run locally witch is good for privacy and is customizable.
-A packaged product, is avalable on https://openhomesystem.com/product/openhems-server/
+This software is an Open-Source Home Energy Management System based on [Home-Assistant](https://www.home-assistant.io/) installation. It all run locally witch is good for privacy and is customizable. It will launch heavy consumption appliance at the best time.
 
 This software is usefull to get an as smart as possible management of power consumption and production. This should lead to cost reduction. 
 
@@ -76,6 +75,18 @@ This software is usefull to get an as smart as possible management of power cons
 
 Warning : This software is under activ developpment and is used on production but remain at early developpment.
 All contribution to the software are welcome. Please contact contact@openhomesystem.com for any questions.
+
+
+Overview
+========
+
+You could insert it in Home-Assistant like this.
+
+![Screenshot](docs/images/dashboard_openhems.png)
+
+And here we ask the "voiture" to start for 2 hours (Here configured in french).
+
+![Screenshot configured](docs/images/dashboard_openhems_filled.png)
 
 
 Features
@@ -122,18 +133,15 @@ Prerequisites
 Install this software
 =====================
 
-See the [documentation](https://openhems.readthedocs.io/en/latest/installation.html)
+It is integrate to Home-Assistant as an add-on on HAOS. Please in addon-modules add a store url "https://github.com/abriotde/openhems-addon". Then refresh the store annd click to add OpenHEMS.
 
-There is a video, in French, to explain how to configure OpenHEMS on [Youtube](https://www.youtube.com/watch?v=1rb9n-XyTsM)
+Once install, you have to configure it. Open the "web interface" and choice "parameters" in the menu. There is a video, in French, to explain how to install and configure OpenHEMS on [Youtube](https://www.youtube.com/watch?v=1rb9n-XyTsM). You can to read the documentation (RTFM) the [documentation](https://openhems.readthedocs.io/en/latest/installation.html) or see example in config/openhems.yaml or tests/data/*.yaml. Please contact us if you have problems.
 
-Configure
-=========
+Once configured, you will add a tile in your Home-Asssitant dashboard. Add a web-page tile. To know the url, open the "web interface" of OpenHEMS and copy the URL and add "/?n=1" at end. You will obtain something like "http://192.168.1.202:8000/?n=1". You should just change "192.168.1.202" part.
 
-See the [documentation](https://openhems.readthedocs.io/en/latest/configure.html)
+Additional documentation
+========================
 
-usefull documentation
-=====================
-
-- https://developers.home-assistant.io/docs/development_environment
-- https://www.home-assistant.io/installation/linux
-- https://emhass.readthedocs.io/en/latest/
+- [Installation of Home-Assisant](https://www.home-assistant.io/installation/linux)
+- [For those who want to developp](https://developers.home-assistant.io/docs/development_environment)
+- [For those who will use "emhass" strategy](https://emhass.readthedocs.io/en/latest/)
