@@ -6,9 +6,7 @@
     <h1>OpenHEMS</h1>
     <strong>A simple Home Energy Management System</strong>
   </div>
-  
   <br>
-  
   <p align="center">
     <a style="text-decoration:none" href="https://github.com/abriotde/openhems-sample/blob/main/LICENSE">
       <img alt="Licence" src="https://img.shields.io/github/license/abriotde/openhems-sample">
@@ -37,7 +35,6 @@
        <img src="https://img.shields.io/github/v/release/abriotde/openhems-addon" alt="Home-Assistant add-on">
     </a>
   </p>
-
   <div align="center">
     <a style="text-decoration:none" href="https://openhems.readthedocs.io/en/latest/">
         <img src="https://raw.githubusercontent.com/abriotde/openhems-sample/main/docs/images/Documentation_button.svg" alt="Documentation">
@@ -49,9 +46,7 @@
         <img src="https://raw.githubusercontent.com/abriotde/openhems-sample/main/docs/images/Issues_button.svg" alt="Issues">
     </a>
   </div>
-
-<br>
-  
+  <br>
   <p align="center">
   If you like this work please consider buying a coffee ;-) 
   </p>
@@ -135,7 +130,7 @@ Install this software
 
 It is integrate to Home-Assistant as an add-on on HAOS. Please in addon-modules add a store url "https://github.com/abriotde/openhems-addon". Then refresh the store annd click to add OpenHEMS.
 
-Once install, you have to configure it. Open the "web interface" and choice "parameters" in the menu. There is a video, in French, to explain how to install and configure OpenHEMS on [Youtube](https://www.youtube.com/watch?v=1rb9n-XyTsM). You can to read the documentation (RTFM) the [documentation](https://openhems.readthedocs.io/en/latest/installation.html) or see example in config/openhems.yaml or tests/data/*.yaml. Please contact us if you have problems.
+Once install, you have to configure it. Open the "web interface" and choice "parameters" in the menu. There is a video, in French, to explain how to install and configure OpenHEMS on [Youtube](https://www.youtube.com/watch?v=1rb9n-XyTsM). You can to read the documentation (RTFM) the [documentation](https://openhems.readthedocs.io/en/latest/installation.html) or see example in `config/openhems.yaml` or `tests/data/*.yaml` or `src/openhems/data/openhems_default.yaml`. Please contact us if you have problems.
 
 Once configured, you will add a tile in your Home-Asssitant dashboard. Add a web-page tile. To know the url, open the "web interface" of OpenHEMS and copy the URL and add "/?n=1" at end. You will obtain something like "http://192.168.1.202:8000/?n=1". You should just change "192.168.1.202" part.
 

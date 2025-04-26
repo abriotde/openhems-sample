@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.10 - 2024-04-26
+### Improvement
+- MOD readme : To catch attention, add screenshot + install insstructions
+- ADD Switch witch are not switchable by home automation : It allow reduce margin because we can count heavy consumer that are not switchable to avoid black-out (on off-peak time-slots).
+- ADD Sqlite3 DB to record/analyze behavior of switch : guess characteristics.
+- ADD FeedbackSwitch with a modelization by polynomial regression
+
 ## 0.2.9 - 2024-04-18
 ## FIX
 - MOD Avoid import sko.GA (witch need pip) when not used (not using annealing strategy)
