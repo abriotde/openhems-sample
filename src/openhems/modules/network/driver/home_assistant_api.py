@@ -36,7 +36,6 @@ class HomeAssistantAPI(HomeStateUpdater):
 			self.token = conf.get("api.long_lived_token")
 		else:
 			self.apiUrl = "http://supervisor/core/api"
-		self._elemsKeysCache = None
 		self.cachedIds = {}
 		# Time to sleep after wrong HomeAssistant call
 		self.sleepDurationOnerror = 2
