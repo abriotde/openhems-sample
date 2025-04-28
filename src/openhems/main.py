@@ -147,8 +147,9 @@ class OpenHEMSApplication:
 			schedule = self.server.getSchedule()
 		except (HomeStateUpdaterException, CastException, ConfigurationException) as e:
 			# at least HomeStateUpdaterException, CastException, ConfigurationException
-			self.logger.error(str(e))
-			self.warnings.append(str(e))
+			message = f"Error during network initialization : {e.message}"
+			self.logger.error(message)
+			self.warnings.append(message)
 		for warning in self.warnings:
 			self.logger.error(warning)
 		port = port if port>0 else configurator.get("server.port")

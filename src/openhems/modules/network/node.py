@@ -157,6 +157,15 @@ class OpenHEMSNode:
 		except TypeError as e:
 			raise ConfigurationException(str(e)) from e
 
+
+	def getFeeder(self, sourceType):
+		"""
+		:sourceType: Availables are "isOn", "currentPower"
+		"""
+		if sourceType=="currentPower":
+			return self._currentPower
+		return None
+
 	def getTime(self):
 		"""
 		Get current time

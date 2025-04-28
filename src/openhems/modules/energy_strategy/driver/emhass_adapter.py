@@ -328,12 +328,12 @@ Altitude: {altitude}
 		zeroRelacementVars = [
 			'sensor.emhass_photovoltaic_power_produced',
 			'sensor.emhass_household_power_consumption'
-		] + [elem.currentPower.nameid for elem in elems]
+		] + [elem.getFeeder("currentPower").nameid for elem in elems]
 		datas['var_replace_zero'] = EmhassAdapter.getYamlList(zeroRelacementVars)
 		elems = network.getAll("solarpanel")
 		interpretVars = [
 			'sensor.emhass_photovoltaic_power_produced'
-		] + [elem.currentPower.nameid for elem in elems]
+		] + [elem.getFeeder("currentPower").nameid for elem in elems]
 		datas['var_interp'] = EmhassAdapter.getYamlList(interpretVars)
 
 		# Feel solarpanel fields
@@ -355,9 +355,9 @@ Altitude: {altitude}
 			varLoad = "sensor.emhass_household_power_consumption"
 		else:
 			for elem in network.getAll("solarpanel"):
-				varPV = elem.currentPower.nameid
+				varPV = elem.getFeeder("currentPower").nameid
 			for elem in network.getAll("inout"):
-				varLoad = elem.currentPower.nameid
+				varLoad = elem.getFeeder("currentPower").nameid
 		datas['emhass_photovoltaic_power_produced'] =varPV
 		datas['emhass_household_power_consumption'] =varLoad
 

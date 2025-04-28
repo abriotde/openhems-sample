@@ -67,6 +67,14 @@ class OutNode(OpenHEMSNode):
 	def isSwitchable(self):
 		return False
 
+	def getFeeder(self, sourceType):
+		"""
+		:sourceType: Availables are "currentPower"
+		"""
+		if sourceType=="currentPower":
+			return self._currentPower
+		return super().getFeeder(sourceType)
+
 	def setFakeSwitchFeeder(self, isOnFeeder):
 		"""
 		Function used in FakeNetwork.getFeeder()
@@ -95,6 +103,14 @@ class Switch(OutNode):
 			strategyId = self.network.getDefaultStrategy().id
 		self.strategyId = strategyId
 		self._priority = priority
+
+	def getFeeder(self, sourceType):
+		"""
+		:sourceType: Availables are "isOn", "currentPower"
+		"""
+		if sourceType=="isOn":
+			return self._isOn
+		return super().getFeeder(sourceType)
 
 	def isSwitchable(self):
 		return True
@@ -479,6 +495,13 @@ class FeedbackSwitch(Switch):
 		self._model = FeedbackModelizer(self, tablename)
 		self._nextTargets = []
 
+	def getFeeder(self, sourceType):
+		"""
+		:sourceType: Availables are "isOn", "currentPower", "sensor"
+		"""
+		if sourceType=="sensor":
+			return self._sensor
+		return super().getFeeder(sourceType)
 
 	def __del__(self):
 		del self._model
