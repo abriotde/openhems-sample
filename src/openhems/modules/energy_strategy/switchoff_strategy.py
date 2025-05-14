@@ -6,7 +6,7 @@ This is in case we just base on "off-peak" range hours to control output.
 #TODO : TestAuto - RunOk - InProd : 3/6
 """
 from datetime import datetime
-from openhems.modules.network.network import OpenHEMSNetwork
+from openhems.modules.network.network import Network
 from openhems.modules.util import ConfigurationException, HoursRanges
 from .energy_strategy import EnergyStrategy
 
@@ -19,7 +19,7 @@ class SwitchoffStrategy(EnergyStrategy):
 	(Like internet box for WiFi, or swimming-pool pump, or controlled mechanical ventilation).
 	"""
 
-	def __init__(self, mylogger, network: OpenHEMSNetwork, strategyId:str,
+	def __init__(self, mylogger, network: Network, strategyId:str,
 		     offHoursRanges, reverse=False, condition=True):
 		super().__init__(strategyId, network, mylogger)
 		self.offHoursRanges = HoursRanges(offHoursRanges)

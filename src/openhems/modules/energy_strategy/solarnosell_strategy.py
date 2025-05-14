@@ -5,7 +5,7 @@ Case offpeak + solar-panel, use emhass or simulated annealing strategy
 
 #TODO : TestAuto - RunOk - InProd : 3/6
 """
-from openhems.modules.network.network import OpenHEMSNetwork
+from openhems.modules.network.network import Network
 from openhems.modules.util import ConfigurationManager
 from .solarbased_strategy import SolarBasedStrategy
 
@@ -27,7 +27,7 @@ class SolarNoSellStrategy(SolarBasedStrategy):
 	The good news is that for 0 it's something between, and even for 2 or -2.
 	"""
 
-	def __init__(self, mylogger, network: OpenHEMSNetwork,
+	def __init__(self, mylogger, network: Network,
 			configurationGlobal:ConfigurationManager, configurationStrategy:dict,
 			strategyId:str="nosell"):
 		super().__init__(strategyId, network, configurationGlobal, mylogger)

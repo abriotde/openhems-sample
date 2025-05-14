@@ -6,7 +6,7 @@ It is used to know devices and to switch on/off them.
 from typing import Final
 import copy
 from openhems.modules.util.notification_manager import NotificationManager
-from .node import OpenHEMSNode
+from .node import Node
 from .outnode import OutNode, Switch
 from .inoutnode import (
 	InOutNode, PublicPowerGrid, SolarPanel, Battery
@@ -16,18 +16,18 @@ from .homestate_updater import HomeStateUpdater
 POWER_MARGIN: Final[int] = 10 # Margin of power consumption for security
 
 # pylint: disable=too-many-public-methods
-class OpenHEMSNetwork:
+class Network:
 	"""
 	This class aim to abstract home network of connected devices.
 	It is used to know devices and to switch on/off them.
 	"""
 	def print(self, printer=None):
 		"""
-		Print OpenHEMSNetwork as human readable string
+		Print Network as human readable string
 		"""
 		if printer is None:
 			printer = print
-		printer("OpenHEMSNetwork(")
+		printer("Network(")
 		printer(" IN : ")
 		for elem in self.getAll("inout"):
 			printer("  - "+str(elem))
@@ -40,7 +40,7 @@ class OpenHEMSNetwork:
 		self.networkUpdater: HomeStateUpdater = None
 		self.nodes = []
 		self.notificationManager = None
-		self._elemsCache = {}
+		self._filteredNodesCache = {} # List of nodes by categories
 		self.logger = logger
 		self._loopNb = 0 # used for cache (if loopNb didn't move, get from cache)
 		self._loopNbMarginPowerOn = -1
@@ -63,7 +63,7 @@ class OpenHEMSNetwork:
 		# print("addNetworkUpdater()")
 		networkUpdater.initNetwork(self)
 		self.networkUpdater = networkUpdater
-		networkUpdater.getNetwork(nodesConf)
+		networkUpdater.getNodes(nodesConf)
 		self.notificationManager = NotificationManager(self.networkUpdater)
 		self.print(self.logger.info)
 
@@ -84,13 +84,13 @@ class OpenHEMSNetwork:
 			schedule[myid] = sc
 		return schedule
 
-	def addNode(self, elem: OpenHEMSNode) -> OpenHEMSNode:
+	def addNode(self, elem: Node) -> Node:
 		"""
 		Add a node.
 		"""
 		elem.network = self
 		self.nodes.append(elem)
-		self._elemsCache = {}
+		self._filteredNodesCache = {}
 		return elem
 
 	def getCurrentPower(self, filterId="inout"):
@@ -107,7 +107,7 @@ class OpenHEMSNetwork:
 		Return Out nodes, filtered by strategy=strategyId if set.
 		!!! WARNING !!! filterId and elemFilter must be bijectiv (one-to-one)
 		"""
-		out = self._elemsCache.get(filterId, None)
+		out = self._filteredNodesCache.get(filterId, None)
 		if out is None:
 			if elemFilter is None:
 				filters = {
@@ -131,7 +131,7 @@ class OpenHEMSNetwork:
 				self.logger.error("Network.getAll() : unknown filterId '%s'",
 					 filterId)
 				out = None
-			self._elemsCache[filterId] = out
+			self._filteredNodesCache[filterId] = out
 		return out
 
 	def getAll(self, filterId):
@@ -282,7 +282,7 @@ class OpenHEMSNetwork:
 		"""
 		# self.logger.debug("getNodesForStrategy(%s)", strategyId)
 		key = "strategy_"+strategyId
-		nodes = self._elemsCache.get(key, None)
+		nodes = self._filteredNodesCache.get(key, None)
 		if nodes is None:
 			# self.logger.debug("getNodesForStrategy() : generate cache")
 			nodes = []
@@ -290,7 +290,7 @@ class OpenHEMSNetwork:
 				strategy = node.getStrategyId()
 				if strategy is None or strategy==strategyId:
 					nodes.append(node)
-			self._elemsCache[key] = nodes
+			self._filteredNodesCache[key] = nodes
 			# self.logger.debug("getNodesForStrategy(%s) = %s", strategyId, nodes)
 		return nodes
 

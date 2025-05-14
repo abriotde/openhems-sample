@@ -9,7 +9,7 @@ It's inspired by https://github.com/jmcollin78/solar_optimizer.git
 """
 
 from datetime import datetime, timedelta
-from openhems.modules.network.network import OpenHEMSNetwork
+from openhems.modules.network.network import Network
 from openhems.modules.util import ConfigurationManager
 from .optimization_algorithm import OptimizationAlgorithm, Algorithme
 from .energy_strategy import EnergyStrategy
@@ -22,7 +22,7 @@ class SimulatedAnnealingStrategy(EnergyStrategy):
 	short name is AnnealingStrategy
 	"""
 
-	def __init__(self, myLogger, network: OpenHEMSNetwork,
+	def __init__(self, myLogger, network: Network,
 			configurationGlobal:ConfigurationManager, configurationAnnealing: dict,
 			strategyId: str = "emhass"):
 		del configurationGlobal

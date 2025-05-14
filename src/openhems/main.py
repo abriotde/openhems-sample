@@ -18,7 +18,7 @@ sys.path.append(str(openhemsPath))
 # pylint: disable=wrong-import-position
 from openhems.modules.network.driver.home_assistant_api import HomeAssistantAPI
 from openhems.modules.network.driver.fake_network import FakeNetwork
-from openhems.modules.network import OpenHEMSNetwork, HomeStateUpdaterException
+from openhems.modules.network import Network, HomeStateUpdaterException
 
 from openhems.modules.web import OpenhemsHTTPServer
 from openhems.modules.util import (
@@ -92,7 +92,7 @@ class OpenHEMSApplication:
 			networkUpdater = FakeNetwork(configurator)
 		else:
 			raise ConfigurationException(f"Invalid server.network configuration '{networkSource}'")
-		network = OpenHEMSNetwork(logger, networkUpdater, configurator.get("network.nodes"))
+		network = Network(logger, networkUpdater, configurator.get("network.nodes"))
 		return network
 
 

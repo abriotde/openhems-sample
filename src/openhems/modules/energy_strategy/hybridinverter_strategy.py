@@ -11,7 +11,7 @@ TODO : Implemented - Call - Conf - TestAuto - RunOk - InProd : 6/6
 """
 
 import logging
-from openhems.modules.network.network import OpenHEMSNetwork
+from openhems.modules.network.network import Network
 from .solarbased_strategy import SolarBasedStrategy, GeoPosition
 
 class HybridInverterStrategy(SolarBasedStrategy):
@@ -25,7 +25,7 @@ class HybridInverterStrategy(SolarBasedStrategy):
 	Disadvantages : 
 	"""
 
-	def __init__(self, strategyId:str, network:OpenHEMSNetwork, geoposition:GeoPosition):
+	def __init__(self, strategyId:str, network:Network, geoposition:GeoPosition):
 		super().__init__(strategyId, network, geoposition)
 		logging.getLogger("HybridInverterStrategy")\
 			.error("SolarOnlyProductionStrategy() : TODO")

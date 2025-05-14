@@ -4,9 +4,9 @@ Represent device of home network
 
 from openhems.modules.contract import Contract
 from .feeder import ConstFeeder
-from .node import OpenHEMSNode
+from .node import Node
 
-class InOutNode(OpenHEMSNode):
+class InOutNode(Node):
 	"""
 	It is electricity source, it may consume electricity over-production
 	 if possible (Battery with MPPT or Sell on public-grid)

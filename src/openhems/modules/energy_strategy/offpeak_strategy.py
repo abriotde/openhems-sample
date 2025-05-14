@@ -7,7 +7,7 @@ The strategy is to switch on electric devices only on "off-peak" hours
 
 import logging
 from datetime import datetime, timedelta
-from openhems.modules.network.network import OpenHEMSNetwork
+from openhems.modules.network.network import Network
 from openhems.modules.util import ConfigurationException, DATETIME_PRINT_FORMAT
 from .energy_strategy import EnergyStrategy
 
@@ -22,7 +22,7 @@ class OffPeakStrategy(EnergyStrategy):
 	 with check to not exceed authorized max consumption
 	"""
 
-	def __init__(self, mylogger, network: OpenHEMSNetwork, strategyId:str):
+	def __init__(self, mylogger, network: Network, strategyId:str):
 		super().__init__(strategyId, network, mylogger)
 		self.inOffpeakRange = False
 		self._rangeChangeDone = False

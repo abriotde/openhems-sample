@@ -11,7 +11,7 @@ from openhems.modules.util import (
 	ConfigurationException, HoursRanges, Recorder
 )
 from .feeder import Feeder, FakeSwitchFeeder
-from .node import OpenHEMSNode
+from .node import Node
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +53,7 @@ class GuessIsOnFeeder(Feeder):
 	def __repr__(self):
 		return str(self)
 
-class OutNode(OpenHEMSNode):
+class OutNode(Node):
 	"""
 	Electricity consumer (like washing-machine, water-heater) that we can't switch on/off.
 	We can just know if it has a power consumption. We deduce from it if it's on or off.
@@ -333,7 +333,7 @@ class FeedbackModelizer:
 		self._mode = FeedbackModelizer.Mode.EVAL # Mode used to evaluate the characterisctics.
 		self._recorder:Recorder = Recorder(tablename)
 		self._wasOn:bool = switch.isOn()
-		self.node:OpenHEMSNode = switch
+		self.node:Node = switch
 		self._model:TimeModelization = TimeModelization()
 
 	def __del__(self):
