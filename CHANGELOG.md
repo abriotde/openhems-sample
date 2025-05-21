@@ -1,13 +1,17 @@
 # Changelog
 
-## 0.2.10 - 2024-04-26
+## 0.2.11 - 2025-05-21
+### Improvement
+- ADD Notify loop errors on dashboard.
+
+## 0.2.10 - 2025-04-26
 ### Improvement
 - MOD readme : To catch attention, add screenshot + install insstructions
 - ADD Switch witch are not switchable by home automation : It allow reduce margin because we can count heavy consumer that are not switchable to avoid black-out (on off-peak time-slots).
 - ADD Sqlite3 DB to record/analyze behavior of switch : guess characteristics.
 - ADD FeedbackSwitch with a modelization by polynomial regression
 
-## 0.2.9 - 2024-04-18
+## 0.2.9 - 2025-04-18
 ## FIX
 - MOD Avoid import sko.GA (witch need pip) when not used (not using annealing strategy)
 
@@ -17,7 +21,7 @@
 - MOD readme : add white_check_mark.
 - ADD web tooltips on dynamic popup (for nodes/strategies) and update translations
 
-## 0.2.8 - 2024-04-15
+## 0.2.8 - 2025-04-15
 ### Fix
 - FIX strategy/annealing : Use genetic algorythm for more reliable results.
 - FIX node/solarpanel :  add tests on it and complete class attributes.
@@ -29,29 +33,29 @@
 - MOD doc : Update configure/usage
 - MOD test : Improve
 
-## 0.2.7 - 2024-04-07
+## 0.2.7 - 2025-04-07
 ### Fix
 - FIX Home-Assistant addon, create /etc/openhems/openhems.yaml (config file) if not exists.
 
-## 0.2.6 - 2024-04-07
+## 0.2.6 - 2025-04-07
 To fix Home-Assistant addon, must upgrade version for so few.
 
 ### Fix
 - FIX Start even if CastException or over at init.
 
-## 0.2.5 - 2024-04-06
+## 0.2.5 - 2025-04-06
 To fix Home-Assistant addon, must upgrade version for so few.
 
 ### Fix
 - FIX Start even if the classname is missing or miss configured.
 
-## 0.2.4 - 2024-04-05
+## 0.2.4 - 2025-04-05
 ### Fix
 - FIX web /params UI for editing configuration
 - FIX : Start even if a critical parameter of a node fail to get values.
 - FIX : Start even if logfile is unknown or Home-Assistant API unavailable.
 
-## 0.2.3 - 2024-04-03
+## 0.2.3 - 2025-04-03
 Want to extends possibilities. For the moment it do not run ok, but write down main ideas and try to determine main usable strategies.
 
 ### Improvement
@@ -61,7 +65,7 @@ Want to extends possibilities. For the moment it do not run ok, but write down m
 - Factorize code for strategy using an algo running not at each cycle : emhass & annealing
 - Update documentation
 
-## 0.2.2 - 2024-04-01
+## 0.2.2 - 2025-04-01
 ### Fix
 - FIX security against over-load problems + add devices deactivation to avoid ping-pong effect.
 
@@ -70,7 +74,7 @@ Want to extends possibilities. For the moment it do not run ok, but write down m
 - ADD priority notion for devices.
 - Improve test_server.py with multi-cycle and test security against over-load.
 
-## 0.2.1 - 2024-03-27
+## 0.2.1 - 2025-03-27
 ### Fix
 - FIX docker stability
 - FIX integration for Home-Assisant.
@@ -78,7 +82,7 @@ Want to extends possibilities. For the moment it do not run ok, but write down m
 ### Improvement
 - Update Documentation
 
-## 0.2.0 - 2024-03-24
+## 0.2.0 - 2025-03-24
 ### Fix
 - Configuration UI : It was broken since the possibility to have multiple strategies. It was not very stable even before.
 - Emhass : it was broken too since multi-strategies
@@ -92,19 +96,19 @@ Want to extends possibilities. For the moment it do not run ok, but write down m
 - Improve stability of
 - Update documentations
 
-## 0.1.14 - 2024-02-20
+## 0.1.14 - 2025-02-20
 ### Fix
 - Fix pip package usage : Add necessary datas and correct paths. The goal is to create Home-Assistant integration.
 
-## 0.1.13 - 2024-02-20
+## 0.1.13 - 2025-02-20
 
-## 0.1.12 - 2024-02-20
+## 0.1.12 - 2025-02-20
 
-## 0.1.11 - 2024-02-20
+## 0.1.11 - 2025-02-20
 
-## 0.1.10 - 2024-02-20
+## 0.1.10 - 2025-02-20
 
-## 0.1.9 - 2024-02-19
+## 0.1.9 - 2025-02-19
 ### Improvement
 - Publish openhems as PIP package (Same version). The goal is put it in Home-Assistant's addon.
 - Lots of work done on website and hardware study but not on openhems-sample.
@@ -112,7 +116,7 @@ Want to extends possibilities. For the moment it do not run ok, but write down m
 ### Fix
 - Github action python-publish.yml
 
-## 0.1.8 - 2024-01-29
+## 0.1.8 - 2025-01-29
 ### Improvement
 - ADD strategy : Use timeout on scheduled devices to respect constraints
 - MOD doc : Add usage documentation
@@ -123,7 +127,7 @@ Want to extends possibilities. For the moment it do not run ok, but write down m
 ### TODO
 - Use internet to get Tempo color instead of HA plugin
 
-## 0.1.7 - 2024-01-03
+## 0.1.7 - 2025-01-03
 ### Improvement
 - MOD : Multi-strategy
 - MOD : Add SwitchOffStrategy with extra conditions.
@@ -134,7 +138,7 @@ Want to extends possibilities. For the moment it do not run ok, but write down m
 ### TODO
 - Update UI YAML edition
 
-## 0.1.6 - 2024-01-03
+## 0.1.6 - 2025-01-03
 ### Improvement
 - MOD log for docker on stdout
 - MOD : some more log.
