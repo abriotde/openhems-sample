@@ -154,9 +154,10 @@ class NotificationManager:
 		The goal of this function is to delay a notification for a kind of message.
 		 This delay will be checked on self.loop()
 		"""
-		self.logger.debug("setTimer(%s , %s)",message, timer)
+		self.logger.debug("NotificationManager.setTimer(%s , %s)",message, timer)
 		# for line in traceback.format_stack(): print(line)
 		if timer is None:
+			self.logger.info("NotificationManager : notify on dashboard '%s'", message)
 			self.networkUpdater.notify(message)
 		else:
 			self.timers[message] = timer
@@ -201,9 +202,9 @@ class NotificationManager:
 		 wich can buffer them (delay and group them).
 		"""
 		history = self.history.get(message)
-		self.logger.debug("notify(%s)",message)
+		# self.logger.debug("NotificationManager.notify(%s)",message)
 		if history is None:
-			self.logger.debug("1st notify(%s)",message)
+			# self.logger.debug("1st notify(%s)",message)
 			history = MessageHistory(message, self)
 			self.history[message] = history
 		history.notify()

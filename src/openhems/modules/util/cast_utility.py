@@ -14,6 +14,7 @@ class CastException(Exception):
 	"""
 	Custom Home-Assitant excepton to be captured.
 	"""
+	UNAVAILABLE = 1
 	def __init__(self, message, defaultValue):
 		self.message = message
 		self.defaultValue = defaultValue
@@ -33,7 +34,7 @@ class CastUtililty:
 			retValue = value
 		elif isinstance(value, str):
 			if value=="unavailable":
-				raise CastException("Unavailable value for '"+value+"'", 0)
+				raise CastException("'"+value+"'", CastException.UNAVAILABLE)
 			retValue = int(float(value)) # int("0.0") crash while float("0") don't...
 		else:
 			raise CastException("Impossible cast to int: Undefined algorythm : '"+str(type(value))+"'", 0)

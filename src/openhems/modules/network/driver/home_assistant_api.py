@@ -109,11 +109,11 @@ class HomeAssistantAPI(HomeStateUpdater):
 		 we just have to update few values.
 		"""
 		super().updateNetwork()
-		response = self.callAPI("/states")
 		if len(self.cachedIds) == 0:
 			self.logger.warning("HomeAssistantAPI.updateNetwork() : "
 				"No entities to update.")
 			return True
+		response = self.callAPI("/states")
 		for e in response:
 			# print(e)
 			entityId = e['entity_id']
@@ -122,7 +122,7 @@ class HomeAssistantAPI(HomeStateUpdater):
 				try:
 					value = CastUtililty.toType(self.cachedIds[entityId][1], val)
 				except CastException as e:
-					raise HomeStateUpdaterException(e.message) from e
+					raise HomeStateUpdaterException(" Home-Assitant entity_id='"+entityId+"' : "+e.message, e.code) from e
 				self.cachedIds[entityId][0] = value
 				self.logger.info("HomeAssistantAPI.updateNetwork(%s) = %s", \
 					entityId, value)
@@ -140,6 +140,7 @@ class HomeAssistantAPI(HomeStateUpdater):
 		return: True if the switch is after on, False else
 		"""
 		if isOn!=node.isOn() and node.isSwitchable():
+			self.logger.debug("switchOn(%s, %s)", isOn, node);
 			expectStr = "on" if isOn else "off"
 			# pylint: disable=protected-access
 			entityId = node._isOn.nameid # (Should do in an other way?)
@@ -200,6 +201,7 @@ class HomeAssistantAPI(HomeStateUpdater):
 			"content-type": "application/json",
 		}
 		response = None
+		self.logger.debug("callAPI(%s)", url)
 		try:
 			if data is None:
 				response = requests.get(self.apiUrl+url,
@@ -208,13 +210,14 @@ class HomeAssistantAPI(HomeStateUpdater):
 				)
 			else:
 				response = requests.post(self.apiUrl+url,
-					headers=headers, json=data, timeout=5
+					headers=headers, json=data, timeout=15
 					# verify='/etc/letsencrypt/live/openproduct.freeboxos.fr/cert.pem'
 				)
+				self.logger.debug("  With data : %s", data)
 		except (requests.exceptions.HTTPError,
 		  		requests.exceptions.ReadTimeout,
 				requests.exceptions.ConnectTimeout) as error:
-			msg = f"Unable to access Home Assistance instance, check URL : {url} ({data}) : {error}"
+			msg = f"Unable to access Home Assistance instance, check URL : {self.apiUrl}{url} ({data}) : {error}"
 			self.logger.error(msg)
 			raise HomeStateUpdaterException(msg) from error
 		errMsg = ""

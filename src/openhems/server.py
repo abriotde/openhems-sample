@@ -9,9 +9,9 @@ from openhems.modules.energy_strategy import (
 	OffPeakStrategy, SwitchoffStrategy, SimulatedAnnealingStrategy,
 	SolarNoSellStrategy
 )
-# from openhems.modules.network import HomeStateUpdaterException
+from openhems.modules.network import HomeStateUpdaterException
 from openhems.modules.util import (
-	CastUtililty, ConfigurationManager, ConfigurationException
+	CastUtililty, ConfigurationManager, ConfigurationException, CastException
 )
 from openhems.modules.network import (
 	FeedbackSwitch
@@ -217,13 +217,17 @@ class OpenHEMSServer:
 		nextloop = time.time() + loopDelay
 		while True:
 			# pylint: disable=broad-exception-caught
+			# self.network.notify("OpenHEMS is running")
 			try:
 				self.loop()
 			except Exception as e:
 				# at least HomeStateUpdaterException, CastException, HomeStateUpdaterException
-				self.logger.error("Fail update network : %s",e)
+				self.logger.error("Fail update network : %s", e)
 				if self.logger.isEnabledFor(logging.DEBUG):
 					self.logger.exception(e)
+				if isinstance(e, HomeStateUpdaterException) and e.code == CastException.UNAVAILABLE:
+					self.network.notify("Could you solve that problem? It seam we can't get information from "+e.message)
+				self.network.notify("Fail update network : "+e.message)
 			t = time.time()
 			if t<nextloop:
 				self.logger.debug("OpenHEMSServer.run() : sleep(%.2f min)", (nextloop-t)/60)

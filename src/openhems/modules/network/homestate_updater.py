@@ -24,9 +24,9 @@ class HomeStateUpdaterException(Exception):
 	"""
 	Custom Configuration exception.
 	"""
-	def __init__(self, message, defaultValue=''):
+	def __init__(self, message, code=0):
 		self.message = message
-		self.defaultValue = defaultValue
+		self.code = code
 
 class HomeStateUpdater:
 	"""

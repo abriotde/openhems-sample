@@ -530,9 +530,11 @@ class FeedbackSwitch(Switch):
 			self.defineOptimums()
 		retValue = False
 		if sensorValue>self._max:
+			logger.info("FeedbackSwitch.check() : Switch '%s' due to MAX (%s>%s).", self.id, sensorValue, self._max)
 			retValue = self.switchOn(self._direction==FeedbackSwitch.Direction.DOWN)
 			retValue = retValue and self._direction==FeedbackSwitch.Direction.DOWN
 		elif sensorValue<self._min:
+			logger.info("FeedbackSwitch.check() : Switch '%s' due to MIN (%s<%s).", self.id, sensorValue, self._min)
 			retValue = self.switchOn(self._direction==FeedbackSwitch.Direction.UP)
 			retValue = retValue and self._direction==FeedbackSwitch.Direction.UP
 		return retValue

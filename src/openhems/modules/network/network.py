@@ -231,6 +231,7 @@ class Network:
 		Send a notification using the appropriate way 
 		(Only push to HomeAssistant for the moment).
 		"""
+		self.logger.info("Network.notify(%s)", message)
 		self.notificationManager.notify(message)
 
 	def switchOffAll(self):
