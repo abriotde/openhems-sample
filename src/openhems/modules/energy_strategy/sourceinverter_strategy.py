@@ -15,7 +15,7 @@ Disadvantages : Could not charge battery on off-peak grid hours
 """
 
 import logging
-from openhems.modules.network.network import OpenHEMSNetwork, POWER_MARGIN
+from openhems.modules.network.network import Network, POWER_MARGIN
 from .solarbased_strategy import SolarBasedStrategy, GeoPosition
 
 class SourceInverterStrategy(SolarBasedStrategy):
@@ -31,7 +31,7 @@ class SourceInverterStrategy(SolarBasedStrategy):
 	 if there is- not so much solar production
 	"""
 
-	def __init__(self, strategyId:str, network: OpenHEMSNetwork, geoPosition: GeoPosition, config):
+	def __init__(self, strategyId:str, network: Network, geoPosition: GeoPosition, config):
 		self.logger = logging.getLogger(__name__)
 		self.logger.info("SourceInverterStrategy({config})")
 		super().__init__(strategyId, network, geoPosition)
@@ -97,7 +97,7 @@ class SourceInverterStrategy(SolarBasedStrategy):
 
 	def updateNetwork(self, cycleDuration:int, now=None):
 		"""
-		Update the OpenHEMSNetwork
+		Update the Network
 		"""
 		del now
 		if self.network.isGridSourceOn():

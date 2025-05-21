@@ -124,7 +124,7 @@ class ApplianceConstraints():
 		retValue += f" for node={self.node.id}"
 		return retValue
 
-class OpenHEMSNode:
+class Node:
 	"""
 	Represent device of home network
 	"""
@@ -142,7 +142,7 @@ class OpenHEMSNode:
 		self.setId(nameId)
 		self.network = network
 		self._controlledPower = controlledPowerFeeder
-		self._controlledPowerValues = controlledPowerValues
+		self._controlledPowerValues = controlledPowerValues # dict of currentPower from asked controlled power (level).
 		self._initControlledPowerValues()
 		self._currentPower:Feeder = currentPower
 		self._maxPower:Feeder = maxPower
@@ -156,6 +156,15 @@ class OpenHEMSNode:
 			self.getCurrentPower()
 		except TypeError as e:
 			raise ConfigurationException(str(e)) from e
+
+
+	def getFeeder(self, sourceType):
+		"""
+		:sourceType: Availables are "isOn", "currentPower"
+		"""
+		if sourceType=="currentPower":
+			return self._currentPower
+		return None
 
 	def getTime(self):
 		"""
@@ -219,7 +228,7 @@ class OpenHEMSNode:
 			raise TypeError(errorMsg)
 		if self.isSwitchable() and currentPower!=0 and not self.isOn():
 			logger.warning("'%s' is off but current power=%d", self.id, currentPower)
-		# logger.debug("OpenHEMSNode.getCurrentPower(%s) = %s", self.id, currentPower)
+		# logger.debug("Node.getCurrentPower(%s) = %s", self.id, currentPower)
 		return currentPower
 
 	def getMaxPower(self):
@@ -261,7 +270,7 @@ class OpenHEMSNode:
 
 	def isControlledPower(self):
 		"""
-			Return true if this OpenHEMSNode can be switch on/off.
+			Return true if this Node can be switch on/off.
 		"""
 		return self._controlledPower is not None
 
@@ -331,7 +340,7 @@ class OpenHEMSNode:
 
 	def isSwitchable(self):
 		"""
-			Return true if this OpenHEMSNode can be switch on/off.
+			Return true if this Node can be switch on/off.
 		"""
 		return self._isOn is not None
 
@@ -339,7 +348,7 @@ class OpenHEMSNode:
 		"""
 		Return true if the node is not switchable or is switch on.
 		"""
-		# print("OpenHEMSNode.isOn(",self.id,")")
+		# print("Node.isOn(",self.id,")")
 		if self._isOn is None:
 			logger.error("'%s' unable to know if on.", self.id)
 			return False

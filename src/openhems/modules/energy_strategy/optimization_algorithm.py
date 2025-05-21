@@ -60,7 +60,7 @@ class OptimizationAlgorithm:
 	@dataclass
 	class SimulatedAnnealingAlgorithmParams:
 		"""
-		This is a storage class for OpenHEMSNode parameters 
+		This is a storage class for Node parameters 
 		used for OptimizationAlgorithm
 		"""
 		initialTemperature:float
@@ -71,7 +71,7 @@ class OptimizationAlgorithm:
 	@dataclass
 	class Node:
 		"""
-		This is a storage class for OpenHEMSNode parameters 
+		This is a storage class for Node parameters 
 		used for OptimizationAlgorithm
 		"""
 		powerMax: float

@@ -6,7 +6,7 @@ import datetime
 from dataclasses import dataclass
 import astral
 from astral.sun import sun
-from openhems.modules.network.network import OpenHEMSNetwork
+from openhems.modules.network.network import Network
 from openhems.modules.util import ConfigurationManager
 from .energy_strategy import EnergyStrategy
 
@@ -29,10 +29,10 @@ class SolarBasedStrategy(EnergyStrategy):
 	"""
 	Super class for all solar-based strategy
 	:param strategyId: A string as nameid
-	:param network: An OpenHEMSNetwork representing the home electricity network
+	:param network: An Network representing the home electricity network
 	:param configurationGlobal: An ConfigurationManager representing the wall application configuration
 	"""
-	def  __init__(self, strategyId, network:OpenHEMSNetwork,
+	def  __init__(self, strategyId, network:Network,
 			configurationGlobal:ConfigurationManager , myLogger=None):
 		super().__init__(strategyId, network, myLogger)
 		self.geoposition = GeoPosition(
@@ -56,7 +56,7 @@ class SolarBasedStrategy(EnergyStrategy):
 
 	# def updateNetwork(self, cycleDuration:int, now=None):
 	# 	"""
-	# 	Update the OpenHEMSNetwork.
+	# 	Update the Network.
 	# 	"""
 	# 	return super().updateNetwork(cycleDuration, now)
 

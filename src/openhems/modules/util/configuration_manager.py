@@ -189,10 +189,10 @@ class ConfigurationManager():
 		"""
 		Force a new value for a key.
 		"""
+		k = prekey+key
 		if isinstance(value, dict):
-			self._load(value, init, prekey+key+'.')
+			self._load(value, init, k+'.')
 		else:
-			k = prekey+key
 			if not init and not k in self._conf:
 				msg = "key='"+k+"' is not valid in "+str(self._conf)+"."
 				self.logger.error(msg)

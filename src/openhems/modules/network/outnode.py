@@ -11,7 +11,7 @@ from openhems.modules.util import (
 	ConfigurationException, HoursRanges, Recorder
 )
 from .feeder import Feeder, FakeSwitchFeeder
-from .node import OpenHEMSNode
+from .node import Node
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +53,7 @@ class GuessIsOnFeeder(Feeder):
 	def __repr__(self):
 		return str(self)
 
-class OutNode(OpenHEMSNode):
+class OutNode(Node):
 	"""
 	Electricity consumer (like washing-machine, water-heater) that we can't switch on/off.
 	We can just know if it has a power consumption. We deduce from it if it's on or off.
@@ -66,6 +66,14 @@ class OutNode(OpenHEMSNode):
 
 	def isSwitchable(self):
 		return False
+
+	def getFeeder(self, sourceType):
+		"""
+		:sourceType: Availables are "currentPower"
+		"""
+		if sourceType=="currentPower":
+			return self._currentPower
+		return super().getFeeder(sourceType)
 
 	def setFakeSwitchFeeder(self, isOnFeeder):
 		"""
@@ -95,6 +103,14 @@ class Switch(OutNode):
 			strategyId = self.network.getDefaultStrategy().id
 		self.strategyId = strategyId
 		self._priority = priority
+
+	def getFeeder(self, sourceType):
+		"""
+		:sourceType: Availables are "isOn", "currentPower"
+		"""
+		if sourceType=="isOn":
+			return self._isOn
+		return super().getFeeder(sourceType)
 
 	def isSwitchable(self):
 		return True
@@ -317,7 +333,7 @@ class FeedbackModelizer:
 		self._mode = FeedbackModelizer.Mode.EVAL # Mode used to evaluate the characterisctics.
 		self._recorder:Recorder = Recorder(tablename)
 		self._wasOn:bool = switch.isOn()
-		self.node:OpenHEMSNode = switch
+		self.node:Node = switch
 		self._model:TimeModelization = TimeModelization()
 
 	def __del__(self):
@@ -479,6 +495,13 @@ class FeedbackSwitch(Switch):
 		self._model = FeedbackModelizer(self, tablename)
 		self._nextTargets = []
 
+	def getFeeder(self, sourceType):
+		"""
+		:sourceType: Availables are "isOn", "currentPower", "sensor"
+		"""
+		if sourceType=="sensor":
+			return self._sensor
+		return super().getFeeder(sourceType)
 
 	def __del__(self):
 		del self._model
@@ -507,9 +530,11 @@ class FeedbackSwitch(Switch):
 			self.defineOptimums()
 		retValue = False
 		if sensorValue>self._max:
+			logger.info("FeedbackSwitch.check() : Switch '%s' due to MAX (%s>%s).", self.id, sensorValue, self._max)
 			retValue = self.switchOn(self._direction==FeedbackSwitch.Direction.DOWN)
 			retValue = retValue and self._direction==FeedbackSwitch.Direction.DOWN
 		elif sensorValue<self._min:
+			logger.info("FeedbackSwitch.check() : Switch '%s' due to MIN (%s<%s).", self.id, sensorValue, self._min)
 			retValue = self.switchOn(self._direction==FeedbackSwitch.Direction.UP)
 			retValue = retValue and self._direction==FeedbackSwitch.Direction.UP
 		return retValue

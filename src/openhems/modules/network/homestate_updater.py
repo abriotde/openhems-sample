@@ -24,13 +24,13 @@ class HomeStateUpdaterException(Exception):
 	"""
 	Custom Configuration exception.
 	"""
-	def __init__(self, message, defaultValue=''):
+	def __init__(self, message, code=0):
 		self.message = message
-		self.defaultValue = defaultValue
+		self.code = code
 
 class HomeStateUpdater:
 	"""
-	This is an abstract class to update OpenHEMSNetwork
+	This is an abstract class to update Network
 	 ignoring the real source of the update.
 	Today only Home-Assistant updater is implemented (HomeAssistantAPI).
 	"""
@@ -50,7 +50,7 @@ class HomeStateUpdater:
 
 	def updateNetwork(self):
 		"""
-		A function witch update home network and return OpenHEMSNetwork.
+		A function witch update home network and return Network.
 		"""
 		# self.refreshId += 1 # useless : self.network.getCycleId() replaceIt?
 
@@ -166,11 +166,11 @@ class HomeStateUpdater:
 			raise ConfigurationException(msg)
 		return feeder
 
-	def getNetwork(self, networkConf):
+	def getNodes(self, networkConf):
 		"""
 		Initialyze network according to it's configuration.
 		"""
-		# print("HomestateUpdater._getNetwork()")
+		# print("HomestateUpdater._getNodes()")
 		i = 0
 		for e in networkConf:
 			# print("Node: ",e)
@@ -188,7 +188,7 @@ class HomeStateUpdater:
 				elif classname == "battery":
 					node = self.getBattery(nameid, e)
 				else:
-					msg = f"HomeAssistantAPI.getNetwork : Unknown classname '{classname}'"
+					msg = f"HomeAssistantAPI.getNodes : Unknown classname '{classname}'"
 					self.logger.critical(msg)
 					raise ConfigurationException(msg)
 				self.network.addNode(node)
@@ -199,7 +199,7 @@ class HomeStateUpdater:
 
 	def getSwitch(self, nameid, nodeConf):
 		"""
-		Return a OpenHEMSNode representing a switch
+		Return a Node representing a switch
 		 according to it's YAML configuration.
 		"""
 		self.tmp = "switch"

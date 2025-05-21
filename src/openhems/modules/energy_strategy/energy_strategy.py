@@ -17,7 +17,7 @@ import logging
 import datetime
 from dataclasses import dataclass
 from openhems.modules.network import (
-	OpenHEMSNetwork, OpenHEMSNode, Switch, FeedbackSwitch
+	Network, Node, Switch, FeedbackSwitch
 )
 
 @dataclass
@@ -25,7 +25,7 @@ class StrategyNode:
 	"""
 	Class to manage a node in a strategy: keep track of its state
 	"""
-	node:OpenHEMSNode
+	node:Node
 	isOn:bool = False
 
 	def changed(self, isOn=None):
@@ -62,7 +62,7 @@ class EnergyStrategy:
 	"""
 	Super class for all EnergyStrategy modules
 	"""
-	def  __init__(self, strategyId:str, network:OpenHEMSNetwork,
+	def  __init__(self, strategyId:str, network:Network,
 	              logger=None, evalFrequency:int=60):
 		if logger is None:
 			logger = logging.getLogger(__name__)

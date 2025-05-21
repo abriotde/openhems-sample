@@ -10,7 +10,7 @@ from datetime import datetime
 import logging
 import pytz
 import numpy as np
-from openhems.modules.network.network import OpenHEMSNetwork
+from openhems.modules.network.network import Network
 from openhems.modules.util.configuration_manager import ConfigurationManager
 from .energy_strategy import EnergyStrategy # , LOOP_DELAY_VIRTUAL
 from .driver.emhass_adapter import (
@@ -26,7 +26,7 @@ class EmhassStrategy(EnergyStrategy):
 	So this require some more Python packages.
 	"""
 
-	def __init__(self, mylogger, network: OpenHEMSNetwork,
+	def __init__(self, mylogger, network: Network,
 			configurationGlobal:ConfigurationManager, configurationEmhass:dict,
 			strategyId:str="emhass"):
 		freq = configurationEmhass.get("freq")
