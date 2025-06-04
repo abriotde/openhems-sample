@@ -27,8 +27,6 @@ class ApplianceConstraints():
 		self.maxDurationOff = configuration.get('maxDurationOff', None)
 		self._duration = 0
 		self._isOn = None # Feeder to test if switch is on.
-		self._wasOn = False # Used to detect change of state
-		self._wasOnCycleId = -1
 		self.node = None
 
 	def setNode(self, node):
@@ -138,17 +136,20 @@ class Node:
 		self.name = haId
 		self.id = haId.strip().replace(" ", "_")
 
-	def __init__(self, nameId, currentPower, maxPower, isOnFeeder=None,
+	def __init__(self, nameId, currentPower, maxPower, *, isOnFeeder=None,
 			  controlledPowerFeeder=None, controlledPowerValues=None, network=None):
 		self.id = ""
 		self.setId(nameId)
 		self.network = network
 		self._controlledPower = controlledPowerFeeder
-		self._controlledPowerValues = controlledPowerValues # dict of currentPower from asked controlled power (level).
+		# dict of currentPower from asked controlled power (level).
+		self._controlledPowerValues = controlledPowerValues
 		self._initControlledPowerValues()
 		self._currentPower:Feeder = currentPower
 		self._maxPower:Feeder = maxPower
 		self._isOn:Feeder = isOnFeeder
+		self._wasOn:bool = False # Used to detect change of state
+		self._wasOnCycleId:int = -1
 		# To try predict power. Useless today.
 		# self._previousPower = deque()
 		# Security
@@ -356,7 +357,9 @@ class Node:
 			return False
 		retValue = self._isOn.getValue()
 		if retValue!=self._wasOn and self._wasOnCycleId!=self.network.getCycleId():
-			logger.debug("Node.isOn(%s) = %s witch was not expected : A user manually changed the state.", self.id, retValue)
+			logger.debug(
+				"Node.isOn(%s) = %s witch was not expected : A user manually changed the state.",
+				self.id, retValue)
 			self._wasOn = retValue
 			self._wasOnCycleId = self.network.getCycleId()
 			if retValue:

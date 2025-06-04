@@ -53,23 +53,26 @@ class OpenHEMSServer:
 				condition = strategyParams.get('condition', True)
 				reverse = CastUtililty.toTypeBool(strategyParams.get('reverse', False))
 				strategyObj = SwitchoffStrategy(mylogger, self.network, strategyId,
-				                                offhoursrange, reverse, condition)
+				                offhoursrange, reverse=reverse, condition=condition)
 				self.strategies.append(strategyObj)
 			elif strategy=="emhass":
 				# pylint: disable=import-outside-toplevel
 				# Avoid to import EmhassStrategy and all it's dependances when no needs.
 				from openhems.modules.energy_strategy.emhass_strategy import EmhassStrategy
 				self.strategies.append(
-					EmhassStrategy(mylogger, self.network, serverConf, strategyParams, strategyId))
+					EmhassStrategy(mylogger, self.network, serverConf, strategyParams,
+					strategyId=strategyId))
 			elif strategy=="annealing":
 				self.strategies.append(
 						SimulatedAnnealingStrategy(
-							mylogger, self.network, serverConf, strategyParams, strategyId)
-					)
+							mylogger, self.network, serverConf, strategyParams,
+							strategyId=strategyId)
+				)
 			elif strategy in ["nosell", "nobuy", "ratiosellbuy"]:
 				self.strategies.append(
 						SolarNoSellStrategy(
-							mylogger, self.network, serverConf, strategyParams, strategyId)
+							mylogger, self.network, serverConf, strategyParams,
+							strategyId=strategyId)
 				)
 			else:
 				msg = f"OpenHEMSServer() : Unknown strategy '{strategy}'"
@@ -220,14 +223,21 @@ class OpenHEMSServer:
 			# self.network.notify("OpenHEMS is running")
 			try:
 				self.loop()
-			except Exception as e:
+			except HomeStateUpdaterException as e:
 				# at least HomeStateUpdaterException, CastException, HomeStateUpdaterException
 				self.logger.error("Fail update network : %s", e)
 				if self.logger.isEnabledFor(logging.DEBUG):
 					self.logger.exception(e)
 				if isinstance(e, HomeStateUpdaterException) and e.code == CastException.UNAVAILABLE:
-					self.network.notify("Could you solve that problem? It seam we can't get information from "+e.message)
+					self.network.notify(
+						"Could you solve that problem? It seam we can't get information from "
+						+ e.message
+					)
 				self.network.notify("Fail update network : "+e.message)
+			except Exception as e:
+				self.logger.error("Fail update network : %s", e)
+				if self.logger.isEnabledFor(logging.DEBUG):
+					self.logger.exception(e)
 			t = time.time()
 			if t<nextloop:
 				self.logger.debug("OpenHEMSServer.run() : sleep(%.2f min)", (nextloop-t)/60)

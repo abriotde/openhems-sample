@@ -95,7 +95,7 @@ class OptimizationAlgorithm:
 		sellTax:float
 
 
-	def __init__(self, initialTemp:float=1000, minTemp:float=0.1, coolingFactor:float=0.95,
+	def __init__(self, *, initialTemp:float=1000, minTemp:float=0.1, coolingFactor:float=0.95,
 		maxIterationNumber:int=1000,logger=None, algo=Algorithme.GENETIC):
 		self.logger = logger
 		"""Initialize the algorithm with values"""
@@ -210,8 +210,8 @@ class OptimizationAlgorithm:
 		return current
 
 	def run(self, devices:list[OutNode], powerConsumption:float,
-			solarPowerProduction:float, sellCost:float, buyCost:float,
-			batterySoc: float, offpeakPrice:float):
+			solarPowerProduction:float, *, sellCost:float, buyCost:float,
+			batterySoc:float=0.0, offpeakPrice:float=0.0):
 		"""The entrypoint of the algorithm:
 		You should give:
 			- devices: a list of OutNode devices

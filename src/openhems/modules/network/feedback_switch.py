@@ -1,6 +1,19 @@
 """
 Represent appliance of home network: Devices consumming electricity.
 """
+from enum import Enum
+import logging
+import datetime
+import numpy as np
+from openhems.modules.network.feeder import Feeder
+from openhems.modules.util import (
+	HoursRanges,
+	ConfigurationException,
+	Recorder
+)
+from .outnode import Node, Switch
+
+logger = logging.getLogger(__name__)
 
 class TimeModelization:
 	"""
@@ -289,7 +302,8 @@ class FeedbackSwitch(Switch):
 	DEFAULT_MIN = -2**32 # Default min value of the sensor
 
 	def __init__(self, switch:Switch,
-			sensorFeeder=None, targeter=None, direction:Direction=Direction.UP, tablename="FeedbackSwitch"):
+			sensorFeeder=None, targeter=None,
+			*, direction:Direction=Direction.UP, tablename="FeedbackSwitch"):
 		"""
 		:param targeter HoursRanges: Define min/max range of sensor target.
 			Should be a HoursRanges with tuple (min/max) sit in place of cost.
@@ -314,7 +328,8 @@ class FeedbackSwitch(Switch):
 				"targeter should be a HoursRanges(of tuple) or tuple of 2 int or int.")
 		self._targeter:HoursRanges = targeter
 		self._sensor:Feeder = sensorFeeder
-		# Offpeak and wanted taget can change during the day. This allow to wait for the next range
+		# Offpeak and wanted taget can change during the day.
+		# This allow to wait for the next range
 		self._rangeEnd = datetime.datetime(2024, 5, 28) # First commit date ;)
 		self._minmax = None # The required min/max value.
 		self._min = None # Current min value. Should be in [self._minmax.min; self._minmax.max[
@@ -335,7 +350,8 @@ class FeedbackSwitch(Switch):
 		return super().getFeeder(sourceType)
 
 	def __del__(self):
-		del self._model
+		if hasattr(self, '_model'):
+			del self._model
 
 	def switchOn(self, connect, register=None):
 		"""
@@ -361,11 +377,15 @@ class FeedbackSwitch(Switch):
 			self.defineOptimums()
 		retValue = False
 		if sensorValue>self._max:
-			logger.info("FeedbackSwitch.check() : Switch '%s' due to MAX (%s>%s).", self.id, sensorValue, self._max)
+			logger.info(
+				"FeedbackSwitch.check() : Switch '%s' due to MAX (%s>%s).",
+				self.id, sensorValue, self._max)
 			retValue = self.switchOn(self._direction==FeedbackSwitch.Direction.DOWN)
 			retValue = retValue and self._direction==FeedbackSwitch.Direction.DOWN
 		elif sensorValue<self._min:
-			logger.info("FeedbackSwitch.check() : Switch '%s' due to MIN (%s<%s).", self.id, sensorValue, self._min)
+			logger.info(
+				"FeedbackSwitch.check() : Switch '%s' due to MIN (%s<%s).",
+				self.id, sensorValue, self._min)
 			retValue = self.switchOn(self._direction==FeedbackSwitch.Direction.UP)
 			retValue = retValue and self._direction==FeedbackSwitch.Direction.UP
 		return retValue

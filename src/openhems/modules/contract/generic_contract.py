@@ -142,8 +142,8 @@ class GenericContract:
 		if value is None:
 			baseKey = "default.node.publicpowergrid.contract"
 			testkeys = [baseKey+"."+classname+"."+key, classname+"."+key, key]
-			for key in testkeys:
-				value = configuration.get(key, defaultType)
+			for k in testkeys:
+				value = configuration.get(k, defaultType)
 				if value is not None:
 					break
 			if value is None:

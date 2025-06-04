@@ -28,7 +28,7 @@ class EmhassStrategy(EnergyStrategy):
 
 	def __init__(self, mylogger, network: Network,
 			configurationGlobal:ConfigurationManager, configurationEmhass:dict,
-			strategyId:str="emhass"):
+			*, strategyId:str="emhass"):
 		freq = configurationEmhass.get("freq")
 		super().__init__(strategyId, network, mylogger, evalFrequency=freq)
 		self.logger.info("EmhassStrategy(%s)", configurationEmhass)

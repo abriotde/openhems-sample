@@ -83,7 +83,7 @@ class TestStrategy(unittest.TestCase):
 			else:
 				print(f"Node {nodeId} not found in nodes")
 
-	def checkValues(self, nodesIds, values,
+	def checkValues(self, nodesIds, values,* ,
 			marginPower=None,
 			scheduledDurations=None,
 			isOn=None):

@@ -2,14 +2,9 @@
 Represent appliance of home network: Devices consumming electricity.
 """
 
-import datetime
-from enum import Enum
 import logging
-import numpy as np
 from openhems.modules.web import OpenHEMSSchedule
-from openhems.modules.util import (
-	ConfigurationException, HoursRanges, Recorder
-)
+from openhems.modules.util import ConfigurationException
 from .feeder import Feeder, FakeSwitchFeeder
 from .node import Node
 
@@ -60,7 +55,7 @@ class OutNode(Node):
 	This is usefull for appliances not switchable by home automation but wich can consum a lot.
 	This is to take care of their max consumption in OpenHEMSServer.check() to avoid over-load.
 	"""
-	def __init__(self, nameId, currentPower, maxPower, network=None, nbCycleWithoutPowerForOff=0):
+	def __init__(self, nameId, currentPower, maxPower, *, network=None, nbCycleWithoutPowerForOff=0):
 		isOn = GuessIsOnFeeder(self, nbCycleWithoutPowerForOff)
 		super().__init__(nameId, currentPower, maxPower, network=network, isOnFeeder=isOn)
 
