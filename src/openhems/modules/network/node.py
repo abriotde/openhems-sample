@@ -26,7 +26,9 @@ class ApplianceConstraints():
 		self.maxDurationOn = configuration.get('maxDurationOn', None)
 		self.maxDurationOff = configuration.get('maxDurationOff', None)
 		self._duration = 0
-		self._isOn = None
+		self._isOn = None # Feeder to test if switch is on.
+		self._wasOn = False # Used to detect change of state
+		self._wasOnCycleId = -1
 		self.node = None
 
 	def setNode(self, node):
@@ -352,9 +354,16 @@ class Node:
 		if self._isOn is None:
 			logger.error("'%s' unable to know if on.", self.id)
 			return False
-		return self._isOn.getValue()
+		retValue = self._isOn.getValue()
+		if retValue!=self._wasOn and self._wasOnCycleId!=self.network.getCycleId():
+			logger.debug("Node.isOn(%s) = %s witch was not expected : A user manually changed the state.", self.id, retValue)
+			self._wasOn = retValue
+			self._wasOnCycleId = self.network.getCycleId()
+			if retValue:
+				self.network.server.registerDecrementTime(self, True)
+		return retValue
 
-	def switchOn(self, connect:bool, register=None) -> bool:
+	def switchOn(self, connect:bool, register:bool=None) -> bool:
 		"""
 		May not work if it is impossible (No relay) or if it failed.
 
@@ -367,6 +376,9 @@ class Node:
 					"on" if connect else "off", self.id)
 				return not connect
 			ok = self.network.networkUpdater.switchOn(connect, self)
+			if ok==connect:
+				self._wasOn = ok
+				self._wasOnCycleId = self.network.getCycleId()
 			if ok and register is not None:
 				self.network.server.registerDecrementTime(self, register)
 			return ok

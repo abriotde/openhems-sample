@@ -139,7 +139,8 @@ class HomeAssistantAPI(HomeStateUpdater):
 		"""
 		return: True if the switch is after on, False else
 		"""
-		if isOn!=node.isOn() and node.isSwitchable():
+		rIsOn = node.isOn()
+		if isOn!=rIsOn and node.isSwitchable():
 			self.logger.debug("switchOn(%s, %s)", isOn, node);
 			expectStr = "on" if isOn else "off"
 			# pylint: disable=protected-access
@@ -158,7 +159,7 @@ class HomeAssistantAPI(HomeStateUpdater):
 			return isOn if ok else (not isOn)
 		# print("HomeAssistantAPI.switchOn(",isOn,", ",entityId,") :
 		# Nothing to do.")
-		return node.isOn()
+		return rIsOn
 
 	def getServices(self):
 		"""

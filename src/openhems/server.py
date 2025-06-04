@@ -107,7 +107,7 @@ class OpenHEMSServer:
 					schedule[myid] = sc
 		return schedule
 
-	def registerDecrementTime(self, node, register=True):
+	def registerDecrementTime(self, node, register:bool=True):
 		"""
 		Register a node witch will decrement time.
 		"""

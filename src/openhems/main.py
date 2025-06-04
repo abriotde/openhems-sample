@@ -95,7 +95,6 @@ class OpenHEMSApplication:
 		network = Network(logger, networkUpdater, configurator.get("network.nodes"))
 		return network
 
-
 	def getLogger(self):
 		"""
 		Return logger
