@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.11 - 2025-05-21
+## 0.2.12 - 2025-06-12
 ### Improvement
 - Separate feedbackSwitch
 
