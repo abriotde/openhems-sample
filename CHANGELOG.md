@@ -2,6 +2,14 @@
 
 ## 0.2.11 - 2025-05-21
 ### Improvement
+- Separate feedbackSwitch
+
+### Fix
+- Catch all errors on server loop to avoid crash the thread.
+- when started manually a switch, there was no call to decrementTime
+
+## 0.2.11 - 2025-05-21
+### Improvement
 - ADD Notify loop errors on dashboard.
 
 ## 0.2.10 - 2025-04-26
