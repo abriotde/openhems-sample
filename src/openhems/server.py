@@ -14,7 +14,7 @@ from openhems.modules.util import (
 	CastUtililty, ConfigurationManager, ConfigurationException, CastException
 )
 from openhems.modules.network import (
-	FeedbackSwitch
+	FeedbackSwitch, ConstraintsException
 )
 
 class OpenHEMSServer:
@@ -140,7 +140,35 @@ class OpenHEMSServer:
 		self.logger.debug("decrementTime(%s)", duration)
 		for node in self._decrementTimeCallbacks.values():
 			self.logger.debug(" - for '%s'", node)
-			node.decrementTime(duration)
+			try:
+				node.decrementTime(duration)
+			except ConstraintsException as e:
+				self.logger.error("Constraint error : %s", e.message)
+				if self.logger.isEnabledFor(logging.DEBUG):
+					self.logger.exception(e)
+				self.network.notify(
+					f"Constraint error: {e.message}"
+				)
+
+	def _disableDevicesDue2OverLoad(self,marginPowerOn):
+		"""
+		Disable devices due to over-load.
+		This is called by the network when margin power is negative.
+		"""
+		elems = self.network.getAll("switch")
+		elems.sort( # start from the less priority
+			key=lambda x:x.getPriority()
+		)
+		for elem in elems:
+			if marginPowerOn<0 and elem.isSwitchable() and elem.isOn():
+				power = elem.getCurrentPower()
+				self.logger.info("Switch off '%s' due to missing power margin.", elem.id)
+				if elem.switchOn(False):
+					self.logger.error("DevicesDue2OverLoad: Fail switch off '%s'.", elem.id)
+				else:
+					marginPowerOn += power
+					elem.setActivate(False)
+					self._inOverLoadMode = True
 
 	def check(self):
 		""""
@@ -153,20 +181,7 @@ class OpenHEMSServer:
 			self.logger.warning(
 				"Margin power On is negativ (%f): Need to sitch off devices.",
 				marginPowerOn)
-			elems = self.network.getAll("switch")
-			elems.sort( # start from the less priority
-				key=lambda x:x.getPriority()
-			)
-			for elem in elems:
-				if marginPowerOn<0 and elem.isSwitchable() and elem.isOn():
-					power = elem.getCurrentPower()
-					self.logger.info("Switch off '%s' due to missing power margin.", elem.id)
-					if elem.switchOn(False):
-						self.logger.error("Fail switch off '%s' due to missing power margin.", elem.id)
-					else:
-						marginPowerOn += power
-						elem.setActivate(False)
-						self._inOverLoadMode = True
+			self._disableDevicesDue2OverLoad(marginPowerOn)
 		elif self._inOverLoadMode and marginPowerOn>0: # Try to re-activate nodes
 			inOverLoadMode = False
 			# start from the bigest priority (default order)
@@ -228,14 +243,21 @@ class OpenHEMSServer:
 				self.logger.error("Fail update network : %s", e)
 				if self.logger.isEnabledFor(logging.DEBUG):
 					self.logger.exception(e)
-				if isinstance(e, HomeStateUpdaterException) and e.code == CastException.UNAVAILABLE:
+				if e.code == CastException.UNAVAILABLE:
 					self.network.notify(
 						"Could you solve that problem? It seam we can't get information from "
 						+ e.message
 					)
 				self.network.notify("Fail update network : "+e.message)
+			except ConstraintsException as e:
+				self.logger.error("Constraint error : %s", e.message)
+				if self.logger.isEnabledFor(logging.DEBUG):
+					self.logger.exception(e)
+				self.network.notify(
+					f"Constraint error : {e.message}"
+				)
 			except Exception as e:
-				self.logger.error("Fail update network : %s", e)
+				self.logger.error("Fail update network : %s", str(e))
 				if self.logger.isEnabledFor(logging.DEBUG):
 					self.logger.exception(e)
 			t = time.time()

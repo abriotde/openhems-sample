@@ -243,7 +243,7 @@ class HomeStateUpdater:
 			strategyId = nodeConf.get("strategy", None)
 			if strategyId is None:
 				strategyId = self.network.getDefaultStrategy().id
-			node = Switch(node, isOn, strategyId, priority=priority)
+			node = Switch(node, isOn, strategyId=strategyId, priority=priority)
 			node = self._getFeedbackSwitch(node, nodeConf)
 			condition = nodeConf.get('condition', None)
 			if condition is not None:

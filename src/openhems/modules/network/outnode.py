@@ -88,7 +88,7 @@ class Switch(OutNode):
 	Electricity consumer (like washing-machine, water-heater)
 	wich can be switch on/off.
 	"""
-	def __init__(self, node, isOnFeeder=None, strategyId=None, priority=50):
+	def __init__(self, node, isOnFeeder=None, *, strategyId=None, priority=50):
 		if isOnFeeder is None:
 			raise ConfigurationException("Declare a Switch() but without seting isOn.")
 		super(OutNode, self).__init__(node.name, node._currentPower, node._maxPower,

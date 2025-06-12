@@ -185,6 +185,13 @@ class HomeAssistantAPI(HomeStateUpdater):
 			"title":"Notification from OpenHEMS."
 		}
 		self.callAPI("/services/notify/persistent_notification", data=data)
+		data = {
+			"entity_id": "device_tracker.2410fpcc5g",
+			# "entity_id": "my_direct_message_notifier",
+			"message": message,
+			"title": "Notification from OpenHEMS."
+		}
+		self.callAPI("/services/notify/send_message", data=data)
 
 	def getValue(self, entityId, key="state"):
 		"""
