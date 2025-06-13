@@ -41,12 +41,12 @@ class RTETempoContract(RTEContract):
 			)
 		self.historyColor = {}
 		if color is not None and not isinstance(color, Feeder):
-			color = feederProvider.getFeeder(color, defaultType="str")
+			color = feederProvider.getFeeder(color, expectedType="str")
 		self.color = color
 		self.lastCall = ""
 		self.lastColor = ""
 		if colorNext is not None and not isinstance(colorNext, Feeder):
-			colorNext = feederProvider.getFeeder(colorNext)
+			colorNext = feederProvider.getFeeder(colorNext, expectedType="str")
 		self.colorNext = colorNext
 		self.lastCallNext = ""
 		self.lastColorNext = ""
