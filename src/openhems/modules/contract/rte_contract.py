@@ -21,7 +21,7 @@ class RTETempoContract(RTEContract):
 	"""
 	HOUR_DAY_CHANGE = 6
 	HOUR_OFFPEAK_START = 22
-	def __init__(self, color=None, colorNext=None,
+	def __init__(self, *, color=None, colorNext=None,
 	             offpeakprices=None, peakprices=None, feederProvider=None, offpeakHoursRanges=None):
 		if offpeakHoursRanges is None:
 			offpeakHoursRanges = [str(self.HOUR_OFFPEAK_START)+"h-"+str(self.HOUR_DAY_CHANGE)+"h"]
@@ -41,7 +41,7 @@ class RTETempoContract(RTEContract):
 			)
 		self.historyColor = {}
 		if color is not None and not isinstance(color, Feeder):
-			color = feederProvider.getFeeder(color, "str")
+			color = feederProvider.getFeeder(color, defaultType="str")
 		self.color = color
 		self.lastCall = ""
 		self.lastColor = ""

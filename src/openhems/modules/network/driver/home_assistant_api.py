@@ -57,7 +57,9 @@ class HomeAssistantAPI(HomeStateUpdater):
 		self.network = network
 		# print("getHANodes() = ", self.haElements)
 
-	def getFeeder(self, value, expectedType=None, defaultValue=None, nameid="", node=None) -> Feeder:
+	def getFeeder(self, value,
+			   *, expectedType=None, defaultValue=None, nameid="", node=None
+			   ) -> Feeder:
 		"""
 		Return a feeder considering
 		 if the "key" can be a Home-Assistant element id.
@@ -122,7 +124,9 @@ class HomeAssistantAPI(HomeStateUpdater):
 				try:
 					value = CastUtililty.toType(self.cachedIds[entityId][1], val)
 				except CastException as e:
-					raise HomeStateUpdaterException(" Home-Assitant entity_id='"+entityId+"' : "+e.message, e.code) from e
+					raise HomeStateUpdaterException(
+						"Home-Assitant entity_id='"+entityId+"' : "+e.message, 0
+					) from e
 				self.cachedIds[entityId][0] = value
 				self.logger.info("HomeAssistantAPI.updateNetwork(%s) = %s", \
 					entityId, value)
@@ -139,8 +143,9 @@ class HomeAssistantAPI(HomeStateUpdater):
 		"""
 		return: True if the switch is after on, False else
 		"""
-		if isOn!=node.isOn() and node.isSwitchable():
-			self.logger.debug("switchOn(%s, %s)", isOn, node);
+		rIsOn = node.isOn()
+		if isOn!=rIsOn and node.isSwitchable():
+			self.logger.debug("switchOn(%s, %s)", isOn, node)
 			expectStr = "on" if isOn else "off"
 			# pylint: disable=protected-access
 			entityId = node._isOn.nameid # (Should do in an other way?)
@@ -158,7 +163,7 @@ class HomeAssistantAPI(HomeStateUpdater):
 			return isOn if ok else (not isOn)
 		# print("HomeAssistantAPI.switchOn(",isOn,", ",entityId,") :
 		# Nothing to do.")
-		return node.isOn()
+		return rIsOn
 
 	def getServices(self):
 		"""
@@ -180,6 +185,13 @@ class HomeAssistantAPI(HomeStateUpdater):
 			"title":"Notification from OpenHEMS."
 		}
 		self.callAPI("/services/notify/persistent_notification", data=data)
+		data = {
+			"entity_id": "device_tracker.2410fpcc5g",
+			# "entity_id": "my_direct_message_notifier",
+			"message": message,
+			"title": "Notification from OpenHEMS."
+		}
+		self.callAPI("/services/notify/send_message", data=data)
 
 	def getValue(self, entityId, key="state"):
 		"""
@@ -217,7 +229,8 @@ class HomeAssistantAPI(HomeStateUpdater):
 		except (requests.exceptions.HTTPError,
 		  		requests.exceptions.ReadTimeout,
 				requests.exceptions.ConnectTimeout) as error:
-			msg = f"Unable to access Home Assistance instance, check URL : {self.apiUrl}{url} ({data}) : {error}"
+			msg = ("Unable to access Home Assistance instance, check URL "
+		  		f": {self.apiUrl}{url} ({data}) : {error}")
 			self.logger.error(msg)
 			raise HomeStateUpdaterException(msg) from error
 		errMsg = ""

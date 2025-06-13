@@ -13,7 +13,7 @@ class InOutNode(Node):
 	param maxPower: positive value, max power we can consume at a time.
 	param minPower: negative value if we can sell or ther is battery, 0 overwise.
 	"""
-	def __init__(self, nameid, currentPower, maxPower, minPower, marginPower) -> None:
+	def __init__(self, nameid, currentPower, *, maxPower=2300, minPower=0, marginPower=0) -> None:
 		# isAutoAdatative: bool, isControlable: bool, isModulable: bool, isCyclic: bool
 		super().__init__(nameid, currentPower, maxPower)
 		self.marginPower = marginPower
@@ -76,9 +76,10 @@ class PublicPowerGrid(InOutNode):
 	"""
 	This represent Public power grid. Just one should be possible.
 	"""
-	def __init__(self, nameid, currentPower, maxPower, minPower, marginPower,
-	             contract, networkUpdater):
-		super().__init__(nameid, currentPower, maxPower, minPower, marginPower)
+	def __init__(self, nameid, currentPower, maxPower, minPower, *, marginPower,
+	             contract=None, networkUpdater=None):
+		super().__init__(nameid, currentPower,
+				   maxPower=maxPower, minPower=minPower, marginPower=marginPower)
 		self.contract = Contract.getContract(contract, networkUpdater.conf, networkUpdater)
 
 	def __str__(self):
@@ -104,7 +105,8 @@ class SolarPanel(InOutNode):
 			modulesPerString=1, stringsPerInverter=1, marginPower=None):
 		if marginPower is None:
 			marginPower = ConstFeeder(0)
-		super().__init__(nameid, currentPower, maxPower, currentPower,  marginPower)
+		super().__init__(nameid, currentPower,
+				maxPower=maxPower, minPower=0, marginPower=marginPower)
 		self.moduleModel = moduleModel
 		self.inverterModel = inverterModel
 		self.tilt = tilt
@@ -142,7 +144,7 @@ class Battery(InOutNode):
 			maxPowerIn = ConstFeeder(2300) # a standard electrical outlet
 		if maxPowerOut is None:
 			maxPowerOut = ConstFeeder(-1*maxPowerIn.getValue())
-		super().__init__(nameid, currentPower, maxPowerIn, maxPowerOut, 0)
+		super().__init__(nameid, currentPower, maxPower=maxPowerIn, minPower=maxPowerOut, marginPower=0)
 		self.isControlable = True
 		self.isModulable = False
 		self.capacity = capacity

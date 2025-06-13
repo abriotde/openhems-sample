@@ -120,7 +120,7 @@ class HoursRanges:
 	:param float defaultCost: Cost for hoursRangesList when cost is not set.
 	:param float outRangeCost: Cost ranges not defined in hoursRangesList
 	"""
-	def __init__(self, hoursRangesList:list=None, timeStart:datetime=None,
+	def __init__(self, hoursRangesList:list=None, *, timeStart:datetime=None,
 			  timeout:datetime=None, timeoutCallBack=None, data=None,
 			  defaultCost:float=0.0, outRangeCost:float=0.15):
 		if hoursRangesList is None:

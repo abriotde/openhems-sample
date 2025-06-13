@@ -20,7 +20,7 @@ class SwitchoffStrategy(EnergyStrategy):
 	"""
 
 	def __init__(self, mylogger, network: Network, strategyId:str,
-		     offHoursRanges, reverse=False, condition=True):
+		     offHoursRanges, *, reverse=False, condition=True):
 		super().__init__(strategyId, network, mylogger)
 		self.offHoursRanges = HoursRanges(offHoursRanges)
 		self.inOffRange = False

@@ -18,7 +18,7 @@ class OpenHEMSSchedule:
 		self.name = name
 		self.id = haId
 		self.timeout:datetime = None
-		self.duration:int = None
+		self.duration:int = 0
 		self.logger = logging.getLogger(__name__)
 		self.strategyCache = {}
 		self._condition = None

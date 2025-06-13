@@ -11,8 +11,9 @@ from openhems.modules.util import (
 )
 from .node import ApplianceConstraints
 from .outnode import (
-	OutNode, Switch, FeedbackSwitch
+	OutNode, Switch
 )
+from .feedback_switch import FeedbackSwitch
 from .inoutnode import (
 	PublicPowerGrid, SolarPanel, Battery
 )
@@ -75,7 +76,9 @@ class HomeStateUpdater:
 		"""
 		self.network = network
 
-	def getFeeder(self, value, expectedType=None, defaultValue=None, nameid="", node=None) -> Feeder:
+	def getFeeder(self, value,
+			   *, expectedType=None, defaultValue=None, nameid="", node=None
+			) -> Feeder:
 		"""
 		Return a feeder considering
 		 This function should be overiden by sub-class
@@ -94,8 +97,9 @@ class HomeStateUpdater:
 		minPower = self._getFeeder(nodeConf, "minPower", "int")
 		contract = nodeConf.get("contract")
 		# print("getPublicPowerGrid() : marginPower=", marginPower, nodeConf)
-		node = PublicPowerGrid(nameid, currentPower, maxPower, minPower, marginPower,
-			contract, self)
+		node = PublicPowerGrid(nameid, currentPower=currentPower, maxPower=maxPower,
+				minPower=minPower, marginPower=marginPower,
+				contract=contract, networkUpdater=self)
 		# self.logger.info(node)
 		return node
 
@@ -153,7 +157,7 @@ class HomeStateUpdater:
 			or value=='': # Like None but for not mandatory fields.
 			value = self.conf.get( "default.node."+self.tmp+"."+key)
 		try:
-			feeder = self.getFeeder(value, expectedType, nameid=self.tmp+"."+key, node=node)
+			feeder = self.getFeeder(value, expectedType=expectedType, nameid=self.tmp+"."+key, node=node)
 		except ValueError as e:
 			raise ConfigurationException(
 				"Impossible to convert "+key+" = '"+value
@@ -197,6 +201,30 @@ class HomeStateUpdater:
 				self.logger.error(msg)
 				self.warningMessages.append(msg)
 
+	def _getFeedbackSwitch(self, node:Switch, nodeConf):
+		"""
+		Return a FeedbackSwitch if configured in nodeConf.
+		"""
+		sensor = nodeConf.get("sensor")
+		if sensor is not None and sensor!='':
+			sensor = self._getFeeder(nodeConf, "sensor", "int")
+			target = nodeConf.get("target", None)
+			direction = FeedbackSwitch.Direction.UP
+			if target is not None:
+				if isinstance(target, list) and len(target)==2 and isinstance(target[0], (int, float)):
+					# case min/max couple : Exp: [16, 23]
+					minmax = FeedbackSwitch.MinMax(target[0], target[1], direction)
+					target = HoursRanges(hoursRangesList=[], outRangeCost=minmax)
+				elif isinstance(target, (int, float)):
+					# case target value : Exp: 16
+					target = HoursRanges(hoursRangesList=[], outRangeCost=target)
+				else:
+					# case complex : [["16h-23h", 15], ["23h-16h", [16, 18]]]
+					target = HoursRanges(target)
+			node = FeedbackSwitch(node, sensorFeeder=sensor, targeter=target,
+					direction=direction)
+		return node
+
 	def getSwitch(self, nameid, nodeConf):
 		"""
 		Return a Node representing a switch
@@ -215,25 +243,8 @@ class HomeStateUpdater:
 			strategyId = nodeConf.get("strategy", None)
 			if strategyId is None:
 				strategyId = self.network.getDefaultStrategy().id
-			node = Switch(node, isOn, strategyId, priority=priority)
-			sensor = nodeConf.get("sensor")
-			if sensor is not None and sensor!='':
-				sensor = self._getFeeder(nodeConf, "sensor", "int")
-				target = nodeConf.get("target", None)
-				direction = FeedbackSwitch.Direction.UP
-				if target is not None:
-					if isinstance(target, list) and len(target)==2 and isinstance(target[0], (int, float)):
-						# case min/max couple : Exp: [16, 23]
-						minmax = FeedbackSwitch.MinMax(target[0], target[1], direction)
-						target = HoursRanges(hoursRangesList=[], outRangeCost=minmax)
-					elif isinstance(target, (int, float)):
-						# case target value : Exp: 16
-						target = HoursRanges(hoursRangesList=[], outRangeCost=target)
-					else:
-						# case complex : [["16h-23h", 15], ["23h-16h", [16, 18]]]
-						target = HoursRanges(target)
-				node = FeedbackSwitch(node, sensorFeeder=sensor, targeter=target,
-						direction=direction)
+			node = Switch(node, isOn, strategyId=strategyId, priority=priority)
+			node = self._getFeedbackSwitch(node, nodeConf)
 			condition = nodeConf.get('condition', None)
 			if condition is not None:
 				node.setCondition(condition)

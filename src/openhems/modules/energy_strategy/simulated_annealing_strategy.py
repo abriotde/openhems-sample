@@ -24,7 +24,7 @@ class SimulatedAnnealingStrategy(EnergyStrategy):
 
 	def __init__(self, myLogger, network: Network,
 			configurationGlobal:ConfigurationManager, configurationAnnealing: dict,
-			strategyId: str = "emhass"):
+			*, strategyId:str = "emhass"):
 		del configurationGlobal
 		super().__init__(strategyId, network, myLogger)
 		self.logger.info("SimulatedAnnealingStrategy(%s)", configurationAnnealing)
@@ -34,7 +34,10 @@ class SimulatedAnnealingStrategy(EnergyStrategy):
 		coolingFactor = float(configurationAnnealing.get("cooling_factor"))
 		maxIterationNumber = int(configurationAnnealing.get("max_iteration_number"))
 		self._algo = OptimizationAlgorithm(
-			initTemp, minTemp, coolingFactor, maxIterationNumber, logger=self.logger, algo=Algorithme.GENETIC
+			initialTemp=initTemp,
+			minTemp=minTemp, coolingFactor=coolingFactor,
+			maxIterationNumber=maxIterationNumber,
+			logger=self.logger, algo=Algorithme.GENETIC
 		)
 		self.network = network
 		freq = configurationAnnealing.get("freq")
@@ -69,12 +72,12 @@ class SimulatedAnnealingStrategy(EnergyStrategy):
 		self._bestSolution, self._bestGoal, self._totalPower \
 			= self._algo.run(
 			nodes,
-			powerConsumption,
-			powerProduction,
-			sellCost,
-			buyCost,
-			batterySoc,
-			offpeakPrice
+			powerConsumption=powerConsumption,
+			solarPowerProduction=powerProduction,
+			sellCost=sellCost,
+			buyCost=buyCost,
+			batterySoc=batterySoc,
+			offpeakPrice=offpeakPrice
 		)
 
 	def apply(self, cycleDuration, now=None):

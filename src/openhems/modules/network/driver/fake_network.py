@@ -23,7 +23,9 @@ class FakeNetwork(HomeStateUpdater):
 #	def __init__(self, conf) -> None:
 #		super().__init__(conf)
 
-	def getFeeder(self, value, expectedType=None, defaultValue=None, nameid="", node=None) -> Feeder:
+	def getFeeder(self, value,
+			   *, expectedType=None, defaultValue=None, nameid="", node=None
+			) -> Feeder:
 		"""
 		Return a feeder considering
 		 if the "key" can be a Home-Assistant element id.

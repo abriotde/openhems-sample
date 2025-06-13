@@ -29,7 +29,7 @@ class SolarNoSellStrategy(SolarBasedStrategy):
 
 	def __init__(self, mylogger, network: Network,
 			configurationGlobal:ConfigurationManager, configurationStrategy:dict,
-			strategyId:str="nosell"):
+			*, strategyId:str="nosell"):
 		super().__init__(strategyId, network, configurationGlobal, mylogger)
 		self._ratio = configurationStrategy.get("ratio")
 		self._margin = configurationStrategy.get("margin")
