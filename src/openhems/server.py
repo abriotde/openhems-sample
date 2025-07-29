@@ -6,8 +6,7 @@ import time
 import datetime
 import logging
 from openhems.modules.energy_strategy import (
-	OffPeakStrategy, SwitchoffStrategy, SimulatedAnnealingStrategy,
-	SolarNoSellStrategy
+	OffPeakStrategy, SwitchoffStrategy, SimulatedAnnealingStrategy
 )
 from openhems.modules.network import HomeStateUpdaterException
 from openhems.modules.util import (
@@ -69,6 +68,8 @@ class OpenHEMSServer:
 							strategyId=strategyId)
 				)
 			elif strategy in ["nosell", "nobuy", "ratiosellbuy"]:
+				# Do not import SolarNoSellStrategy if not needed to avoid 'astral' depenency if not needed.
+				from openhems.modules.energy_strategy.solarnosell_strategy.SolarNoSellStrategy
 				self.strategies.append(
 						SolarNoSellStrategy(
 							mylogger, self.network, serverConf, strategyParams,

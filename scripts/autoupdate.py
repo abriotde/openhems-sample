@@ -13,11 +13,12 @@ import importlib
 from zipfile import ZipFile
 import git # https://gitpython.readthedocs.io/en/stable/tutorial.html#submodule-handling
 import requests
+import toml
 from packaging.version import Version
 PATH_ROOT = Path(__file__).parents[1]
-sys.path.append(str(PATH_ROOT))
+sys.path.append(str(PATH_ROOT)+"/src")
 #pylint: disable=wrong-import-position, import-error
-from openhems.modules.util import ProjectConfiguration
+from openhems.modules.util.project_configuration import ProjectConfiguration
 
 postupdateScriptRegexp = re.compile('postupdate-(?P<version>[0-9.]*)\\.py')
 gitCommitIdRegexp = re.compile('^[a-z0-9A-Z]{40}$')
@@ -223,7 +224,7 @@ class Updater:
 					filepath.chmod(0o755)
 				else:
 					print("ERROR : chmod 755 ", filepath)
-		for subdir in ["src","scripts", "version", "docs", "tests", "pyproject.toml"]:
+		for subdir in ["src","scripts", "docs", "tests", "pyproject.toml"]:
 			spath = tmpPath / subdir
 			print(" - ",str(spath))
 			if spath.is_dir():
@@ -281,12 +282,13 @@ class Updater:
 		"""
 		Return last version number available for install
 		"""
-		versionUrl	= self.getRawUrl('/version')
+		versionUrl	= self.getRawUrl('/pyproject.toml')
 		res = requests.get(versionUrl, timeout=30)
 		# print(res," for ",versionUrl)
 		if res.status_code!=200:
 			return None
-		return res.content.decode("utf-8").strip()
+		pyproject = toml.loads(res.content.decode("utf-8"))
+		return pyproject.get("project", {}).get("version")
 
 	def check4update(self):
 		"""
@@ -324,3 +326,5 @@ class Updater:
 
 updater = Updater.initFromEnv()
 updater.check4update()
+# print("Latest version : "+updater.getLatestVersion())
+# print("Current version : "+updater.getCurrentVersion())

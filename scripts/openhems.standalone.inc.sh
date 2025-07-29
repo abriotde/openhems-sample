@@ -1,7 +1,7 @@
 
 function installOpenHemsPrerequisites {
 	echo "Install OpenHEMS server"
-	sudo apt install -y python3-pandas python3-yaml python3-pyramid python3-pyramid-jinja2 python3-astral python3-virtualenv
+	sudo apt install -y python3-pandas python3-yaml python3-pyramid python3-pyramid-jinja2 python3-astral python3-virtualenv python3-toml
 }
 
 function installOpenHemsService {
