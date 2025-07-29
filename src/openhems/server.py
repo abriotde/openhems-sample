@@ -69,7 +69,7 @@ class OpenHEMSServer:
 				)
 			elif strategy in ["nosell", "nobuy", "ratiosellbuy"]:
 				# Do not import SolarNoSellStrategy if not needed to avoid 'astral' depenency if not needed.
-				from openhems.modules.energy_strategy.solarnosell_strategy.SolarNoSellStrategy
+				from openhems.modules.energy_strategy.solarnosell_strategy import SolarNoSellStrategy
 				self.strategies.append(
 						SolarNoSellStrategy(
 							mylogger, self.network, serverConf, strategyParams,
