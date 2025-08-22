@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.13 - 2025-08-22
+### Fix
+- Small fix for SolarNoSellStrategy
+
 ## 0.2.12 - 2025-06-12
 ### Improvement
 - Separate feedbackSwitch
