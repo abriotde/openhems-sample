@@ -128,7 +128,9 @@ class TestOffpeakStrategy(utils.TestStrategy):
 		# publicpowergrid should not be present,
 		# but server must work with error message in GET /params
 		configFile = utils.ROOT_PATH / "tests/data/openhems_fake4tests_missingKeyParams.yaml"
-		self.assertIsNone(self.init(configFile))
+		conf = self.init(configFile)
+		# logger.error("Config used: %s", conf)
+		self.assertIsNotNone(conf)
 		expectedWarnings = [
 			"Impossible to load publicpowergrid",
 			"OffPeak-strategy is useless without offpeak hours."

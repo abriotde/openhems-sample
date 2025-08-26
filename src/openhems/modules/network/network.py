@@ -189,7 +189,7 @@ class Network:
 		if filterId is None:
 			filterId = "inout"
 		vals = [x.getMarginPower() for x in self.getAll(filterId)]
-		return max(vals)
+		return 0 if not vals else max(vals)
 
 	def getMarginPowerOn(self):
 		"""
