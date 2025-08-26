@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.14 - 2025-08-26
+### Fix
+- Start Web Server even if nothing ok. In order to fix HomeAssistant add-on.
+
 ## 0.2.13 - 2025-08-22
 ### Fix
 - Small fix for SolarNoSellStrategy

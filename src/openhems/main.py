@@ -12,6 +12,7 @@ from logging import handlers
 from datetime import datetime
 from threading import Thread
 import argparse
+import traceback
 from pathlib import Path
 openhemsPath = Path(__file__).parents[1]
 sys.path.append(str(openhemsPath))
@@ -141,12 +142,15 @@ class OpenHEMSApplication:
 		# pylint: disable=broad-exception-caught
 		try:
 			network = self.getNetworkFromConfiguration(self.logger, configurator)
-			self.warnings = self.warnings + network.getWarningMessages()
 			self.server = OpenHEMSServer(self.logger, network, configurator)
+			self.warnings = self.warnings + self.server.getWarningMessages()
 			schedule = self.server.getSchedule()
 		except (HomeStateUpdaterException, CastException, ConfigurationException) as e:
 			# at least HomeStateUpdaterException, CastException, ConfigurationException
-			message = f"Error during network initialization : {e.message}"
+			# Avoid to raise exception, prefer using warnings to have all services working (at least Web IHM).
+			errclass = type(e).__name__
+			trace = ''.join(traceback.TracebackException.from_exception(e).format())
+			message = f"Error during network initialization : {errclass} : {e.message} : {trace}"
 			self.logger.error(message)
 			self.warnings.append(message)
 		for warning in self.warnings:

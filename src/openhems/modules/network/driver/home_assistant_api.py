@@ -228,7 +228,8 @@ class HomeAssistantAPI(HomeStateUpdater):
 				self.logger.debug("  With data : %s", data)
 		except (requests.exceptions.HTTPError,
 		  		requests.exceptions.ReadTimeout,
-				requests.exceptions.ConnectTimeout) as error:
+				requests.exceptions.ConnectTimeout,
+				requests.exceptions.ConnectionError) as error:
 			msg = ("Unable to access Home Assistance instance, check URL "
 		  		f": {self.apiUrl}{url} ({data}) : {error}")
 			self.logger.error(msg)

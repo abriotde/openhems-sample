@@ -33,6 +33,7 @@ class OpenHEMSServer:
 		self._inOverLoadMode = False # in over load mode, we have node deactivate for safety
 		self._now = None # Current timestamp: Can be fake on simulation/tests mode.
 		# "Nodes" to call decrementTime() to manage their time/constraints
+		self.warningMessages = []
 		self._decrementTimeCallbacks = {}
 		self._initDecrementTimeCallbacks()
 		self._initStrategies(mylogger, serverConf)
@@ -41,47 +42,54 @@ class OpenHEMSServer:
 		"""
 		Initialize the strategies.
 		"""
-		throwErr = None
 		for strategyParams in serverConf.get("server.strategies"):
 			strategy = strategyParams.get("class", "").lower()
 			strategyId = strategyParams.get("id", strategy)
-			if strategy=="offpeak":
-				self.strategies.append(OffPeakStrategy(mylogger, self.network, strategyId))
-			elif strategy=="switchoff":
-				offhoursrange = strategyParams.get('offhours', "[22h-6h]")
-				condition = strategyParams.get('condition', True)
-				reverse = CastUtililty.toTypeBool(strategyParams.get('reverse', False))
-				strategyObj = SwitchoffStrategy(mylogger, self.network, strategyId,
-				                offhoursrange, reverse=reverse, condition=condition)
-				self.strategies.append(strategyObj)
-			elif strategy=="emhass":
-				# pylint: disable=import-outside-toplevel
-				# Avoid to import EmhassStrategy and all it's dependances when no needs.
-				from openhems.modules.energy_strategy.emhass_strategy import EmhassStrategy
-				self.strategies.append(
-					EmhassStrategy(mylogger, self.network, serverConf, strategyParams,
-					strategyId=strategyId))
-			elif strategy=="annealing":
-				self.strategies.append(
-						SimulatedAnnealingStrategy(
-							mylogger, self.network, serverConf, strategyParams,
-							strategyId=strategyId)
-				)
-			elif strategy in ["nosell", "nobuy", "ratiosellbuy"]:
-				# Do not import SolarNoSellStrategy if not needed to avoid 'astral' depenency if not needed.
-				from openhems.modules.energy_strategy.solarnosell_strategy import SolarNoSellStrategy
-				self.strategies.append(
-						SolarNoSellStrategy(
-							mylogger, self.network, serverConf, strategyParams,
-							strategyId=strategyId)
-				)
-			else:
-				msg = f"OpenHEMSServer() : Unknown strategy '{strategy}'"
-				self.logger.critical(msg)
+			throwErr = None
+			try:
+				if strategy=="offpeak":
+					self.strategies.append(OffPeakStrategy(mylogger, self.network, strategyId))
+				elif strategy=="switchoff":
+					offhoursrange = strategyParams.get('offhours', "[22h-6h]")
+					condition = strategyParams.get('condition', True)
+					reverse = CastUtililty.toTypeBool(strategyParams.get('reverse', False))
+					strategyObj = SwitchoffStrategy(mylogger, self.network, strategyId,
+									offhoursrange, reverse=reverse, condition=condition)
+					self.strategies.append(strategyObj)
+				elif strategy=="emhass":
+					# pylint: disable=import-outside-toplevel
+					# Avoid to import EmhassStrategy and all it's dependances when no needs.
+					from openhems.modules.energy_strategy.emhass_strategy import EmhassStrategy
+					self.strategies.append(
+						EmhassStrategy(mylogger, self.network, serverConf, strategyParams,
+						strategyId=strategyId))
+				elif strategy=="annealing":
+					self.strategies.append(
+							SimulatedAnnealingStrategy(
+								mylogger, self.network, serverConf, strategyParams,
+								strategyId=strategyId)
+					)
+				elif strategy in ["nosell", "nobuy", "ratiosellbuy"]:
+					# Do not import SolarNoSellStrategy if not needed to avoid 'astral' depenency if not needed.
+					from openhems.modules.energy_strategy.solarnosell_strategy import SolarNoSellStrategy
+					self.strategies.append(
+							SolarNoSellStrategy(
+								mylogger, self.network, serverConf, strategyParams,
+								strategyId=strategyId)
+					)
+				else:
+					msg = f"OpenHEMSServer() : Unknown strategy '{strategy}'"
+					self.logger.critical(msg)
+					throwErr = msg
+			except (ConfigurationException, CastException) as e:
+				msg = f"Error initializing strategy '{strategyId}': {e.message}"
 				throwErr = msg
-		if throwErr is not None:
-			self.logger.error(str(throwErr))
-			raise ConfigurationException(throwErr)
+			if throwErr is not None:
+				self.logger.error(throwErr)
+				self.warningMessages.append(throwErr)
+
+	def getWarningMessages(self):
+		return self.warningMessages + self.network.getWarningMessages()
 
 	def _initDecrementTimeCallbacks(self):
 		"""

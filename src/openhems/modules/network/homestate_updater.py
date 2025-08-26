@@ -196,7 +196,7 @@ class HomeStateUpdater:
 					self.logger.critical(msg)
 					raise ConfigurationException(msg)
 				self.network.addNode(node)
-			except (ConfigurationException, CastException) as e:
+			except (ConfigurationException, CastException, HomeStateUpdaterException) as e:
 				msg = f"Impossible to load {classname}({nameid}) due to "+str(e)
 				self.logger.error(msg)
 				self.warningMessages.append(msg)
