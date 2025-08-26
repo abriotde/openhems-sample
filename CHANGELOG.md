@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.15 - 2025-08-26
+### Fix
+- To allow update Python package to update HomeAsistant addon.
+
 ## 0.2.14 - 2025-08-26
 ### Fix
 - Start Web Server even if nothing ok. In order to fix HomeAssistant add-on.
