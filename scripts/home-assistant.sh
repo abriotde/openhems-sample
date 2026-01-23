@@ -113,11 +113,11 @@ EOF
 function updateHomeAsssistant {
 	# https://www.home-assistant.io/integrations/backup/
 	# http://192.168.1.202:8123/developer-tools/service?service=backup.create
-	docker pull ghcr.io/home-assistant/home-assistant:stable
+	docker pull $HOMEASSISTANT_DOCKER_IMAGE
 	# TODO : Backup home-assistant...
 	docker stop $DOCKER_HA_NAME
 	docker container rm $DOCKER_HA_NAME
-	# docker rmi ghcr.io/home-assistant/home-assistant:stable
+	# docker rmi $HOMEASSISTANT_DOCKER_IMAGE
 	# tar -xOf <backup_tar_file> "./homeassistant.tar.gz" | tar --strip-components=1 -zxf - -C <restore_directory>
 	launchDocker $DOCKER_HA_NAME
 	wait_homeassistant_container_up

@@ -90,7 +90,7 @@ function launchDocker {
 			  -v /run/dbus:/run/dbus:ro \
 			  -e TZ=$MY_TIME_ZONE \
 			  --network=host --rm \
-			  ghcr.io/home-assistant/home-assistant:stable
+			  $HOMEASSISTANT_DOCKER_IMAGE
 		else if [[ $dockerName == "openhems" ]]; then
 			/usr/bin/docker run \
 			  --name $dockerName \
