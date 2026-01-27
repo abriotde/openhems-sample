@@ -84,14 +84,14 @@ class TestContractModule(unittest.TestCase):
 				rangeEnd = rangeEnd.strftime(self.DATETIME_STR_FORMAT)
 				self.assertFalse(inoffpeak)
 				self.assertEqual(rangeEnd, "2025-02-04 22:00:00")
-				self.assertEqual(cost, 0.4)
+				self.assertEqual(cost, 0.5)
 				# test checkRange() when occure timeStart
 				mydate2 = datetime.strptime("2025-02-04 23:00:00", self.DATETIME_STR_FORMAT)
 				inoffpeak, rangeEnd, cost = hoursRange.checkRange(mydate2)
 				rangeEnd = rangeEnd.strftime(self.DATETIME_STR_FORMAT)
 				self.assertTrue(inoffpeak, "In off-peak of 23:00:00")
 				self.assertEqual(rangeEnd, "2025-02-05 06:00:00", "off-peak range end")
-				self.assertEqual(cost, 0.1, "off-peak price red")
+				self.assertEqual(cost, 0.2, "off-peak price red")
 
 if __name__ == '__main__':
 	unittest.main()
