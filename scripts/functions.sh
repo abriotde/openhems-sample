@@ -15,7 +15,7 @@ function wait_homeassistant_container_up {
 }
 
 function activate_service {
-	service = $1
+	service=$1
 	if [ -f $service ]; then
 		sudo cp $service /etc/systemd/system/
 		sudo mv $service /lib/systemd/system/
@@ -25,7 +25,7 @@ function activate_service {
     systemctl enable $service
     systemctl start $service
     ok=`systemctl is-active --quiet $service`
-    if [ $ok != 0 ]; then
+    if [[ $ok != 0 ]]; then
         echo "ERROR : Fail activate '$service'. Something goes wrong. Cancel installation."
         exit 1
     fi

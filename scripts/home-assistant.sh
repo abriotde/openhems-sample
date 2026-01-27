@@ -59,8 +59,7 @@ ExecStop=/usr/bin/docker stop $DOCKER_HA_NAME
 [Install]
 WantedBy=multi-user.target
 EOF
-	sudo mv homeassistant.service /lib/systemd/system/
-	ln -s /lib/systemd/system/homeassistant.service /etc/systemd/system/multi-user.target.wants
+	activate_service homeassistant.service
 
 	echo "Install HACS"
 	# https://hacs.xyz/docs/setup/download/

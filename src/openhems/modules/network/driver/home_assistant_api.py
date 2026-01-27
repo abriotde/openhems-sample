@@ -259,7 +259,10 @@ class HomeAssistantAPI(HomeStateUpdater):
 				pass
 			self.logger.error(errMsg)
 			self.logger.debug("With token '%s'", self.token)
-			if url!="/services/notify/persistent_notification":
+			if url not in [
+						"/services/notify/persistent_notification",
+						"/services/notify/send_message"
+					]:
 				# To avoid infinite loop : It's url for notify()
 				self.notify("Error callAPI() : "
 					f"status_code={response.status_code} : {errMsg}")
