@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.16 - 2026-29-01
+### Fix
+- Install scripts
+- As no update during a long time, some modules was up dated and generates bug with our code. We fix them.
+
 ## 0.2.15 - 2025-08-26
 ### Fix
 - To allow update Python package to update HomeAsistant addon.
