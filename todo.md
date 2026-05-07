@@ -5,7 +5,12 @@
 - promote : LinuxFR
 
 # Integration
+- A guided configuration, question/response.
+- IA to formulate predictions.
 - IA to command OpenHEMS devices ("Start the washing machine") & as "Personnal Assistant"
+
+- A dashboard to see the house state.
+
 
 # Development
 - dev/node : When get curentPower, check maxPower and update it if needed.

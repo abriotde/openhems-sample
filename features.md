@@ -1,14 +1,17 @@
-# Version v0.1
-This version is tested and quite safe for installation with strategy 'offpeak'.
 
-Features are:
-- A install script "home-assistant.sh" to install this software from any 'recent' Debian based OS.
-- A server witch interact with Home-Assistant to control devices.
-- A basic web-server to configure if we want to schedule devices and how long time.
-- 
+Here are some reflexions about the project.
 
-Programmed features for next version are:
-- Set up a deadline for scheduled devices.
-- A auto-update  system and evenutually ssh access for maintenance from web
-- Test with solar panel
-- Solar router F1ATB integration (Or electrical devices for which precise consumption can be requested)
+
+
+
+* [Akkudoktor-EOS](https://github.com/akkudoktor-eos/eos) : Algorithmes génétiques
+* [EVCC](https://evcc.io/en/https://evcc.io/en/) : Charge véhicule
+* Optimisation de la batterie, programmation linéaire
+
+
+Alternative :
+* [Fenecon EMS](https://www.fenecon.com/fenecon-home-6-10-15)
+* [OpenEMS](https://github.com/thliebig/openEMS-Project)
+  * OpenEMS Edge : local intelligence : Communication by "Channels" whith devices ("Bridge" level to "device" level), Controller & Scheduller
+  * OpenEMS Backend : hub cloud : 
+  * OpenEMS UI
