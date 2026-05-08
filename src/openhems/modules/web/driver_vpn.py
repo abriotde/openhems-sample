@@ -5,7 +5,24 @@ import subprocess
 import time
 from pathlib import Path
 
-class VpnDriverWireguard:
+class VpnDriver:
+	"""
+	Abstract class for VPN Driver.
+	"""
+	def testVPN(self):
+		"""
+		Test if the VPN is up.
+		@return: bool : True if VPN is up, false else
+		"""
+		raise NotImplementedError("testVPN() not implemented")
+
+	def startVPN(self, start:bool=True):
+		"""
+		Start/Stop the VPN.
+		@param start: bool: if False stop the Wireguard's VPN else start it.
+		"""
+		raise NotImplementedError("startVPN() not implemented")
+class VpnDriverWireguard(VpnDriver):
 	"""
 	Start/stop/test a VPN Wireguard
 	"""
@@ -39,7 +56,7 @@ class VpnDriverWireguard:
 		with subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE) as _:
 			pass
 
-class VpnDriverIncronServer:
+class VpnDriverIncronServer(VpnDriver):
 	"""
 	It's not a daemond, it use incrontab daemond to serve client.
 

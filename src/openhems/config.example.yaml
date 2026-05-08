@@ -1,0 +1,11 @@
+
+type: glance
+title: OpenHEMS - État actuel
+entities:
+  - entity: sensor.openhems_current_strategy
+    name: Stratégie
+  - entity: sensor.openhems_last_action
+    name: Dernière action
+  - entity: sensor.openhems_next_planned_switch
+    name: Prochain changement
+
