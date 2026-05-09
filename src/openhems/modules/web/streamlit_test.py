@@ -32,9 +32,9 @@ def root_run(context):
 	socket.start()
 	try:
 		while True:
-			print("Hello")
+			print("Schedules:")
 			for node_id, node in context.schedule.items():
-				print("Schedule item:", node_id, "-", node)
+				print(" - ", node_id, "-", node)
 			sleep(10)
 	except KeyboardInterrupt:
 		socket.stop()
@@ -43,9 +43,7 @@ def streamlit_test():
 	"""
 	Test function to run Streamlit app without running the whole OpenHEMS application.
 	"""
-	print("streamlit_test()")
 	# Create a dummy context with necessary attributes
-	print("Set dummy context for Streamlit test.")
 	dummy_context = OpenHEMSContext(
 		lock=threading.Lock(),
 		schedule={"node_id": OpenHEMSSchedule(3600, "Test Schedule")},

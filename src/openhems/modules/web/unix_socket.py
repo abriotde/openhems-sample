@@ -12,10 +12,16 @@ import json
 import threading
 import os
 import streamlit as st
+from enum import Enum
+import datetime
 
 SOCKET_PATH = "/tmp/openhems.sock"
 
 class UnixSocketServer:
+	class Action(Enum):
+		GET_SCHEDULE = "get_schedule"
+		UPDATE_SCHEDULE = "update_schedule"
+
 	def __init__(self, schedule, lock, logger=None):
 		self.schedule = schedule
 		self.lock = lock
@@ -45,27 +51,36 @@ class UnixSocketServer:
 		try:
 			data = conn.recv(4096).decode('utf-8')
 			request = json.loads(data)
-			if request['action'] == 'get_schedule':
+			action = request.get("action")
+			print("UnixSocketServer._handle_client(:", request, ")")
+			if action == self.Action.GET_SCHEDULE.value:
 				with self.lock:
-					print("Send schedules : ", self.schedule)
+					# print("Send schedules : ", self.schedule)
 					# Sérialiser le schedule dans un format simple
 					response = json.dumps(self.schedule)
 				conn.send(response.encode('utf-8'))
-			elif request['action'] == 'update_device':
-				device_id = request['device_id']
+			elif action == self.Action.UPDATE_SCHEDULE.value:
+				id = request['id']
 				duration = request.get('duration')
 				timeout = request.get('timeout')
+				timeout = datetime.datetime.strptime(timeout[0:16], "%Y-%m-%dT%H:%M") if timeout is not None else None
+				print("Update schedule for id:", id, "duration:", duration, "timeout:", timeout)
 				with self.lock:
 					# Modifier l'objet schedule existant
-					self.schedule[device_id].setSchedule(duration, timeout)
+					self.schedule[id].setSchedule(duration, timeout)
 				conn.send(b'{"status":"ok"}')
 		except Exception as e:
+			print("Error handling socket request:", e, file=sys.stderr)
 			conn.send(json.dumps({"error": str(e)}).encode('utf-8'))
 		finally:
 			conn.close()
 
 	@staticmethod
-	def send_request(request):
+	def send_request(action, request=None):
+		# print(f"send_request({action}, {request})")
+		if request is None:
+			request = {}
+		request["action"] = action.value
 		try:
 			sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
 			sock.connect(SOCKET_PATH)
@@ -79,15 +94,18 @@ class UnixSocketServer:
 
 	@staticmethod
 	def get_schedule():
-		resp = UnixSocketServer.send_request({"action": "get_schedule"})
+		resp = UnixSocketServer.send_request(
+			 UnixSocketServer.Action.GET_SCHEDULE
+		)
 		return resp
 
 	@staticmethod
-	def update_device(device_id, duration, timeout):
-		resp = UnixSocketServer.send_request({
-			"action": "update_device",
-			"device_id": device_id,
+	def update_schedule(id, duration, timeout):
+		data = {
+			"id": id,
 			"duration": duration,
 			"timeout": timeout
-		})
-		return resp.get("status") == "ok"
+		}
+		resp = UnixSocketServer.send_request(UnixSocketServer.Action.UPDATE_SCHEDULE, data)
+		# print("update_schedule() = ", resp)
+		return resp.get("status") == "ok" or resp.get("error")

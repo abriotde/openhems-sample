@@ -114,12 +114,12 @@ class OpenHEMSSchedule:
 		"""
 		del request
 		timeout = self.timeout.strftime("%H:%M") if self.timeout is not None else "0"
-		date = self.timeout.strftime("%d/%m/%Y") if self.timeout is not None else ""
+		timeout_dt = self.timeout.strftime("%Y-%m-%d %H:%M") if self.timeout is not None else None
 		return {"name":self.name,
 			"duration":self.duration,
 			"timeout":timeout,
-			"date":date}
+			"timeout_dt":timeout_dt}
 
 	def __str__(self):
-		timeout = self.timeout.strftime("%Y-%m-%d %H:%M:%S") if self.timeout is not None else "0"
+		timeout = self.timeout.strftime("%Y-%m-%d %H:%M:%S") if self.timeout is not None else ""
 		return f"Schedule({self.name}, duration:{self.duration}, timeout:{timeout})"

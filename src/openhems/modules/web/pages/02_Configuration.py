@@ -118,6 +118,7 @@ def yaml_editor_page(page):
         json_schema = yaml.safe_load(f0)
         with open(page, "r") as f1:
             initial_text = f1.read()
+            # st.write(f"ddd{initial_text}.")
             monaco_return = monaco_editor(
                 initial_text,
                 schema=json_schema,
@@ -125,7 +126,10 @@ def yaml_editor_page(page):
                 # a unique key avoids to reload the editor each time the content changed
                 key=f"monaco_editor",
             )
-            yaml_content = monaco_return['text']
+            if monaco_return is not None:
+                yaml_content = monaco_return.get('text')
+            else:
+                yaml_content = initial_text # Force generate error
             try:
                 data = yaml.safe_load(yaml_content)  # Vérifie que le YAML est syntaxiquement correct
                 if jsonschema.validate(data, json_schema) is None:

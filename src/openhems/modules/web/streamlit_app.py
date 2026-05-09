@@ -25,16 +25,13 @@ class OpenHEMSContext:
     vpnDriver: VpnDriver
 
 
-print("import streamlit_app.py : done")
-
-    
 class OpenhemsHTTPServer2():
     """
     Class for HTTP Server for OpenHEMS UI configuration
     """
     def __init__(self, mylogger, schedule, warningMessages, *,
             port=8000, htmlRoot="/", inDocker=False, configurator=None):
-        print("Init OpenhemsHTTPServer2 with port ", port)
+        # print("Init OpenhemsHTTPServer2 with port ", port)
         self.logger = mylogger
         self.schedule = schedule
         self.warningMessages = warningMessages
@@ -71,7 +68,6 @@ class OpenhemsHTTPServer2():
             translations=self.translations,
             vpnDriver=self.vpnDriver
         )
-        print("Init OpenhemsHTTPServer2 Ok.")
 
     def run(self):
         st.title("OpenHEMS")
