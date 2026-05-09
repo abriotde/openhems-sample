@@ -52,6 +52,7 @@ dependencies = [
 	'h5py',
 	'pulp',
 	"streamlit>=1.57.0",
+	"streamlit-monaco-yaml>=0.2.0",
 ]
 license = { file = "LICENSE", "expression" = "GPL-3.0-or-later" }
 # license = "GPL-3.0-or-later"
