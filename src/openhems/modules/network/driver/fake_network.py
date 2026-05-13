@@ -77,3 +77,27 @@ class FakeNetwork(HomeStateUpdater):
 		if printer is None:
 			printer = print
 		printer(f"FakeNetwork.notify({message})")
+
+	def listComponents(self):
+		return [
+			"currentcost.sensor",
+			"tapo.switch",
+			"tuya_ble.sensor",
+			"backup",
+			"ble_monitor.binary_sensor",
+			"localtuya.remote",
+			"logger",
+			"http",
+			"hacs",
+			"cast",
+			"device_tracker",
+			"upnp.binary_sensor",
+			"notify",
+			"person",
+			"sensor.rte_tempo_prochaine_couleur",
+			"sensor.lixee_zlinky_tic_puissance_apparente",
+			"switch.tz3000_2putqrmw_ts011f_commutateur",
+			"sensor.tz3000_2putqrmw_ts011f_puissance",
+			"switch.tz3000_2putqrmw_ts011f_commutateur_2",
+			"sensor.tz3000_2putqrmw_ts011f_puissance_2",
+		]

@@ -6,6 +6,7 @@ import logging
 from time import sleep
 
 sys.path.append(os.path.dirname(__file__))
+from dist.openhems.modules.network.driver.fake_network import FakeNetwork
 from streamlit_app import OpenhemsHTTPServer2, OpenHEMSContext
 
 from openhems.modules.web import OpenHEMSSchedule
@@ -13,6 +14,7 @@ import threading
 from threading import Thread
 from openhems.modules.util import ProjectConfiguration
 from openhems.modules.web.unix_socket import UnixSocketServer
+from openhems.modules.network.driver import FakeNetwork
 
 logger = logging.getLogger(__name__)
 import socket
@@ -27,8 +29,11 @@ def listen_socket():
 		print("Listening to socket...")
 		sleep(5)
 
+
+
+
 def root_run(context):
-	socket = UnixSocketServer(context.schedule, context.lock, context.logger)
+	socket = UnixSocketServer(context.schedule, context.lock, context.network, context.logger)
 	socket.start()
 	try:
 		while True:
@@ -44,20 +49,22 @@ def streamlit_test():
 	Test function to run Streamlit app without running the whole OpenHEMS application.
 	"""
 	# Create a dummy context with necessary attributes
+	network = FakeNetwork(ProjectConfiguration(logger))
 	dummy_context = OpenHEMSContext(
 		lock=threading.Lock(),
 		schedule={"node_id": OpenHEMSSchedule(3600, "Test Schedule")},
 		logger=logger,
 		configurator=None,
 		translations={"web": {"defaultTooltip": "Default: tooltip"}},
-		vpnDriver=None
+		vpnDriver=None,
+		network=network
 	)
 	# Run the Streamlit app
 	server = OpenhemsHTTPServer2(
 		mylogger=dummy_context.logger,
 		schedule=dummy_context.schedule,
 		warningMessages=[],
-		port=8501,  # Default Streamlit port
+		port=8000,  # Default Streamlit port
 		inDocker=False,
 		configurator=dummy_context.configurator
 	)

@@ -74,9 +74,9 @@ class OpenhemsHTTPServer2():
         print("Run on port ", self.port)
         streamlit_app_path = str(ROOT_PATH / "src/openhems/modules/web/streamlit_app.py")
         subprocess.run([sys.executable, "-m", "streamlit",
-            "run", streamlit_app_path,
-            "--server.port="+str(self.port),
-            "--server.headless=true"
+            "run", "--server.port="+str(self.port),
+            # "--server.headless=true",
+            streamlit_app_path,
         ])
         # try:
         #     import streamlit.web.bootstrap as bootstrap

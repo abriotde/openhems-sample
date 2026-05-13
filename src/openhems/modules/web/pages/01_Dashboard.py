@@ -34,8 +34,8 @@ def manage_schedules_page():
             "ID": st.column_config.TextColumn("ID", disabled=True),
             "Name": st.column_config.TextColumn("Name", disabled=True),
             "Duration": st.column_config.NumberColumn("Duration", min_value=0, step=1),
-            "Timeout": st.column_config.DatetimeColumn("Timeout",
-                format="YYYY-MM-DD HH:mm", 
+            "Timeout": st.column_config.DatetimeColumn("Timeout"
+                # format="YYYY-MM-DD HH:mm", 
                 # default=datetime.datetime.now()
             )
         },

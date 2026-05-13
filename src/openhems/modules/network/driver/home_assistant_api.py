@@ -139,6 +139,13 @@ class HomeAssistantAPI(HomeStateUpdater):
 		self.logger.debug("createNodeElement(%s)", elem)
 		return elem
 
+	def listComponents(self):
+		"""
+		Print Home-Assistant components list.
+		"""
+		response = self.callAPI("/components")
+		return response
+
 	def switchOn(self, isOn, node):
 		"""
 		return: True if the switch is after on, False else

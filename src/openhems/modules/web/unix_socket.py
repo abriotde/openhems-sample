@@ -5,6 +5,8 @@ import os
 import logging
 from time import sleep
 
+from openhems.modules.network.homestate_updater import HomeStateUpdater
+
 sys.path.append(os.path.dirname(__file__))
 import threading
 import socket
@@ -21,9 +23,11 @@ class UnixSocketServer:
 	class Action(Enum):
 		GET_SCHEDULE = "get_schedule"
 		UPDATE_SCHEDULE = "update_schedule"
+		LIST_COMPONENTS = "list_components"
 
-	def __init__(self, schedule, lock, logger=None):
+	def __init__(self, schedule, lock, home_state_updater: HomeStateUpdater, logger=None):
 		self.schedule = schedule
+		self.home_state_updater = home_state_updater
 		self.lock = lock
 		self.logger = logger or logging.getLogger(__name__)
 		self.socket_path = SOCKET_PATH
@@ -69,6 +73,10 @@ class UnixSocketServer:
 					# Modifier l'objet schedule existant
 					self.schedule[id].setSchedule(duration, timeout)
 				conn.send(b'{"status":"ok"}')
+			elif action == self.Action.LIST_COMPONENTS.value:
+				components = self.home_state_updater.listComponents()
+				response = json.dumps(components)
+				conn.send(response.encode('utf-8'))
 		except Exception as e:
 			print("Error handling socket request:", e, file=sys.stderr)
 			conn.send(json.dumps({"error": str(e)}).encode('utf-8'))
@@ -109,3 +117,17 @@ class UnixSocketServer:
 		resp = UnixSocketServer.send_request(UnixSocketServer.Action.UPDATE_SCHEDULE, data)
 		# print("update_schedule() = ", resp)
 		return resp.get("status") == "ok" or resp.get("error")
+
+	@staticmethod
+	def get_schedule():
+		resp = UnixSocketServer.send_request(
+			 UnixSocketServer.Action.GET_SCHEDULE
+		)
+		return resp
+
+	@staticmethod
+	def list_components():
+		resp = UnixSocketServer.send_request(
+			 UnixSocketServer.Action.LIST_COMPONENTS
+		)
+		return resp
