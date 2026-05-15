@@ -6,7 +6,6 @@ import logging
 from time import sleep
 
 sys.path.append(os.path.dirname(__file__))
-from dist.openhems.modules.network.driver.fake_network import FakeNetwork
 from streamlit_app import OpenhemsHTTPServer2, OpenHEMSContext
 
 from openhems.modules.web import OpenHEMSSchedule
@@ -14,7 +13,7 @@ import threading
 from threading import Thread
 from openhems.modules.util import ProjectConfiguration
 from openhems.modules.web.unix_socket import UnixSocketServer
-from openhems.modules.network.driver import FakeNetwork
+from openhems.modules.network.driver.fake_network import FakeNetwork
 
 logger = logging.getLogger(__name__)
 import socket
@@ -49,7 +48,7 @@ def streamlit_test():
 	Test function to run Streamlit app without running the whole OpenHEMS application.
 	"""
 	# Create a dummy context with necessary attributes
-	network = FakeNetwork(ProjectConfiguration(logger))
+	network = FakeNetwork(ProjectConfiguration())
 	dummy_context = OpenHEMSContext(
 		lock=threading.Lock(),
 		schedule={"node_id": OpenHEMSSchedule(3600, "Test Schedule")},

@@ -7,6 +7,7 @@ from dataclasses import dataclass
 import logging
 ROOT_PATH = Path(__file__).parents[4]
 sys.path.append(str(ROOT_PATH / "src"))
+from openhems.modules.network.homestate_updater import HomeStateUpdater
 from openhems.modules.util import (
  	ConfigurationManager
 )
@@ -23,6 +24,7 @@ class OpenHEMSContext:
     configurator: ConfigurationManager
     translations: dict
     vpnDriver: VpnDriver
+    network: HomeStateUpdater = None
 
 
 class OpenhemsHTTPServer2():
@@ -60,14 +62,6 @@ class OpenhemsHTTPServer2():
         self.vpnDriver = vpnDriver
         self.vpnDriver.testVPN()
         # self.generateTemplateYamlParams(lang) # TODO
-        OpenHEMSContext(
-            lock=None,
-            schedule=self.schedule,
-            logger=self.logger,
-            configurator=self.configurator,
-            translations=self.translations,
-            vpnDriver=self.vpnDriver
-        )
 
     def run(self):
         st.title("OpenHEMS")
