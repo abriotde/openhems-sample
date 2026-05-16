@@ -6,7 +6,7 @@ import logging
 from time import sleep
 
 sys.path.append(os.path.dirname(__file__))
-from streamlit_app import OpenhemsHTTPServer2, OpenHEMSContext
+from openhems.modules.web.Dashboard import OpenhemsHTTPServer2, OpenHEMSContext
 
 from openhems.modules.web import OpenHEMSSchedule
 import threading
