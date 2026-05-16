@@ -1,7 +1,6 @@
 import io
 import streamlit as st
 from streamlit_monaco_yaml import monaco_editor
-from streamlit_searchbox import st_searchbox
 # from streamlit_monaco import st_monaco
 from openhems.modules.util import (
 	ConfigurationManager, ConfigurationException, CastUtililty, CastException, ProjectConfiguration
@@ -13,8 +12,15 @@ import yaml
 import jsonschema
 import dataclasses
 from openhems.modules.web.unix_socket import UnixSocketServer
+from enum import Enum
 
 ROOT_PATH = Path(__file__).parents[5]
+
+
+class ConfigEditionState(Enum):
+    YAML_EDITOR = 0
+    ASSISTANT_WARNING = 1
+    ASSISTANT = 2
 
 @dataclasses.dataclass
 class BasicDeviceConfiguration:
@@ -303,7 +309,7 @@ def basic_configure_next_buttons(sub=False):
             st.rerun()
     
 
-def basic_configure(config_page):
+def basic_configure(config_page, cancel=False):
     # Initialization
     if "steps" not in st.session_state:
         st.session_state.config = BasicConfiguration()
@@ -315,6 +321,11 @@ def basic_configure(config_page):
     st.progress(cur / nb)
     st.title(f"⚙️ Assistant de configuration")
     st.header(f"{step_list[steps.step]} - ({cur} / {nb})")
+
+    state = ConfigEditionState.ASSISTANT.value
+    if cancel:
+        if st.button("❌ Annuler l'assistant", use_container_width=True):
+            return ConfigEditionState.YAML_EDITOR.value
 
     if steps.step == 0:
         st.markdown("""
@@ -461,11 +472,13 @@ def basic_configure(config_page):
                 st.balloons()
                 st.session_state.steps = ConfigureSteps()  # reset steps
                 st.rerun()
+    return state
 
 def yaml_editor_page(config_page):
     # Affichage de l'éditeur YAML
     st.title("✍️ Éditeur YAML Avancé")
     json_schema = load_schema()
+    state = ConfigEditionState.YAML_EDITOR.value
     with open(config_page, "r") as f1:
         initial_text = f1.read()
         # st.write(f"ddd{initial_text}.")
@@ -483,19 +496,48 @@ def yaml_editor_page(config_page):
         try:
             validate_config(config=yaml_content, schema=json_schema)
             st.success("✅ Fichier YAML valide !")
-            if st.button("💾 Sauvegarder"):
-                save_config(config=yaml_content, config_page=config_page, schema=json_schema)
-                st.success("✅ Fichier YAML sauvegardé !")
-                # print("Contenu sauvegardé :", yaml_content)
+            col1, col2 = st.columns(2)
+            with col1: 
+                if st.button("💾 Sauvegarder"):
+                    save_config(config=yaml_content, config_page=config_page, schema=json_schema)
+                    st.success("✅ Fichier YAML sauvegardé !")
+            with col2:
+                if st.button("✏️ Assistant d'édition de configuration"):
+                    state = ConfigEditionState.ASSISTANT_WARNING.value
+                    
         except (jsonschema.exceptions.ValidationError, jsonschema.exceptions.SchemaError) as e:
             st.error(f"❌ Fichier YAML invalide selon le schéma JSON. : {e}")
-
+    return state
 
 config_page = str(ROOT_PATH / "config/openhems.yaml")
 with open(config_page, "r") as f1:
     conf = yaml.safe_load(f1)
-    if len(conf.get("network", {}).get("nodes", [])) == 0:
-        basic_configure(config_page)
+    has_nodes = len(conf.get("network", {}).get("nodes", [])) != 0
+    if "config_ui_editor" in st.session_state:
+        state = st.session_state.config_ui_editor
+    elif not has_nodes:
+        state = ConfigEditionState.ASSISTANT.value
     else:
-        yaml_editor_page(config_page)
-
+        state = ConfigEditionState.YAML_EDITOR.value
+    new_state = state
+    if state==ConfigEditionState.ASSISTANT.value:
+        new_state = basic_configure(config_page, cancel=has_nodes)
+    elif state==ConfigEditionState.ASSISTANT_WARNING.value:
+        st.warning(
+            "**⚠️ Risque de perte d’informations ou de formatage**\n\n"
+            "L’assistant d'édition est imparfait et peut occasionner des pertes dans votre configuration "
+            "a minima dans la mise en page si vous l'avez édité manuellement. Souhaitez-vous continuer ?"
+        )
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("✅ Oui, ouvrir l’assistant"):
+                new_state = ConfigEditionState.ASSISTANT.value
+        with col2:
+            if st.button("❌ Non, annuler"):
+                new_state = ConfigEditionState.YAML_EDITOR.value
+        display = False
+    elif state==ConfigEditionState.YAML_EDITOR.value:
+        new_state = yaml_editor_page(config_page)
+    if new_state!=state:
+        st.session_state.config_ui_editor = new_state
+        st.rerun()
