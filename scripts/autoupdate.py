@@ -13,7 +13,7 @@ import importlib
 from zipfile import ZipFile
 import git # https://gitpython.readthedocs.io/en/stable/tutorial.html#submodule-handling
 import requests
-import toml
+import toml # pylint: disable=E0401
 from packaging.version import Version
 PATH_ROOT = Path(__file__).parents[1]
 sys.path.append(str(PATH_ROOT)+"/src")

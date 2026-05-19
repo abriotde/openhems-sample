@@ -134,7 +134,7 @@ class Switch(OutNode):
 		Set a condition to switchOn
 		even if the node is  not manually schedule.
 		"""
-		self.schedule.setCondition(condition)
+		self.schedule.set_condition(condition)
 		return condition
 
 	def isScheduled(self):
@@ -143,7 +143,7 @@ class Switch(OutNode):
 		"""
 		sch = self.getSchedule()
 		if sch is not None:
-			return sch.isScheduled()
+			return sch.is_scheduled()
 		return False
 
 	def decrementTime(self, time:int) -> int:
@@ -152,7 +152,7 @@ class Switch(OutNode):
 		"""
 		sch = self.getSchedule()
 		if sch is not None and self.isOn():
-			return sch.decrementTime(time)
+			return sch.decrement_time(time)
 		return 0
 
 	def getStrategyId(self):

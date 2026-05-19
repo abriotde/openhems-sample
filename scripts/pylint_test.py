@@ -110,12 +110,17 @@ ROOT_PATH = Path(__file__).parents[1]
 # analyzeFolder(ROOT_PATH / "src/openhems")
 # analyzeFolder(ROOT_PATH/"scripts")
 # analyzeFolder(ROOT_PATH/"tests")
-cmds=[
-  "pylint  --fail-under=9.9 $(git ls-files '*.py')",
-  "pylint --rcfile=src/openhems/modules/web/.pylintrc src/openhems/modules/web/"
-]
-for cmd in cmds:
-	stream = os.popen(cmd)
-	for line in stream.readlines():
-		print(line)
+def pylint():
+	"""
+	Launch pylint on all project and print results.
+	"""
+	cmds = [
+		"pylint  --fail-under=9.9 $(git ls-files '*.py')",
+		"pylint --rcfile=src/openhems/modules/web/.pylintrc src/openhems/modules/web/"
+	]
+	for cmd in cmds:
+		stream = os.popen(cmd)
+		for line in stream.readlines():
+			print(line)
 
+pylint()

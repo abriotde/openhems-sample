@@ -123,6 +123,7 @@ class OpenHEMSApplication:
 
 	def __init__(self, yamlConfFilepath:str, *, port=0, logfilepath='', inDocker=False):
 		# Temporary logger
+		#pylint: disable=too-many-locals
 		self.logger = logging.getLogger(__name__)
 		# Keep warnings for tests (self.server can be None if it raise Exception).
 		self.warnings = []
@@ -161,7 +162,7 @@ class OpenHEMSApplication:
 		root = configurator.get("server.htmlRoot")
 		inDocker = inDocker or configurator.get("server.inDocker", "bool")
 		self.webserver = OpenhemsHTTPServer(self.logger, schedule, self.warnings,
-			port=port, htmlRoot=root, inDocker=inDocker, configurator=configurator)
+			port=port, html_root=root, in_docker=inDocker, configurator=configurator)
 		if network is not None:
 			self.logger.info("OpenHEMS loaded.")
 			network.notify("Start OpenHEMS.")

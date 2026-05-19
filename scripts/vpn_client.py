@@ -23,11 +23,11 @@ COMMAND = args[0] if len(args)>0 else ''
 client = VpnDriverIncronClient(logger, VPN_PATH)
 
 if COMMAND=='start':
-	client.startVPN()
+	client.start_vpn()
 elif COMMAND=='stop':
-	client.startVPN(False)
+	client.start_vpn(False)
 elif COMMAND=='test':
-	up = client.testVPN()
+	up = client.test_vpn()
 	print("Is VPN up? '",up,"'")
 else:
 	print(f"Unknown command : '{COMMAND}'")

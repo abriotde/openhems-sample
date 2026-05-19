@@ -7,8 +7,8 @@ from dataclasses import dataclass
 from enum import Enum
 import scipy.optimize
 import numpy as np
+from sko.GA import GA # pylint: disable=E0401
 from openhems.modules.network import OutNode
-
 
 # Study of solutions:
 # - Genetic Algorithm
@@ -522,7 +522,7 @@ class OptimizationAlgorithm:
 				idx = l-1
 		return realValues[idx]
 
-	from sko.GA import GA # pip install scikit-opt
+	 # pip install scikit-opt
 	# Genetic algorythm (sko.GA) but with reference to all the context.
 	@dataclass
 	class ParamGA(GA):
@@ -530,30 +530,17 @@ class OptimizationAlgorithm:
 		@dataclass to manage parameters of Genetic Algorythms.
 		"""
 		customParam: str
-		func: str
-		nDim: int
-		sizePop: int
-		maxIter: int
-		probMut: float
-		lb: float
-		ub: float
-		constraintEq: float
-		constraintUeq: float
-		precision: float
 
-		def __init__(self, customParam, func, nDim, *,
-                 sizePop=50, maxIter=200, probMut=0.001,
-                 lb=-1, ub=1,
-                 constraintEq=tuple(), constraintUeq=tuple(),
-                 precision=1e-7):
-			super().__init__(func, nDim,
-                 sizePop, maxIter, probMut,
-                 lb, ub,
-                 constraintEq, constraintUeq,
-                 precision)
+		def __init__(self, customParam, ga:GA):
+			super().__init__(
+				ga.func, ga.n_dim,ga.size_pop,ga.max_iter,
+				ga.prob_mut,ga.lb,ga.ub,
+				ga.constraint_eq,ga.constraint_ueq,
+				ga.precision,ga.early_stop
+			)
 			self.customParam = customParam
 			def funcTransformed(x):
-				return np.array([func(self.customParam, tuple(y)) for y in x])
+				return np.array([ga.func(self.customParam, tuple(y)) for y in x])
 			self.func = funcTransformed
 
 	@staticmethod
@@ -595,8 +582,7 @@ class OptimizationAlgorithm:
 		"""
 		Use genetic algorythm to find the best solution
 		"""
-		ga = self.ParamGA(
-			customParam=self,
+		ga0 = GA(
 			func=self.evalTarget3,
 			nDim=len(self._equipments),
 			sizePop=50,      # Population size
@@ -605,6 +591,7 @@ class OptimizationAlgorithm:
 			lb=0, ub=OptimizationAlgorithm.GENETIC_MODULO, # Use modulo to adapt
 			precision=1,      # Treat variables as integers (0 or 1)
 		)
+		ga = self.ParamGA(customParam=self, ga=ga0)
 		# print(f"Run Genetic Algorythm for {self._equipments}")
 		bestX, bestY = ga.run()
 		for i,v in enumerate(bestX):

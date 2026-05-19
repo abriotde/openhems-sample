@@ -71,6 +71,7 @@ class OpenHEMSServer:
 					)
 				elif strategy in ["nosell", "nobuy", "ratiosellbuy"]:
 					# Do not import SolarNoSellStrategy if not needed to avoid 'astral' depenency if not needed.
+					# pylint: disable=import-outside-toplevel
 					from openhems.modules.energy_strategy.solarnosell_strategy import SolarNoSellStrategy
 					self.strategies.append(
 							SolarNoSellStrategy(
@@ -89,6 +90,9 @@ class OpenHEMSServer:
 				self.warningMessages.append(throwErr)
 
 	def getWarningMessages(self):
+		"""
+		Return warning messages to display on dashboard.
+		"""
 		return self.warningMessages + self.network.getWarningMessages()
 
 	def _initDecrementTimeCallbacks(self):
@@ -232,6 +236,7 @@ class OpenHEMSServer:
 			self.logger.info("Loop sleep(%d min)", round(time2wait/60))
 			time.sleep(time2wait)
 
+	# pylint: disable=too-many-branches
 	def run(self, loopDelay=0):
 		"""
 		Run an infinite loop
@@ -243,7 +248,7 @@ class OpenHEMSServer:
 			loopDelay = self._loopDelay
 		nextloop = time.time() + loopDelay
 		while True:
-			# pylint: disable=broad-exception-caught
+			# pylint: disable=broad-exception-caught, too-many-branches
 			# self.network.notify("OpenHEMS is running")
 			try:
 				self.loop()

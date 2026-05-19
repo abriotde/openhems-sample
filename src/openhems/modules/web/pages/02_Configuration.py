@@ -14,7 +14,7 @@ import dataclasses
 import yaml
 import jsonschema
 import streamlit as st # pylint: disable=E0401
-from streamlit_monaco_yaml import monaco_editor
+from streamlit_monaco_yaml import monaco_editor # pylint: disable=E0401
 
 # pylint: disable=wrong-import-position
 ROOT_PATH = Path(__file__).parents[5]

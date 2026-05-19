@@ -16,4 +16,4 @@ from openhems.modules.web.driver_vpn import VpnDriverIncronServer
 logger = logging.getLogger(__name__)
 
 server = VpnDriverIncronServer(logger)
-server.runServer()
+server.run_server()
