@@ -141,14 +141,14 @@ class OffPeakStrategy(EnergyStrategy):
 		Switch on nodes wich must be switch on during peak-periods
 		due to missing time during offpeak period to respect timeout
 		"""
-		# TODO : A better solution should be to not iterate over all nodes and ask getStrategyCache()
+		# TODO : A better solution should be to not iterate over all nodes and ask get_strategy_cache()
 		# Maybe a way to remove OffPeakStrategy cache directly... a callback?
 		for elem in self.getNodes():
 			schedule = elem.getSchedule()
-			onPeriods = schedule.getStrategyCache(self.strategyId)
+			onPeriods = schedule.get_strategy_cache(self.strategyId)
 			if onPeriods is None:
 				onPeriods = self.getOnPeriods(now, schedule)
-				schedule.setStrategyCache(self.strategyId, onPeriods)
+				schedule.set_strategy_cache(self.strategyId, onPeriods)
 				if self.logger.isEnabledFor(logging.INFO):
 					for onPeriod in onPeriods:
 						self.logger.info("Will have to switch on %s from %s to %s to respect %s", elem.id,
@@ -165,7 +165,7 @@ class OffPeakStrategy(EnergyStrategy):
 					else:
 						if not elem.switchOn(False):
 							# TODO : remove past periods : useless anymore
-							schedule.setStrategyCache(self.strategyId, onPeriods)
+							schedule.set_strategy_cache(self.strategyId, onPeriods)
 
 	def getPeakPeriods(self, now, schedule):
 		"""

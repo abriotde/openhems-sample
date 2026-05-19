@@ -147,7 +147,8 @@ class OpenHEMSApplication:
 			schedule = self.server.getSchedule()
 		except (HomeStateUpdaterException, CastException, ConfigurationException) as e:
 			# at least HomeStateUpdaterException, CastException, ConfigurationException
-			# Avoid to raise exception, prefer using warnings to have all services working (at least Web IHM).
+			# Avoid to raise exception, prefer using warnings to have all services working
+			#  (at least Web IHM).
 			errclass = type(e).__name__
 			trace = ''.join(traceback.TracebackException.from_exception(e).format())
 			message = f"Error during network initialization : {errclass} : {e.message} : {trace}"

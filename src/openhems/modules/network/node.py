@@ -66,7 +66,7 @@ class ApplianceConstraints():
 		message = f"For node {self.node.name} : "
 		self._isOn = self.node.isOn()
 		if self._isOn and (self.minPower is not None or self.maxPower is not None):
-			logger.debug("Check power constraints for node %s witch is on", self.node.name)
+			logger.debug("Check power constraints for node %s witch is on ", self.node.name)
 			currentPower = self.node.getCurrentPower()
 			if currentPower is None:
 				logger.error(f"Unable to get currentPower (None) for node {self.node.name}.")
@@ -74,14 +74,13 @@ class ApplianceConstraints():
 				if self.minPower is not None and currentPower<self.minPower:
 					self._minPowerDuration += time
 					if self.minPowerDelay is None or self._minPowerDuration>=self.minPowerDelay:
-						message += (f"Offending minPower ({self.minPower}) < currentPower ({currentPower})"
-							f" during more than {self.minPowerDelay} seconds.")
+						message += ("Offending minPower (%s) < currentPower (%s) during more than %s seconds.",
+				  			self.minPower, currentPower, self.minPowerDelay)
 						# self.node.switchOn(False) # Maybe is just starting, if switch off,
 						# we may offend minDurationOn
 						raise ConstraintsException(message, ConstraintsType.MIN_POWER)
-					else:
-						logger.debug("Current power (%s) < minPower (%s) for %s seconds, need %s seconds for alert",
-							currentPower, self.minPower, self._minPowerDuration, self.minPowerDelay)
+					logger.debug("Current power (%s) < minPower (%s) for %s seconds, need %s seconds for alert",
+						currentPower, self.minPower, self._minPowerDuration, self.minPowerDelay)
 				else:
 					self._minPowerDuration = 0
 					# logger.debug("No minPower pb")

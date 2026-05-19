@@ -524,32 +524,48 @@ class OptimizationAlgorithm:
 
 	from sko.GA import GA # pip install scikit-opt
 	# Genetic algorythm (sko.GA) but with reference to all the context.
+	@dataclass
 	class ParamGA(GA):
-		def __init__(self, custom_param, func, n_dim,
-                 size_pop=50, max_iter=200, prob_mut=0.001,
+		"""
+		@dataclass to manage parameters of Genetic Algorythms.
+		"""
+		customParam: str
+		func: str
+		nDim: int
+		sizePop: int
+		maxIter: int
+		probMut: float
+		lb: float
+		ub: float
+		constraintEq: float
+		constraintUeq: float
+		precision: float
+
+		def __init__(self, customParam, func, nDim, *,
+                 sizePop=50, maxIter=200, probMut=0.001,
                  lb=-1, ub=1,
-                 constraint_eq=tuple(), constraint_ueq=tuple(),
+                 constraintEq=tuple(), constraintUeq=tuple(),
                  precision=1e-7):
-			super().__init__(func, n_dim,
-                 size_pop, max_iter, prob_mut,
+			super().__init__(func, nDim,
+                 sizePop, maxIter, probMut,
                  lb, ub,
-                 constraint_eq, constraint_ueq,
+                 constraintEq, constraintUeq,
                  precision)
-			self.custom_param = custom_param
-			def func_transformed(X):
-				return np.array([func(self.custom_param, tuple(x)) for x in X])
-			self.func = func_transformed
+			self.customParam = customParam
+			def funcTransformed(x):
+				return np.array([func(self.customParam, tuple(y)) for y in x])
+			self.func = funcTransformed
 
 	@staticmethod
-	def evalTarget3(custom_param, x):
+	def evalTarget3(customParam, x):
 		"""
 		Function to optimize for geneticAlgorithm()
 		"""
 		# print("evalTarget3(", x,")")
 		devicesConsumption = 0
 		for i,v in enumerate(x):
-			devicesConsumption += custom_param.geneticGetPower(v, i)
-		return custom_param.evalTarget3CB(devicesConsumption)
+			devicesConsumption += customParam.geneticGetPower(v, i)
+		return customParam.evalTarget3CB(devicesConsumption)
 
 	@functools.lru_cache(maxsize=5000)
 	def evalTarget3CB(self, devicesConsumption):
@@ -580,12 +596,12 @@ class OptimizationAlgorithm:
 		Use genetic algorythm to find the best solution
 		"""
 		ga = self.ParamGA(
-			custom_param=self,
+			customParam=self,
 			func=self.evalTarget3,
-			n_dim=len(self._equipments),
-			size_pop=50,      # Population size
-			max_iter=200,     # Generations
-			prob_mut=0.1,     # Mutation probability
+			nDim=len(self._equipments),
+			sizePop=50,      # Population size
+			maxIter=200,     # Generations
+			probMut=0.1,     # Mutation probability
 			lb=0, ub=OptimizationAlgorithm.GENETIC_MODULO, # Use modulo to adapt
 			precision=1,      # Treat variables as integers (0 or 1)
 		)
