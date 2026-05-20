@@ -5,15 +5,16 @@ Test and validation module for streamlit solution.
 
 
 import sys
-import os
+from pathlib import Path
 import logging
 from time import sleep
 import threading
 from threading import Thread
 import unittest
 
-# pylint: disable=wrong-import-position
-sys.path.append(os.path.dirname(__file__))
+# pylint: disable=wrong-import-position, import-error
+ROOT_PATH = Path(__file__).parents[0]
+sys.path.append(str(ROOT_PATH / "src"))
 from openhems.modules.web import OpenHEMSSchedule
 from openhems.modules.util import ProjectConfiguration
 from openhems.modules.web.unix_socket import UnixSocketServer
@@ -76,4 +77,4 @@ class TestStreamlit(unittest.TestCase):
         t0.join(timeout=5)
 
 if __name__ == '__main__':
-	unittest.main()
+    unittest.main()

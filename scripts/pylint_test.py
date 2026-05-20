@@ -116,7 +116,8 @@ def pylint():
 	"""
 	cmds = [
 		"pylint  --fail-under=9.9 $(git ls-files '*.py')",
-		"pylint --rcfile=src/openhems/modules/web/.pylintrc src/openhems/modules/web/"
+		"pylint --fail-under=9.9 --rcfile=src/openhems/modules/web/.pylintrc src/openhems/modules/web/"
+		"pylint --fail-under=9.9 --rcfile=src/openhems/modules/web/.pylintrc tests"
 	]
 	for cmd in cmds:
 		stream = os.popen(cmd)

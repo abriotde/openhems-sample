@@ -584,10 +584,10 @@ class OptimizationAlgorithm:
 		"""
 		ga0 = GA(
 			func=self.evalTarget3,
-			nDim=len(self._equipments),
-			sizePop=50,      # Population size
-			maxIter=200,     # Generations
-			probMut=0.1,     # Mutation probability
+			n_dim=len(self._equipments),
+			size_pop=50,      # Population size
+			max_iter=200,     # Generations
+			prob_mut=0.1,     # Mutation probability
 			lb=0, ub=OptimizationAlgorithm.GENETIC_MODULO, # Use modulo to adapt
 			precision=1,      # Treat variables as integers (0 or 1)
 		)
