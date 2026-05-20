@@ -6,6 +6,7 @@ import dataclasses
 import logging
 from enum import Enum
 from typing import Final
+import threading
 from collections import OrderedDict # , deque
 from openhems.modules.util import CastUtililty, ConfigurationException
 from .feeder import Feeder
@@ -197,6 +198,12 @@ class OnNodeManager:
 				self._node.network.server.registerDecrementTime(self._node, True)
 		return retValue
 
+	def setValue(self, value):
+		"""
+		Set node on or off.
+		"""
+		self._isOn.setValue(value)
+
 	def switchOn(self, connect:bool):
 		"""
 		Switch on/off the node.
@@ -233,6 +240,7 @@ class Node:
 		# Security
 		self._isActivate = True # Can inactivate node for security reasons.
 		self._constraints = None
+		self.lock = threading.Lock() # Used to avoid concurrency pb on schedule and constraints
 		try: # Test if currentPower is well configured
 			self.getCurrentPower()
 		except TypeError as e:

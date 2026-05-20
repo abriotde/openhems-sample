@@ -531,16 +531,16 @@ class OptimizationAlgorithm:
 		"""
 		customParam: str
 
-		def __init__(self, customParam, ga:GA):
+		def __init__(self, customParam, func, ga:GA):
 			super().__init__(
-				ga.func, ga.n_dim,ga.size_pop,ga.max_iter,
+				func, ga.n_dim,ga.size_pop,ga.max_iter,
 				ga.prob_mut,ga.lb,ga.ub,
 				ga.constraint_eq,ga.constraint_ueq,
 				ga.precision,ga.early_stop
 			)
 			self.customParam = customParam
 			def funcTransformed(x):
-				return np.array([ga.func(self.customParam, tuple(y)) for y in x])
+				return np.array([func(self.customParam, tuple(y)) for y in x])
 			self.func = funcTransformed
 
 	@staticmethod
@@ -591,7 +591,7 @@ class OptimizationAlgorithm:
 			lb=0, ub=OptimizationAlgorithm.GENETIC_MODULO, # Use modulo to adapt
 			precision=1,      # Treat variables as integers (0 or 1)
 		)
-		ga = self.ParamGA(customParam=self, ga=ga0)
+		ga = self.ParamGA(customParam=self, func=self.evalTarget3, ga=ga0)
 		# print(f"Run Genetic Algorythm for {self._equipments}")
 		bestX, bestY = ga.run()
 		for i,v in enumerate(bestX):

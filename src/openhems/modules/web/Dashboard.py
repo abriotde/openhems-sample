@@ -3,32 +3,24 @@ Dashboard web page to see and manage schedule of devices in OpenHEMS.
 """
 #pylint: disable=invalid-name
 
-import os
 import sys
-import signal
 from pathlib import Path
 import dataclasses
 import logging
-from pyramid import url
-from pyramid import url
-import requests
-import time
 from datetime import datetime
-import subprocess
 import streamlit as st # pylint: disable=E0401
-import yaml
 import pandas as pd
 
 # pylint: disable=wrong-import-position
 ROOT_PATH = Path(__file__).parents[4]
 sys.path.append(str(ROOT_PATH / "src"))
-from openhems.modules.web.unix_socket import UnixSocketServer
+from openhems.unix_socket import UnixSocketServer
 from openhems.modules.network.homestate_updater import HomeStateUpdater
 from openhems.modules.util import (
  	ConfigurationManager
 )
 from openhems.modules.web.driver_vpn import (
-	VpnDriver, VpnDriverIncronClient, VpnDriverWireguard
+	VpnDriver
 )
 
 @dataclasses.dataclass
@@ -36,7 +28,6 @@ class OpenHEMSContext:
     """
     OpenHEMS context used in common with web server and core process
     """
-    lock: str
     schedule: dict
     logger: logging.Logger
     configurator: ConfigurationManager
@@ -44,99 +35,6 @@ class OpenHEMSContext:
     vpnDriver: VpnDriver
     network: HomeStateUpdater = None
 
-
-class OpenhemsHTTPServer2():
-    """
-    Class for HTTP Server for OpenHEMS UI configuration
-    """
-    def __init__(self, mylogger, schedule, warningMessages, *,
-            port=8000, html_root="/", inDocker=False, configurator=None):
-        # print("Init OpenhemsHTTPServer2 with port ", port)
-        self.logger = mylogger
-        self.schedule = schedule
-        self.warningMessages = warningMessages
-        self.port = port
-        self.html_root = html_root
-        if configurator is None:
-            configurator = ConfigurationManager(self.logger)
-        if isinstance(configurator, str):
-            self.yamlConfFilepath = configurator
-            configurator.defaultPath = ConfigurationManager.DEFAULT_PATH
-            configurator = ConfigurationManager(self.logger)
-            configurator.addYamlConfig(Path(self.yamlConfFilepath))
-        else:
-            self.yamlConfFilepath = configurator.getLastYamlConfFilepath()
-        self.defaultConfFilepath = configurator.defaultPath
-        self.configurator = configurator
-        lang = configurator.get("localization.language")
-        self.translations = {}
-        translationsPath = ROOT_PATH / ("src/openhems/data/keys_"+lang+".yaml")
-        with translationsPath.open("r", encoding="utf-8") as keyFile:
-            self.translations = yaml.load(keyFile, Loader=yaml.FullLoader)
-        if inDocker:
-            vpnDriver = VpnDriverIncronClient(mylogger)
-        else:
-            vpnDriver = VpnDriverWireguard(mylogger)
-        self.vpnDriver = vpnDriver
-        self.vpnDriver.test_vpn()
-        # self.generateTemplateYamlParams(lang) # TODO
-
-    def run(self, test_mode=False):
-        """
-        Run the web server throw a subprocess (bash cmd)
-        """
-        st.title("OpenHEMS")
-        print("Run on port ", self.port)
-        streamlit_app_path = str(ROOT_PATH / "src/openhems/modules/web/Dashboard.py")
-        cmd = [sys.executable, "-m", "streamlit",
-            "run", "--server.port="+str(self.port),
-            streamlit_app_path,
-        ]
-        if test_mode:
-            cmd.append("--server.headless=true")
-            cmd.append("--browser.gatherUsageStats=false")
-            print("Test mode: ", cmd)
-            self.proc = subprocess.Popen(
-                cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                preexec_fn=os.setsid  # Permet de tuer tout le groupe de processus
-            )
-        else:
-           self.proc = subprocess.run(cmd, check=False)
-        # try:
-        #     import streamlit.web.bootstrap as bootstrap
-        #     bootstrap.run(streamlit_app_path, True, [], {})
-        #     print("Launched bootstrap.run() with ", streamlit_app_path)
-        # except KeyboardInterrupt:
-        #     pass
-
-    def stop(self):
-        """
-        Should be used to stop properly.
-        """
-        os.killpg(os.getpgid(self.proc.pid), signal.SIGTERM)
-        return
-
-    def test(self, path="/"):
-        """
-        Test function to run Streamlit app without running the whole OpenHEMS application.
-        """
-        url = "http://localhost:" + str(self.port) + path
-        for _ in range(30):  # timeout 30 secondes
-            try:
-                response = requests.get(url)
-                if response.status_code == 200:
-                    break
-            except requests.ConnectionError:
-                pass
-            time.sleep(1)
-        else:
-            # Si on sort de la boucle sans avoir réussi
-            self.proc.terminate()
-            raise RuntimeError("Le serveur Streamlit n'a pas démarré")
-
-        yield url
 
 def manage_schedules_page(mode=0):
     """

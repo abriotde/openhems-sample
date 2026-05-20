@@ -4,5 +4,5 @@ HTTP web server to give UI to configure OpenHEMS server:
 * Switch on/offf VPN
 """
 
-from .web import OpenhemsHTTPServer
-from .schedule import OpenHEMSSchedule
+from .web_streamlit import OpenhemsHTTPServer
+from .Dashboard import OpenHEMSContext

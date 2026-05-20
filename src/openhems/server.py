@@ -134,6 +134,12 @@ class OpenHEMSServer:
 			self.logger.debug("Unregister decrement time for node '%s'", node)
 			self._decrementTimeCallbacks.pop(id(node))
 
+	def getNetwork(self):
+		"""
+		Return network.
+		"""
+		return self.network
+
 	def getTime(self):
 		"""
 		Return current time

@@ -22,7 +22,7 @@ from openhems.modules.util import (
     ConfigurationManager, ConfigurationException, CastUtililty, CastException, ProjectConfiguration
 )
 from .driver_vpn import VpnDriverWireguard, VpnDriverIncronClient
-# from .schedule import OpenHEMSSchedule
+# from openhems.schedule import OpenHEMSSchedule
 
 # Patch for jsonEncoder
 # pylint: disable=unused-argument

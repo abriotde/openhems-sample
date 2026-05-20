@@ -4,8 +4,11 @@ The web server is the UI used to that.
 """
 import logging
 import datetime
+import threading
 from jinja2 import Template
 from openhems.modules.util import CastUtililty, ConfigurationException
+
+# pylint: disable=invalid-name, bad-indentation # Until full migration to snake_case
 
 class OpenHEMSSchedule:
     """
@@ -23,6 +26,7 @@ class OpenHEMSSchedule:
         self.strategy_cache = {}
         self._condition = None
         self.node = node
+        self.lock = node.lock if node is not None and node.lock is not None else threading.Lock()
 
     def _get_val(self, ha_id):
         """
@@ -64,8 +68,9 @@ class OpenHEMSSchedule:
             self.logger.error("is_scheduled(%s) = ERROR : %s : Ignore this condition.",
                               self._condition, str(e))
             raise ConfigurationException(e) from e
-        self.logger.debug("OpenHEMSSchedule.is_scheduled(%s) : duration = %s",
-                self.id, self.duration)
+        with self.lock:
+            self.logger.debug("OpenHEMSSchedule.is_scheduled(%s) : duration = %s",
+                    self.id, self.duration)
         return self.duration is not None and self.duration>0
 
     def set_schedule(self, duration:int=None, timeout:datetime=None):
@@ -85,9 +90,10 @@ class OpenHEMSSchedule:
             timeout = CastUtililty.toTypeDatetime(timeout)
         if not isinstance(duration, int):
             timeout = CastUtililty.toTypeInt(duration)
-        self.duration = duration
-        self.timeout = timeout
-        self.strategy_cache = {}
+        with self.lock:
+            self.duration = duration
+            self.timeout = timeout
+            self.strategy_cache = {}
 
     def get_strategy_cache(self, strategy_id):
         """
@@ -99,13 +105,15 @@ class OpenHEMSSchedule:
         """
         Set cache for a strategy_id    
         """
-        self.strategy_cache[strategy_id] = value
+        with self.lock:
+            self.strategy_cache[strategy_id] = value
 
     def decrement_time(self, duration):
         """
         decrease time to be on from elapsed time.
         """
-        self.duration = max(self.duration-duration, 0)
+        with self.lock:
+            self.duration = max(self.duration-duration, 0)
         return self.duration
 
     def __json__(self, request=None):
@@ -113,13 +121,18 @@ class OpenHEMSSchedule:
         Export as JSON.
         """
         del request
-        timeout = self.timeout.strftime("%H:%M") if self.timeout is not None else "0"
-        timeout_dt = self.timeout.strftime("%Y-%m-%d %H:%M") if self.timeout is not None else None
-        return {"name":self.name,
-            "duration":self.duration,
-            "timeout":timeout,
-            "timeout_dt":timeout_dt}
+        with self.lock:
+            timeout = self.timeout.strftime("%H:%M") if self.timeout is not None else "0"
+            if self.timeout is not None:
+                timeout_dt = self.timeout.strftime("%Y-%m-%d %H:%M")
+            else:
+                timeout_dt = None
+            return {"name":self.name,
+                "duration":self.duration,
+                "timeout":timeout,
+                "timeout_dt":timeout_dt}
 
     def __str__(self):
-        timeout = self.timeout.strftime("%Y-%m-%d %H:%M:%S") if self.timeout is not None else ""
-        return f"Schedule({self.name}, duration:{self.duration}, timeout:{timeout})"
+        with self.lock:
+            timeout = self.timeout.strftime("%Y-%m-%d %H:%M:%S") if self.timeout is not None else ""
+            return f"Schedule({self.name}, duration:{self.duration}, timeout:{timeout})"

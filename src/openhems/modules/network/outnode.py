@@ -3,7 +3,7 @@ Represent appliance of home network: Devices consumming electricity.
 """
 
 import logging
-from openhems.modules.web import OpenHEMSSchedule
+from openhems.modules.network.schedule import OpenHEMSSchedule
 from openhems.modules.util import ConfigurationException
 from .feeder import Feeder, FakeSwitchFeeder
 from .node import Node

@@ -19,7 +19,7 @@ from streamlit_monaco_yaml import monaco_editor # pylint: disable=E0401
 # pylint: disable=wrong-import-position
 ROOT_PATH = Path(__file__).parents[5]
 sys.path.append(str(ROOT_PATH / "src"))
-from openhems.modules.web.unix_socket import UnixSocketServer
+from openhems.unix_socket import UnixSocketServer
 # from openhems.modules.util import (
 # 	ConfigurationManager, ConfigurationException, CastUtililty, CastException, ProjectConfiguration
 # )

@@ -20,7 +20,7 @@ sys.path.append(str(openhemsPath))
 from openhems.modules.network.driver.home_assistant_api import HomeAssistantAPI
 from openhems.modules.network.driver.fake_network import FakeNetwork
 from openhems.modules.network import Network, HomeStateUpdaterException
-
+from openhems.unix_socket import UnixSocketServer
 from openhems.modules.web import OpenhemsHTTPServer
 from openhems.modules.util import (
 	ConfigurationManager, ConfigurationException,
@@ -139,7 +139,7 @@ class OpenHEMSApplication:
 		logfile = logfilepath if logfilepath!='' else configurator.get("server.logfile")
 		self.setLogger(loglevel, logformat, logfile, inDocker)
 		self.logger.info("Load YAML configuration from '%s'.",yamlConfFilepath)
-		self.server = None
+		self.server:OpenHEMSServer = None
 		# pylint: disable=broad-exception-caught
 		try:
 			network = self.getNetworkFromConfiguration(self.logger, configurator)
@@ -173,6 +173,8 @@ class OpenHEMSApplication:
 		"""
 		if self.server is not None:
 			self.server.run()
+			socket = UnixSocketServer(self.server.getSchedule(), self.server.getNetwork(), self.logger)
+			socket.start()
 
 	def runWebServer(self):
 		"""
