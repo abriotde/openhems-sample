@@ -3,11 +3,16 @@ Dashboard web page to see and manage schedule of devices in OpenHEMS.
 """
 #pylint: disable=invalid-name
 
-
+import os
 import sys
+import signal
 from pathlib import Path
 import dataclasses
 import logging
+from pyramid import url
+from pyramid import url
+import requests
+import time
 from datetime import datetime
 import subprocess
 import streamlit as st # pylint: disable=E0401
@@ -76,18 +81,29 @@ class OpenhemsHTTPServer2():
         self.vpnDriver.test_vpn()
         # self.generateTemplateYamlParams(lang) # TODO
 
-    def run(self):
+    def run(self, test_mode=False):
         """
         Run the web server throw a subprocess (bash cmd)
         """
         st.title("OpenHEMS")
         print("Run on port ", self.port)
         streamlit_app_path = str(ROOT_PATH / "src/openhems/modules/web/Dashboard.py")
-        subprocess.run([sys.executable, "-m", "streamlit",
+        cmd = [sys.executable, "-m", "streamlit",
             "run", "--server.port="+str(self.port),
-            # "--server.headless=true",
             streamlit_app_path,
-        ], check=False)
+        ]
+        if test_mode:
+            cmd.append("--server.headless=true")
+            cmd.append("--browser.gatherUsageStats=false")
+            print("Test mode: ", cmd)
+            self.proc = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                preexec_fn=os.setsid  # Permet de tuer tout le groupe de processus
+            )
+        else:
+           self.proc = subprocess.run(cmd, check=False)
         # try:
         #     import streamlit.web.bootstrap as bootstrap
         #     bootstrap.run(streamlit_app_path, True, [], {})
@@ -99,7 +115,28 @@ class OpenhemsHTTPServer2():
         """
         Should be used to stop properly.
         """
+        os.killpg(os.getpgid(self.proc.pid), signal.SIGTERM)
         return
+
+    def test(self, path="/"):
+        """
+        Test function to run Streamlit app without running the whole OpenHEMS application.
+        """
+        url = "http://localhost:" + str(self.port) + path
+        for _ in range(30):  # timeout 30 secondes
+            try:
+                response = requests.get(url)
+                if response.status_code == 200:
+                    break
+            except requests.ConnectionError:
+                pass
+            time.sleep(1)
+        else:
+            # Si on sort de la boucle sans avoir réussi
+            self.proc.terminate()
+            raise RuntimeError("Le serveur Streamlit n'a pas démarré")
+
+        yield url
 
 def manage_schedules_page(mode=0):
     """
