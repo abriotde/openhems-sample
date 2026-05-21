@@ -14,6 +14,8 @@ from importlib import util
 from importlib.metadata import version
 from packaging.version import Version
 
+# pylint: disable=invalid-name
+
 emhassModuleSpec = util.find_spec('emhass')
 if emhassModuleSpec is not None and Version(version('emhass'))>Version('0.9.0'):
 	print("module 'emhass' is installed on version ", version('emhass'))

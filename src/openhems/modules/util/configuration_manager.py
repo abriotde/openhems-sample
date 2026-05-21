@@ -45,8 +45,8 @@ class ConfigurationManager():
 			self.defaultPath = ConfigurationManager.DEFAULT_PATH
 		else:
 			self.defaultPath = defaultPath
+		self.filepaths = []
 		self.addYamlConfig(self.defaultPath, True)
-		self.lastYamlConfFilepath = self.defaultPath
 
 	#pylint: disable=too-many-branches
 	def _completeFromModelCB(self, configuration, model, baseKey="", exceptKeys=None):
@@ -165,7 +165,7 @@ class ConfigurationManager():
 		"""
 		Return the last YAML configuration file path. We consder it as the "main".
 		"""
-		return self.lastYamlConfFilepath
+		return self.filepaths[-1]
 
 	def addYamlConfig(self, yamlConfig, init=False):
 		"""
@@ -182,7 +182,7 @@ class ConfigurationManager():
 		if dictConfig is not None:
 			self._load(dictConfig, init)
 		self._cache = {}
-		self.lastYamlConfFilepath = yamlConfig
+		self.filepaths.append(yamlConfig)
 		# print(self._conf)
 
 	def add(self, key, value, init=False, prekey=''):
@@ -375,3 +375,11 @@ class ConfigurationManager():
 			)
 			self.logger.error(traceback.format_exc())
 			shutil.copyfile(backupFile, yamlConfFilepath)
+
+	def __str__(self):
+		retValue = "ConfigurationManager(\n"
+		retValue += "  filepaths = " + str(self.filepaths) + ",\n"
+		retValue += " config = " + str(self.retrieveYamlConfig()) + "\n"
+		retValue += ")"
+
+		return retValue

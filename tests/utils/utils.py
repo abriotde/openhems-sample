@@ -34,10 +34,11 @@ class TestStrategy(unittest.TestCase):
             return None
         self.app.server.allowSleep = False
         for node in self.get_network().getAll("out"):
-            # logger.info("Node: %s is on:%s", node.id, node.isOn())
+            logger.info("Node: %s is on:%s", node, node.isOn())
             self.assertFalse(node.isOn())
             self.nodes[node.id] = node
         self.app.server.loop(now)
+        print("Network is : ", self.get_network())
         return self.nodes
 
     def loop(self, loop_delay=None, now=None):

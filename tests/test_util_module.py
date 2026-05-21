@@ -51,10 +51,11 @@ class TestUtilModule(unittest.TestCase):
         self.assertEqual(value, '')
 
         # Test overriden configurations values
-        configurator.addYamlConfig(ROOT_PATH / 'config/openhems.yaml')
+        configurator.addYamlConfig(ROOT_PATH / 'tests/data/openhems_testutil.yaml')
         value = configurator.get("server.logfile")
         self.assertEqual(value, '')
 
+        # print("Configuration: ", configurator)
         cur_folder = Path(__file__).parents[0]
         saved_file = cur_folder / 'data/openhems_test_save.tmp.yaml'
         if saved_file.exists():

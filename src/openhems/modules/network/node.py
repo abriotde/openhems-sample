@@ -208,8 +208,110 @@ class OnNodeManager:
 		"""
 		Switch on/off the node.
 		"""
-		self._isOn = connect
+		self._wasOn = connect
 		self._wasOnCycleId = self._node.network.getCycleId()
+
+class PowerControler:
+	"""
+	Manage node power control
+	"""
+	def __init__(self, feeder, values=None, node=None):
+		self._feeder:Feeder = feeder
+		self._values = values # dict of urrentPower from asked controlled power (level).
+		self._node = node
+		self._init()
+
+	def getValue(self):
+		"""
+		Return current wanted controlled power for node with controlable power.
+		!!! Warning maybe we don't get power but an abstract value (like power from 0 to 6). !!!
+		"""
+		value = self._feeder.getValue()
+		return value
+
+	def setValue(self, value):
+		"""
+		Set wanted controlled power for node with controlable power.
+		!!! Warning maybe we don't set power but an abstract value. !!!
+		"""
+		self._feeder.setValue(value)
+
+	def getValues(self):
+		"""
+		Return possible values for on/off node.
+		"""
+		return self._values
+
+	def update(self, newValue):
+		"""
+		Update current wanted controlled power for node with controlable power.
+		!!! Warning maybe we don't get power but an abstract value (like power from 0 to 6). !!!
+		"""
+		value = self.getValue()
+		power = self.getValues().get(value)
+		if power is None:
+			self._values[value] = newValue
+		elif newValue!=value: # Choice the most coherent value
+			# pylint: disable=protected-access
+			linkPrev, linkNext, _ = self._values._OrderedDict__map[value]
+			prevValue = self._values[linkPrev[2]]
+			nextValue = self._values[linkNext[2]]
+			# check that power values are ordered (like control value)
+			coherent = prevValue<value<nextValue
+			coherentNew = prevValue<newValue<nextValue
+			if coherent and coherentNew:
+				old = max(value-prevValue, nextValue-value)
+				new = max(newValue-prevValue, nextValue-newValue)
+				if new<old:
+					self._values[value] = newValue
+				# else nothing to do, that was the "best"
+			elif coherent:
+				pass
+			elif coherentNew:
+				self._values[value] = newValue
+			# else: uncoherent values, the error is probably elsewhere
+		return value
+
+	def setNode(self, node):
+		"""
+		Set the parent node
+		"""
+		self._node = node
+
+
+	def _init(self):
+		"""
+		Allow to define controlledPowerValues as
+		- {range: [0, 10], step: 2}
+		- {0: 0, 1: 100, 2: 400, 3: 1000}
+		- [0, 1, 2, 3, 4, 5]
+		"""
+		if isinstance(self._values, list):
+			values = [None for _ in self._values]
+			self._values = dict(zip(self._values, values))
+		elif isinstance(self._values, dict):
+			myrange = None
+			step = None
+			controlledPowerValues = {}
+			for k, v in self._values.items():
+				if k=="range":
+					myrange=v
+				elif k=="step":
+					step=v
+				else:
+					controlledPowerValues[k]=v
+			if (myrange is not None or step is not None) \
+					or len(controlledPowerValues)==0:
+				if step is None:
+					step=1
+				if myrange is None:
+					myrange=[0, self._node.getMaxPower()]
+				elif isinstance(myrange, str):
+					myrange = CastUtililty.toTypeList(myrange)
+				keys = range(myrange[0], myrange[1], step)
+				values = [None for _ in keys]
+				controlledPowerValues = controlledPowerValues | dict(zip(keys, values))
+			self._values = OrderedDict(sorted(controlledPowerValues))
 
 class Node:
 	"""
@@ -224,14 +326,14 @@ class Node:
 		self.id = haId.strip().replace(" ", "_")
 
 	def __init__(self, nameId, currentPower, maxPower, *, isOnFeeder=None,
-			  controlledPowerFeeder=None, controlledPowerValues=None, network=None):
+			  powerController:PowerControler=None, network=None):
 		self.id = ""
 		self.setId(nameId)
 		self.network = network
-		self._controlledPower = controlledPowerFeeder
+		if powerController is not None:
+			powerController.setNode(self)
+		self._powerController = powerController
 		# dict of currentPower from asked controlled power (level).
-		self._controlledPowerValues = controlledPowerValues
-		self._initControlledPowerValues()
 		self._currentPower:Feeder = currentPower
 		self._maxPower:Feeder = maxPower
 		self._isOn:OnNodeManager = OnNodeManager(self, isOnFeeder) if isOnFeeder is not None else None
@@ -260,40 +362,6 @@ class Node:
 		Get current time
 		"""
 		return self.network.getTime()
-
-	def _initControlledPowerValues(self):
-		"""
-		Allow to define controlledPowerValues as
-		- {range: [0, 10], step: 2}
-		- {0: 0, 1: 100, 2: 400, 3: 1000}
-		- [0, 1, 2, 3, 4, 5]
-		"""
-		if isinstance(self._controlledPowerValues, list):
-			values = [None for _ in self._controlledPowerValues]
-			self._controlledPowerValues = dict(zip(self._controlledPowerValues, values))
-		elif isinstance(self._controlledPowerValues, dict):
-			myrange = None
-			step = None
-			controlledPowerValues = {}
-			for k, v in self._controlledPowerValues.items():
-				if k=="range":
-					myrange=v
-				elif k=="step":
-					step=v
-				else:
-					controlledPowerValues[k]=v
-			if (myrange is not None or step is not None) \
-					or len(controlledPowerValues)==0:
-				if step is None:
-					step=1
-				if myrange is None:
-					myrange=[0,self.getMaxPower()]
-				elif isinstance(myrange, str):
-					myrange = CastUtililty.toTypeList(myrange)
-				keys = range(myrange[0], myrange[1], step)
-				values = [None for _ in keys]
-				controlledPowerValues = controlledPowerValues | dict(zip(keys, values))
-			self._controlledPowerValues = OrderedDict(sorted(controlledPowerValues))
 
 	# def _setCurrentPower(self, currentPower):
 	# 	"""
@@ -361,14 +429,14 @@ class Node:
 		"""
 			Return true if this Node can be switch on/off.
 		"""
-		return self._controlledPower is not None
+		return self._powerController is not None
 
 	def getControlledPowerValues(self):
 		"""
 		Get a dict matching possible command with possible power.
 		"""
-		if self._controlledPower is not None: # Fist call, init values
-			return self._controlledPowerValues
+		if self._powerController is not None: # Fist call, init values
+			return self._powerController.getValues()
 		return None
 
 
@@ -377,32 +445,9 @@ class Node:
 		Get current wanted controlled power for node with controlable power.
 		!!! Warning maybe we don't get power but an abstract value (like power from 0 to 6). !!!
 		"""
-		if self._controlledPower is not None:
-			value = self._controlledPower.getValue()
-			power = self._controlledPowerValues.get(value)
+		if self._powerController is not None:
 			newValue = self.getCurrentPower()
-			if power is None:
-				self._controlledPowerValues[value] = newValue
-			elif newValue!=value: # Choice the most coherent value
-				# pylint: disable=protected-access
-				linkPrev, linkNext, _ = self._controlledPowerValues._OrderedDict__map[value]
-				prevValue = self._controlledPowerValues[linkPrev[2]]
-				nextValue = self._controlledPowerValues[linkNext[2]]
-				# check that power values are ordered (like control value)
-				coherent = prevValue<value<nextValue
-				coherentNew = prevValue<newValue<nextValue
-				if coherent and coherentNew:
-					old = max(value-prevValue, nextValue-value)
-					new = max(newValue-prevValue, nextValue-newValue)
-					if new<old:
-						self._controlledPowerValues[value] = newValue
-					# else nothing to do, that was the "best"
-				elif coherent:
-					pass
-				elif coherentNew:
-					self._controlledPowerValues[value] = newValue
-				# else: uncoherent values, the error is probably elsewhere
-			return value
+			return self._powerController.update(newValue)
 		return None
 
 	def setControlledPower(self, power):
@@ -410,8 +455,8 @@ class Node:
 		Set wanted controlled power for node with controlable power.
 		!!! Warning maybe we don't set power but an abstract value. !!!
 		"""
-		if self._controlledPower is not None:
-			return self._controlledPower.setValue(power)
+		if self._powerController is not None:
+			return self._powerController.setValue(power)
 		return None
 
 	def setActivate(self, value:bool):

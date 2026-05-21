@@ -53,7 +53,6 @@ def analyzeFolder(folder):
 	for line in stream.readlines():
 		print(line)
 		# pylint: disable=pointless-string-statement
-		"""
 		ok = pattern_line.match(line)
 		if ok:
 			file = ok[1]
@@ -83,7 +82,6 @@ def analyzeFolder(folder):
 				print(line)
 		else:
 			print(line)
-		"""
 
 def initSnakeCaseConversion():
 	"""

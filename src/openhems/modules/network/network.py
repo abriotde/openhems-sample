@@ -337,3 +337,14 @@ class Network:
 		Get current time
 		"""
 		return self.server.getTime()
+
+	def __str__(self):
+		out = "Network(\n"
+		out += " IN : \n"
+		for elem in self.getAll("inout"):
+			out += "  - "+str(elem)+"\n"
+		out += " OUT : \n"
+		for elem in self.getAll("out"):
+			out += "  - "+str(elem)+"\n"
+		out += "\n)"
+		return out

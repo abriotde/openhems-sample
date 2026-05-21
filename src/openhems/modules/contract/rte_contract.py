@@ -65,6 +65,7 @@ class RTETempoContract(RTEContract):
 		"""
 			Use https://www.api-couleur-tempo.fr/api/ API to get TempoColori of a day.
 		"""
+		# print(f"callApiRteTempo({day})", file=sys.stderr)
 		url = "https://www.api-couleur-tempo.fr/api/jourTempo/"+day
 		retVal = None
 		for _ in range(3): # Could be usefull for 502 error
@@ -100,6 +101,7 @@ class RTETempoContract(RTEContract):
 		"""
 		Return "day color". As it change every day, keep cache for 1 hour at least
 		"""
+		# print(f"getColor({now}, {attime})", file=sys.stderr)
 		if isinstance(self.color, str):
 			# self.logger.debug("getColor() : STR(%s)", self.color)
 			return self.color
@@ -121,6 +123,7 @@ class RTETempoContract(RTEContract):
 		"""
 		Return the color of a passed date.
 		"""
+		# print(f"getHistoryColor({attime})", file=sys.stderr)
 		if not isinstance(attime, str):
 			day = self.getColorDate(attime)
 		else:
@@ -144,6 +147,7 @@ class RTETempoContract(RTEContract):
 		Return the next day color according to Home-Assistant
 		Warning: A beter way would be to use Web API directly
 		"""
+		# print(f"getNextColor({now})", file=sys.stderr)
 		if now is None:
 			now = datetime.datetime.now()
 		curCall = now.strftime("%Y%m%d%H")
@@ -184,6 +188,7 @@ class RTETempoContract(RTEContract):
 			as one colorRange is used in multi context changing it's Limits.
 		"""
 		color = self.getColor(now, attime)
+		# print("getHoursRanges() : color=", color, file=sys.stderr)
 		hoursRanges = self.colorRanges.get(color)
 		if hoursRanges is None:
 			raise ConfigurationException(

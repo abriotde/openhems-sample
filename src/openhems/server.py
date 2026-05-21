@@ -157,7 +157,7 @@ class OpenHEMSServer:
 		Decrement time from all objects neither the type (Thanks Python ;) )
 		"""
 		self.logger.debug("decrementTime(%s)", duration)
-		for node in self._decrementTimeCallbacks.values():
+		for node in list(self._decrementTimeCallbacks.values()):
 			self.logger.debug(" - for '%s'", node)
 			try:
 				node.decrementTime(duration)

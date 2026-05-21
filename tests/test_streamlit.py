@@ -8,7 +8,6 @@ import sys
 from pathlib import Path
 import logging
 from time import sleep
-import threading
 from threading import Thread
 import unittest
 
@@ -52,7 +51,6 @@ class TestStreamlit(unittest.TestCase):
         # Create a dummy context with necessary attributes
         network = FakeNetwork(ProjectConfiguration())
         dummy_context = OpenHEMSContext(
-            lock=threading.Lock(),
             schedule={"node_id": OpenHEMSSchedule(3600, "Test Schedule")},
             logger=logger,
             configurator=None,
@@ -64,7 +62,7 @@ class TestStreamlit(unittest.TestCase):
         server = OpenhemsHTTPServer(
             mylogger=dummy_context.logger,
             schedule=dummy_context.schedule,
-            warningMessages=[],
+            warning_messages=[],
             port=8000,  # Default Streamlit port
             in_docker=False,
             configurator=dummy_context.configurator
