@@ -14,8 +14,9 @@ import pandas as pd
 # pylint: disable=wrong-import-position
 ROOT_PATH = Path(__file__).parents[4]
 sys.path.append(str(ROOT_PATH / "src"))
-from openhems.unix_socket import UnixSocketServer
+from openhems.unix_socket import UnixSocketClient
 from openhems.modules.network.homestate_updater import HomeStateUpdater
+from openhems.modules.web.web_streamlit import OpenhemsHTTPServer, trad
 from openhems.modules.util import (
  	ConfigurationManager
 )
@@ -43,8 +44,11 @@ def manage_schedules_page(mode=0):
     if mode==0:
         st.title("Gestion des programmations")
     # Get schedules from the UnixSocketServer (core server)
-    schedule = UnixSocketServer.get_schedule()
+    schedule = OpenhemsHTTPServer.get_socket_client().get_schedule()
     # st.write("DEBUG schedule:", schedule)
+    if schedule is None:
+        st.warning("Erreur lors de la récupération des appareils programmables.")
+        return
 
     # Create a DataFrame for display and editing
     print("manage_schedules_page() : schedule =", schedule)
@@ -87,22 +91,33 @@ def manage_schedules_page(mode=0):
 
     # 0n save
     if st.button("💾 Appliquer les modifications"):
-        for _, row in edited_df.iterrows():
-            node_id = row["ID"]
-            if node_id in schedule:
-                print("Row:", row)
+        # st.info(f"Button clicked")
+        updated = False
+        schedule_keys = list(schedule.keys())
+        for i, row in edited_df.iterrows():
+            if i < len(schedule_keys):
+                # print("Row:", row)
+                node_id = schedule_keys[i]
                 duration = row.get("Duration")
                 if duration == 0:
                     duration = None
                 timeout = row.get("Timeout")
                 if not pd.notna(timeout):
+                    # st.info(f"No timeout provided for node_id: {node_id}, {timeout}")
                     timeout = None
                 elif isinstance(timeout, datetime):
-                    print("Convert timeout to string:", timeout)
+                    # print("Convert timeout to string:", timeout)
                     timeout = timeout.strftime("%Y-%m-%dT%H:%M:%S")
-                UnixSocketServer.update_schedule(node_id, duration, timeout)
-        st.success("Programmations mises à jour !")
-        st.rerun()
+                # else:
+                #     st.info(f"Timeout provided for node_id: {node_id}: ·{timeout}·")
+                OpenhemsHTTPServer.get_socket_client()\
+                    .update_schedule(node_id, duration, timeout)
+                updated = True
+            # else:
+            #     st.info(f"node_id: {i} / {schedule_keys}")
+        if updated:
+            st.success("Programmations mises à jour !")
+        # st.rerun()
 
 
 # Configuration de la page

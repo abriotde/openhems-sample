@@ -35,6 +35,14 @@ function updateOpenHEMS {
 	$OPENHEMS_PATH/scripts/autoupdate.py
 }
 
+function startOpenHEMS {
+	cd $OPENHEMS_PATH/src/openhems
+	mkdir -p $OPENHEMS_LOGPATH
+	cmd="./main.py --conf $OPENHEMS_PATH/config/openhems.conf --logfile $OPENHEMS_LOGPATH/openhems.log"
+	echo "Start OpenHEMS server : $ $cmd"
+	$cmd
+}
+
 # TODO : Install custom Python + venv ?
 # https://wiki.crowncloud.net/index.php?How_to_Install_Python_3_11_on_Debian_11 (3.11.10)
 # virtualenv --python="/usr/bin/python2.6" "/path/to/new/virtualenv/"

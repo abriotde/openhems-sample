@@ -20,6 +20,5 @@ OPENHEMS_DOCKER_VERSION=latest
 TMP_DIR=/tmp
 VPN_IP=10.0.0.2
 MY_TIME_ZONE=`cat /etc/timezone`
-DOCKER_OPENHEMS=1
-
-
+DOCKER_OPENHEMS=0
+OPENHEMS_LOGPATH=/home/alberic/Documents/OpenHomeSystem/openhems-sample/logs

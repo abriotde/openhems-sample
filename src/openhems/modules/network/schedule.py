@@ -116,11 +116,10 @@ class OpenHEMSSchedule:
             self.duration = max(self.duration-duration, 0)
         return self.duration
 
-    def __json__(self, request=None):
+    def __json__(self):
         """
         Export as JSON.
         """
-        del request
         with self.lock:
             timeout = self.timeout.strftime("%H:%M") if self.timeout is not None else "0"
             if self.timeout is not None:

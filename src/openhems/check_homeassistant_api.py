@@ -11,7 +11,7 @@ import json
 from requests import get
 import yaml
 
-yamlConfig = Path(__file__).parents[2] / "config/openhems.yaml"
+yamlConfig = Path(__file__).parents[2] / "config/openhems.secret.yaml"
 
 with yamlConfig.open('r', encoding="utf-8") as file:
 	print("Load YAML configuration from ", yamlConfig)

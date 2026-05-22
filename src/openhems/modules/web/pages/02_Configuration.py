@@ -19,7 +19,7 @@ from streamlit_monaco_yaml import monaco_editor # pylint: disable=E0401
 # pylint: disable=wrong-import-position
 ROOT_PATH = Path(__file__).parents[5]
 sys.path.append(str(ROOT_PATH / "src"))
-from openhems.unix_socket import UnixSocketServer
+from openhems.modules.web import OpenhemsHTTPServer
 # from openhems.modules.util import (
 # 	ConfigurationManager, ConfigurationException, CastUtililty, CastException, ProjectConfiguration
 # )
@@ -139,7 +139,7 @@ def save_basic_config(
 @st.cache_data(ttl=3600)
 def get_ha_entities() -> list:
     """ Get Home-Assistant entities list via UnixSocketServer."""
-    return UnixSocketServer.list_components()
+    return OpenhemsHTTPServer.get_socket_client().list_components()
 
 def select_ha_entity(search_term: str) -> list:
     """Fonction de recherche passée à st_searchbox."""

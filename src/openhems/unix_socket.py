@@ -21,6 +21,11 @@ from openhems.modules.network.homestate_updater import HomeStateUpdater
 SOCKET_PATH = "/tmp/openhems.sock"
 
 # pylint: disable=invalid-name, bad-indentation # Until full migration to snake_case
+def json_default(obj):
+    if hasattr(obj, "__json__"):
+        return obj.__json__()
+    # Optionnel : gérer d'autres types non sérialisables
+    raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
 
 class UnixSocketServer:
     """
@@ -35,11 +40,11 @@ class UnixSocketServer:
         LIST_COMPONENTS = "list_components"
 
     def __init__(self, schedule: list[OpenHEMSSchedule],
-                  home_state_updater: HomeStateUpdater, logger=None):
+                  network: HomeStateUpdater, socket_path=SOCKET_PATH, logger=None):
         self.schedule = schedule
-        self.home_state_updater = home_state_updater
+        self.home_state_updater = network
         self.logger = logger or logging.getLogger(__name__)
-        self.socket_path = SOCKET_PATH
+        self.socket_path = socket_path
         self.server = None
         self.thread = None
 
@@ -77,7 +82,7 @@ class UnixSocketServer:
             if action == self.Action.GET_SCHEDULE.value:
                 # print("Send schedules : ", self.schedule)
                 # Sérialiser le schedule dans un format simple
-                response = json.dumps(self.schedule)
+                response = json.dumps(self.schedule, default=json_default)
                 conn.send(response.encode('utf-8'))
             elif action == self.Action.UPDATE_SCHEDULE.value:
                 request_id = request['id']
@@ -100,8 +105,14 @@ class UnixSocketServer:
         finally:
             conn.close()
 
-    @staticmethod
-    def send_request(action, request=None):
+class UnixSocketClient:
+    """
+    Client to send request to the UnixSocketServer.
+    """
+    def __init__(self, socket_path=SOCKET_PATH):
+        self.socket_path = socket_path
+
+    def send_request(self, action, request=None):
         """
         Used by client to send a correct request to this unix socket server 
         """
@@ -111,7 +122,7 @@ class UnixSocketServer:
         request["action"] = action.value
         try:
             sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-            sock.connect(SOCKET_PATH)
+            sock.connect(self.socket_path)
             sock.send(json.dumps(request).encode('utf-8'))
             response = sock.recv(8192).decode('utf-8')
             sock.close()
@@ -120,18 +131,16 @@ class UnixSocketServer:
             st.error(f"Erreur de communication avec le core : {e}")
             return None
 
-    @staticmethod
-    def get_schedule():
+    def get_schedule(self):
         """
         For the client, to ask schedule list.
         """
-        resp = UnixSocketServer.send_request(
+        resp = self.send_request(
              UnixSocketServer.Action.GET_SCHEDULE
         )
         return resp
 
-    @staticmethod
-    def update_schedule(schedule_id, duration, timeout):
+    def update_schedule(self, schedule_id, duration, timeout):
         """
         For the client, to update a schedule for a device.
         """
@@ -140,17 +149,16 @@ class UnixSocketServer:
             "duration": duration,
             "timeout": timeout
         }
-        resp = UnixSocketServer.send_request(UnixSocketServer.Action.UPDATE_SCHEDULE, data)
+        resp = self.send_request(UnixSocketServer.Action.UPDATE_SCHEDULE, data)
         # print("update_schedule() = ", resp)
         return resp.get("status") == "ok" or resp.get("error")
 
-    @staticmethod
-    def list_components():
+    def list_components(self):
         """
         For the client, to ask the list of existing Home-Assistant available components
           (to limit configuration errors).
         """
-        resp = UnixSocketServer.send_request(
+        resp = self.send_request(
              UnixSocketServer.Action.LIST_COMPONENTS
         )
         return resp

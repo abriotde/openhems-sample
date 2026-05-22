@@ -130,6 +130,7 @@ class OpenHEMSApplication:
 		network = None
 		schedule = []
 		configurator = ConfigurationManager(self.logger)
+		self.configurator = configurator
 		try:
 			configurator = self.loadYamlConfiguration(configurator, yamlConfFilepath)
 		except ConfigurationException as e:
@@ -173,7 +174,12 @@ class OpenHEMSApplication:
 		"""
 		if self.server is not None:
 			self.server.run()
-			socket = UnixSocketServer(self.server.getSchedule(), self.server.getNetwork(), self.logger)
+			socket = UnixSocketServer(
+				self.server.getSchedule(),
+				self.server.getNetwork(),
+				self.logger,
+				socket_path=self.configurator.get("server.socketpath")
+			)
 			socket.start()
 
 	def runWebServer(self):
