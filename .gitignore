@@ -19,3 +19,4 @@ docs/OpenHemsUMLDiagram.puml
 docs/source/generated
 src/openhems/openhems.db
 tests/openhems.db
+src/openhems/data/streamlit_session.yaml

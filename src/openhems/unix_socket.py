@@ -22,6 +22,9 @@ SOCKET_PATH = "/tmp/openhems.sock"
 
 # pylint: disable=invalid-name, bad-indentation # Until full migration to snake_case
 def json_default(obj):
+    """
+    Override JSON serializer for objects to use __json__ method.
+    """
     if hasattr(obj, "__json__"):
         return obj.__json__()
     # Optionnel : gérer d'autres types non sérialisables
@@ -89,7 +92,10 @@ class UnixSocketServer:
                 duration = request.get('duration')
                 timeout = request.get('timeout')
                 if timeout is not None:
-                    timeout = datetime.datetime.strptime(timeout[0:16], "%Y-%m-%dT%H:%M")
+                    timeout = datetime.datetime.strptime(
+                        timeout[0:16].replace("T", " "),
+                        "%Y-%m-%d %H:%M"
+                    )
                 print("Update schedule for id:", request_id,
                       "duration:", duration, "timeout:", timeout)
                 # Modifier l'objet schedule existant

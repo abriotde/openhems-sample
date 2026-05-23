@@ -12,7 +12,7 @@ import time
 import subprocess
 import requests
 import yaml
-import streamlit as st
+import streamlit as st #pylint: disable=import-error
 
 from openhems.unix_socket import UnixSocketClient # pylint: disable=E0401
 
@@ -50,16 +50,13 @@ class OpenhemsHTTPServer():
             configurator.addYamlConfig(Path(self.yaml_config_file_path))
         else:
             self.yaml_config_file_path = configurator.getLastYamlConfFilepath()
-        self.default_config_file_path = configurator.defaultPath
         self.configurator = configurator
         lang = configurator.get("localization.language")
-        self.translations = {}
         self.lang = lang
         if in_docker:
-            vpn_driver = VpnDriverIncronClient(self.logger)
+            self.vpn_driver = VpnDriverIncronClient(self.logger)
         else:
-            vpn_driver = VpnDriverWireguard(self.logger)
-        self.vpn_driver = vpn_driver
+            self.vpn_driver = VpnDriverWireguard(self.logger)
         self.vpn_driver.test_vpn()
         self.proc = None
         self.define_default_session()
@@ -95,6 +92,12 @@ class OpenhemsHTTPServer():
         # except KeyboardInterrupt:
         #     pass
 
+    def stop(self):
+        """
+        Should be used to stop properly.
+        """
+        os.killpg(os.getpgid(self.proc.pid), signal.SIGTERM)
+
     def define_default_session(self):
         """
         Initialize Streamlit session state with necessary objects (like UnixSocketClient)
@@ -115,7 +118,8 @@ class OpenhemsHTTPServer():
             st.session_state.unix_socket_client = UnixSocketClient(
                 socket_path=session_data.get("socket_path")
             )
-            # It would be better to store in more global variable (avoid to reload it at each session initialization)
+            # It would be better to store in more global variable
+            #  (avoid to reload it at each session initialization)
             #  but no matter as we should have only one user (or very few)
             st.session_state.lang = session_data.get("lang")
 
@@ -143,13 +147,11 @@ class OpenhemsHTTPServer():
             except requests.ConnectionError:
                 pass
             time.sleep(1)
-        else:
-            # Si on sort de la boucle sans avoir réussi
-            # print("Le serveur Streamlit n'a pas démarré", file=sys.stderr)
-            self.proc.terminate()
-            raise RuntimeError("Le serveur Streamlit n'a pas démarré")
-
-        yield url
+        # Si on sort de la boucle sans avoir réussi
+        # print("Le serveur Streamlit n'a pas démarré", file=sys.stderr)
+        self.proc.terminate()
+        raise RuntimeError("Le serveur Streamlit n'a pas démarré")
+        # yield url
 
 @st.cache_data
 def load_translations(lang: str) -> dict:
@@ -157,7 +159,8 @@ def load_translations(lang: str) -> dict:
     if lang not in ["en", "fr"]:
         lang = "en"
     file_path = ROOT_PATH / ("src/openhems/data/keys_"+lang+".yaml")
-    with open(file_path, 'r') as f:
+    translations = {}
+    with open(file_path, 'r', encoding='utf-8') as f:
         translations = yaml.safe_load(f)
     return translations
 

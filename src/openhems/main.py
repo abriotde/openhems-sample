@@ -177,8 +177,8 @@ class OpenHEMSApplication:
 			socket = UnixSocketServer(
 				self.server.getSchedule(),
 				self.server.getNetwork(),
-				self.logger,
-				socket_path=self.configurator.get("server.socketpath")
+				socket_path=self.configurator.get("server.socketpath"),
+				logger=self.logger
 			)
 			socket.start()
 

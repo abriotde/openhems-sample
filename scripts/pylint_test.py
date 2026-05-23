@@ -7,6 +7,8 @@ import re
 import json
 from pathlib import Path
 
+# pylint: disable=invalid-name
+
 pattern_line = re.compile(r"^(.*):([0-9]+):([0-9]+): ([A-Z][0-9][0-9][0-9][0-9]): (.*)")
 snake_case_descr = re.compile(r'.*name "(.*)".* conform to snake_case naming style.*')
 snake_case_transformer = re.compile(r"(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])")
