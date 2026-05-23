@@ -49,7 +49,7 @@ class TestDashboard(unittest.TestCase):
 
         # Verify the app did not crash
         if self.at.exception:
-            raise self.at.exception
+            raise self.at.exception[0]
 
     def click_save_button(self):
         """
@@ -86,7 +86,8 @@ class TestDashboard(unittest.TestCase):
         #  - Not supported : "AttributeError: 'AppTest' object has no attribute 'data_editor'"
         dataframes = self.at.dataframe
         self.assertEqual(len(dataframes), 1, "No data_editor found in the app")
-        df = dataframes[0].value
+        streamlit_dataframe = dataframes[0]
+        df = streamlit_dataframe.value
 
         # Modify "device1"
         # print("Original df:\n", df, file=sys.stderr)

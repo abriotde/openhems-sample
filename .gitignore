@@ -20,3 +20,9 @@ docs/source/generated
 src/openhems/openhems.db
 tests/openhems.db
 src/openhems/data/streamlit_session.yaml
+.devcontainer/devcontainer-lock.json
+config/openhems.back.yaml
+logs/
+openhems.db
+tests/data/*.tmp.yaml
+

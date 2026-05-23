@@ -13,6 +13,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install dependencies
+        run: |
+          git submodule update --init --remote
+          PWD=$(pwd)
+          export PYTHONPATH=$PWD/src:$PWD/lib/emhass/src:$PYTHONPATH
+          echo "PYTHONPATH=$PYTHONPATH"
+          echo "PYTHONPATH=$PYTHONPATH" >> $GITHUB_ENV
+
       - name: Install uv
         uses: astral-sh/setup-uv@v7
         with:

@@ -53,9 +53,19 @@ class TestStreamlit(unittest.TestCase):
     """
     Dummy test class to run Streamlit test without running the whole OpenHEMS application.
     """
-    def setUp(self, network=None, infinity=False):
-        super().__init__()
+    def setUp(self):
         self.http_path = ROOT_PATH / "src" / "openhems" / "modules" / "web"
+        self.network = None
+        self.http_server = None
+        self.core_thread = None
+
+
+    def init(self, network=None, infinity=False):
+        """
+        Initialize the test.
+        """
+        if self.network is not None:
+            return
         if network is None:
             network = FakeNetwork(ProjectConfiguration())
         self.network = network
@@ -90,6 +100,7 @@ class TestStreamlit(unittest.TestCase):
         """
         Test function to run Streamlit app without running the whole OpenHEMS application.
         """
+        self.init()
         # Create a dummy context with necessary attributes
         self.http_server.run(test_mode=True)
         self.http_server.test()
@@ -110,7 +121,8 @@ class TestStreamlit(unittest.TestCase):
 
 if __name__ == '__main__':
     if len(sys.argv) > 1 and sys.argv[1] == "run":
-        test = TestStreamlit(infinity=True)
+        test = TestStreamlit()
+        test.init(infinity=True)
         test.http_server.run(test_mode=True)
         try:
             while True:
