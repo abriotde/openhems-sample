@@ -33,8 +33,8 @@ jobs:
 
       - name: Run tests
         run: |
-          uv run pytest --cov --cov-report=xml 
-            --ignore=tests/test_emhass_adapter.py 
+          uv run pytest --cov --cov-report=xml \
+            --ignore=tests/test_emhass_adapter.py \
             --ignore=src/openhems/emhass
 
       - name: Upload results to Codecov
