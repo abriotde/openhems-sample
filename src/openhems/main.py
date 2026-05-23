@@ -8,8 +8,6 @@ More informations on https://openhomesystem.com/
 
 import sys
 import logging
-from logging import handlers
-from datetime import datetime
 from threading import Thread
 import argparse
 import traceback
@@ -20,65 +18,19 @@ sys.path.append(str(openhemsPath))
 from openhems.modules.network.driver.home_assistant_api import HomeAssistantAPI
 from openhems.modules.network.driver.fake_network import FakeNetwork
 from openhems.modules.network import Network, HomeStateUpdaterException
-from openhems.unix_socket import UnixSocketServer
+from openhems.unix_socket_server import UnixSocketServer
 from openhems.modules.web import OpenhemsHTTPServer
 from openhems.modules.util import (
 	ConfigurationManager, ConfigurationException,
-	CastUtililty, CastException
+	CastUtililty, CastException, getLogger
 )
 from openhems.server import OpenHEMSServer
+
 
 class OpenHEMSApplication:
 	"""
 	This class is the main class to manage OpenHEMS as independant application.
 	"""
-	@staticmethod
-	def filer(param=None):
-		"""
-		Function used to get filename on rotating log
-		"""
-		print("filer(",param,")")
-		now = datetime.now()
-		return 'openhems.'+now.strftime("%Y-%m-%d")+'.log'
-
-	def setLogger(self, loglevel, logformat, logfile, inDocker=False):
-		"""
-		Configure a logger for all the Application.
-		"""
-		if loglevel=="debug":
-			level=logging.DEBUG
-		elif loglevel in ('warn', 'warning'):
-			level=logging.WARNING
-		elif loglevel=="error":
-			level=logging.ERROR
-		elif loglevel in ('critical', 'no'):
-			level=logging.CRITICAL
-		else: # if loglevel=="info":
-			level=logging.INFO
-		myHandlers = []
-		fileHandler = None
-		formatter = logging.Formatter(logformat)
-		# Case wrong logfile path : set to empty : no logging file
-		logfileparents = Path(logfile).parents
-		if len(logfileparents)==0 or not next(iter(logfileparents)).is_dir():
-			logfile = "" # No log file
-		if not inDocker and logfile!="":
-			fileHandler = handlers.TimedRotatingFileHandler(filename=logfile,
-	        	when='D',
-	        	interval=1,
-	        	backupCount=5)
-			fileHandler.rotation_filename = OpenHEMSApplication.filer
-			fileHandler.setFormatter(formatter)
-			myHandlers.append(fileHandler)
-		fileHandler = logging.StreamHandler(sys.stdout)
-		fileHandler.setFormatter(formatter)
-		myHandlers.append(fileHandler)
-		logging.basicConfig(level=level, format=logformat, handlers=myHandlers)
-		self.logger = logging.getLogger(__name__)
-		# self.logger.addHandler(fileHandler)
-		# watched_file_handler = logging.handlers.WatchedFileHandler(logfile)
-		# self.logger.addHandler(watched_file_handler)
-		return self.logger
 
 	def getNetworkFromConfiguration(self, logger, configurator:ConfigurationManager):
 		"""
@@ -117,7 +69,7 @@ class OpenHEMSApplication:
 			if path.is_file():
 				# print("Over load YAML configuration with '",str(path),"'")
 				configurator.addYamlConfig(path)
-			# else: print("No '",str(path),"'")
+			else: print("No '",str(path),"'")
 		configurator.completeWithDefaults()
 		return configurator
 
@@ -138,7 +90,7 @@ class OpenHEMSApplication:
 		loglevel = configurator.get("server.loglevel")
 		logformat = configurator.get("server.logformat")
 		logfile = logfilepath if logfilepath!='' else configurator.get("server.logfile")
-		self.setLogger(loglevel, logformat, logfile, inDocker)
+		self.logger = getLogger(loglevel, logformat, logfile, inDocker)
 		self.logger.info("Load YAML configuration from '%s'.",yamlConfFilepath)
 		self.server:OpenHEMSServer = None
 		# pylint: disable=broad-exception-caught
@@ -173,7 +125,6 @@ class OpenHEMSApplication:
 		Run core server (Smart part) without the webserver part. 
 		"""
 		if self.server is not None:
-			self.server.run()
 			socket = UnixSocketServer(
 				self.server.getSchedule(),
 				self.server.getNetwork(),
@@ -181,6 +132,13 @@ class OpenHEMSApplication:
 				logger=self.logger
 			)
 			socket.start()
+			# server.run() is infinite loop (never give hand back)
+			self.server.run()
+		else:
+			self.logger.error(
+				"Core server cannot start because of "
+				"previous errors during initialization."
+			)
 
 	def runWebServer(self):
 		"""

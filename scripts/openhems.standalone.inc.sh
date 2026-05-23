@@ -38,7 +38,7 @@ function updateOpenHEMS {
 function startOpenHEMS {
 	cd $OPENHEMS_PATH/src/openhems
 	mkdir -p $OPENHEMS_LOGPATH
-	cmd="./main.py --conf $OPENHEMS_PATH/config/openhems.conf --logfile $OPENHEMS_LOGPATH/openhems.log"
+	cmd="./main.py --conf $OPENHEMS_PATH/config/openhems.yaml --logfile $OPENHEMS_LOGPATH/openhems.log"
 	echo "Start OpenHEMS server : $ $cmd"
 	$cmd
 }

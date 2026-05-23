@@ -10,37 +10,21 @@ import datetime
 import threading
 import socket
 import json
-from enum import Enum
-import streamlit as st # pylint: disable=E0401
 
 sys.path.append(os.path.dirname(__file__))
 # pylint: disable=wrong-import-position
 from openhems.modules.network.schedule import OpenHEMSSchedule # pylint: disable=E0401
 from openhems.modules.network.homestate_updater import HomeStateUpdater
+from openhems.unix_socket_action import UnixSocketAction, SOCKET_PATH
+from openhems.modules.util.json import json_default
+# from openhems.modules.web.web_streamlit import get_logger
 
-SOCKET_PATH = "/tmp/openhems.sock"
-
-# pylint: disable=invalid-name, bad-indentation # Until full migration to snake_case
-def json_default(obj):
-    """
-    Override JSON serializer for objects to use __json__ method.
-    """
-    if hasattr(obj, "__json__"):
-        return obj.__json__()
-    # Optionnel : gérer d'autres types non sérialisables
-    raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
+# pylint: disable=bad-indentation, invalid-name
 
 class UnixSocketServer:
     """
     Unix socket to comunicate beetwen core app and web server.
     """
-    class Action(Enum):
-        """
-        List available actions on this socket
-        """
-        GET_SCHEDULE = "get_schedule"
-        UPDATE_SCHEDULE = "update_schedule"
-        LIST_COMPONENTS = "list_components"
 
     def __init__(self, schedule: list[OpenHEMSSchedule],
                   network: HomeStateUpdater, socket_path=SOCKET_PATH, logger=None):
@@ -62,6 +46,7 @@ class UnixSocketServer:
         self.server.listen(1)
         self.thread = threading.Thread(target=self._accept_connections, daemon=True)
         self.thread.start()
+        self.logger.info(f"UnixSocketServer started on {self.socket_path}")
 
     def stop(self):
         """
@@ -82,12 +67,12 @@ class UnixSocketServer:
             request = json.loads(data)
             action = request.get("action")
             print("UnixSocketServer._handle_client(:", request, ")")
-            if action == self.Action.GET_SCHEDULE.value:
+            if action == UnixSocketAction.GET_SCHEDULE.value:
                 # print("Send schedules : ", self.schedule)
                 # Sérialiser le schedule dans un format simple
                 response = json.dumps(self.schedule, default=json_default)
                 conn.send(response.encode('utf-8'))
-            elif action == self.Action.UPDATE_SCHEDULE.value:
+            elif action == UnixSocketAction.UPDATE_SCHEDULE.value:
                 request_id = request['id']
                 duration = request.get('duration')
                 timeout = request.get('timeout')
@@ -101,8 +86,12 @@ class UnixSocketServer:
                 # Modifier l'objet schedule existant
                 self.schedule[request_id].set_schedule(duration, timeout)
                 conn.send(b'{"status":"ok"}')
-            elif action == self.Action.LIST_COMPONENTS.value:
+            elif action == UnixSocketAction.LIST_COMPONENTS.value:
                 components = self.home_state_updater.listComponents()
+                self.logger.info(
+                    "UnixSocketServer._handle_client() : "
+                    "List components: %s", components
+                )
                 response = json.dumps(components)
                 conn.send(response.encode('utf-8'))
         except (json.JSONDecodeError, ConnectionResetError, BrokenPipeError, AttributeError) as e:
@@ -110,61 +99,3 @@ class UnixSocketServer:
             conn.send(json.dumps({"error": str(e)}).encode('utf-8'))
         finally:
             conn.close()
-
-class UnixSocketClient:
-    """
-    Client to send request to the UnixSocketServer.
-    """
-    def __init__(self, socket_path=SOCKET_PATH):
-        self.socket_path = socket_path
-
-    def send_request(self, action, request=None):
-        """
-        Used by client to send a correct request to this unix socket server 
-        """
-        # print(f"send_request({action}, {request})")
-        if request is None:
-            request = {}
-        request["action"] = action.value
-        try:
-            sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-            sock.connect(self.socket_path)
-            sock.send(json.dumps(request).encode('utf-8'))
-            response = sock.recv(8192).decode('utf-8')
-            sock.close()
-            return json.loads(response)
-        except (json.JSONDecodeError, ConnectionResetError, BrokenPipeError, AttributeError) as e:
-            st.error(f"Erreur de communication avec le core : {e}")
-            return None
-
-    def get_schedule(self):
-        """
-        For the client, to ask schedule list.
-        """
-        resp = self.send_request(
-             UnixSocketServer.Action.GET_SCHEDULE
-        )
-        return resp
-
-    def update_schedule(self, schedule_id, duration, timeout):
-        """
-        For the client, to update a schedule for a device.
-        """
-        data = {
-            "id": schedule_id,
-            "duration": duration,
-            "timeout": timeout
-        }
-        resp = self.send_request(UnixSocketServer.Action.UPDATE_SCHEDULE, data)
-        # print("update_schedule() = ", resp)
-        return resp.get("status") == "ok" or resp.get("error")
-
-    def list_components(self):
-        """
-        For the client, to ask the list of existing Home-Assistant available components
-          (to limit configuration errors).
-        """
-        resp = self.send_request(
-             UnixSocketServer.Action.LIST_COMPONENTS
-        )
-        return resp

@@ -4,7 +4,7 @@ Page for OpenHEMS configuration, with two modes:
 - YAML editor: edit the configuration as a YAML file (with validation)
 - Assistant: a step-by-step assistant to fill the configuration (simplified)
 """
-
+import time
 import sys
 import re
 import json
@@ -15,6 +15,8 @@ import yaml
 import jsonschema
 import streamlit as st # pylint: disable=E0401
 from streamlit_monaco_yaml import monaco_editor # pylint: disable=E0401
+from openhems.modules.util.json import json_default
+from openhems.modules.web.web_streamlit import get_logger
 
 # pylint: disable=wrong-import-position
 ROOT_PATH = Path(__file__).parents[5]
@@ -115,6 +117,7 @@ def save_basic_config(
     Convert the basic configuration and merge it 
     to OpenHEMS configuration file and then save it.
     """
+    get_logger().debug("OpenHEMSHttpServer.Configuration.save_basic_config()")
     current_config = load_config(config_page)
     new_config = current_config.copy()
     # For now, we consider current_nodes=[] because,
@@ -487,8 +490,11 @@ def basic_configure_supplier():
     if supplier_key is None:
         return
 
+    # st.info(f"supplier_key: {supplier_key} / {suppliers_dict}")
+    is_set = False
     if supplier_key=="none":
         contract = None
+        is_set = True
     else:
         if supplier_key == "custom":
             supplier = st.text_input(
@@ -502,25 +508,36 @@ def basic_configure_supplier():
                 "supplier_label": supplier,
                 "name": contract_id
             }
+            is_set = True
         elif supplier_key in suppliers_dict:
             supplier = contracts.get(supplier_key)
             all_contracts = supplier.get("contracts", {})
-            contracts_dict = get_suplliers_dict(all_contracts)
+            contracts_dict1 = get_suplliers_dict(all_contracts)
+            contracts_dict = {"none": ""}
+            contracts_dict.update(contracts_dict1)
+            # st.info(f"Set contract {contracts_dict}")
             contract_id = st_select_from_dict(
                 "Nom du contrat",
                 contracts_dict,
                 contract.get("name") if contract else None
             )
-            if contract_id:
+            # st.info(f"contract_id {contract_id} / {all_contracts}")
+            if contract_id and contract_id in all_contracts:
                 details = all_contracts.get(contract_id)
+                # st.info(f"details : {details}")
                 details.update({
                     "supplier":supplier_key,
                     "supplier_label":supplier.get("label"),
                     "id":contract_id
                 })
+                if contract is None:
+                    contract = {}
                 contract.update(details)
-        contract = basic_configure_supplier_contract_details_form(contract)
-    st.session_state.config.contract = contract
+                contract = basic_configure_supplier_contract_details_form(contract)
+                is_set = True
+    if is_set:
+        st.session_state.config.contract = contract
+
 
 def basic_configure_warning():
     """
@@ -560,22 +577,26 @@ def basic_configure_save(config_page):
     Display a summary of the basic configuration and allow to save it.
     """
     st.subheader("Récapitulatif de votre configuration")
-    st.json(json.dumps(st.session_state.config))
+    st.json(json.dumps(st.session_state.config, default=json_default))
 
     col1, col2 = st.columns(2)
     with col1:
         if st.button("⬅️ Modifier"):
             st.session_state.steps.decr_step()
-            st.rerun()
+            return ConfigEditionState.ASSISTANT.value
     with col2:
         if st.button("✅ Générer la configuration OpenHEMS"):
             # Ici vous écrivez le fichier YAML final ou appelez l'API
             save_basic_config(st.session_state.config, config_page)
-            st.success("Configuration sauvegardée ! Redémarrage d'OpenHEMS...")
+            st.success("Configuration sauvegardée !\n"
+                       "Vériiez la configuration générée et quand cela vous convient,"
+                       "redémarrez OpenHEMS pour une prise en compte.")
             # Option : appeler un endpoint pour recharger la config
             st.balloons()
             st.session_state.steps = ConfigureSteps()  # reset steps
-            st.rerun()
+            time.sleep(10)
+            return ConfigEditionState.YAML_EDITOR.value
+    return ConfigEditionState.ASSISTANT.value
 
 def basic_configure(config_page, cancel=False):
     """
@@ -597,7 +618,7 @@ def basic_configure(config_page, cancel=False):
     cur, nb = st.session_state.steps.get_total_steps()
     st.progress(cur / nb)
     st.title("⚙️ Assistant de configuration")
-    st.header("{} - ({} / {})", step_list[steps.step], cur, nb)
+    st.header(f"{step_list[steps.step]} - ({cur} / {nb})")
 
     state = ConfigEditionState.ASSISTANT.value
     if cancel:
@@ -623,7 +644,7 @@ def basic_configure(config_page, cancel=False):
         basic_configure_devices()
 
     elif steps.step == 5:
-        basic_configure_save(config_page)
+        state = basic_configure_save(config_page)
 
     return state
 

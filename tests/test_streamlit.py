@@ -16,7 +16,7 @@ ROOT_PATH = Path(__file__).parents[1]
 sys.path.append(str(ROOT_PATH / "src"))
 from openhems.modules.network.schedule import OpenHEMSSchedule
 from openhems.modules.util import ProjectConfiguration
-from openhems.unix_socket import UnixSocketServer
+from openhems.unix_socket_server import UnixSocketServer
 from openhems.modules.network.driver.fake_network import FakeNetwork
 from openhems.modules.web import OpenhemsHTTPServer, OpenHEMSContext
 
@@ -122,6 +122,7 @@ class TestStreamlit(unittest.TestCase):
 if __name__ == '__main__':
     if len(sys.argv) > 1 and sys.argv[1] == "run":
         test = TestStreamlit()
+        test.setUp()
         test.init(infinity=True)
         test.http_server.run(test_mode=True)
         try:

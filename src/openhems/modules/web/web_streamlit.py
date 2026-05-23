@@ -14,7 +14,7 @@ import requests
 import yaml
 import streamlit as st #pylint: disable=import-error
 
-from openhems.unix_socket import UnixSocketClient # pylint: disable=E0401
+from openhems.unix_socket_client import UnixSocketClient # pylint: disable=E0401
 
 
 # pylint: disable=wrong-import-position
@@ -26,6 +26,33 @@ from openhems.modules.util import (
 from openhems.modules.web.driver_vpn import (
 	VpnDriverIncronClient, VpnDriverWireguard
 )
+from openhems.modules.util import getLogger as OpenHEMSGetLogger
+
+@st.cache_data
+def get_http_configuration():
+    """
+    Get the YAML configuration file path.
+    """
+    with open(OpenhemsHTTPServer.SESSION_FILE_PATH, "r", encoding="utf-8") as key_file:
+        session_data = yaml.load(key_file, Loader=yaml.FullLoader)
+        return session_data
+    return {}
+
+@st.cache_data
+def get_logger():
+    """
+    Get the logger for the web server.
+    """
+    # TODO : better to have a global logger for all the application (and not one per module)
+    #  but it is not so easy to do with Streamlit caching system
+    #  (and it is not a big deal as we should have only one user)
+    logger = OpenHEMSGetLogger(
+        loglevel="info",
+        logformat="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        logfile=get_http_configuration().get("log_path", ""),
+        inDocker=False
+    )
+    return logger
 
 class OpenhemsHTTPServer():
     """
@@ -103,25 +130,30 @@ class OpenhemsHTTPServer():
         Initialize Streamlit session state with necessary objects (like UnixSocketClient)
         """
         with open(self.SESSION_FILE_PATH, "w", encoding="utf-8") as session_file:
-            yaml.dump({
+            datas = {
                 "socket_path": self.configurator.get("server.socketpath"),
                 "lang": self.lang,
-            }, session_file)
+                "log_path": self.configurator.get("server.logfile"),
+            }
+            yaml.dump(datas, session_file)
+            self.logger.info(
+                "Session file created at '" + str(self.SESSION_FILE_PATH) 
+                + "' with data: " + str(datas)
+            )
 
     @staticmethod
     def init_session():
         """
         Initialize Streamlit session state with necessary objects (like UnixSocketClient)
         """
-        with open(OpenhemsHTTPServer.SESSION_FILE_PATH, "r", encoding="utf-8") as key_file:
-            session_data = yaml.load(key_file, Loader=yaml.FullLoader)
-            st.session_state.unix_socket_client = UnixSocketClient(
-                socket_path=session_data.get("socket_path")
-            )
-            # It would be better to store in more global variable
-            #  (avoid to reload it at each session initialization)
-            #  but no matter as we should have only one user (or very few)
-            st.session_state.lang = session_data.get("lang")
+        session_data = get_http_configuration()
+        st.session_state.unix_socket_client = UnixSocketClient(
+            socket_path=session_data.get("socket_path")
+        )
+        # It would be better to store in more global variable
+        #  (avoid to reload it at each session initialization)
+        #  but no matter as we should have only one user (or very few)
+        st.session_state.lang = session_data.get("lang")
 
     @staticmethod
     def get_socket_client():
