@@ -12,9 +12,11 @@ DOCKER_HA_NAME=homeassistant
 HOMEASSISTANT_EMHASS_DIR=$HOMEASSISTANT_DIR/emhass
 DOCKER_EMHASS_NAME=homeassistant_emhass
 
+
 DOCKER_NAME=openhems
 OPENHEMS_USER=olimex
 OPENHEMS_PATH=/home/olimex/openhems-sample
+OPENHEMS_LOGPATH=/var/log/openhems
 OPENHEMS_BRANCH=main
 OPENHEMS_DOCKER_VERSION=latest
 TMP_DIR=/tmp

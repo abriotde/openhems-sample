@@ -1,11 +1,15 @@
 #!/bin/bash
 
+cd $(dirname $0)
+
 # https://linuxfr.org/news/s-m-a-r-t-badblocks-badblocks2
 
 source openhems.inc.sh
 if [[ $DOCKER_OPENHEMS == 1 ]]; then
+	echo "Run in docker"
 	source openhems.docker.inc.sh
 else
+	echo "Run as standalone"
 	source openhems.standalone.inc.sh
 fi
 

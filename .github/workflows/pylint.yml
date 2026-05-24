@@ -8,7 +8,7 @@ jobs:
     timeout-minutes: 20
     strategy:
       matrix:
-        python-version: ["3.12"]
+        python-version: ["3.13"]
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
@@ -22,4 +22,6 @@ jobs:
         python -m pip install .
     - name: Analysing the code with pylint
       run: |
-        pylint  --fail-under=9.9 $(git ls-files '*.py')
+        pylint --fail-under=9.9 $(git ls-files '*.py')
+        pylint --fail-under=9.9 --rcfile=src/openhems/modules/web/.pylintrc src/openhems/modules/web
+        pylint --fail-under=9.9 --rcfile=src/openhems/modules/web/.pylintrc tests

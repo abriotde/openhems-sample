@@ -16,3 +16,4 @@ from .feeder import (
 	Feeder, SourceFeeder, RandomFeeder, ConstFeeder,
 	RotationFeeder, FakeSwitchFeeder, StateFeeder, SumFeeder # For fakeNetwork
 )
+from .schedule import OpenHEMSSchedule

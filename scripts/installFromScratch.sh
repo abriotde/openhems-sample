@@ -7,7 +7,7 @@ source functions.sh
 
 ./init_server.sh
 
-./homeassistant.sh
+./home-assistant.sh install
 
 ./openhems.sh
 

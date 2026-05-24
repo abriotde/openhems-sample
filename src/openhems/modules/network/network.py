@@ -337,3 +337,20 @@ class Network:
 		Get current time
 		"""
 		return self.server.getTime()
+
+	def listComponents(self):
+		"""
+		Return a list of all components in the network.
+		"""
+		return self.networkUpdater.listComponents()
+
+	def __str__(self):
+		out = "Network(\n"
+		out += " IN : \n"
+		for elem in self.getAll("inout"):
+			out += "  - "+str(elem)+"\n"
+		out += " OUT : \n"
+		for elem in self.getAll("out"):
+			out += "  - "+str(elem)+"\n"
+		out += "\n)"
+		return out

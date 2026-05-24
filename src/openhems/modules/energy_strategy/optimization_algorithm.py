@@ -7,8 +7,8 @@ from dataclasses import dataclass
 from enum import Enum
 import scipy.optimize
 import numpy as np
+from sko.GA import GA # pylint: disable=E0401
 from openhems.modules.network import OutNode
-
 
 # Study of solutions:
 # - Genetic Algorithm
@@ -522,34 +522,37 @@ class OptimizationAlgorithm:
 				idx = l-1
 		return realValues[idx]
 
-	from sko.GA import GA # pip install scikit-opt
+	 # pip install scikit-opt
 	# Genetic algorythm (sko.GA) but with reference to all the context.
+	@dataclass
 	class ParamGA(GA):
-		def __init__(self, custom_param, func, n_dim,
-                 size_pop=50, max_iter=200, prob_mut=0.001,
-                 lb=-1, ub=1,
-                 constraint_eq=tuple(), constraint_ueq=tuple(),
-                 precision=1e-7):
-			super().__init__(func, n_dim,
-                 size_pop, max_iter, prob_mut,
-                 lb, ub,
-                 constraint_eq, constraint_ueq,
-                 precision)
-			self.custom_param = custom_param
-			def func_transformed(X):
-				return np.array([func(self.custom_param, tuple(x)) for x in X])
-			self.func = func_transformed
+		"""
+		@dataclass to manage parameters of Genetic Algorythms.
+		"""
+		customParam: str
+
+		def __init__(self, customParam, func, ga:GA):
+			super().__init__(
+				func, ga.n_dim,ga.size_pop,ga.max_iter,
+				ga.prob_mut,ga.lb,ga.ub,
+				ga.constraint_eq,ga.constraint_ueq,
+				ga.precision,ga.early_stop
+			)
+			self.customParam = customParam
+			def funcTransformed(x):
+				return np.array([func(self.customParam, tuple(y)) for y in x])
+			self.func = funcTransformed
 
 	@staticmethod
-	def evalTarget3(custom_param, x):
+	def evalTarget3(customParam, x):
 		"""
 		Function to optimize for geneticAlgorithm()
 		"""
 		# print("evalTarget3(", x,")")
 		devicesConsumption = 0
 		for i,v in enumerate(x):
-			devicesConsumption += custom_param.geneticGetPower(v, i)
-		return custom_param.evalTarget3CB(devicesConsumption)
+			devicesConsumption += customParam.geneticGetPower(v, i)
+		return customParam.evalTarget3CB(devicesConsumption)
 
 	@functools.lru_cache(maxsize=5000)
 	def evalTarget3CB(self, devicesConsumption):
@@ -579,8 +582,7 @@ class OptimizationAlgorithm:
 		"""
 		Use genetic algorythm to find the best solution
 		"""
-		ga = self.ParamGA(
-			custom_param=self,
+		ga0 = GA(
 			func=self.evalTarget3,
 			n_dim=len(self._equipments),
 			size_pop=50,      # Population size
@@ -589,6 +591,7 @@ class OptimizationAlgorithm:
 			lb=0, ub=OptimizationAlgorithm.GENETIC_MODULO, # Use modulo to adapt
 			precision=1,      # Treat variables as integers (0 or 1)
 		)
+		ga = self.ParamGA(customParam=self, func=self.evalTarget3, ga=ga0)
 		# print(f"Run Genetic Algorythm for {self._equipments}")
 		bestX, bestY = ga.run()
 		for i,v in enumerate(bestX):
