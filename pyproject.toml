@@ -12,7 +12,7 @@ maintainers = [
 ]
 description = "A sample Home Energy Managment System based on Home-Assistant"
 readme = "readme.md"
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 classifiers=[
 	"Development Status :: 5 - Production/Stable",
 	"Intended Audience :: End Users/Desktop",
@@ -30,8 +30,6 @@ dependencies = [
 	'requests',
 	'pandas',
 	'pyyaml',
-	'pyramid',
-	'pyramid-jinja2',
 	'packaging',
 	'astral',
 	'GitPython',
@@ -73,7 +71,7 @@ Repository = "https://github.com/abriotde/openhems-sample.git"
 	
 [build-system]
 requires = [
-	'requests', "pandas", "pyyaml", "pyramid", "pyramid-jinja2", 'packaging', 'astral',
+	'requests', "pandas", "pyyaml", 'packaging', 'astral',
 	'GitPython', 'toml', 'scikit-opt',
 	# For EMHASS
 	'numpy', 'plotly', 'scikit-learn', 'skforecast', 'pvlib', 'beautifulsoup4' , 'protobuf',
