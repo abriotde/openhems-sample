@@ -9,7 +9,6 @@ ENV TARGETARCH=${TARGETARCH:?}
 
 WORKDIR /app
 
-RUN curl https://www.google.com/
 # RUN sed -i 's/deb.debian.org/http.debian.net/g' /etc/apt/sources.list.d/debian.sources
 
 # Installation des dépendances système nécessaires (beaucoup sont déjà présentes)

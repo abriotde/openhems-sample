@@ -8,10 +8,10 @@ mkdir -p logs
 
 OPENHEMS_LOGPATH=$(pwd)/logs
 
-# {target_arch: amd64, os_version: debian},
-# {target_arch: armv7, os_version: debian},
-# {target_arch: armhf, os_version: raspbian},
-# {target_arch: aarch64, os_version: debian}
+# {target_arch: amd64, os_version: debian}, OK
+# {target_arch: aarch64, os_version: debian}, OK = arm64
+# {target_arch: armv7, os_version: debian}, = 32 bit homeassistant/armv7-homeassistant
+# {target_arch: armhf, os_version: raspbian}, = armv7l = 32 bit avec FPU
 
 action=$1
 
