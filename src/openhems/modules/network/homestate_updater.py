@@ -76,6 +76,13 @@ class HomeStateUpdater:
 		"""
 		self.network = network
 
+	def listComponents(self):
+		"""
+		Print Home-Assistant components list.
+		"""
+		self.logger.error("listComponents() should be implemented in sub-class.")
+		raise NotImplementedError("listComponents() should be implemented in sub-class.")
+
 	def getFeeder(self, value,
 			   *, expectedType=None, defaultValue=None, nameid="", node=None
 			) -> Feeder:

@@ -1,0 +1,213 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "OpenHEMS Configuration Schema",
+  "description": "Schéma de validation pour openhems.yaml",
+  "type": "object",
+  "properties": {
+    "api": {
+      "type": "object",
+      "properties": {
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL de l'API Home Assistant (ex: http://...:8123/api)"
+        },
+        "long_lived_token": {
+          "type": "string",
+          "description": "Token d'accès permanent Home Assistant"
+        },
+        "ssl_certificate": {
+          "type": "string",
+          "description": "Chemin ou contenu du certificat SSL (optionnel)"
+        }
+      },
+      "required": ["url", "long_lived_token"],
+      "additionalProperties": false
+    },
+    "localization": {
+      "type": "object",
+      "properties": {
+        "latitude": {
+          "type": "number",
+          "minimum": -90,
+          "maximum": 90,
+          "description": "Latitude en degrés décimaux"
+        },
+        "longitude": {
+          "type": "number",
+          "minimum": -180,
+          "maximum": 180,
+          "description": "Longitude en degrés décimaux"
+        },
+        "altitude": {
+          "type": "integer",
+          "description": "Altitude en mètres (optionnel)"
+        },
+        "timeZone": {
+          "type": "string",
+          "description": "Fuseau horaire (ex: Europe/Paris)"
+        }
+      },
+      "required": ["latitude", "longitude", "timeZone"],
+      "additionalProperties": false
+    },
+    "server": {
+      "type": "object",
+      "properties": {
+        "loglevel": {
+          "type": "string",
+          "enum": ["debug", "info", "warning", "error", "critical"],
+          "default": "info",
+          "description": "Niveau de journalisation"
+        },
+        "loopDelay": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 30,
+          "description": "Délai entre les cycles d'optimisation (secondes)"
+        },
+        "network": {
+          "type": "string",
+          "enum": ["homeassistant", "local", "mqtt"],
+          "default": "homeassistant",
+          "description": "Type d'API réseau utilisée"
+        },
+        "strategies": {
+          "type": "array",
+          "description": "Liste des stratégies actives",
+          "items": {
+            "type": "object",
+            "properties": {
+              "class": {
+                "type": "string",
+                "description": "Nom de la classe de stratégie (ex: offpeak, self_consumption)"
+              },
+              "id": {
+                "type": "string",
+                "description": "Identifiant unique de la stratégie"
+              }
+            },
+            "required": ["class", "id"],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": ["loopDelay", "network"],
+      "additionalProperties": false
+    },
+    "network": {
+      "type": "object",
+      "properties": {
+        "nodes": {
+          "type": "array",
+          "description": "Liste des nœuds (équipements, sources, charges)",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Identifiant unique du nœud"
+              },
+              "class": {
+                "type": "string",
+                "enum": ["PublicPowerGrid", "switch", "battery", "pv", "heater", "ev"],
+                "description": "Type de nœud"
+              },
+              "strategy": {
+                "type": "string",
+                "description": "Référence à une stratégie (optionnelle)"
+              },
+              "currentPower": {
+                "type": "string",
+                "description": "Entité Home Assistant pour la puissance instantanée"
+              },
+              "maxPower": {
+                "type": "number",
+                "description": "Puissance maximale (W)"
+              },
+              "minPower": {
+                "type": "number",
+                "description": "Puissance minimale (W)"
+              },
+              "powerMargin": {
+                "type": "number",
+                "description": "Marge de puissance (W) – pour le réseau public"
+              },
+              "isOn": {
+                "type": "string",
+                "description": "Entité Home Assistant pour l'état marche/arrêt (pour les commutateurs)"
+              },
+              "constraints": {
+                "type": "object",
+                "properties": {
+                  "minPower": {
+                    "type": "number",
+                    "description": "Puissance minimale admissible (W)"
+                  },
+                  "minPowerDelay": {
+                    "type": "integer",
+                    "description": "Durée minimale de maintien de minPower (secondes)"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "contract": {
+                "type": "object",
+                "description": "Contrat d'électricité (pour PublicPowerGrid)",
+                "properties": {
+                  "class": {
+                    "type": "string",
+                    "enum": ["RTETempo", "Base", "HeuresCreuses"],
+                    "description": "Type de contrat"
+                  },
+                  "color": {
+                    "type": "string",
+                    "description": "Entité HA pour la couleur Tempo (bleu/blanc/rouge)"
+                  },
+                  "nextcolor": {
+                    "type": "string",
+                    "description": "Entité HA pour la couleur du lendemain"
+                  },
+                  "offpeakhoursranges": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^\\d{1,2}:|h(\\d{1,2})?\\s*-\\s*\\d{1,2}(:|h)(\\d{1,2})?$",
+                      "description": "Plage horaire ex: '22h05 - 6h'"
+                    },
+                    "description": "Plages heures creuses"
+                  }
+                },
+                "required": ["class"],
+                "additionalProperties": false
+              }
+            },
+            "required": ["id", "class", "currentPower", "maxPower"],
+            "allOf": [
+              {
+                "if": {
+                  "properties": { "class": { "const": "PublicPowerGrid" } }
+                },
+                "then": {
+                  "required": ["powerMargin", "contract"]
+                }
+              },
+              {
+                "if": {
+                  "properties": { "class": { "const": "switch" } }
+                },
+                "then": {
+                  "required": ["isOn"]
+                }
+              }
+            ]
+          }
+        }
+      },
+      "required": ["nodes"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["api", "localization", "server", "network"],
+  "additionalProperties": false
+}

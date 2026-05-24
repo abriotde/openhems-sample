@@ -1,6 +1,6 @@
 [project]
 name = "openhems"
-version = "0.2.16.2"
+version = "0.3.0"
 dynamic = [
 	# "version" # , "description"
 ]
@@ -27,13 +27,32 @@ classifiers=[
 ]
 keywords = ['energy', 'HEMS', 'home automation', 'home-assistant', 'domotic']
 dependencies = [
-	'requests', 'pandas', 'pyyaml', 'pyramid', 'pyramid-jinja2', 'packaging', 'astral', 
-	'GitPython', 'toml', 'scikit-opt',
+	'requests',
+	'pandas',
+	'pyyaml',
+	'packaging',
+	'astral',
+	'GitPython',
+	"toml",
+	'scikit-opt',
 	# For genetic algorithm
 	'scikit-opt',
 	# For EMHASS
-	'numpy', 'plotly', 'scikit-learn', 'skforecast', 'pvlib', 'beautifulsoup4', 'protobuf',
-	'pandas', 'scipy', 'h5py', 'pulp'
+	'numpy',
+	'plotly',
+	'scikit-learn',
+	'skforecast',
+	'pvlib',
+	'beautifulsoup4',
+	'protobuf',
+	'pandas',
+	'scipy',
+	'h5py',
+	'pulp',
+	"streamlit>=1.57.0",
+	"streamlit-monaco-yaml>=0.2.0",
+	"pytest>=9.0.3",
+	"pytest-cov>=7.1.0",
 ]
 license = { file = "LICENSE", "expression" = "GPL-3.0-or-later" }
 # license = "GPL-3.0-or-later"
@@ -52,7 +71,7 @@ Repository = "https://github.com/abriotde/openhems-sample.git"
 	
 [build-system]
 requires = [
-	'requests', "pandas", "pyyaml", "pyramid", "pyramid-jinja2", 'packaging', 'astral',
+	'requests', "pandas", "pyyaml", 'packaging', 'astral',
 	'GitPython', 'toml', 'scikit-opt',
 	# For EMHASS
 	'numpy', 'plotly', 'scikit-learn', 'skforecast', 'pvlib', 'beautifulsoup4' , 'protobuf',
@@ -139,3 +158,7 @@ include = [
     "lib/",
     # "babel.cfg",
 ]
+
+[dependency-groups]
+docs = ["sphinx", "sphinx_rtd_theme"]
+

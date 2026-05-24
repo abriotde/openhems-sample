@@ -2,9 +2,11 @@
 Represent device of home network
 """
 
+import dataclasses
 import logging
 from enum import Enum
 from typing import Final
+import threading
 from collections import OrderedDict # , deque
 from openhems.modules.util import CastUtililty, ConfigurationException
 from .feeder import Feeder
@@ -31,6 +33,20 @@ class ConstraintsException(Exception):
 		self.message = message
 		self.code = code
 
+@dataclasses.dataclass
+class DurationConstraint:
+	"""
+	Duration constraint for the appliance.
+	"""
+	minOn: int
+	minOff: int
+	maxOn: int
+	maxOff: int
+	def __init__(self, configuration:dict):
+		self.minOn = configuration.get('minDurationOn', None)
+		self.minOff = configuration.get('minDurationOff', None)
+		self.maxOn = configuration.get('maxDurationOn', None)
+		self.maxOff = configuration.get('maxDurationOff', None)
 
 class ApplianceConstraints():
 	"""
@@ -43,10 +59,7 @@ class ApplianceConstraints():
 		self._minPowerDuration = 0
 		self.maxPower = configuration.get('maxPower', None)
 		# durations are in seconds
-		self.minDurationOn = configuration.get('minDurationOn', None)
-		self.minDurationOff = configuration.get('minDurationOff', None)
-		self.maxDurationOn = configuration.get('maxDurationOn', None)
-		self.maxDurationOff = configuration.get('maxDurationOff', None)
+		self.durationConstraint = DurationConstraint(configuration)
 		self._duration = 0
 		self._isOn = None # Feeder to test if switch is on.
 		self.node = None
@@ -66,22 +79,21 @@ class ApplianceConstraints():
 		message = f"For node {self.node.name} : "
 		self._isOn = self.node.isOn()
 		if self._isOn and (self.minPower is not None or self.maxPower is not None):
-			logger.debug("Check power constraints for node %s witch is on", self.node.name)
+			logger.debug("Check power constraints for node %s witch is on ", self.node.name)
 			currentPower = self.node.getCurrentPower()
 			if currentPower is None:
-				logger.error(f"Unable to get currentPower (None) for node {self.node.name}.")
+				logger.error("Unable to get currentPower (None) for node %s.", self.node.name)
 			else:
 				if self.minPower is not None and currentPower<self.minPower:
 					self._minPowerDuration += time
 					if self.minPowerDelay is None or self._minPowerDuration>=self.minPowerDelay:
-						message += (f"Offending minPower ({self.minPower}) < currentPower ({currentPower})"
-							f" during more than {self.minPowerDelay} seconds.")
+						message += ("Offending minPower (%s) < currentPower (%s) during more than %s seconds.",
+				  			self.minPower, currentPower, self.minPowerDelay)
 						# self.node.switchOn(False) # Maybe is just starting, if switch off,
 						# we may offend minDurationOn
 						raise ConstraintsException(message, ConstraintsType.MIN_POWER)
-					else:
-						logger.debug("Current power (%s) < minPower (%s) for %s seconds, need %s seconds for alert",
-							currentPower, self.minPower, self._minPowerDuration, self.minPowerDelay)
+					logger.debug("Current power (%s) < minPower (%s) for %s seconds, need %s seconds for alert",
+						currentPower, self.minPower, self._minPowerDuration, self.minPowerDelay)
 				else:
 					self._minPowerDuration = 0
 					# logger.debug("No minPower pb")
@@ -91,16 +103,16 @@ class ApplianceConstraints():
 					raise ConstraintsException(message, ConstraintsType.MAX_POWER)
 		if self._isOn:
 			# logger.debug("Check duration constraints for node %s witch is on", self.node.name)
-			if self.maxDurationOn is not None and self._duration>self.maxDurationOn:
+			if self.durationConstraint.maxOn is not None and self._duration>self.durationConstraint.maxOn:
 				message += ("Offending maxDurationOn "
-					f"({self.maxDurationOn}) < currentDuration ({self._duration})")
+					f"({self.durationConstraint.maxOn}) < currentDuration ({self._duration})")
 				self.node.switchOn(False)
 				raise ConstraintsException(message, ConstraintsType.MAX_DURATION_ON)
 		else:
 			# logger.debug("Check duration constraints for node %s witch is off", self.node.name)
-			if self.maxDurationOff is not None and self._duration>self.maxDurationOff:
+			if self.durationConstraint.maxOff is not None and self._duration>self.durationConstraint.maxOff:
 				message += ("Offending maxDurationOff "
-					f"({self.maxDurationOff}) < currentDuration ({self._duration})")
+					f"({self.durationConstraint.maxOff}) < currentDuration ({self._duration})")
 				self.node.switchOn(True)
 				raise ConstraintsException(message, ConstraintsType.MAX_DURATION_OFF)
 		return True
@@ -110,14 +122,16 @@ class ApplianceConstraints():
 		Check durations constraints and reset durations
 		"""
 		if self._isOn:
-			if self.minDurationOn is not None and self._duration<self.minDurationOn and not on:
+			if (self.durationConstraint.minOn is not None \
+				and self._duration<self.durationConstraint.minOn and not on):
 				message = ("Offending minDurationOn "
-					f"({self.minDurationOn}) > currentDuration ({self._duration}).")
+					f"({self.durationConstraint.minOn}) > currentDuration ({self._duration}).")
 				raise ConstraintsException(message, ConstraintsType.MIN_DURATION_ON)
 		else:
-			if self.minDurationOff is not None and self._duration<self.minDurationOff and on:
+			if (self.durationConstraint.minOff is not None \
+					and self._duration<self.durationConstraint.minOff and on):
 				message = ("Offending minDurationOff "
-					f"({self.minDurationOff}) > currentDuration ({self._duration}).")
+					f"({self.durationConstraint.minOff}) > currentDuration ({self._duration}).")
 				raise ConstraintsException(message, ConstraintsType.MIN_DURATION_OFF)
 		self._isOn = on
 		self._duration = 0
@@ -140,23 +154,164 @@ class ApplianceConstraints():
 		if self.maxPower is not None:
 			retValue += sep+f"maxPower={self.maxPower}"
 			sep=", "
-		if self.minDurationOn is not None:
-			retValue += sep+f"minDurationOn={self.minDurationOn}"
+		if self.durationConstraint.minOn is not None:
+			retValue += sep+f"minDurationOn={self.durationConstraint.minOn}"
 			sep=", "
-		if self.minDurationOff is not None:
-			retValue += sep+f"minDurationOff={self.minDurationOff}"
+		if self.durationConstraint.minOff is not None:
+			retValue += sep+f"minDurationOff={self.durationConstraint.minOff}"
 			sep=", "
-		if self.maxDurationOn is not None:
-			retValue += sep+f"maxDurationOn={self.maxDurationOn}"
+		if self.durationConstraint.maxOn is not None:
+			retValue += sep+f"maxDurationOn={self.durationConstraint.maxOn}"
 			sep=", "
-		if self.maxDurationOff is not None:
-			retValue += sep+f"maxDurationOff={self.maxDurationOff}"
+		if self.durationConstraint.maxOff is not None:
+			retValue += sep+f"maxDurationOff={self.durationConstraint.maxOff}"
 			sep=", "
 		retValue += ")"
 		if self._isOn is not None:
 			retValue += f" _isOn={self._isOn}"
 		retValue += f" for node={self.node.id}"
 		return retValue
+
+class OnNodeManager:
+	"""
+	Manage node on state
+	"""
+	def __init__(self, node, feeder):
+		self._node = node
+		self._isOn:Feeder = feeder
+		self._wasOn:bool = False # Used to detect change of state
+		self._wasOnCycleId:int = -1
+
+	def getValue(self):
+		"""
+		Return if node is on or off.
+		Detect if .
+		"""
+		retValue = self._isOn.getValue()
+		if retValue!=self._wasOn and self._wasOnCycleId!=self._node.network.getCycleId():
+			logger.debug(
+				"Node.isOn(%s) = %s witch was not expected : A user manually changed the state.",
+				self._node.id, retValue)
+			self._wasOn = retValue
+			self._wasOnCycleId = self._node.network.getCycleId()
+			if retValue:
+				self._node.network.server.registerDecrementTime(self._node, True)
+		return retValue
+
+	def setValue(self, value):
+		"""
+		Set node on or off.
+		"""
+		self._isOn.setValue(value)
+
+	def switchOn(self, connect:bool):
+		"""
+		Switch on/off the node.
+		"""
+		self._wasOn = connect
+		self._wasOnCycleId = self._node.network.getCycleId()
+
+class PowerControler:
+	"""
+	Manage node power control
+	"""
+	def __init__(self, feeder, values=None, node=None):
+		self._feeder:Feeder = feeder
+		self._values = values # dict of urrentPower from asked controlled power (level).
+		self._node = node
+		self._init()
+
+	def getValue(self):
+		"""
+		Return current wanted controlled power for node with controlable power.
+		!!! Warning maybe we don't get power but an abstract value (like power from 0 to 6). !!!
+		"""
+		value = self._feeder.getValue()
+		return value
+
+	def setValue(self, value):
+		"""
+		Set wanted controlled power for node with controlable power.
+		!!! Warning maybe we don't set power but an abstract value. !!!
+		"""
+		self._feeder.setValue(value)
+
+	def getValues(self):
+		"""
+		Return possible values for on/off node.
+		"""
+		return self._values
+
+	def update(self, newValue):
+		"""
+		Update current wanted controlled power for node with controlable power.
+		!!! Warning maybe we don't get power but an abstract value (like power from 0 to 6). !!!
+		"""
+		value = self.getValue()
+		power = self.getValues().get(value)
+		if power is None:
+			self._values[value] = newValue
+		elif newValue!=value: # Choice the most coherent value
+			# pylint: disable=protected-access
+			linkPrev, linkNext, _ = self._values._OrderedDict__map[value]
+			prevValue = self._values[linkPrev[2]]
+			nextValue = self._values[linkNext[2]]
+			# check that power values are ordered (like control value)
+			coherent = prevValue<value<nextValue
+			coherentNew = prevValue<newValue<nextValue
+			if coherent and coherentNew:
+				old = max(value-prevValue, nextValue-value)
+				new = max(newValue-prevValue, nextValue-newValue)
+				if new<old:
+					self._values[value] = newValue
+				# else nothing to do, that was the "best"
+			elif coherent:
+				pass
+			elif coherentNew:
+				self._values[value] = newValue
+			# else: uncoherent values, the error is probably elsewhere
+		return value
+
+	def setNode(self, node):
+		"""
+		Set the parent node
+		"""
+		self._node = node
+
+
+	def _init(self):
+		"""
+		Allow to define controlledPowerValues as
+		- {range: [0, 10], step: 2}
+		- {0: 0, 1: 100, 2: 400, 3: 1000}
+		- [0, 1, 2, 3, 4, 5]
+		"""
+		if isinstance(self._values, list):
+			values = [None for _ in self._values]
+			self._values = dict(zip(self._values, values))
+		elif isinstance(self._values, dict):
+			myrange = None
+			step = None
+			controlledPowerValues = {}
+			for k, v in self._values.items():
+				if k=="range":
+					myrange=v
+				elif k=="step":
+					step=v
+				else:
+					controlledPowerValues[k]=v
+			if (myrange is not None or step is not None) \
+					or len(controlledPowerValues)==0:
+				if step is None:
+					step=1
+				if myrange is None:
+					myrange=[0, self._node.getMaxPower()]
+				elif isinstance(myrange, str):
+					myrange = CastUtililty.toTypeList(myrange)
+				keys = range(myrange[0], myrange[1], step)
+				values = [None for _ in keys]
+				controlledPowerValues = controlledPowerValues | dict(zip(keys, values))
+			self._values = OrderedDict(sorted(controlledPowerValues))
 
 class Node:
 	"""
@@ -171,24 +326,23 @@ class Node:
 		self.id = haId.strip().replace(" ", "_")
 
 	def __init__(self, nameId, currentPower, maxPower, *, isOnFeeder=None,
-			  controlledPowerFeeder=None, controlledPowerValues=None, network=None):
+			  powerController:PowerControler=None, network=None):
 		self.id = ""
 		self.setId(nameId)
 		self.network = network
-		self._controlledPower = controlledPowerFeeder
+		if powerController is not None:
+			powerController.setNode(self)
+		self._powerController = powerController
 		# dict of currentPower from asked controlled power (level).
-		self._controlledPowerValues = controlledPowerValues
-		self._initControlledPowerValues()
 		self._currentPower:Feeder = currentPower
 		self._maxPower:Feeder = maxPower
-		self._isOn:Feeder = isOnFeeder
-		self._wasOn:bool = False # Used to detect change of state
-		self._wasOnCycleId:int = -1
+		self._isOn:OnNodeManager = OnNodeManager(self, isOnFeeder) if isOnFeeder is not None else None
 		# To try predict power. Useless today.
 		# self._previousPower = deque()
 		# Security
 		self._isActivate = True # Can inactivate node for security reasons.
 		self._constraints = None
+		self.lock = threading.Lock() # Used to avoid concurrency pb on schedule and constraints
 		try: # Test if currentPower is well configured
 			self.getCurrentPower()
 		except TypeError as e:
@@ -208,40 +362,6 @@ class Node:
 		Get current time
 		"""
 		return self.network.getTime()
-
-	def _initControlledPowerValues(self):
-		"""
-		Allow to define controlledPowerValues as
-		- {range: [0, 10], step: 2}
-		- {0: 0, 1: 100, 2: 400, 3: 1000}
-		- [0, 1, 2, 3, 4, 5]
-		"""
-		if isinstance(self._controlledPowerValues, list):
-			values = [None for _ in self._controlledPowerValues]
-			self._controlledPowerValues = dict(zip(self._controlledPowerValues, values))
-		elif isinstance(self._controlledPowerValues, dict):
-			myrange = None
-			step = None
-			controlledPowerValues = {}
-			for k, v in self._controlledPowerValues.items():
-				if k=="range":
-					myrange=v
-				elif k=="step":
-					step=v
-				else:
-					controlledPowerValues[k]=v
-			if (myrange is not None or step is not None) \
-					or len(controlledPowerValues)==0:
-				if step is None:
-					step=1
-				if myrange is None:
-					myrange=[0,self.getMaxPower()]
-				elif isinstance(myrange, str):
-					myrange = CastUtililty.toTypeList(myrange)
-				keys = range(myrange[0], myrange[1], step)
-				values = [None for _ in keys]
-				controlledPowerValues = controlledPowerValues | dict(zip(keys, values))
-			self._controlledPowerValues = OrderedDict(sorted(controlledPowerValues))
 
 	# def _setCurrentPower(self, currentPower):
 	# 	"""
@@ -309,14 +429,14 @@ class Node:
 		"""
 			Return true if this Node can be switch on/off.
 		"""
-		return self._controlledPower is not None
+		return self._powerController is not None
 
 	def getControlledPowerValues(self):
 		"""
 		Get a dict matching possible command with possible power.
 		"""
-		if self._controlledPower is not None: # Fist call, init values
-			return self._controlledPowerValues
+		if self._powerController is not None: # Fist call, init values
+			return self._powerController.getValues()
 		return None
 
 
@@ -325,32 +445,9 @@ class Node:
 		Get current wanted controlled power for node with controlable power.
 		!!! Warning maybe we don't get power but an abstract value (like power from 0 to 6). !!!
 		"""
-		if self._controlledPower is not None:
-			value = self._controlledPower.getValue()
-			power = self._controlledPowerValues.get(value)
+		if self._powerController is not None:
 			newValue = self.getCurrentPower()
-			if power is None:
-				self._controlledPowerValues[value] = newValue
-			elif newValue!=value: # Choice the most coherent value
-				# pylint: disable=protected-access
-				linkPrev, linkNext, _ = self._controlledPowerValues._OrderedDict__map[value]
-				prevValue = self._controlledPowerValues[linkPrev[2]]
-				nextValue = self._controlledPowerValues[linkNext[2]]
-				# check that power values are ordered (like control value)
-				coherent = prevValue<value<nextValue
-				coherentNew = prevValue<newValue<nextValue
-				if coherent and coherentNew:
-					old = max(value-prevValue, nextValue-value)
-					new = max(newValue-prevValue, nextValue-newValue)
-					if new<old:
-						self._controlledPowerValues[value] = newValue
-					# else nothing to do, that was the "best"
-				elif coherent:
-					pass
-				elif coherentNew:
-					self._controlledPowerValues[value] = newValue
-				# else: uncoherent values, the error is probably elsewhere
-			return value
+			return self._powerController.update(newValue)
 		return None
 
 	def setControlledPower(self, power):
@@ -358,8 +455,8 @@ class Node:
 		Set wanted controlled power for node with controlable power.
 		!!! Warning maybe we don't set power but an abstract value. !!!
 		"""
-		if self._controlledPower is not None:
-			return self._controlledPower.setValue(power)
+		if self._powerController is not None:
+			return self._powerController.setValue(power)
 		return None
 
 	def setActivate(self, value:bool):
@@ -390,14 +487,6 @@ class Node:
 			logger.error("'%s' unable to know if on.", self.id)
 			return False
 		retValue = self._isOn.getValue()
-		if retValue!=self._wasOn and self._wasOnCycleId!=self.network.getCycleId():
-			logger.debug(
-				"Node.isOn(%s) = %s witch was not expected : A user manually changed the state.",
-				self.id, retValue)
-			self._wasOn = retValue
-			self._wasOnCycleId = self.network.getCycleId()
-			if retValue:
-				self.network.server.registerDecrementTime(self, True)
 		return retValue
 
 	def switchOn(self, connect:bool, register:bool=None) -> bool:
@@ -417,8 +506,7 @@ class Node:
 					return not connect
 			ok = self.network.networkUpdater.switchOn(connect, self)
 			if ok==connect:
-				self._wasOn = ok
-				self._wasOnCycleId = self.network.getCycleId()
+				self._isOn.switchOn(ok)
 			if ok and register is not None:
 				self.network.server.registerDecrementTime(self, register)
 			return ok

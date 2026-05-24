@@ -1,7 +1,7 @@
 
 function installOpenHemsPrerequisites {
 	echo "Install OpenHEMS server"
-	sudo apt install -y python3-pandas python3-yaml python3-pyramid python3-pyramid-jinja2 python3-astral python3-virtualenv python3-toml
+	sudo apt install -y python3-pandas python3-yaml python3-astral python3-virtualenv python3-toml
 }
 
 function installOpenHemsService {
@@ -33,6 +33,14 @@ function updateOpenHEMS {
 	export OPENHEMS_BRANCH
 	export TMP_DIR
 	$OPENHEMS_PATH/scripts/autoupdate.py
+}
+
+function startOpenHEMS {
+	cd $OPENHEMS_PATH/src/openhems
+	mkdir -p $OPENHEMS_LOGPATH
+	cmd="./main.py --conf $OPENHEMS_PATH/config/openhems.yaml --logfile $OPENHEMS_LOGPATH/openhems.log"
+	echo "Start OpenHEMS server : $ $cmd"
+	$cmd
 }
 
 # TODO : Install custom Python + venv ?

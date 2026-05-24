@@ -8,6 +8,8 @@
 - A guided configuration, question/response.
 - IA to formulate predictions.
 - IA to command OpenHEMS devices ("Start the washing machine") & as "Personnal Assistant"
+- A dashboard to see the house state. (https://community.home-assistant.io/t/power-flow-card-plus/552326)
+
 
 - A dashboard to see the house state.
 

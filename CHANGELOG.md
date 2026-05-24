@@ -1,6 +1,13 @@
 # Changelog
 
-## 0.2.16 - 2026-29-01
+## 0.3.0 - 2026-05-24
+### Improvement
+- Change Web interface from Pyramid to Streamlit
+- Add a Unix socket for communication between Web and Core application.
+- Simplify Dockerfile
+- Start migration to standard python naming and indenting convention.
+
+## 0.2.16 - 2026-01-29
 ### Fix
 - Install scripts
 - As no update during a long time, some modules was up dated and generates bug with our code. We fix them.

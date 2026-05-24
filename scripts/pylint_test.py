@@ -7,6 +7,8 @@ import re
 import json
 from pathlib import Path
 
+# pylint: disable=invalid-name
+
 pattern_line = re.compile(r"^(.*):([0-9]+):([0-9]+): ([A-Z][0-9][0-9][0-9][0-9]): (.*)")
 snake_case_descr = re.compile(r'.*name "(.*)".* conform to snake_case naming style.*')
 snake_case_transformer = re.compile(r"(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])")
@@ -53,7 +55,6 @@ def analyzeFolder(folder):
 	for line in stream.readlines():
 		print(line)
 		# pylint: disable=pointless-string-statement
-		"""
 		ok = pattern_line.match(line)
 		if ok:
 			file = ok[1]
@@ -83,7 +84,6 @@ def analyzeFolder(folder):
 				print(line)
 		else:
 			print(line)
-		"""
 
 def initSnakeCaseConversion():
 	"""
@@ -107,6 +107,21 @@ def finalyze():
 # snake_case_conversion = initSnakeCaseConversion()
 
 ROOT_PATH = Path(__file__).parents[1]
-analyzeFolder(ROOT_PATH / "src/openhems")
-analyzeFolder(ROOT_PATH/"scripts")
-analyzeFolder(ROOT_PATH/"tests")
+# analyzeFolder(ROOT_PATH / "src/openhems")
+# analyzeFolder(ROOT_PATH/"scripts")
+# analyzeFolder(ROOT_PATH/"tests")
+def pylint():
+	"""
+	Launch pylint on all project and print results.
+	"""
+	cmds = [
+		"pylint  --fail-under=9.9 $(git ls-files '*.py')",
+		"pylint --fail-under=9.9 --rcfile=src/openhems/modules/web/.pylintrc src/openhems/modules/web/",
+		"pylint --fail-under=9.9 --rcfile=src/openhems/modules/web/.pylintrc tests"
+	]
+	for cmd in cmds:
+		stream = os.popen(cmd)
+		for line in stream.readlines():
+			print(line)
+
+pylint()

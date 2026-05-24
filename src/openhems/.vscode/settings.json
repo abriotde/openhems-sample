@@ -8,5 +8,5 @@
 	],
 	"python.testing.pytestEnabled": false,
 	"python.testing.unittestEnabled": true,
-	"python.pythonPath": "/home/alberic/Documents/OpenHomeSystem/openhems-sample/venvemhass/bin/python"
+	"python.pythonPath": "/home/alberic/Documents/OpenHomeSystem/openhems-sample/.venv/bin/python"
 }

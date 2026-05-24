@@ -1,0 +1,149 @@
+edf:
+  label: EDF
+  contracts:
+    basic:
+      label: "Tarif Bleu (option Base)"
+    offpeak:
+      label: "Tarif Bleu (Heures Creuses)"
+      offpeak: ["22h-6h"]
+    tempo:
+      label: "Tempo"
+      offpeak: ["22h-6h"]
+      driver: "RTETempo"
+    weekend:
+      label: "Zen Week-end"
+      driver: "EDFWeekend"
+    weekendHC:
+      label: "Zen Week-end Heures Creuses"
+      offpeak: ["22h-6h"]
+      driver: "EDFWeekend"
+    weekendFlex:
+      label: "Zen Week-end Flex"
+      offpeak: ["22h-6h"]
+      driver: "EDFFlex"
+    zen_fixe:
+      label: "Zen Fixe"
+      price_fix: "12 mois"
+engie:
+  label: Engie
+  contracts:
+    basic:
+      label: "Elec Référence 3 ans"
+      duration: "3 ans"
+      green: true
+    elec_vert_plus:
+      label: "Elec Vert+"
+      surcharge: "5,90 €/mois"
+      green: "100%"
+total:
+  label: TotalEnergies
+  contracts:
+    basic:
+      label: "Heures Eco Electricité"
+      discount: "-8% sur le kWh HT"
+      green: "100%"
+      price_fix: "12 mois"
+    verte_fixe:
+      label: "Verte Fixe"
+      price_fix: "durée déterminée"
+      green: "100%"
+octopus:
+  label: Octopus Energy
+  contracts:
+    basic:
+      label: "Eco-conso Fixe"
+      price_fix: "24 mois"
+      green: "100%"
+      driver: "Kraken"
+    tempo_like:
+      label: "OctoTempo"
+      offpeak: ["22h-6h"]
+      driver: "OctoTempo"
+      green: "100%"
+plenitude:
+  label: Plenitude
+  contracts:
+    basic:
+      label: "PleniWeb Électricité"
+      price_fix: "12 mois"
+      discount: "-8% sur le kWh HT"
+      green: true
+    plenifix:
+      label: "Plenifix"
+      price_fix: "12 mois"
+      discount: "-8% sur le kWh HT"
+enercoop:
+  label: Enercoop
+  contracts:
+    basic:
+      label: "Classic"
+      green: "100% renouvelable (solaire, éolien, hydraulique)"
+      comment: "achat direct à des producteurs"
+      engagement: "coopératif"
+ekwateur:
+  label: Ekwateur
+  contracts:
+    basic:
+      label: "Électricité 100% verte fixe"
+      price_fix: "12 mois"
+      comment: "100% renouvelable"
+    parrainage:
+      label: "Électricité 100% verte fixe"
+      parrainage: "150 kWh offerts au filleul, 150 Jouls au parrain"
+mint_energie:
+  label: Mint Énergie
+  contracts:
+    basic:
+      label: "Online & Green"
+      discount: "-11% sur le kWh HT"
+      green: "25%"
+    smart_green:
+      label: "Smart & Green"
+      label_vertvolt: true
+      green: "100%"
+happ_e:
+  label: happ-e by Engie
+  contracts:
+    basic:
+      label: "Électricité happ-e"
+      comment: "Prix indexé sur le TRV"
+      green: true
+    nova_fixe:
+      label: "NovaFixe Elec"
+      price_fix: "2 ans"
+      discount: "-16% sur le kWh HT"
+vattenfall:
+  label: Vattenfall
+  contracts:
+    basic:
+      label: "Électricité Exclusive Verte"
+      discount: "-10% sur le kWh HT par rapport au TRV"
+      green: "100%"
+    equilibre:
+      label: "Équilibre"
+      price_fix: "durée indéterminée"
+      green: "100%"
+ohm_energie:
+  label: OHM Énergie
+  contracts:
+    basic:
+      label: "Classique"
+      discount: "-10% sur l'abonnement HT"
+      green: true
+    extra_eco_vert:
+      label: "Extra eco VERT"
+      discount: "jusqu'à -15% sur le kWh HT"
+      green: true
+    premi_ohm:
+      label: "Premi'Ohm"
+      price_fix: "3 ans"
+alpiq:
+  label: Alpiq
+  contracts:
+    basic:
+      label: "Électricité Stable"
+      price_fix: "jusqu'au 31/12/2026"
+      discount: "-33% sur le kWh HT par rapport au TRV"
+    electricite_reference:
+      label: "Électricité Référence"
+      discount: "-4% sur le kWh HT par rapport au TRV"

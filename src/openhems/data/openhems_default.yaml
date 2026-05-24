@@ -18,6 +18,7 @@ server:
   loopDelay: 30 # interval beetween 2 loop
   network: homeassistant # Define the type of network API used to control the home energy.
   strategies: []
+  socketpath: /tmp/openhems.sock
 network:
   nodes: [] # List the source of electric power / stockage
 # - class=publicpowergrid: currentPower, maxPower, minPower, powerMargin

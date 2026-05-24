@@ -25,9 +25,9 @@ jobs:
       matrix:
         platform: [
           {target_arch: amd64, os_version: debian},
-          {target_arch: armv7, os_version: debian},
-          {target_arch: armhf, os_version: raspbian},
           {target_arch: aarch64, os_version: debian}
+#          {target_arch: armv7, os_version: debian}, # 32 bit support, disable on Home-Assistant homeassistant/armv7-homeassistant
+#          {target_arch: armhf, os_version: raspbian}, # 32 bit with FPU
         ]
     steps:
     # Pull git repo and build each architecture image separately (with QEMU and Buildx)

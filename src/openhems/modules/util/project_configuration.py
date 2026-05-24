@@ -3,7 +3,7 @@ Usefull to get informations from pyproject.toml
 """
 
 from pathlib import Path
-import toml
+import toml # pylint: disable=E0401
 
 
 class ProjectConfiguration:

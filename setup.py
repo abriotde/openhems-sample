@@ -27,7 +27,7 @@ setup(
 	package_dir={"": "src"},
 	packages=find_packages(where="src"),
 	python_requires=">=3.8, <4",
-	# install_requires=["requests", "pandas", "pyyaml", "pyramid", "pyramid-jinja2"],
+	# install_requires=["requests", "pandas", "pyyaml"],
 	extras_require={
 		# "dev": ["check-manifest"],
 		# "test": ["coverage"],

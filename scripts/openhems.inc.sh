@@ -1,7 +1,6 @@
 
 source config.sh
 source functions.sh
-OPENHEMS_LOGPATH=/var/log/openhems
 
 # Useless ?
 function installMosquitto {
