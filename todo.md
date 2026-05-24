@@ -12,6 +12,9 @@
 - A dashboard to see the house state. (https://community.home-assistant.io/t/power-flow-card-plus/552326)
 
 
+- A dashboard to see the house state.
+
+
 # Development
 - dev/node : When get curentPower, check maxPower and update it if needed.
 - dev/debug : check why sometime OpenHEMS restart.
