@@ -102,7 +102,7 @@ ENV PYTHONUNBUFFERED=1
 LABEL \
     io.hass.name="openhems" \
     io.hass.description="OpenHEMS: Home Energy Management System based on Home Assistant" \
-    io.hass.version="0.2.16.2" \
+    io.hass.version="0.3.0" \
     io.hass.type="addon" \
     io.hass.arch="amd64|arm64|armv7"
 

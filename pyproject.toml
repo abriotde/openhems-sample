@@ -1,6 +1,6 @@
 [project]
 name = "openhems"
-version = "0.2.16.2"
+version = "0.3.0"
 dynamic = [
 	# "version" # , "description"
 ]
