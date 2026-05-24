@@ -29,14 +29,14 @@ class TestDashboard(unittest.TestCase):
         self.mock_socket_client.update_schedule = MagicMock()
 
         # Patch OpenhemsHTTPServer.get_socket_client at the point where Dashboard imports it
-        patcher = patch('openhems.unix_socket.UnixSocketClient.get_schedule',
+        patcher = patch('openhems.unix_socket_client.UnixSocketClient.get_schedule',
             return_value=schedule
         )
         self.mock_socket_client.get_schedule = patcher.start()
         self.mock_socket_client.get_schedule.return_value = schedule
         self.addCleanup(patcher.stop)
 
-        patcher = patch('openhems.unix_socket.UnixSocketClient.update_schedule',
+        patcher = patch('openhems.unix_socket_client.UnixSocketClient.update_schedule',
             return_value=True
         )
         self.mock_socket_client.update_schedule = patcher.start()
