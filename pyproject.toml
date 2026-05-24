@@ -160,5 +160,5 @@ include = [
 ]
 
 [dependency-groups]
-docs = ["sphinx"]
+docs = ["sphinx", "sphinx_rtd_theme"]
 
