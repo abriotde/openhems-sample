@@ -92,6 +92,8 @@ ADD . /app/
 # Installation finale du package openhems (sans ses dépendances, déjà installées)
 RUN uv pip install --no-deps .
 
+RUN mkdir -p /opt/vpn/; touch /opt/vpn/response
+
 # Variables d'environnement Python
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
@@ -108,5 +110,6 @@ EXPOSE 8000
 VOLUME /log /app/config
 
 # Point d'entrée (adaptez le chemin si nécessaire)
-ENTRYPOINT ["python", "/app/src/openhems/main.py", "-l", "/log/openhems.log", "--docker"]
+ENTRYPOINT ["uv", "run", "--directory", "/app", "src/openhems/main.py",\
+  "-l", "/log/openhems.log", "--docker"]
 
