@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.1 - 2026-05-29
+### FIX
+- Add missing package to dependancies
+- Set path as configurables
+- Fix using it as Python package
+- Add a test to avoid this in futur
+
 ## 0.3.0 - 2026-05-24
 ### Improvement
 - Change Web interface from Pyramid to Streamlit

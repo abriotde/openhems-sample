@@ -10,4 +10,4 @@ from .time import Time, HoursRanges, DATETIME_PRINT_FORMAT
 from .notification_manager import NotificationManager, MessageHistory
 from .project_configuration import ProjectConfiguration
 from .recorder import Recorder
-from .logging import getLogger, filer
+from .logging import getLogger, filer, get_log_file_path

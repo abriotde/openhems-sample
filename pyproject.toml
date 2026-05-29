@@ -1,6 +1,6 @@
 [project]
 name = "openhems"
-version = "0.3.0"
+version = "0.3.1"
 dynamic = [
 	# "version" # , "description"
 ]
@@ -53,6 +53,7 @@ dependencies = [
 	"streamlit-monaco-yaml>=0.2.0",
 	"pytest>=9.0.3",
 	"pytest-cov>=7.1.0",
+	'typing-extensions'
 ]
 license = { file = "LICENSE", "expression" = "GPL-3.0-or-later" }
 # license = "GPL-3.0-or-later"

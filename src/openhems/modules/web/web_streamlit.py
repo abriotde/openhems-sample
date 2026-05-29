@@ -15,11 +15,12 @@ import yaml
 import streamlit as st #pylint: disable=import-error
 
 from openhems.unix_socket_client import UnixSocketClient # pylint: disable=E0401
+from openhems.modules.util import get_log_file_path # pylint: disable=E0401
 
 
 # pylint: disable=wrong-import-position
-ROOT_PATH = Path(__file__).parents[4]
-sys.path.append(str(ROOT_PATH / "src"))
+ROOT_PATH = Path(__file__).parents[3]
+sys.path.append(str(ROOT_PATH))
 from openhems.modules.util import (
  	ConfigurationManager
 )
@@ -58,9 +59,10 @@ class OpenhemsHTTPServer():
     """
     Class for HTTP Server for OpenHEMS UI configuration
     """
-    SESSION_FILE_PATH = ROOT_PATH / "src/openhems/data/streamlit_session.yaml"
+    SESSION_FILE_PATH = ROOT_PATH / "openhems/data/streamlit_session.yaml"
+
     def __init__(self, logger, schedule, warning_messages, *,
-            port=8000, html_root="/", in_docker=False, configurator=None):
+            port=8000, html_root="/", in_docker=False, configurator:ConfigurationManager=None):
         del html_root
         # print("Init OpenhemsHTTPServer2 with port ", port)
         self.logger = logger
@@ -95,7 +97,7 @@ class OpenhemsHTTPServer():
         """
         st.title("OpenHEMS")
         print("Run on port ", self.port)
-        streamlit_app_path = str(ROOT_PATH / "src/openhems/modules/web/Dashboard.py")
+        streamlit_app_path = str(ROOT_PATH / "openhems/modules/web/Dashboard.py")
         cmd = [sys.executable, "-m", "streamlit",
             "run", "--server.port="+str(self.port),
             streamlit_app_path,
@@ -129,11 +131,16 @@ class OpenhemsHTTPServer():
         """
         Initialize Streamlit session state with necessary objects (like UnixSocketClient)
         """
+        print("ROOT_PATH=",ROOT_PATH)
         with open(self.SESSION_FILE_PATH, "w", encoding="utf-8") as session_file:
+            log_path = self.configurator.get("server.logfile")
+            if log_path=="":
+                log_path = get_log_file_path(self.logger)
             datas = {
                 "socket_path": self.configurator.get("server.socketpath"),
                 "lang": self.lang,
-                "log_path": self.configurator.get("server.logfile"),
+                "log_path": log_path,
+                "conf_path": str(self.configurator.getLastYamlConfFilepath()),
             }
             yaml.dump(datas, session_file)
             self.logger.info(
@@ -154,6 +161,7 @@ class OpenhemsHTTPServer():
         #  (avoid to reload it at each session initialization)
         #  but no matter as we should have only one user (or very few)
         st.session_state.lang = session_data.get("lang")
+        st.session_state.configurator_path = session_data.get("conf_path")
 
     @staticmethod
     def get_socket_client():

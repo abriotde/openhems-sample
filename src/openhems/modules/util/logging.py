@@ -8,6 +8,8 @@ import logging
 from logging import handlers
 import sys
 
+# pylint: disable=bad-indentation, invalid-name
+
 def filer(param=None):
 	"""
 	Function used to get filename on rotating log
@@ -16,7 +18,14 @@ def filer(param=None):
 	now = datetime.now()
 	return 'openhems.'+now.strftime("%Y-%m-%d")+'.log'
 
-def getLogger(loglevel, logformat, logfile, inDocker=False):
+def get_log_file_path(logger: logging.Logger) -> str | None:
+    """Return the file path of the first FileHandler attached to the logger, or None."""
+    for handler in logger.handlers:
+        if isinstance(handler, logging.FileHandler):
+            return handler.baseFilename
+    return None
+
+def getLogger(loglevel, logformat, logfile, inDocker=False) -> logging.Logger:
 	"""
 	Configure a logger for all the Application.
 	"""

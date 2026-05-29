@@ -12,8 +12,8 @@ import streamlit as st # pylint: disable=E0401
 import pandas as pd
 
 # pylint: disable=wrong-import-position
-ROOT_PATH = Path(__file__).parents[4]
-sys.path.append(str(ROOT_PATH / "src"))
+ROOT_PATH = Path(__file__).parents[3]
+sys.path.append(str(ROOT_PATH))
 # from openhems.modules.network import OpenHEMSSchedule
 from openhems.modules.network.homestate_updater import HomeStateUpdater
 from openhems.modules.web.web_streamlit import OpenhemsHTTPServer

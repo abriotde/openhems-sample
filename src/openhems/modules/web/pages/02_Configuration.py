@@ -690,8 +690,8 @@ def configure_page():
     It manages the state of the page (YAML editor or assistant).
     """
     # Manage the page
-    openhems_config_page = str(ROOT_PATH / "config/openhems.yaml")
-    with open(openhems_config_page, "r", encoding="utf-8") as f1:
+    configurator_path = st.session_state.configurator_path
+    with open(configurator_path, "r", encoding="utf-8") as f1:
         conf = yaml.safe_load(f1)
         has_nodes = len(conf.get("network", {}).get("nodes", [])) != 0
         if "config_ui_editor" in st.session_state:
@@ -702,7 +702,7 @@ def configure_page():
             edition_state = ConfigEditionState.YAML_EDITOR.value
         new_state = edition_state
         if edition_state==ConfigEditionState.ASSISTANT.value:
-            new_state = basic_configure(openhems_config_page, cancel=has_nodes)
+            new_state = basic_configure(configurator_path, cancel=has_nodes)
         elif edition_state==ConfigEditionState.ASSISTANT_WARNING.value:
             st.warning(
                 "**⚠️ Risque de perte d’informations ou de formatage**\n\n"
@@ -719,7 +719,7 @@ def configure_page():
                 if st.button("❌ Non, annuler"):
                     new_state = ConfigEditionState.YAML_EDITOR.value
         elif edition_state==ConfigEditionState.YAML_EDITOR.value:
-            new_state = yaml_editor_page(openhems_config_page)
+            new_state = yaml_editor_page(configurator_path)
         if new_state!=edition_state:
             st.session_state.config_ui_editor = new_state
             st.rerun()

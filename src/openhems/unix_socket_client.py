@@ -39,8 +39,12 @@ class UnixSocketClient:
             response = sock.recv(8192).decode('utf-8')
             sock.close()
             return json.loads(response)
-        except (json.JSONDecodeError, ConnectionResetError, BrokenPipeError, AttributeError) as e:
+        except (json.JSONDecodeError, ConnectionResetError,
+                BrokenPipeError, AttributeError) as e:
             st.error(f"Erreur de communication avec le core : {e}")
+            return None
+        except FileNotFoundError as e:
+            st.error(f"UnixSocketClient.connect : Missing socket '{self.socket_path}'  : {e}")
             return None
         except ConnectionRefusedError as e:
             st.error(f"Socket connection refused to {self.socket_path} : {e}")

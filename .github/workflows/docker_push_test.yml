@@ -1,0 +1,71 @@
+name: Test Package Build and Run
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Build package
+        run: uv build
+
+      - name: Create virtual environment and install wheel
+        run: |
+          uv venv --clear test_env
+          # Activate venv for subsequent steps via PATH and environment variable
+          echo "VIRTUAL_ENV=$PWD/test_env" >> $GITHUB_ENV
+          echo "$PWD/test_env/bin" >> $GITHUB_PATH
+          uv pip install dist/openhems-*.whl
+
+      - name: Start server in background
+        run: |
+          python test_venv.py > server.log 2>&1 &
+          echo $! > server.pid
+        env:
+          PYTHONUNBUFFERED: 1   # Ensure logs are flushed immediately
+
+      - name: Wait for server to be ready
+        run: |
+          for i in {1..30}; do
+            if curl -s http://localhost:8000 > /dev/null; then
+              echo "Server is up"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Server failed to start within 30 seconds"
+          exit 1
+
+      - name: Test home page
+        run: curl -f http://localhost:8000 || exit 1
+
+      - name: Check for errors in server log
+        run: |
+          # 4 errors for "Unable to access Home Assistance instance"
+          if [[ $(grep "ERROR" server.log|wc -l) -gt 4 ]];
+            echo "❌ Found ERROR lines in server log"
+            exit 1
+          fi
+
+      - name: Kill server
+        if: always()   # Always run, even if previous steps fail
+        run: |
+          if [ -f server.pid ]; then
+            kill $(cat server.pid) || true
+          fi
+
+      - name: Print server log on failure
+        if: failure()
+        run: cat server.log
