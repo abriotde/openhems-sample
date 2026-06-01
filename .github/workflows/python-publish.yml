@@ -20,9 +20,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@master
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@master
         with:
           python-version: "3.x"
 
@@ -33,7 +33,7 @@ jobs:
           python -m build
 
       - name: Upload distributions
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@main
         with:
           name: release-dists
           path: dist/
@@ -47,7 +47,7 @@ jobs:
       name: pypi
     steps:
     - name: Retrieve release distributions
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@main
       with:
         name: release-dists
         path: dist/

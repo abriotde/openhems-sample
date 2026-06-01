@@ -8,10 +8,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@master
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@master
         with:
           python-version: '3.13'
 
@@ -27,7 +27,9 @@ jobs:
           # Activate venv for subsequent steps via PATH and environment variable
           echo "VIRTUAL_ENV=$PWD/test_env" >> $GITHUB_ENV
           echo "$PWD/test_env/bin" >> $GITHUB_PATH
-          uv pip install dist/openhems-*.whl
+
+      - name: Install package
+        run: uv pip install dist/openhems-*.whl
 
       - name: Start server in background
         run: |
@@ -54,7 +56,8 @@ jobs:
       - name: Check for errors in server log
         run: |
           # 4 errors for "Unable to access Home Assistance instance"
-          if [[ $(grep "ERROR" server.log|wc -l) -gt 4 ]];
+          cat server.log
+          if [[ $(grep "ERROR" server.log|wc -l) -gt 4 ]]; then
             echo "❌ Found ERROR lines in server log"
             exit 1
           fi
