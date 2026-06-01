@@ -11,7 +11,7 @@ jobs:
       matrix:
         python-version: ["3.13"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@master
 
       - name: Install dependencies
         run: |
@@ -22,7 +22,7 @@ jobs:
           echo "PYTHONPATH=$PYTHONPATH" >> $GITHUB_ENV
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@latest
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
@@ -38,7 +38,7 @@ jobs:
             --ignore=src/openhems/emhass
 
       - name: Upload results to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@main
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
 
