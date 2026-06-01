@@ -48,7 +48,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Extract metadata (tags, labels) for Docker
         id: meta
-        uses: docker/metadata-action@master
+        uses: docker/metadata-action@v6
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}
       - name: Build and push by digest
@@ -97,7 +97,7 @@ jobs:
         uses: docker/setup-buildx-action@master   
       - name: Extract metadata (tags, labels) for Docker
         id: meta
-        uses: docker/metadata-action@master
+        uses: docker/metadata-action@v6
         with:
           images: ${{ vars.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME_LOWER }}
       - name: Log in to the Container registry
