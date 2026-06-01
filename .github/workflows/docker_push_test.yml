@@ -27,7 +27,9 @@ jobs:
           # Activate venv for subsequent steps via PATH and environment variable
           echo "VIRTUAL_ENV=$PWD/test_env" >> $GITHUB_ENV
           echo "$PWD/test_env/bin" >> $GITHUB_PATH
-          uv pip install dist/openhems-*.whl
+
+      - name: Install package
+        run: uv pip install dist/openhems-*.whl
 
       - name: Start server in background
         run: |
