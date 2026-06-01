@@ -56,7 +56,7 @@ jobs:
       - name: Check for errors in server log
         run: |
           # 4 errors for "Unable to access Home Assistance instance"
-          if [[ $(grep "ERROR" server.log|wc -l) -gt 4 ]];
+          if [[ $(grep "ERROR" server.log|wc -l) -gt 4 ]]; then
             echo "❌ Found ERROR lines in server log"
             exit 1
           fi
