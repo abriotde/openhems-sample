@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.2 - 2026-06-04
+### Fix
+- FIX run from other path (Docker, Home-Assistant add-on... )
+- FIX : start allways the Web server.
+- FIX : should work on Home-Assistant
+
 ## 0.3.1 - 2026-05-29
 ### FIX
 - Add missing package to dependancies
