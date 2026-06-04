@@ -25,4 +25,4 @@ config/openhems.back.yaml
 logs/
 openhems.db
 tests/data/*.tmp.yaml
-
+.worktrees/
