@@ -7,7 +7,8 @@ File used to test openhems as a package (see test_venv.sh)
 
 import openhems
 
-config_file = "./config/openhems.yaml"
+config_file = "./tests/data/openhems_fake4tests.yaml"
+# config_file = "./config/openhems.yaml"
 
 app = openhems.OpenHEMSApplication(config_file)
 app.run()

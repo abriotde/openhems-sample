@@ -19,8 +19,8 @@ from openhems.modules.util.json import json_default
 from openhems.modules.web.web_streamlit import get_logger
 
 # pylint: disable=wrong-import-position
-ROOT_PATH = Path(__file__).parents[5]
-sys.path.append(str(ROOT_PATH / "src"))
+ROOT_PATH = Path(__file__).parents[4]
+sys.path.append(str(ROOT_PATH))
 from openhems.modules.web import OpenhemsHTTPServer
 # from openhems.modules.util import (
 # 	ConfigurationManager, ConfigurationException, CastUtililty, CastException, ProjectConfiguration
@@ -75,7 +75,7 @@ def load_schema():
     """
     Load the schema for OpenHEMS configuration validation.
     """
-    with open(str(ROOT_PATH / "config/openhems.schema.yaml"), "r", encoding="utf-8") as f:
+    with open(str(ROOT_PATH / "openhems/data/openhems.schema.yaml"), "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 def validate_config(config:dict|str, schema=None):
@@ -112,7 +112,7 @@ def snake_case(s):
 
 def save_basic_config(
         basic_config: BasicConfiguration,
-        config_page=ROOT_PATH / "config/openhems.yaml"):
+        config_page=ROOT_PATH / "../config/openhems.yaml"):
     """
     Convert the basic configuration and merge it 
     to OpenHEMS configuration file and then save it.
@@ -483,7 +483,7 @@ def basic_configure_supplier():
     Display the electricity supplier configuration page.
     """
     st.write("**Quel est votre fournisseur d'électricité ?**")
-    contracts = load_config(str(ROOT_PATH / "src/openhems/data/ennergy_supplier.yaml"))
+    contracts = load_config(str(ROOT_PATH / "openhems/data/ennergy_supplier.yaml"))
     suppliers_dict = get_suplliers_dict(contracts)
     contract = st.session_state.config.contract
     supplier_key = basic_configure_supplier_select(suppliers_dict, contract)

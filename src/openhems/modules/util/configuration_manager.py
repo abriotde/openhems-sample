@@ -182,7 +182,10 @@ class ConfigurationManager():
 		if dictConfig is not None:
 			self._load(dictConfig, init)
 		self._cache = {}
-		self.filepaths.append(yamlConfig)
+		if isinstance(yamlConfig, str):
+			yamlConfig = Path(yamlConfig)
+		absPath = yamlConfig.resolve()
+		self.filepaths.append(absPath)
 		# print(self._conf)
 
 	def add(self, key, value, init=False, prekey=''):

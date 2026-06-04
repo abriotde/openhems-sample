@@ -1,6 +1,5 @@
 server:
   loglevel: error
-  logfile: ""
   network: fake
   strategies: 
     - {class: offpeak, id: offpeak}

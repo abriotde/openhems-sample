@@ -10,8 +10,11 @@ import sys
 import logging
 from threading import Thread
 import argparse
+import threading
 import traceback
 from pathlib import Path
+
+from openhems.modules.util.project_configuration import ProjectConfiguration
 openhemsPath = Path(__file__).parents[1]
 sys.path.append(str(openhemsPath))
 # pylint: disable=wrong-import-position
@@ -120,20 +123,37 @@ class OpenHEMSApplication:
 			self.logger.info("OpenHEMS loaded.")
 			network.notify("Start OpenHEMS.")
 
-	def runManagementServer(self):
+	def runManagementServer(self, event:threading.Event=None):
 		"""
 		Run core server (Smart part) without the webserver part. 
 		"""
+
 		if self.server is not None:
+			schedule = self.server.getSchedule()
+			network = self.server.getNetwork()
+		else: # Create a UnixSocketServer even if there is no core server.
+			# In order to allow webserver to start and display error messages / reconfigure server.
+			schedule = {}
+			network = FakeNetwork(ProjectConfiguration())
+		try:
 			socket = UnixSocketServer(
-				self.server.getSchedule(),
-				self.server.getNetwork(),
+				schedule,
+				network,
 				socket_path=self.configurator.get("server.socketpath"),
 				logger=self.logger
 			)
 			socket.start()
+		except Exception as e: # pylint: disable=broad-exception-caught
+			self.logger.error("Error occurred while starting management server: %s", e)
+		if event:
+			event.set()
+
+		if self.server is not None:
 			# server.run() is infinite loop (never give hand back)
-			self.server.run()
+			try:
+				self.server.run()
+			except Exception as e: # pylint: disable=broad-exception-caught
+				self.logger.error("Error occurred while running management server: %s", e)
 		else:
 			self.logger.error(
 				"Core server cannot start because of "
@@ -150,10 +170,13 @@ class OpenHEMSApplication:
 		"""
 		Run wall OpenHEMS Application
 		"""
+		event = threading.Event()
+		t1 = Thread(target=self.runManagementServer, args=[event])
+		t1.start()
+		# Wait UnixSocketServer started (before web server try listen to it)
+		event.wait()
 		t0 = Thread(target=self.runWebServer, args=[])
 		t0.start()
-		t1 = Thread(target=self.runManagementServer, args=[])
-		t1.start()
 		# t.join()
 		# t.run()
 

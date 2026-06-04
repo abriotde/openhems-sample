@@ -50,8 +50,8 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}
           tags: |
-            type=ref,event=tag  # Use Git tag when available
-            type=raw,value=latest,enable={{is_default_branch}}  # Tag 'latest' on main
+            type=ref,event=tag
+            type=raw,value=latest,enable={{is_default_branch}}
       - name: Build and push by digest
         id: build
         uses: docker/build-push-action@master
