@@ -1,11 +1,7 @@
-graft data
-graft lib
-
-include_package_data data
+include pyproject.toml
 
 recursive-include data *.yaml
 recursive-include emhass *
 global-exclude */__pycache__/*
 global-exclude *.pyc
 
-include pyproject.toml
