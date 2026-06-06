@@ -1,6 +1,6 @@
 [project]
 name = "openhems"
-version = "0.3.2.1"
+version = "0.3.2.2"
 dynamic = [
 	# "version" # , "description"
 ]
@@ -69,18 +69,9 @@ Homepage = "https://openhomesystem.com"
 Issues = "https://github.com/abriotde/openhems-sample/issues"
 Documentation = "https://openhems.readthedocs.io/en/latest/"
 Repository = "https://github.com/abriotde/openhems-sample.git"
-	
+
 [build-system]
-requires = [
-	'requests', "pandas", "pyyaml", 'packaging', 'astral',
-	'GitPython', 'toml', 'scikit-opt',
-	# For EMHASS
-	'numpy', 'plotly', 'scikit-learn', 'skforecast', 'pvlib', 'beautifulsoup4' , 'protobuf',
-	'pandas', 'scipy', 'h5py', 'pulp',
-	'flit_core >=3.2,<4', "setuptools>=42", "wheel"
-]
-# build-backend = "flit_core.buildapi"
-# build-backend = "openhems.build"
+requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
@@ -116,10 +107,6 @@ ignore_errors = true
 [tool.coverage.html]
 directory = "coverage_html_report"
 
-
-[tool.setuptools.data-files]
-# "share/openhems" = ["data/*.yaml"]
-
 [tool.setuptools]
 include-package-data = true
 
@@ -140,24 +127,6 @@ openhems = [
 		"emhass/scripts/*.json",
 		"emhass/src/emhass/static/data/*.json",
 		"emhass/src/emhass/data/*.json",
-		"pyproject.toml"
-]
-
-[tool.flit.sdist]
-include = [
-    "LICENSE",
-    "CHANGELOG.md",
-    # Documentation
-    "doc/",
-    # "CODE_OF_CONDUCT.rst",  # used as an include in the Documentation
-    # "EXAMPLES.rst",  # used as an include in the Documentation
-    # Tests
-    "tests/",
-    # "tox.ini",
-    # Utilities
-    "data/",
-    "lib/",
-    # "babel.cfg",
 ]
 
 [dependency-groups]

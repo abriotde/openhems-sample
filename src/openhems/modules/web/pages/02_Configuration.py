@@ -693,6 +693,8 @@ def configure_page():
     configurator_path = st.session_state.configurator_path
     with open(configurator_path, "r", encoding="utf-8") as f1:
         conf = yaml.safe_load(f1)
+        if conf is None:
+            conf = {}
         has_nodes = len(conf.get("network", {}).get("nodes", [])) != 0
         if "config_ui_editor" in st.session_state:
             edition_state = st.session_state.config_ui_editor
