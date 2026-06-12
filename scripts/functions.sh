@@ -20,15 +20,17 @@ function activate_service {
 		sudo cp $service /etc/systemd/system/
 		sudo mv $service /lib/systemd/system/
 	fi
-	ln -s /lib/systemd/system/$service /etc/systemd/system/multi-user.target.wants
+	symlink=/etc/systemd/system/multi-user.target.wants/$service
+	rm -f $symlink
+	ln -s /lib/systemd/system/$service $symlink
 	systemctl daemon-reload
-    systemctl enable $service
-    systemctl start $service
-    ok=`systemctl is-active --quiet $service`
-    if [[ $ok != 0 ]]; then
-        echo "ERROR : Fail activate '$service'. Something goes wrong. Cancel installation."
-        exit 1
-    fi
+	systemctl enable $service
+	systemctl start $service
+	ok=`systemctl is-active --quiet $service`
+	if [[ $ok != 0 ]]; then
+		echo "ERROR : Fail activate '$service'. Something goes wrong. \"$ systemctl is-active $service\" Cancel installation."
+		exit 1
+	fi
 }
 
 function installDocker {
@@ -83,6 +85,14 @@ function launchDocker {
 	if [[ $DO_INSTALL -eq 1 ]]; then
 		echo "Create docker '$dockerName'"
 		if [[ $dockerName == "homeassistant" ]]; then
+			echo "/usr/bin/docker run \
+			  --name $dockerName \
+			  --privileged \
+			  -v $HOMEASSISTANT_DIR/config:/config \
+			  -v /run/dbus:/run/dbus:ro \
+			  -e TZ=$MY_TIME_ZONE \
+			  --network=host --rm \
+			  $HOMEASSISTANT_DOCKER_IMAGE"
 			/usr/bin/docker run \
 			  --name $dockerName \
 			  --privileged \

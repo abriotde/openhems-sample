@@ -690,6 +690,8 @@ def configure_page():
     It manages the state of the page (YAML editor or assistant).
     """
     # Manage the page
+    if 'configurator_path' not in st.session_state:
+        OpenhemsHTTPServer.init_session()
     configurator_path = st.session_state.configurator_path
     with open(configurator_path, "r", encoding="utf-8") as f1:
         conf = yaml.safe_load(f1)

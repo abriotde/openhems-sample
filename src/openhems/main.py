@@ -14,6 +14,7 @@ import threading
 import traceback
 from pathlib import Path
 
+ROOT_PATH = Path(__file__).parents[3]
 from openhems.modules.util.project_configuration import ProjectConfiguration
 openhemsPath = Path(__file__).parents[1]
 sys.path.append(str(openhemsPath))

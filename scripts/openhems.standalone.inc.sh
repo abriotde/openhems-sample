@@ -1,7 +1,15 @@
 
 function installOpenHemsPrerequisites {
 	echo "Install OpenHEMS server"
-	sudo apt install -y python3-pandas python3-yaml python3-astral python3-virtualenv python3-toml
+	sudo apt install -y python3-pandas python3-yaml python3-astral python3-virtualenv python3-toml python3-importlib-metadata python3.11-venv
+	cd $OPENHEMS_PATH
+	python3 -m venv .venv --system-site-packages
+	source .venv/bin/activate
+	pip install streamlit scikit-opt streamlit-monaco-yaml
+}
+
+function installOpenHems {
+	echo "Install OpenHEMS"
 }
 
 function installOpenHemsService {
@@ -12,7 +20,8 @@ After = docker.target
 
 [Service]
 # User=openhems
-ExecStart = $OPENHEMS_PATH/src/openhems/main.py
+Environment="PYTHONPATH=$OPENHEMS_PATH/src"
+ExecStart=$OPENHEMS_PATH/.venv/bin/python3 $OPENHEMS_PATH/src/openhems/main.py
 StandardOutput=append:$OPENHEMS_LOGPATH/openhems.service.log
 StandardError=append:$OPENHEMS_LOGPATH/openhems.service.error.log
 SyslogIdentifier=OpenHEMS

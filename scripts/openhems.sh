@@ -24,7 +24,7 @@ else if [[ $1 == "stop" ]]; then
 	echo "Stop $DOCKER_NAME"
 	stopOpenHEMS
 else if [[ $1 == "install" ]]; then
-	echo "Install $DOCKER_NAME docker"
+	echo "Install OpenHEMS"
 	installOpenHemsPrerequisites
 	# installVPN
 	# installLogrotate

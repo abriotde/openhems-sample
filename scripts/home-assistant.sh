@@ -52,7 +52,7 @@ WorkingDirectory=/home/olimex/openhems-sample/scripts
 RestartSec=120s
 ExecStartPre=-/usr/bin/docker stop $DOCKER_HA_NAME
 ExecStartPre=-/usr/bin/docker rm $DOCKER_HA_NAME
-ExecStart=$HOMEASSISTANT_DIR/scripts/home-assistant.sh start
+ExecStart=$OPENHEMS_PATH/scripts/home-assistant.sh start
 ExecStartPost=/bin/sleep 120
 ExecStop=/usr/bin/docker stop $DOCKER_HA_NAME
 
