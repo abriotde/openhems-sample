@@ -6,11 +6,9 @@ from pathlib import Path
 import toml # pylint: disable=E0401
 ROOT_DIR = Path(__file__).parents[2]
 # In your openhems/__init__.py
-from importlib.metadata import version, metadata
+from importlib.metadata import version, metadata, PackageNotFoundError
 
-__version__ = version("openhems")
 # or read other metadata:
-name = metadata("openhems")["Name"]
 class ProjectConfiguration:
 	"""
 	Usefull function to do something like a cast : Convertion of types
@@ -18,8 +16,32 @@ class ProjectConfiguration:
 
 	def __init__(self, openHemsProjectConfPath=None):
 		# In your openhems/__init__.py
+		try:
+			self._mode = 1
 			self._version = version("openhems")
 			self._conf = metadata("openhems")
+		except PackageNotFoundError:
+			# case we run project as standalone
+			# No metadata will be found
+			self._mode = 0
+			conf = self.get_conf_from_pyproject()
+			project = conf.get("project", {})
+			self._version = project.get("version",0.3)
+			self._conf = project
+
+	def get_conf_from_pyproject(self):
+		"""
+		Get the project configuration from pyproject.toml file instead of metadata (When not installed)
+		"""
+		openHemsProjectConfPath = Path(__file__)
+		for path in Path(__file__).parents:
+			openHemsProjectConfPath = path / "pyproject.toml"
+			if openHemsProjectConfPath.is_file():
+				break
+		else:
+			return {}
+		with openHemsProjectConfPath.open('r', encoding="utf-8") as file:
+			return toml.loads(file.read())
 
 	def getVersion(self):
 		"""
@@ -32,18 +54,24 @@ class ProjectConfiguration:
 		Return current project maintainers.
 		"""
 		print("Project configuration:", self._conf)
-		return self._conf.get('Maintainer', 'Unknown')
+		if self._mode==1:
+			return self._conf.get('Maintainer', 'Unknown')
+		else:
+			return self._conf['maintainers']
 
 	def getUrls(self):
 		"""
 		get projects urls
 		"""
-		url_entries = self._conf.get_all('Project-URL')
-		all_urls = {}
-		for entry in url_entries:
-			label, url = entry.split(", ", 1)
-			all_urls[label] = url
-		return all_urls
+		if self._mode==1:
+			url_entries = self._conf.get_all('Project-URL')
+			all_urls = {}
+			for entry in url_entries:
+				label, url = entry.split(", ", 1)
+				all_urls[label] = url
+			return all_urls
+		else:
+			return self._conf['urls']
 
 	def getConf(self):
 		"""
@@ -61,10 +89,17 @@ class ProjectConfiguration:
 		"""
 		Get contact information
 		"""
-		return self._conf.get('Maintainer-email', 'Unknown')
+		if self._mode==1:
+			return self._conf.get('Maintainer-email', 'Unknown')
+		else:
+			return self._conf['maintainers'][0]['email']
 
 	def getName(self):
 		"""
 		Get project name
 		"""
-		return self._conf['Name']
+		if self._mode==1:
+			return self._conf['Name']
+		else:
+			return self._conf['name']
+

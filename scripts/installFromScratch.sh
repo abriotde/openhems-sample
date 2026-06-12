@@ -9,5 +9,5 @@ source functions.sh
 
 ./home-assistant.sh install
 
-./openhems.sh
+./openhems.sh install
 
