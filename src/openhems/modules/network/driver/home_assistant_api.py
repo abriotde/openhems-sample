@@ -155,7 +155,7 @@ class HomeAssistantAPI(HomeStateUpdater):
 			self.logger.debug("switchOn(%s, %s)", isOn, node)
 			expectStr = "on" if isOn else "off"
 			# pylint: disable=protected-access
-			entityId = node._isOn.nameid # (Should do in an other way?)
+			entityId = node._isOn.getNameId() # (Should do in an other way?)
 			response = self.callAPI(
 				"/services/switch/turn_"+expectStr,
 				{"entity_id": entityId}
