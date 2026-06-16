@@ -1,10 +1,20 @@
 # Changelog
 
+## 0.3.3 - 2026-06-16
+### FIX
+- crash on use OnNodeManager : HomeAssistantApi.switchOn() : 'OnNodeManager' object has no attribute 'nameid'
+- Install as standalone
+- Webpages and update
+- Use ProjectConfiguration : use importlib.metadata() when installed and pyproject.toml overwise
+
+### MOD
+- Update documentation (for Streamlit mainly)
+
 ## 0.3.2 - 2026-06-04
 ### Fix
-- FIX run from other path (Docker, Home-Assistant add-on... )
-- FIX : start allways the Web server.
-- FIX : should work on Home-Assistant
+- run from other path (Docker, Home-Assistant add-on... )
+- start allways the Web server.
+- should work on Home-Assistant
 
 ## 0.3.1 - 2026-05-29
 ### FIX

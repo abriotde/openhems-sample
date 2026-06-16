@@ -8,7 +8,9 @@ In this paragraph we will see main use cases of OpenHEMS and how we can use it. 
 When to choose OpenHEMS
 -----------------------
 
-If you have solar panel, OpenHEMS is an excellent choice to controll them in order to increase profitability.
+OpenHEMS is for personnal home, not for complexe environment like industry or building. It is for people who want to reduce their energy bill and/or to increase the profitability of their solar panel or simply to reduce their C02 emissions.
+
+If you have solar panel, OpenHEMS should be an excellent choice to controll them in order to increase profitability.
 
 If you don't have solar panel, you usually have devices you can manually programm. Maybe is it not necessary to set a complex home automation for this. But when there is lots of devices or if you have ever Home-Asistant installed (or would like to), OpenHEMS will empowered it.
 

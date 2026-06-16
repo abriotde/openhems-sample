@@ -1,5 +1,5 @@
 """
-Usefull to get informations from pyproject.toml
+Usefull to get informations from this project : version, name, maintainers from pyproject.toml (or metadata if installed)
 """
 
 from pathlib import Path
@@ -11,7 +11,8 @@ from importlib.metadata import version, metadata, PackageNotFoundError
 # or read other metadata:
 class ProjectConfiguration:
 	"""
-	Usefull function to do something like a cast : Convertion of types
+	Usefull to get informations from this project : version, name, maintainers from pyproject.toml 
+	Use metadata only if installed.
 	"""
 
 	def __init__(self, openHemsProjectConfPath=None):

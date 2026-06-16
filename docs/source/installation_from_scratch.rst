@@ -2,6 +2,10 @@
 Installation from scratch
 =========================
 
+This way is reserved to aknowledged people. There is 2 main reasons to choose this way:
+- It is for people who want to developp OpenHEMS because it allow you to update source fiels and tests.
+- Or people who want to install it on a custom devic likee Banana Pi in a lighter way than full HomeAssitant-OS using docker.
+
 Prerequisites
 -------------
 
@@ -28,23 +32,48 @@ Installation
 
 * Run `git clone https://github.com/abriotde/openhems-sample.git`
 
-* Run `cd openhems-sample/scripts/`
+* Configure it. See dedicated page :doc:`configure`. After configured, restart at least OpenHEMS add-on.
 
-* Edit config.sh and adapt it:
+* Copy `cat ../scripts/config.sh|grep -v "^source"|tee config/config.inc.sh` and edit config/config.inc.sh to adapt to your needs.
 
- * DOMAINNAME : The domain name you have from internet to access your server. It is usually configurable in the internet box.
+ * `RSYNC_CMD` : command shell de copy
 
- * HOMEASSISTANT_IP : This is the local IP (If ever one set static, keep it). You must check it's a free IP in your internet box not in DHCP rank.
+ * `DOMAINNAME` : The domain name you have from internet to access your server. It is not important
 
- * HOMEASSISTANT_DIR : An empty directory where you will install HomeAssistant. If you run HomeAssistantOS, it is the place where it is install but it should be useless
+ * `HOMEASSISTANT_IP` : IP of your Home-Assistant server.
 
- * HOMEASSISTANT_CONFIG_PATH : The Home-Assistant path for configuration (You probably do not need to change it)
+ * `HOMEASSISTANT_DIR` : An empty directory where you will install HomeAssistant if you choose to install it as docker.
 
- * DOCKER_NAME : The name of the docker HomeAssistant. I do not think you need to change it.
+ * `HOMEASSISTANT_CONFIG_PATH` :  The Home-Assistant path for configuration (You probably do not need to change it)
 
- * OPENHEMS_PATH : The place you did the "git clone"
+ * `HOMEASSISTANT_DOCKER_IMAGE` : The docker image of Home-Assistant.
+
+ * `DOCKER_HA_NAME` : The name of the docker HomeAssistant.
+
+ * `DOCKER_NAME` : OpenHEMS docker name. I do not think you need to change it.
+
+ * `OPENHEMS_USER` : The user who will run OpenHEMS.
+
+ * `OPENHEMS_PATH` : The place you did the "git clone"
+
+ * `OPENHEMS_LOGPATH` : The place where OpenHEMS will write logs. It should be a directory with write access for the user who run OpenHEMS.
+
+ * `OPENHEMS_BRANCH` : The branch of OpenHEMS to use. It should be "main" for production, "dev" for development.
+
+ * `OPENHEMS_DOCKER_VERSION` : The version of the OpenHEMS docker image to use.
+
+ * `TMP_DIR` : A temporary directory for installation. It should be a directory with write access for the user who run OpenHEMS.
+
+ * `VPN_IP` : The IP of the VPN server if you use one. It is a unstable function.
+
+ * `MY_TIME_ZONE` : Your timezone.
+
+ * `DOCKER_OPENHEMS` : 1 if you will run OpenHEMS as a docker (for test/production), 0 if you will run it from source code (for development).
+
+
+* Go in scripts folder `cd openhems-sample/scripts/`
  
-* Run `./installFromScratch.sh` or just `./openhems.sh` if you have ever HomeAssistant installed with HACS
+* Run `./installFromScratch.sh` or just `./openhems.sh install` if you have ever HomeAssistant installed with HACS
 
 * Check in a web browser "http://$HOMEASSISTANT_IP:8123/" after replacing $HOMEASSISTANT_IP with your IP. If ok, home-assistant is correctly installed.
 

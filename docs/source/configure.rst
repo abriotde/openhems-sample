@@ -39,8 +39,10 @@ If OpenHEMS is not installed as add-on of Home-AssistantOS, you will need to gen
 Configure OpenHEMS with web interface
 -------------------------------------
 
-Open the web interface of OpenHEMS (http://192.168.1.202:8000/) and click on "params" menu.  Should be on http://192.168.1.202:8000/params. You will see a form with many fields to fill. Default are usually good enough. To have more informations about fields, see below at paragraph "Configure OpenHEMS with YAML file".
-"Strategies" and ""network" must be set and are quite difficult to set. Click on "+" button to see the popup with choices. See paragraph bellow "Configure OpenHEMS with YAML file" to have more informations.
+Open the web interface of OpenHEMS (http://192.168.1.202:8000/) and click on "Configuration" menu.  Should be on http://192.168.1.202:8000/Configuration. You can edit it manually, as yaml file. But a good way is to use the helper to start. The helper will not configure it perfectly but aprroximatively.
+There is too an exemple on [repository](https://raw.githubusercontent.com/abriotde/openhems-sample/refs/heads/main/config/openhems.yaml).
+To have more informations about fields, see below at paragraph "Configure OpenHEMS with YAML file".
+"Strategies" and ""network" must be set and are quite difficult to set.
 
 There is a video, in french, to show how to configure OpenHEMS with web interface. You can find it on [Youtube](https://www.youtube.com/watch?v=1rb9n-XyTsM).
 

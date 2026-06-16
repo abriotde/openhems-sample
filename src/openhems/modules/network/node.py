@@ -174,13 +174,20 @@ class ApplianceConstraints():
 
 class OnNodeManager:
 	"""
-	Manage node on state
+	Manage node on/off state
+	The goal is to detect if the user manually switch on/off the node and to avoid to switch on/off too often.
 	"""
-	def __init__(self, node, feeder):
+	def __init__(self, node, feeder:Feeder):
 		self._node = node
 		self._isOn:Feeder = feeder
 		self._wasOn:bool = False # Used to detect change of state
 		self._wasOnCycleId:int = -1
+
+	def getNameId(self):
+		"""
+		Return node nameId from _isOn feeder
+		"""
+		return self._isOn.getNameId()
 
 	def getValue(self):
 		"""
@@ -325,7 +332,7 @@ class Node:
 		self.name = haId
 		self.id = haId.strip().replace(" ", "_")
 
-	def __init__(self, nameId, currentPower, maxPower, *, isOnFeeder=None,
+	def __init__(self, nameId, currentPower, maxPower, *, isOnFeeder:Feeder=None,
 			  powerController:PowerControler=None, network=None):
 		self.id = ""
 		self.setId(nameId)
@@ -348,6 +355,11 @@ class Node:
 		except TypeError as e:
 			raise ConfigurationException(str(e)) from e
 
+	def getNameId(self):
+		"""
+		Return node nameId
+		"""
+		return self.name
 
 	def getFeeder(self, sourceType):
 		"""

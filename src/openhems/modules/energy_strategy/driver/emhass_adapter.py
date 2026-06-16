@@ -199,11 +199,11 @@ Altitude: {altitude}
 		Return Home-Assistant template.yaml file
 		 fill according to openhems.yaml config.
 		"""
-		inout = ['(states("'+elem.currentPower.nameid+'") | float(0))'
+		inout = ['(states("'+elem.currentPower.getNameId()+'") | float(0))'
 			for elem in network.getAll("inout")]
-		out = ['(states("'+elem.currentPower.nameid+'") | float(0))'
+		out = ['(states("'+elem.currentPower.getNameId()+'") | float(0))'
 			for elem in network.getAll("out")]
-		solarpanel = ['(states("'+elem.currentPower.nameid+'") | float(0))'
+		solarpanel = ['(states("'+elem.currentPower.getNameId()+'") | float(0))'
 			for elem in network.getAll("solarpanel")]
 		if len(inout)==0 or len(out)==0 or len(solarpanel)==0:
 			logger.error("Emhass optimization need %s configuration.",
@@ -328,12 +328,12 @@ Altitude: {altitude}
 		zeroRelacementVars = [
 			'sensor.emhass_photovoltaic_power_produced',
 			'sensor.emhass_household_power_consumption'
-		] + [elem.getFeeder("currentPower").nameid for elem in elems]
+		] + [elem.getFeeder("currentPower").getNameId() for elem in elems]
 		datas['var_replace_zero'] = EmhassAdapter.getYamlList(zeroRelacementVars)
 		elems = network.getAll("solarpanel")
 		interpretVars = [
 			'sensor.emhass_photovoltaic_power_produced'
-		] + [elem.getFeeder("currentPower").nameid for elem in elems]
+		] + [elem.getFeeder("currentPower").getNameId() for elem in elems]
 		datas['var_interp'] = EmhassAdapter.getYamlList(interpretVars)
 
 		# Feel solarpanel fields
@@ -355,9 +355,9 @@ Altitude: {altitude}
 			varLoad = "sensor.emhass_household_power_consumption"
 		else:
 			for elem in network.getAll("solarpanel"):
-				varPV = elem.getFeeder("currentPower").nameid
+				varPV = elem.getFeeder("currentPower").getNameId()
 			for elem in network.getAll("inout"):
-				varLoad = elem.getFeeder("currentPower").nameid
+				varLoad = elem.getFeeder("currentPower").getNameId()
 		datas['emhass_photovoltaic_power_produced'] =varPV
 		datas['emhass_household_power_consumption'] =varLoad
 
