@@ -7,6 +7,7 @@ Page for OpenHEMS configuration, with two modes:
 import time
 import sys
 import re
+import os
 import json
 from pathlib import Path
 from enum import Enum
@@ -554,7 +555,8 @@ Vous pourrez ensuite modifier les paramètres finement dans l'interface standard
             st.rerun()
     with col2:
         if st.button("❌ Annuler", use_container_width=True):
-            st.stop()
+            st.session_state.config_ui_editor = ConfigEditionState.YAML_EDITOR.value
+            st.rerun()
 
 def basic_configure_battery():
     """
@@ -648,14 +650,24 @@ def basic_configure(config_page, cancel=False):
 
     return state
 
-def yaml_editor_page(config_page):
+def yaml_editor_page(config_page, conf):
     """
     Display the YAML editor page (as plaintext).
     """
     st.title("✍️ Éditeur YAML Avancé")
     json_schema = load_schema()
     state = ConfigEditionState.YAML_EDITOR.value
-    with open(config_page, "r", encoding="utf-8") as f1:
+    if not st.session_state.has_updated_running_conf:
+        # We will edit a temporary file with the running conf (Can be many files combined)
+        # We will swap them at end
+        config_page_edit = str(config_page.parents[1]) + "/.tmp." + str(config_page.name)
+        print("config_page_edit:", config_page_edit, "; from:", config_page)
+        conf = get_current_configuration()
+        with open(config_page_edit, "w") as f0:
+            f0.write(yaml.dump(conf))
+    else:
+        config_page_edit = config_page
+    with open(config_page_edit, "r", encoding="utf-8") as f1:
         initial_text = f1.read()
         # st.write(f"ddd{initial_text}.")
         monaco_return = monaco_editor(
@@ -675,7 +687,10 @@ def yaml_editor_page(config_page):
             col1, col2 = st.columns(2)
             with col1:
                 if st.button("💾 Sauvegarder"):
-                    save_config(config=yaml_content, config_page=config_page, schema=json_schema)
+                    save_config(config=yaml_content, config_page=config_page_edit, schema=json_schema)
+                    if not st.session_state.has_updated_running_conf:
+                        os.rename(config_page_edit, config_page)
+                        st.session_state.has_updated_running_conf = True # (even if no change)
                     st.success("✅ Fichier YAML sauvegardé !")
             with col2:
                 if st.button("✏️ Assistant d'édition de configuration"):
@@ -683,6 +698,48 @@ def yaml_editor_page(config_page):
         except (jsonschema.exceptions.ValidationError, jsonschema.exceptions.SchemaError) as e:
             st.error(f"❌ Fichier YAML invalide selon le schéma JSON. : {e}")
     return state
+
+def dicts_differ(d1, d2):
+    """Return True if d1 and d2 differ, False if they are equal (recursive)."""
+    if type(d1) is not type(d2):
+        return True
+
+    if isinstance(d1, dict):
+        if set(d1.keys()) != set(d2.keys()):
+            return True
+        for key in d1:
+            if dicts_differ(d1[key], d2[key]):
+                return True
+        return False
+
+    elif isinstance(d1, list):
+        if len(d1) != len(d2):
+            return True
+        for a, b in zip(d1, d2):
+            if dicts_differ(a, b):
+                return True
+        return False
+
+    elif isinstance(d1, set):
+        # Compare sorted lists (order‑independent)
+        return dicts_differ(sorted(d1, key=str), sorted(d2, key=str))
+
+    else:
+        return d1 != d2
+
+@st.cache_data(ttl=3600)
+def get_current_configuration():
+    """
+    return the current configuration, the running one if configurator_path has not been edited,
+    configurator_path else. Set 'has_updated_running_conf'.
+    """
+    configurator_path = st.session_state.configurator_path
+    if st.session_state.has_updated_running_conf:
+        with open(configurator_path, "r", encoding="utf-8") as f1:
+            return yaml.safe_load(f1)
+    else:
+        return st.session_state.configurator.retrieveYamlConfig()
+    return {}
 
 def configure_page():
     """
@@ -694,39 +751,40 @@ def configure_page():
     if 'configurator_path' not in st.session_state:
         OpenhemsHTTPServer.init_session()
     configurator_path = st.session_state.configurator_path
-    with open(configurator_path, "r", encoding="utf-8") as f1:
-        conf = yaml.safe_load(f1)
-        if conf is None:
-            conf = {}
-        has_nodes = len(conf.get("network", {}).get("nodes", [])) != 0
-        if "config_ui_editor" in st.session_state:
-            edition_state = st.session_state.config_ui_editor
-        elif not has_nodes:
-            edition_state = ConfigEditionState.ASSISTANT.value
-        else:
-            edition_state = ConfigEditionState.YAML_EDITOR.value
-        new_state = edition_state
-        if edition_state==ConfigEditionState.ASSISTANT.value:
-            new_state = basic_configure(configurator_path, cancel=has_nodes)
-        elif edition_state==ConfigEditionState.ASSISTANT_WARNING.value:
-            st.warning(
-                "**⚠️ Risque de perte d’informations ou de formatage**\n\n"
-                "L’assistant d'édition est imparfait et peut occasionner"
-                " des pertes dans votre configuration "
-                "a minima dans la mise en page si vous l'avez édité manuellement."
-                " Souhaitez-vous continuer ?"
-            )
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("✅ Oui, ouvrir l’assistant"):
-                    new_state = ConfigEditionState.ASSISTANT.value
-            with col2:
-                if st.button("❌ Non, annuler"):
-                    new_state = ConfigEditionState.YAML_EDITOR.value
-        elif edition_state==ConfigEditionState.YAML_EDITOR.value:
-            new_state = yaml_editor_page(configurator_path)
-        if new_state!=edition_state:
-            st.session_state.config_ui_editor = new_state
-            st.rerun()
+    conf = get_current_configuration()
+    if st.session_state.has_updated_running_conf:
+        st.warning("⚠️ La configuration a été modifiée,\n " \
+            "pour la prendre en compte veuillez redémarrer"
+        )
+    has_nodes = len(conf.get("network", {}).get("nodes", [])) != 0
+    if "config_ui_editor" in st.session_state:
+        edition_state = st.session_state.config_ui_editor
+    elif not has_nodes:
+        edition_state = ConfigEditionState.ASSISTANT.value
+    else:
+        edition_state = ConfigEditionState.YAML_EDITOR.value
+    new_state = edition_state
+    if edition_state==ConfigEditionState.ASSISTANT.value:
+        new_state = basic_configure(configurator_path, cancel=has_nodes)
+    elif edition_state==ConfigEditionState.ASSISTANT_WARNING.value:
+        st.warning(
+            "**⚠️ Risque de perte d’informations ou de formatage**\n\n"
+            "L’assistant d'édition est imparfait et peut occasionner"
+            " des pertes dans votre configuration "
+            "a minima dans la mise en page si vous l'avez édité manuellement."
+            " Souhaitez-vous continuer ?"
+        )
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("✅ Oui, ouvrir l’assistant"):
+                new_state = ConfigEditionState.ASSISTANT.value
+        with col2:
+            if st.button("❌ Non, annuler"):
+                new_state = ConfigEditionState.YAML_EDITOR.value
+    elif edition_state==ConfigEditionState.YAML_EDITOR.value:
+        new_state = yaml_editor_page(configurator_path, conf)
+    if new_state!=edition_state:
+        st.session_state.config_ui_editor = new_state
+        st.rerun()
 
 configure_page()
