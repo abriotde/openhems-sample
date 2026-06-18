@@ -14,6 +14,7 @@ from .feedback_switch import FeedbackSwitch, HeatingSystem
 from .inoutnode import InOutNode, PublicPowerGrid, SolarPanel, Battery
 from .feeder import (
 	Feeder, SourceFeeder, RandomFeeder, ConstFeeder,
-	RotationFeeder, FakeSwitchFeeder, StateFeeder, SumFeeder # For fakeNetwork
+	RotationFeeder, FakeSwitchFeeder, StateFeeder, SumFeeder, # For fakeNetwork
+	SolarFeeder
 )
 from .schedule import OpenHEMSSchedule

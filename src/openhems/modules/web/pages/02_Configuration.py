@@ -690,6 +690,7 @@ def configure_page():
     It manages the state of the page (YAML editor or assistant).
     """
     # Manage the page
+    # pylint: disable=too-many-branches
     if 'configurator_path' not in st.session_state:
         OpenhemsHTTPServer.init_session()
     configurator_path = st.session_state.configurator_path

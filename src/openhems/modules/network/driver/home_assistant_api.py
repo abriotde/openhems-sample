@@ -105,12 +105,12 @@ class HomeAssistantAPI(HomeStateUpdater):
 			return val
 		return None
 
-	def updateNetwork(self):
+	def updateNetwork(self, cycleDuration:int=30, now=None):
 		"""
 		Update network, but as we ever know it's architecture,
 		 we just have to update few values.
 		"""
-		super().updateNetwork()
+		super().updateNetwork(cycleDuration, now)
 		if len(self.cachedIds) == 0:
 			self.logger.warning("HomeAssistantAPI.updateNetwork() : "
 				"No entities to update.")

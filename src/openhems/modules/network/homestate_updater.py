@@ -49,10 +49,11 @@ class HomeStateUpdater:
 		"""
 		return self.network.getCycleId()
 
-	def updateNetwork(self):
+	def updateNetwork(self, cycleDuration:int=30, now=None):
 		"""
 		A function witch update home network and return Network.
 		"""
+		del cycleDuration, now
 		# self.refreshId += 1 # useless : self.network.getCycleId() replaceIt?
 
 	def switchOn(self, isOn, _):

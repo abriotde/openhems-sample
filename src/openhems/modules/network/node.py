@@ -175,7 +175,8 @@ class ApplianceConstraints():
 class OnNodeManager:
 	"""
 	Manage node on/off state
-	The goal is to detect if the user manually switch on/off the node and to avoid to switch on/off too often.
+	The goal is to detect if the user manually switch on/off
+	  the node and to avoid to switch on/off too often.
 	"""
 	def __init__(self, node, feeder:Feeder):
 		self._node = node

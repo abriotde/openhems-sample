@@ -1,17 +1,23 @@
 """
-Usefull to get informations from this project : version, name, maintainers from pyproject.toml (or metadata if installed)
+Usefull to get informations from this project : 
+version, name, maintainers from pyproject.toml (or metadata if installed)
 """
 
 from pathlib import Path
+from importlib.metadata import version, metadata, PackageNotFoundError
 import toml # pylint: disable=E0401
+
 ROOT_DIR = Path(__file__).parents[2]
 # In your openhems/__init__.py
-from importlib.metadata import version, metadata, PackageNotFoundError
+
+
+# pylint: disable=invalid-name
 
 # or read other metadata:
 class ProjectConfiguration:
 	"""
-	Usefull to get informations from this project : version, name, maintainers from pyproject.toml 
+	Usefull to get informations from this project
+	  : version, name, maintainers from pyproject.toml 
 	Use metadata only if installed.
 	"""
 
@@ -25,12 +31,12 @@ class ProjectConfiguration:
 			# case we run project as standalone
 			# No metadata will be found
 			self._mode = 0
-			conf = self.get_conf_from_pyproject()
+			conf = self.get_conf_from_pyproject(openHemsProjectConfPath)
 			project = conf.get("project", {})
 			self._version = project.get("version",0.3)
 			self._conf = project
 
-	def get_conf_from_pyproject(self):
+	def get_conf_from_pyproject(self, openHemsProjectConfPath):
 		"""
 		Get the project configuration from pyproject.toml file instead of metadata (When not installed)
 		"""
@@ -57,8 +63,7 @@ class ProjectConfiguration:
 		print("Project configuration:", self._conf)
 		if self._mode==1:
 			return self._conf.get('Maintainer', 'Unknown')
-		else:
-			return self._conf['maintainers']
+		return self._conf['maintainers']
 
 	def getUrls(self):
 		"""
@@ -71,8 +76,7 @@ class ProjectConfiguration:
 				label, url = entry.split(", ", 1)
 				all_urls[label] = url
 			return all_urls
-		else:
-			return self._conf['urls']
+		return self._conf['urls']
 
 	def getConf(self):
 		"""
@@ -92,8 +96,7 @@ class ProjectConfiguration:
 		"""
 		if self._mode==1:
 			return self._conf.get('Maintainer-email', 'Unknown')
-		else:
-			return self._conf['maintainers'][0]['email']
+		return self._conf['maintainers'][0]['email']
 
 	def getName(self):
 		"""
@@ -101,6 +104,4 @@ class ProjectConfiguration:
 		"""
 		if self._mode==1:
 			return self._conf['Name']
-		else:
-			return self._conf['name']
-
+		return self._conf['name']
