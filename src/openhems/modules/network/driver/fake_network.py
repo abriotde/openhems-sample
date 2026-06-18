@@ -23,7 +23,9 @@ class FakeNetwork(HomeStateUpdater):
 	This is a fake network for tests.
 	"""
 
-	def __init__(self, conf:ConfigurationManager) -> None:
+	def __init__(self, conf:ConfigurationManager=None) -> None:
+		if conf is None:
+			conf = ConfigurationManager()
 		super().__init__(conf)
 		starttime = conf.get("server.start_time", defaultValue="2024-01-01 00:00:00")
 		self._time = datetime.strptime(starttime, "%Y-%m-%d %H:%M:%S").timestamp()
@@ -130,13 +132,16 @@ class FakeNetwork(HomeStateUpdater):
 		for node in self.network.getAll("out"):
 			if node.isOn():
 				energy += node.getCurrentPower()
+		print("FakeNetwork.updateNetwork() : nodes : ", energy)
 		for node in self.network.getAll("solarpanel"):
 			energy -= node.getCurrentPower()
+		print("FakeNetwork.updateNetwork() : solarpanel : ", energy)
 		for node in self.network.getAll("battery"):
 			energy -= node.updateEnergy(energy, cycleDuration, now)
+		print("FakeNetwork.updateNetwork() : battery : ", energy)
 		publicpowergrid = self.network.getPublicpowergrid()
 		if publicpowergrid:
-			energy = publicpowergrid.updateEnergy(energy)
+			energy = publicpowergrid.updateEnergy(energy, cycleDuration)
 		if energy!=0:
 			energyKwh = energy*2.777e-7 # Convert Watt-second to Kilowatt-hour
 			self.logger.error("Run out of energy of %s  kWh (%s ws) ",energyKwh, energy)

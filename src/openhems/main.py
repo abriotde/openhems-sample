@@ -15,7 +15,7 @@ import traceback
 from pathlib import Path
 # pylint: disable=wrong-import-position
 ROOT_PATH = Path(__file__).parents[3]
-from openhems.modules.util.project_configuration import ProjectConfiguration
+from openhems.modules.util import ConfigurationManager
 openhemsPath = Path(__file__).parents[1]
 sys.path.append(str(openhemsPath))
 # pylint: disable=wrong-import-position
@@ -116,7 +116,7 @@ class OpenHEMSApplication:
 		else: # Create a UnixSocketServer even if there is no core server.
 			# In order to allow webserver to start and display error messages / reconfigure server.
 			schedule = {}
-			network = FakeNetwork(ProjectConfiguration())
+			network = FakeNetwork(ConfigurationManager())
 		try:
 			socket = UnixSocketServer(
 				schedule,

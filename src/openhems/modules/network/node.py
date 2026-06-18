@@ -402,8 +402,8 @@ class Node:
 		return currentPower
 
 	def getMaxPower(self):
-		"""
-		Get max power 
+		""" 
+		Get max power in Kwh
 		"""
 		return self._maxPower.getValue()
 

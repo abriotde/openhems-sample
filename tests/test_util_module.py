@@ -172,7 +172,7 @@ class TestUtilModule(unittest.TestCase):
         #   FakeNetwork.notify("A test message." occured 56 more times)
         f = io.StringIO()
         with contextlib.redirect_stdout(f):
-            networkUpdater = FakeNetwork(None)
+            networkUpdater = FakeNetwork()
             notificator = NotificationManager(networkUpdater, logger)
             fakeMessage = "A test message."
             # notificator.notify(fakeMessage)

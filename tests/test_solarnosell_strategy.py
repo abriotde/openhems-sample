@@ -12,7 +12,7 @@ import utils
 
 logger = logging.getLogger(__name__)
 
-class TestAnnealingStrategy(utils.TestStrategy):
+class TestSolarNoSellStrategy(utils.TestStrategy):
     """
     Try test wall core server (OpenHEMS part, not web part)
     """

@@ -8,7 +8,7 @@ from pathlib import Path
 import datetime
 import shutil
 import traceback
-import sys
+import logging
 import yaml
 import traceback
 from yaml.scanner import ScannerError
@@ -38,13 +38,17 @@ class ConfigurationManager():
 		"server.strategies": "strategy"
 	}
 	_instance = None
-	def __init__(self, logger=None, defaultPath=None, pathlist=[]):
+	def __init__(self, logger=None, defaultPath=None, pathlist=None):
 		# print("ConfigurationManager(",[defaultPath] + ppathlist,")")
+		if logger is None:
+			logger = logging.getLogger(__name__)
 		self.logger = logger
 		self._conf = {}
 		self._cache = {}
 		if defaultPath  is None:
 			defaultPath = self.DEFAULT_PATH
+		if pathlist is None:
+			pathlist = []
 		self.filepaths = []
 		for f in [defaultPath] + pathlist:
 			self.addYamlConfig(f, True)

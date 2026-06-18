@@ -95,12 +95,14 @@ class PublicPowerGrid(InOutNode):
 		"""
 		return self.contract
 
-	def updateEnergy(self, energy:float, duration:float):
+	def updateEnergy(self, energy:float, duration:float, now=None):
 		"""
 		Fonction used only on Fake network to force publicpowergrid 
 		to consume all over productions/consumptions.
 		"""
 		# TODO : check max/min power
+		print("PublicPowerGrid.updateEnergy(",energy,", ",duration,")")
+		del now
 		power = energy/duration
 		if power>self.getMaxPower():
 			raise DangerousStateException(
@@ -108,9 +110,12 @@ class PublicPowerGrid(InOutNode):
 				"OVER_CONSUMPTION"
 			)
 		if -self.getMinPower()>power:
-			raise DangerousStateException(
-				f"Reach PublicPowerGrid min power : {-self.getMinPower()} > {power}",
-				"OVER_CONSUMPTION"
+			# raise DangerousStateException(
+			# 	f"Reach PublicPowerGrid min power : {-self.getMinPower()} > {power}",
+			# 	"OVER_CONSUMPTION"
+			# )
+			self.logger.error(
+				"Reach PublicPowerGrid min power : {%s} > {%s} ", -self.getMinPower(), power
 			)
 		node = self._currentPower
 		if hasattr(node, '_currentPower'):
@@ -226,11 +231,12 @@ class FakeBattery(Battery):
 		"""
 		return self._energy_stored/self._max_energy_stored*100
 
-	def updateEnergy(self, energy:float, duration:float):
+	def updateEnergy(self, energy:float, duration:float, now=None):
 		"""
 		At each cycle, we will set how mutch power we want to store/give back.
 		energy : energy we want to store (positive) or give back (negative)
 		"""
+		del now
 		in_power = energy/duration
 		overdemand = 0
 		if in_power>self.getMaxPower():

@@ -15,7 +15,7 @@ import unittest
 ROOT_PATH = Path(__file__).parents[1]
 sys.path.append(str(ROOT_PATH / "src"))
 from openhems.modules.network.schedule import OpenHEMSSchedule
-from openhems.modules.util import ProjectConfiguration
+from openhems.modules.util import ConfigurationManager
 from openhems.unix_socket_server import UnixSocketServer
 from openhems.modules.network.driver.fake_network import FakeNetwork
 from openhems.modules.web import OpenhemsHTTPServer, OpenHEMSContext
@@ -67,7 +67,7 @@ class TestStreamlit(unittest.TestCase):
         if self.network is not None:
             return
         if network is None:
-            network = FakeNetwork(ProjectConfiguration())
+            network = FakeNetwork(ConfigurationManager())
         self.network = network
         dummy_context = OpenHEMSContext(
             schedule={"node_id": OpenHEMSSchedule(3600, "Test Schedule")},
