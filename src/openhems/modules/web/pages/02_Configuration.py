@@ -657,11 +657,12 @@ def yaml_editor_page(config_page, conf):
     st.title("✍️ Éditeur YAML Avancé")
     json_schema = load_schema()
     state = ConfigEditionState.YAML_EDITOR.value
-    if not st.session_state.has_updated_running_conf:
+    use_tmp_file = (not st.session_state.conf_has_updated_running) and st.session_state.conf_differs
+    if use_tmp_file:
         # We will edit a temporary file with the running conf (Can be many files combined)
         # We will swap them at end
-        config_page_edit = str(config_page.parents[1]) + "/.tmp." + str(config_page.name)
-        print("config_page_edit:", config_page_edit, "; from:", config_page)
+        config_page_edit = str(config_page.parents[0]) + "/.tmp." + str(config_page.name)
+        # print("config_page_edit:", config_page_edit, "; from:", config_page)
         conf = get_current_configuration()
         with open(config_page_edit, "w") as f0:
             f0.write(yaml.dump(conf))
@@ -688,9 +689,9 @@ def yaml_editor_page(config_page, conf):
             with col1:
                 if st.button("💾 Sauvegarder"):
                     save_config(config=yaml_content, config_page=config_page_edit, schema=json_schema)
-                    if not st.session_state.has_updated_running_conf:
+                    if use_tmp_file:
                         os.rename(config_page_edit, config_page)
-                        st.session_state.has_updated_running_conf = True # (even if no change)
+                        st.session_state.conf_has_updated_running = True # (even if no change)
                     st.success("✅ Fichier YAML sauvegardé !")
             with col2:
                 if st.button("✏️ Assistant d'édition de configuration"):
@@ -731,14 +732,22 @@ def dicts_differ(d1, d2):
 def get_current_configuration():
     """
     return the current configuration, the running one if configurator_path has not been edited,
-    configurator_path else. Set 'has_updated_running_conf'.
+    configurator_path else. Set 'conf_has_updated_running'.
     """
     configurator_path = st.session_state.configurator_path
-    if st.session_state.has_updated_running_conf:
+    if st.session_state.conf_has_updated_running:
+        print("get_current_configuration(",configurator_path,")")
         with open(configurator_path, "r", encoding="utf-8") as f1:
             return yaml.safe_load(f1)
     else:
-        return st.session_state.configurator.retrieveYamlConfig()
+        conf0 = st.session_state.configurator.retrieveYamlConfig()
+        with open(configurator_path, "r", encoding="utf-8") as f1:
+            conf1 = yaml.safe_load(f1)
+        if dicts_differ(conf0, conf1):
+            st.session_state.conf_differs = True
+        else:
+            st.session_state.conf_differs = False
+        return conf0
     return {}
 
 def configure_page():
@@ -752,7 +761,7 @@ def configure_page():
         OpenhemsHTTPServer.init_session()
     configurator_path = st.session_state.configurator_path
     conf = get_current_configuration()
-    if st.session_state.has_updated_running_conf:
+    if st.session_state.conf_has_updated_running:
         st.warning("⚠️ La configuration a été modifiée,\n " \
             "pour la prendre en compte veuillez redémarrer"
         )

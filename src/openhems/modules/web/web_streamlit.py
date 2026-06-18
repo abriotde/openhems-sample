@@ -166,7 +166,7 @@ class OpenhemsHTTPServer():
         configurator = ConfigurationManager(pathlist=session_data.get("paths"))
         st.session_state.configurator = configurator
         st.session_state.configurator_path = configurator.getMainYamlConfFilepath()
-        st.session_state.has_updated_running_conf = False
+        st.session_state.conf_has_updated_running = False # Will be true when it will be updated
 
     @staticmethod
     def get_socket_client():
