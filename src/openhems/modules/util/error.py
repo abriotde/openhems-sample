@@ -1,4 +1,6 @@
-
+"""
+Module to specify Exceptions
+"""
 class DangerousStateException(Exception):
 	"""
 	Raised on dangerous electricty state, like impossible, risk of electrical short circuit or fire

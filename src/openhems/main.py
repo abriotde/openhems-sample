@@ -15,7 +15,6 @@ import traceback
 from pathlib import Path
 # pylint: disable=wrong-import-position
 ROOT_PATH = Path(__file__).parents[3]
-from openhems.modules.util import ConfigurationManager
 openhemsPath = Path(__file__).parents[1]
 sys.path.append(str(openhemsPath))
 # pylint: disable=wrong-import-position

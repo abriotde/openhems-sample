@@ -52,7 +52,7 @@ class InOutNode(Node):
 		Return current margin power
 		"""
 		margin = self.marginPower.getValue()
-		# logger.debug("MarginPower of Node %s is %s", self.id, margin)
+		# self.network.logger.debug("MarginPower of Node %s is %s", self.id, margin)
 		return margin
 
 	# def _getSafetyLevel(self):
@@ -105,6 +105,9 @@ class PublicPowerGrid(InOutNode):
 		del now
 		power = energy/duration
 		if power>self.getMaxPower():
+			self.network.logger.error(
+				"Reach PublicPowerGrid max power : {%s} > {%s} ", power, self.getMaxPower()
+			)
 			raise DangerousStateException(
 				f"Reach PublicPowerGrid max power : {power} > {self.getMaxPower()}",
 				"OVER_CONSUMPTION"
@@ -114,7 +117,7 @@ class PublicPowerGrid(InOutNode):
 			# 	f"Reach PublicPowerGrid min power : {-self.getMinPower()} > {power}",
 			# 	"OVER_CONSUMPTION"
 			# )
-			self.logger.error(
+			self.network.logger.error(
 				"Reach PublicPowerGrid min power : {%s} > {%s} ", -self.getMinPower(), power
 			)
 		node = self._currentPower

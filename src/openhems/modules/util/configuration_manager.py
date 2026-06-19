@@ -7,10 +7,9 @@ import os
 from pathlib import Path
 import datetime
 import shutil
-import traceback
 import logging
-import yaml
 import traceback
+import yaml
 from yaml.scanner import ScannerError
 from openhems.modules.util.cast_utility import CastUtililty, CastException
 
@@ -194,7 +193,7 @@ class ConfigurationManager():
 		for i in reversed(range(len(self.filepaths))):
 			filepath = self.filepaths[i]
 			if filepath in [self.filepaths[0], self.DEFAULT_PATH]:
-				# For security, do not touch default values. 
+				# For security, do not touch default values.
 				return None
 			if 0>filepath.name.find(".secret."):
 				return filepath
@@ -388,7 +387,7 @@ class ConfigurationManager():
 				dicts.pop()
 		# print("Config: ", yamlConfig)
 		return yamlConfig
-
+# pylint: disable=invalid-name
 	def save(self, yamlConfFilepath):
 		"""
 		Save the current configuration in a Yaml file.

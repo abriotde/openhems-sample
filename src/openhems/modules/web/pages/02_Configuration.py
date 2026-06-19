@@ -664,7 +664,7 @@ def yaml_editor_page(config_page, conf):
         config_page_edit = str(config_page.parents[0]) + "/.tmp." + str(config_page.name)
         # print("config_page_edit:", config_page_edit, "; from:", config_page)
         conf = get_current_configuration()
-        with open(config_page_edit, "w") as f0:
+        with open(config_page_edit, "w", encoding="utf-8") as f0:
             f0.write(yaml.dump(conf))
     else:
         config_page_edit = config_page
@@ -688,7 +688,9 @@ def yaml_editor_page(config_page, conf):
             col1, col2 = st.columns(2)
             with col1:
                 if st.button("💾 Sauvegarder"):
-                    save_config(config=yaml_content, config_page=config_page_edit, schema=json_schema)
+                    save_config(config=yaml_content,
+                                config_page=config_page_edit,
+                                schema=json_schema)
                     if use_tmp_file:
                         os.rename(config_page_edit, config_page)
                         st.session_state.conf_has_updated_running = True # (even if no change)
@@ -700,33 +702,46 @@ def yaml_editor_page(config_page, conf):
             st.error(f"❌ Fichier YAML invalide selon le schéma JSON. : {e}")
     return state
 
-def dicts_differ(d1, d2):
-    """Return True if d1 and d2 differ, False if they are equal (recursive)."""
-    if type(d1) is not type(d2):
+def list_differ(d1:list, d2:list):
+    """
+    recursiv comparaison function for list
+    """
+    if len(d1) != len(d2):
         return True
-
-    if isinstance(d1, dict):
-        if set(d1.keys()) != set(d2.keys()):
+    for a, b in zip(d1, d2):
+        if obj_differ(a, b):
             return True
-        for key in d1:
-            if dicts_differ(d1[key], d2[key]):
-                return True
-        return False
+    return False
 
+def dict_differ(d1:dict, d2:dict):
+    """
+    recursiv comparaison function for dict
+    """
+    if set(d1.keys()) != set(d2.keys()):
+        return True
+    for key in d1:
+        if obj_differ(d1[key], d2[key]):
+            return True
+    return False
+
+def obj_differ(d1, d2):
+    """
+    recursiv comparaison function for obj of nearly anything
+    Return True if d1 and d2 differ, False if they are equal (recursive).
+    """
+    differ = False
+    if type(d1) is not type(d2):
+        differ = True
+    elif isinstance(d1, dict):
+        differ = dict_differ(d1, d2)
     elif isinstance(d1, list):
-        if len(d1) != len(d2):
-            return True
-        for a, b in zip(d1, d2):
-            if dicts_differ(a, b):
-                return True
-        return False
-
+        differ = list_differ(d1, d2)
     elif isinstance(d1, set):
         # Compare sorted lists (order‑independent)
-        return dicts_differ(sorted(d1, key=str), sorted(d2, key=str))
-
+        differ = obj_differ(sorted(d1, key=str), sorted(d2, key=str))
     else:
-        return d1 != d2
+        differ = d1 != d2
+    return differ
 
 @st.cache_data(ttl=3600)
 def get_current_configuration():
@@ -743,7 +758,7 @@ def get_current_configuration():
         conf0 = st.session_state.configurator.retrieveYamlConfig()
         with open(configurator_path, "r", encoding="utf-8") as f1:
             conf1 = yaml.safe_load(f1)
-        if dicts_differ(conf0, conf1):
+        if obj_differ(conf0, conf1):
             st.session_state.conf_differs = True
         else:
             st.session_state.conf_differs = False
