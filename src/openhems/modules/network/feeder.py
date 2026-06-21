@@ -61,6 +61,12 @@ class SourceFeeder(Feeder):
 			self.value = self.source.getEntityValue(self.nameid)
 		return self.value
 
+	def getNameId(self):
+		"""
+		Getter, Used to switch on/off ( HomeAssistantAPI.switchOn() )
+		"""
+		return self.nameid
+
 	def __str__(self):
 		return "SourceFeeder("+self.nameid+")"
 

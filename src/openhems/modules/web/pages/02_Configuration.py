@@ -16,7 +16,9 @@ import yaml
 import jsonschema
 import streamlit as st # pylint: disable=E0401
 from streamlit_monaco_yaml import monaco_editor # pylint: disable=E0401
-from openhems.modules.util.json import json_default
+from openhems.modules.util import (
+    json_default, obj_differ
+)
 from openhems.modules.web.web_streamlit import get_logger
 
 # pylint: disable=wrong-import-position
@@ -701,47 +703,6 @@ def yaml_editor_page(config_page, conf):
         except (jsonschema.exceptions.ValidationError, jsonschema.exceptions.SchemaError) as e:
             st.error(f"❌ Fichier YAML invalide selon le schéma JSON. : {e}")
     return state
-
-def list_differ(d1:list, d2:list):
-    """
-    recursiv comparaison function for list
-    """
-    if len(d1) != len(d2):
-        return True
-    for a, b in zip(d1, d2):
-        if obj_differ(a, b):
-            return True
-    return False
-
-def dict_differ(d1:dict, d2:dict):
-    """
-    recursiv comparaison function for dict
-    """
-    if set(d1.keys()) != set(d2.keys()):
-        return True
-    for key in d1:
-        if obj_differ(d1[key], d2[key]):
-            return True
-    return False
-
-def obj_differ(d1, d2):
-    """
-    recursiv comparaison function for obj of nearly anything
-    Return True if d1 and d2 differ, False if they are equal (recursive).
-    """
-    differ = False
-    if type(d1) is not type(d2):
-        differ = True
-    elif isinstance(d1, dict):
-        differ = dict_differ(d1, d2)
-    elif isinstance(d1, list):
-        differ = list_differ(d1, d2)
-    elif isinstance(d1, set):
-        # Compare sorted lists (order‑independent)
-        differ = obj_differ(sorted(d1, key=str), sorted(d2, key=str))
-    else:
-        differ = d1 != d2
-    return differ
 
 @st.cache_data(ttl=3600)
 def get_current_configuration():

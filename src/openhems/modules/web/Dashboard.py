@@ -119,11 +119,9 @@ def manage_schedules_page(mode=0):
         column_config={
             # "ID": st.column_config.TextColumn("ID", disabled=True),
             "Name": st.column_config.TextColumn("Name", disabled=True),
-            "Duration": st.column_config.NumberColumn(
+            "Duration": st.column_config.TimeColumn(
                 "Duration",
-                min_value=0,
-                step=1,
-                help="Durée en seconde durant laquelle vous souhaitez que l'appareil fonctionne."
+                help="Durée durant laquelle vous souhaitez que l'appareil fonctionne."
             ),
             "Timeout": st.column_config.DatetimeColumn(
                 "Timeout",
