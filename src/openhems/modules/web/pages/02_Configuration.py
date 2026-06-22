@@ -704,7 +704,7 @@ def yaml_editor_page(config_page, conf):
             st.error(f"❌ Fichier YAML invalide selon le schéma JSON. : {e}")
     return state
 
-@st.cache_data(ttl=3600)
+# @st.cache_data(ttl=3600)
 def get_current_configuration():
     """
     return the current configuration, the running one if configurator_path has not been edited,
