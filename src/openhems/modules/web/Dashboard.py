@@ -65,10 +65,11 @@ def schedules_dict2dataframe(schedule):
         timeout = node.get("timeout_dt", None)
         if timeout is not None:
             timeout = datetime.strptime(timeout, "%Y-%m-%d %H:%M")
+        duration = seconds2time(int(node.get("duration", 0))) # node['duration'] can be float.
         row = {
             "ID": node_id,
             "Name": node.get("name", ""),
-            "Duration": seconds2time(node.get("duration", 0)),
+            "Duration": duration,
             "Timeout": timeout
         }
         data.append(row)
