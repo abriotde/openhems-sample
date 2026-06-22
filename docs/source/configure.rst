@@ -222,11 +222,11 @@ This is a list of "nodes". We detail it on ::doc:`configure_nodes` but here is t
 
 * *minPower* * : This is the minimal power we can get. Usually 0, but it can be negative if it can act as a battery.
 
-* *powerMargin* : This is the margin to maxPower and minPower we should not go above as a security.
+* *powerMargin* : This is the margin to maxPower and minPower we should not go above as a security. Prevents oscillations and measurement inaccuracies due to treat delay.
 
-* *currentPower* * : This is the currrent power delivered
+* *currentPower* * : This is the currrent power delivered. This should be an home-assistant ID.
 
-* *maxPower* * : This is the maximum power we can get from that source.
+* *maxPower* * : This is the maximum power we can get from that source. This is used to compute margins.
 
 The class attribute define some extra possibles attributes. Available classes are :
 
