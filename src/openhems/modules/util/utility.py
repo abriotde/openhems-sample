@@ -1,6 +1,8 @@
 """
 All usefull function
 """
+# To update style.
+# pylint: disable=bad-indentation, invalid-name
 
 def list_differ(d1:list, d2:list):
     """
