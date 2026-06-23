@@ -14,7 +14,6 @@
 - Install as standalone
 - Webpages and update
 - Use ProjectConfiguration : use importlib.metadata() when installed and pyproject.toml overwise
-
 ### Improvement
 - Update documentation (for Streamlit mainly)
 

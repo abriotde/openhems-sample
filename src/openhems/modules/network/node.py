@@ -175,6 +175,7 @@ class ApplianceConstraints():
 class OnNodeManager:
 	"""
 	Manage node on/off state
+
 	The goal is to detect if the user manually switch on/off
 	  the node and to avoid to switch on/off too often.
 	"""
