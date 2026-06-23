@@ -21,7 +21,7 @@
           "description": "Chemin ou contenu du certificat SSL (optionnel)"
         }
       },
-      "required": ["url", "long_lived_token"],
+      "required": [],
       "additionalProperties": false
     },
     "localization": {
@@ -92,7 +92,7 @@
           }
         }
       },
-      "required": ["loopDelay", "network"],
+      "required": [],
       "additionalProperties": false
     },
     "network": {
@@ -208,6 +208,6 @@
       "additionalProperties": false
     }
   },
-  "required": ["api", "localization", "server", "network"],
+  "required": ["api", "network"],
   "additionalProperties": false
 }

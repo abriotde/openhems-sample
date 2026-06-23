@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 import dataclasses
 import logging
-from datetime import datetime
+from datetime import datetime, time
 import streamlit as st # pylint: disable=E0401
 import pandas as pd
 
@@ -36,6 +36,26 @@ class OpenHEMSContext:
     vpnDriver: VpnDriver
     network: HomeStateUpdater = None
 
+def time2seconds(duration:time):
+    """
+    Convert datetime.time in seconds.
+    """
+    ret = duration.hour*3600+duration.minute*60+duration.second
+    print("time2seconds(",duration,") = ", ret)
+    return ret
+
+def seconds2time(duration:int):
+    """
+    Convert seconds to datetime.time.
+    """
+    hour = duration//3600
+    t = duration - hour*3600
+    minute = t//60
+    second = t - minute*60
+    print("seconds2time(",duration,") = ", hour, minute, second)
+    ret = time(hour, minute, second)
+    return ret
+
 def schedules_dict2dataframe(schedule):
     """
     Convert schedule dict to a pandas DataFrame for display in Streamlit
@@ -45,10 +65,11 @@ def schedules_dict2dataframe(schedule):
         timeout = node.get("timeout_dt", None)
         if timeout is not None:
             timeout = datetime.strptime(timeout, "%Y-%m-%d %H:%M")
+        duration = seconds2time(int(node.get("duration", 0))) # node['duration'] can be float.
         row = {
             "ID": node_id,
             "Name": node.get("name", ""),
-            "Duration": node.get("duration", 0),
+            "Duration": duration,
             "Timeout": timeout
         }
         data.append(row)
@@ -65,7 +86,7 @@ def update_schedule_from_dataframe(schedules, edited_df):
         if i < len(schedule_keys):
             # print("Row:", row)
             node_id = schedule_keys[i]
-            duration = row.get("Duration")
+            duration = time2seconds(row.get("Duration"))
             if duration == 0:
                 duration = None
             timeout = row.get("Timeout")
@@ -119,11 +140,9 @@ def manage_schedules_page(mode=0):
         column_config={
             # "ID": st.column_config.TextColumn("ID", disabled=True),
             "Name": st.column_config.TextColumn("Name", disabled=True),
-            "Duration": st.column_config.NumberColumn(
+            "Duration": st.column_config.TimeColumn(
                 "Duration",
-                min_value=0,
-                step=1,
-                help="Durée en seconde durant laquelle vous souhaitez que l'appareil fonctionne."
+                help="Durée durant laquelle vous souhaitez que l'appareil fonctionne."
             ),
             "Timeout": st.column_config.DatetimeColumn(
                 "Timeout",

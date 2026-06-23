@@ -60,7 +60,7 @@
 Presentation
 ============
 
-This software is an Open-Source Home Energy Management System based on [Home-Assistant](https://www.home-assistant.io/) installation. It all run locally witch is good for privacy and is customizable. It will launch heavy consumption appliance at the best time.
+This software is an Open-Source Home Energy Management System based on [Home-Assistant](https://www.home-assistant.io/) installation. It all run locally witch is good for privacy and is customizable. The role of OpenHEMS is to schedule all heavy consumption appliance at the best time.
 
 This software is usefull to get an as smart as possible management of power consumption and production. This should lead to cost reduction. 
 
@@ -70,6 +70,102 @@ This software is usefull to get an as smart as possible management of power cons
 
 Warning : This software is under activ developpment and is used on production but remain at early developpment.
 All contribution to the software are welcome. Please contact contact@openhomesystem.com for any questions.
+
+# Architecture
+
+OpenHEMS is **not** another home automation platform. It is an **Energy Management System (HEMS)** that sits on top of your home automation system and makes optimization decisions.
+
+Rather than directly interacting with devices, OpenHEMS continuously evaluates the state of your home, forecasts future energy availability and demand, and determines the best time to operate flexible loads.
+
+```
+
+   +-------------------+  +-------------------+
+   |  Internet         |  |  Home-Assistant   |
+   +-------------------+  +-------------------+
+   | Weather Forecast  |  | Solar Production  |
+   | Electricity Prices|  | Battery Status    |
+   |                   |  | Home Consumption  |
+   +-------------------+  +-------------------+
+              ┼─────────────────────┼
+                           │ Rest/API
+                           ▼
+                  +-------------------+
+                  |     OpenHEMS      |
+                  |-------------------|
+                  | House Model       |
+                  | Forecast Engine   |
+                  | Optimization      |
+                  | Scheduler         |
+                  +-------------------+
+                           │ Rest/API
+                           ▼
+                   Home-Assistant
+                           │
+          ┌────────────────┼────────────────┐
+          ▼                ▼                ▼
+      EV Charger      Water Heater     Dishwasher
+```
+
+## Responsibilities
+
+OpenHEMS separates responsibilities into three distinct layers:
+
+### Home Assistant
+
+Home Assistant is responsible for communicating with physical devices. It exposes sensors, switches, climate entities and services.
+
+### OpenHEMS
+
+OpenHEMS builds an internal representation of the house using data from Home Assistant and external providers (weather, tariffs, forecasts). It computes an optimal schedule according to user-defined objectives and constraints.
+
+### Devices
+
+Devices simply execute the commands issued by Home Assistant. They do not contain any optimization logic.
+
+## Decision Loop
+
+At regular intervals, OpenHEMS performs the following steps:
+
+1. Read the current state of the house.
+2. Retrieve forecasts (solar production, weather, electricity prices, etc.).
+3. Build an internal model of available energy and expected consumption.
+4. Compute the optimal schedule according to the selected strategy.
+5. Send commands to Home Assistant when actions are required.
+6. Wait to avoid unnecessary power consumption/requests (by default 30 secondes from step 1).
+6. Repeat.
+
+## Example
+
+Imagine the following situation:
+
+```
+11:30
+PV forecast predicts 5 kW of solar production around noon.
+
+↓
+
+OpenHEMS postpones the dishwasher instead of starting it immediately.
+
+↓
+
+12:15
+Solar production reaches the expected level.
+
+↓
+
+Dishwasher starts automatically.
+
+↓
+
+13:00
+The EV charger starts.
+
+↓
+
+The battery remains above the configured minimum state of charge.
+```
+
+Instead of reacting to events one by one, OpenHEMS plans ahead to maximize self-consumption, reduce electricity costs, and respect the user's preferences and system constraints.
 
 
 Overview
@@ -87,6 +183,7 @@ And here we ask the "voiture" to start for 2 hours (Here configured in french).
 Features
 ========
 
+:white_check_mark: Home-Assistant integration\
 :white_check_mark: Easy installation and UI configuration with HTML pages\
 :white_check_mark: Support multiple off-peak time-slots and even variable time-slots and cost (RTE Tempo contract).\
 :white_check_mark: Usefull if you don't have solar panel but only a contract with off-peak.\
@@ -102,6 +199,12 @@ We are expected to add soon the following features. We need beta-tester for thos
 
 :x: Variable switch support (like solar router, wall-box)\
 :x: Works with hybrid and standard inverters\
+:x: Domoticz integration (a embryo exist)\
+:x: Jeedom integration\
+:x: Dynamic tariffs (a draft exist)\
+:x: Vehicle-to-grid\
+:x: Heat pumps\
+:x: Learning strategy\
 
 What OpenHEMS is not.
 

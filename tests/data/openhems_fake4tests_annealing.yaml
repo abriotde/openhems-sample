@@ -5,7 +5,7 @@ server:
     - {class: annealing, id: annealing}
 network:
   nodes:
-    - {id: linky, currentPower: -1000, marginPower: 1000, maxPower: 3100, minPower: 0, class: PublicPowerGrid, contract: {
+    - {id: linky, currentPower: -1000, marginPower: 1000, maxPower: 3100, minPower: 3000, class: PublicPowerGrid, contract: {
         class: generic, defaultPrice: 0.15, outRangePrice: 0.30, hoursRanges: ["22h-6h"], sellPrice: 0.05
       }
     }

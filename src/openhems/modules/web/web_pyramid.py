@@ -277,7 +277,7 @@ class OpenhemsHTTPServer():
             configurator = ConfigurationManager(self.logger)
             configurator.addYamlConfig(Path(self.yaml_conf_filepath))
         else:
-            self.yaml_conf_filepath = configurator.getLastYamlConfFilepath()
+            self.yaml_conf_filepath = configurator.getMainYamlConfFilepath()
         self.default_conf_filepath = configurator.defaultPath
         self.configurator = configurator
         lang = configurator.get("localization.language")

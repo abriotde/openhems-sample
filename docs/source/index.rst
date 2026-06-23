@@ -30,4 +30,5 @@ Contents
    installation_from_scratch
    configure
    configure_nodes
+   architecture
    api

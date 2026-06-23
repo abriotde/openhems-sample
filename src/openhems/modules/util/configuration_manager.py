@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import datetime
 import shutil
+import logging
 import traceback
 import yaml
 from yaml.scanner import ScannerError
@@ -36,17 +37,20 @@ class ConfigurationManager():
 		"server.strategies": "strategy"
 	}
 	_instance = None
-	def __init__(self, logger, defaultPath=None):
-		# print("ConfigurationManager()")
+	def __init__(self, logger=None, defaultPath=None, pathlist=None):
+		# print("ConfigurationManager(",[defaultPath] + ppathlist,")")
+		if logger is None:
+			logger = logging.getLogger(__name__)
 		self.logger = logger
 		self._conf = {}
 		self._cache = {}
 		if defaultPath  is None:
-			self.defaultPath = ConfigurationManager.DEFAULT_PATH
-		else:
-			self.defaultPath = defaultPath
+			defaultPath = self.DEFAULT_PATH
+		if pathlist is None:
+			pathlist = []
 		self.filepaths = []
-		self.addYamlConfig(self.defaultPath, True)
+		for f in [defaultPath] + pathlist:
+			self.addYamlConfig(f, True)
 
 	#pylint: disable=too-many-branches
 	def _completeFromModelCB(self, configuration, model, baseKey="", exceptKeys=None):
@@ -161,11 +165,39 @@ class ConfigurationManager():
 				# print("> ",key," => ", value)
 				self.add(key, value, init, prekey)
 
-	def getLastYamlConfFilepath(self):
+	def loadYamlConfiguration(self, yamlConfFilepath:str):
+		"""
+		Load YAML configuration
+		 - over load it with a secret file if exists.
+		 - complete with default values.
+		Return a "Configurator"
+		"""
+		# print("Load YAML configuration from '",yamlConfFilepath,"'")
+		path = Path(yamlConfFilepath)
+		self.addYamlConfig(path)
+		if path.suffix!="":
+			# print("Suffix:", path.suffix)
+			secretPath = str(yamlConfFilepath).replace(path.suffix, ".secret"+path.suffix)
+			path = Path(secretPath)
+			if path.is_file():
+				# print("Over load YAML configuration with '",str(path),"'")
+				self.addYamlConfig(path)
+			else: print("No '",str(path),"'")
+		self.completeWithDefaults()
+		return self
+
+	def getMainYamlConfFilepath(self):
 		"""
 		Return the last YAML configuration file path. We consder it as the "main".
 		"""
-		return self.filepaths[-1]
+		for i in reversed(range(len(self.filepaths))):
+			filepath = self.filepaths[i]
+			if filepath in [self.filepaths[0], self.DEFAULT_PATH]:
+				# For security, do not touch default values.
+				return None
+			if 0>filepath.name.find(".secret."):
+				return filepath
+		return None
 
 	def addYamlConfig(self, yamlConfig, init=False):
 		"""
@@ -282,7 +314,7 @@ class ConfigurationManager():
 		 YAML default configuration. 
 		"""
 		if path is None:
-			path = self.defaultPath
+			path = self.filepaths[0]
 		if isinstance(path, str):
 			path = Path(path)
 		# It's not a good solution, but a try for HA addon
@@ -291,6 +323,7 @@ class ConfigurationManager():
 		if not path.exists():
 			path.touch()
 		with path.open('r', encoding="utf-8") as yamlfile:
+			# print("getRawYamlConfig((",path,")")
 			return yaml.load(yamlfile, Loader=yaml.FullLoader)
 
 	@staticmethod
@@ -317,7 +350,7 @@ class ConfigurationManager():
 	def retrieveYamlConfig(self, full=False):
 		"""
 		Retrieve what should be the YAML config to get that configuration.
-		Substract values to default Values from self.defaultPath.
+		Substract values to default Values from .
 		"""
 		defaultConfig = self.getRawYamlConfig()
 		yamlConfig = {}
@@ -354,7 +387,7 @@ class ConfigurationManager():
 				dicts.pop()
 		# print("Config: ", yamlConfig)
 		return yamlConfig
-
+# pylint: disable=invalid-name
 	def save(self, yamlConfFilepath):
 		"""
 		Save the current configuration in a Yaml file.
@@ -378,6 +411,12 @@ class ConfigurationManager():
 			)
 			self.logger.error(traceback.format_exc())
 			shutil.copyfile(backupFile, yamlConfFilepath)
+
+	def get_paths_list(self):
+		"""
+		Give filepaths list : allow to get back same Configurator.
+		"""
+		return self.filepaths
 
 	def __str__(self):
 		retValue = "ConfigurationManager(\n"

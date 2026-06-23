@@ -33,13 +33,13 @@ class DomoticzAPI(HomeStateUpdater):
 		print("DomoticzAPI.initNetwork() : TODO")
 		# TODO
 
-	def updateNetwork(self):
+	def updateNetwork(self, cycleDuration:int=30, now=None):
 		"""
 		Update network, but as we ever know it's architecture,
 		 we just have to update few values.
 		"""
 		# TODO
-		super().updateNetwork()
+		super().updateNetwork(cycleDuration, now)
 		print("DomoticzAPI.updateNetwork() : TODO")
 		return True
 

@@ -1,13 +1,20 @@
 # Changelog
 
+## 0.3.4 - 2026-06-23
+### FIX
+- core FIX
+
+### Improvement
+- On web/dashboard : duration as time instead of int/seconds.
+- IHM/config : concat all configuration files to edit a complete one and other improvments.
+
 ## 0.3.3 - 2026-06-16
 ### FIX
 - crash on use OnNodeManager : HomeAssistantApi.switchOn() : 'OnNodeManager' object has no attribute 'nameid'
 - Install as standalone
 - Webpages and update
 - Use ProjectConfiguration : use importlib.metadata() when installed and pyproject.toml overwise
-
-### MOD
+### Improvement
 - Update documentation (for Streamlit mainly)
 
 ## 0.3.2 - 2026-06-04

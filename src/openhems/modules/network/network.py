@@ -134,7 +134,7 @@ class Network:
 			self._filteredNodesCache[filterId] = out
 		return out
 
-	def getAll(self, filterId):
+	def getAll(self, filterId: str):
 		"""
 		Same as private _getAll() except that we can't set custom elemFilter
 		 to avoid incoherence between elemFilter AND filterId
@@ -332,7 +332,7 @@ class Network:
 			return cost
 		return cost
 
-	def getTime(self):
+	def getTime(self) -> int:
 		"""
 		Get current time
 		"""
@@ -343,6 +343,16 @@ class Network:
 		Return a list of all components in the network.
 		"""
 		return self.networkUpdater.listComponents()
+
+	def getPublicpowergrid(self):
+		"""
+		Shortcut to get publicpowergrid as we should have just one.
+		"""
+		nodes = self.getAll("publicpowergrid")
+		if len(nodes)>=1:
+			return nodes[0]
+		return None
+
 
 	def __str__(self):
 		out = "Network(\n"

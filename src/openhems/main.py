@@ -13,9 +13,8 @@ import argparse
 import threading
 import traceback
 from pathlib import Path
-
+# pylint: disable=wrong-import-position
 ROOT_PATH = Path(__file__).parents[3]
-from openhems.modules.util.project_configuration import ProjectConfiguration
 openhemsPath = Path(__file__).parents[1]
 sys.path.append(str(openhemsPath))
 # pylint: disable=wrong-import-position
@@ -58,25 +57,6 @@ class OpenHEMSApplication:
 		"""
 		return self.logger
 
-	def loadYamlConfiguration(self, configurator:ConfigurationManager, yamlConfFilepath:str):
-		"""
-		Load YAML configuration, over load it with a secret file if exists.
-		Return a "Configurator"
-		"""
-		# print("Load YAML configuration from '",yamlConfFilepath,"'")
-		path = Path(yamlConfFilepath)
-		configurator.addYamlConfig(path)
-		if path.suffix!="":
-			# print("Suffix:", path.suffix)
-			secretPath = str(yamlConfFilepath).replace(path.suffix, ".secret"+path.suffix)
-			path = Path(secretPath)
-			if path.is_file():
-				# print("Over load YAML configuration with '",str(path),"'")
-				configurator.addYamlConfig(path)
-			else: print("No '",str(path),"'")
-		configurator.completeWithDefaults()
-		return configurator
-
 	def __init__(self, yamlConfFilepath:str, *, port=0, logfilepath='', inDocker=False):
 		# Temporary logger
 		#pylint: disable=too-many-locals
@@ -88,7 +68,7 @@ class OpenHEMSApplication:
 		configurator = ConfigurationManager(self.logger)
 		self.configurator = configurator
 		try:
-			configurator = self.loadYamlConfiguration(configurator, yamlConfFilepath)
+			configurator.loadYamlConfiguration(yamlConfFilepath)
 		except ConfigurationException as e:
 			self.warnings.append(str(e))
 		loglevel = configurator.get("server.loglevel")
@@ -135,7 +115,7 @@ class OpenHEMSApplication:
 		else: # Create a UnixSocketServer even if there is no core server.
 			# In order to allow webserver to start and display error messages / reconfigure server.
 			schedule = {}
-			network = FakeNetwork(ProjectConfiguration())
+			network = FakeNetwork(ConfigurationManager())
 		try:
 			socket = UnixSocketServer(
 				schedule,

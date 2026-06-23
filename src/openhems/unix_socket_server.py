@@ -66,7 +66,7 @@ class UnixSocketServer:
             data = conn.recv(4096).decode('utf-8')
             request = json.loads(data)
             action = request.get("action")
-            print("UnixSocketServer._handle_client(:", request, ")")
+            self.logger.debug("UnixSocketServer._handle_client(%s) ", request)
             if action == UnixSocketAction.GET_SCHEDULE.value:
                 # print("Send schedules : ", self.schedule)
                 # Sérialiser le schedule dans un format simple
@@ -81,8 +81,8 @@ class UnixSocketServer:
                         timeout[0:16].replace("T", " "),
                         "%Y-%m-%d %H:%M"
                     )
-                print("Update schedule for id:", request_id,
-                      "duration:", duration, "timeout:", timeout)
+                # print("Update schedule for id:", request_id,
+                #       "duration:", duration, "timeout:", timeout)
                 # Modifier l'objet schedule existant
                 self.schedule[request_id].set_schedule(duration, timeout)
                 conn.send(b'{"status":"ok"}')

@@ -144,7 +144,10 @@ class OpenHEMSServer:
 		"""
 		Return current time
 		"""
-		return self._now
+		if self._now:
+			return self._now
+		# Case FakeNetwork.
+		return self.network.getTime()
 
 	def getCycleId(self):
 		"""

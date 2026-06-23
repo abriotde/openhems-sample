@@ -5,11 +5,13 @@ the NetworkUpdater will really search to update the value.
 """
 
 import random
-import logging
+# import logging
+import math
+import pytz
+import pvlib
+import pandas as pd
 from openhems.modules.util import CastUtililty
 # from .homestate_updater import HomeStateUpdater
-
-logger = logging.getLogger(__name__)
 
 # pylint: disable=too-few-public-methods
 class Feeder:
@@ -58,6 +60,12 @@ class SourceFeeder(Feeder):
 			self.sourceId = sourceId
 			self.value = self.source.getEntityValue(self.nameid)
 		return self.value
+
+	def getNameId(self):
+		"""
+		Getter, Used to switch on/off ( HomeAssistantAPI.switchOn() )
+		"""
+		return self.nameid
 
 	def __str__(self):
 		return "SourceFeeder("+self.nameid+")"
@@ -115,7 +123,7 @@ class RotationFeeder(Feeder):
 	def __init__(self, source, valuesList:list):
 		self.len = len(valuesList)
 		if self.len==0:
-			logger.error("RotationFeeder() init with empty list. Sert to default [0]")
+			# logger.error("RotationFeeder() init with empty list. Sert to default [0]")
 			valuesList = [0]
 			self.len = len(valuesList)
 		super().__init__(valuesList[0])
@@ -191,3 +199,103 @@ class SumFeeder(Feeder):
 
 	def __str__(self):
 		return f"SumFeeder({self.value})"
+
+# pylint: disable=invalid-name
+
+class SolarFeeder(Feeder):
+	"""
+	It's tosimulate a solar panel.
+
+	randomizeFactor: Factor between 0 and 1. 
+	This simulate weather conditions: higher value, 
+	mean more chances the power received is diminished.
+	"""
+	def __init__(self, network, nb_panel:int=10, azimuth:float=180, randomizeFactor:float=0.0):
+		super().__init__(None)
+		self._network = network
+		self._nb_panel = nb_panel
+		self._azimuth = azimuth
+		self._random = randomizeFactor
+
+	def getValue(self):
+		"""
+		The return 'value' rotate on a list of predefined 'values'.
+		On each OpenHEMS server loop, self.source.cycleId should increment,
+		 witch occure the change, 
+		"""
+		time = self._network.getTime()
+		# utc_time = tz.localize(time).astimezone(pytz.utc)
+		lon, lat, alt = 48.435, -2.201, 100 # (Longitude, Latitude, Altitude)
+		times = pd.DatetimeIndex(
+			[time],
+			tz=pytz.timezone('Europe/Paris')
+		)
+		panel_area = 1.7 * self._nb_panel
+		panel_efficiency = 0.20
+		surface_tilt = lat # use evaluate_tilt() ?
+		surface_azimuth = self._azimuth
+		# mc = pvlib.modelchain.ModelChain.with_basic_chain(
+		# 	latitude=lat,
+		# 	longitude=lon,
+		# 	altitude=alt,
+		# 	surface_tilt=surface_tilt,
+		# 	surface_azimuth=surface_azimuth,
+		# )
+		solar_position = pvlib.solarposition.get_solarposition(times, lat, lon, altitude=alt)
+		clearsky = pvlib.clearsky.ineichen(times, lat, lon, altitude=alt)
+		tilted_irradiance = pvlib.irradiance.get_total_irradiance(
+			surface_tilt=surface_tilt,
+			surface_azimuth=surface_azimuth,
+			solar_zenith=solar_position['apparent_zenith'],
+			solar_azimuth=solar_position['azimuth'],
+			dni=clearsky['dni'],
+			ghi=clearsky['ghi'],
+			dhi=clearsky['dhi'],
+			model='haydavies'
+		)
+		power_received = tilted_irradiance['poa_global'] * panel_area * panel_efficiency
+		if self._random != 0.0:
+			# lower is _random, more chances is power_received less diminished
+			power_received *= math.pow(random.uniform(0, 1), self._random)
+		return power_received
+
+	def __str__(self):
+		return f"SolarFeeder(nb={self._nb_panel}, azimuth={self._azimuth}, rand={self._random})"
+
+
+# def evaluate_tilt(tilt, panel_azimuth, solar_pos, clearsky, weight_type='flat_curve'):
+# 	"""
+# 	Calculates the weighted value of a given tilt.
+# 	weight_type: 'flat_curve' or 'peak_shaving'
+# 	"""
+# 	tilted = pvlib.irradiance.get_total_irradiance(
+# 	    surface_tilt=tilt,
+# 	    surface_azimuth=panel_azimuth,
+# 	    solar_zenith=solar_pos['apparent_zenith'],
+# 	    solar_azimuth=solar_pos['azimuth'],
+# 	    dni=clearsky['dni'],
+# 	    ghi=clearsky['ghi'],
+# 	    dhi=clearsky['dhi'],
+# 	    model='haydavies'
+# 	)
+# 	times = pd.date_range(start='2026-01-01', end='2027-01-01', freq='60T', tz='UTC')
+#
+# 	# Get hourly POA (Plane of Array) irradiance in W/m²
+# 	poa_hourly = tilted['poa_global']
+#
+# 	# Convert index to local solar time for weighting (approximate)
+# 	# We will just extract the hour-of-day (UTC + offset)
+# 	# For Beijing, UTC+8 gives local time.
+# 	local_hours = (times.hour + 8) % 24  # Simple local hour (DST ignored, good enough)
+#
+# 	# Give high value to morning (6-9 AM) and evening (3-6 PM)
+# 	# Give lower value to midday (10 AM - 2 PM) to flatten the peak.
+# 	weights = np.ones(len(local_hours)) * 0.5  # Base weight
+# 	weights[(local_hours >= 3) & (local_hours < 9)] = 1.5   # Morning peak
+# 	weights[(local_hours >= 15) & (local_hours < 21)] = 1.5 # Evening peak
+# 	weights[(local_hours >= 9) & (local_hours < 15)] = 0.8  # Midday (lower importance)
+# 	weights[local_hours < 3] = 0   # Night
+# 	weights[local_hours >= 21] = 0 # Night
+# 	# Calculate weighted sum (in Wh/m²)
+# 	weighted_sum = (poa_hourly * weights).sum()
+# 	return weighted_sum

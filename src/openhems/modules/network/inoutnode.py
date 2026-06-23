@@ -3,6 +3,7 @@ Represent device of home network
 """
 
 from openhems.modules.contract import Contract
+from openhems.modules.util import DangerousStateException
 from .feeder import ConstFeeder
 from .node import Node
 
@@ -45,12 +46,13 @@ class InOutNode(Node):
 		Return current minimal power
 		"""
 		return self.minPower.getValue()
+
 	def getMarginPower(self):
 		"""
 		Return current margin power
 		"""
 		margin = self.marginPower.getValue()
-		# logger.debug("MarginPower of Node %s is %s", self.id, margin)
+		# self.network.logger.debug("MarginPower of Node %s is %s", self.id, margin)
 		return margin
 
 	# def _getSafetyLevel(self):
@@ -92,6 +94,36 @@ class PublicPowerGrid(InOutNode):
 		Like offpeak-hours, prices.
 		"""
 		return self.contract
+
+	def updateEnergy(self, energy:float, duration:float, now=None):
+		"""
+		Fonction used only on Fake network to force publicpowergrid 
+		to consume all over productions/consumptions.
+		"""
+		# TODO : check max/min power
+		print("PublicPowerGrid.updateEnergy(",energy,", ",duration,")")
+		del now
+		power = energy/duration
+		if power>self.getMaxPower():
+			self.network.logger.error(
+				"Reach PublicPowerGrid max power : {%s} > {%s} ", power, self.getMaxPower()
+			)
+			raise DangerousStateException(
+				f"Reach PublicPowerGrid max power : {power} > {self.getMaxPower()}",
+				"OVER_CONSUMPTION"
+			)
+		if -self.getMinPower()>power:
+			# raise DangerousStateException(
+			# 	f"Reach PublicPowerGrid min power : {-self.getMinPower()} > {power}",
+			# 	"OVER_CONSUMPTION"
+			# )
+			self.network.logger.error(
+				"Reach PublicPowerGrid min power : {%s} > {%s} ", -self.getMinPower(), power
+			)
+		node = self._currentPower
+		if hasattr(node, '_currentPower'):
+			node.setValue(power)
+		return 0
 
 class SolarPanel(InOutNode):
 	"""
@@ -146,7 +178,7 @@ class Battery(InOutNode):
 			maxPowerOut = ConstFeeder(-1*maxPowerIn.getValue())
 		super().__init__(nameid, currentPower, maxPower=maxPowerIn, minPower=maxPowerOut, marginPower=0)
 		self.isControlable = True
-		self.isModulable = False
+		self.isModulable = True
 		self.capacity = capacity
 		self.currentLevel = currentLevel
 		self.lowLevel = lowLevel
@@ -175,5 +207,65 @@ class Battery(InOutNode):
 
 	def __repr__(self):
 		return str(self)
+
+# pylint: disable=invalid-name
+
+class FakeBattery(Battery):
+	"""
+	This represent a fake battery. It is usefull for test or simulation.
+	"""
+	# pylint: disable=too-many-arguments
+	def __init__(self, nameid, capacity, currentPower, *, maxPowerIn=None,
+			maxPowerOut=None, efficiencyIn:float=0.95, efficiencyOut:float=0.95,
+			targetLevel:float=0.70,
+			currentLevel=None, lowLevel:float=0.20, highLevel:float=0.80):
+		super().__init__(nameid, capacity, currentPower,
+			maxPowerIn=maxPowerIn, maxPowerOut=maxPowerOut,
+			efficiencyIn=efficiencyIn, efficiencyOut=efficiencyOut,
+			targetLevel=targetLevel,
+			currentLevel=currentLevel, lowLevel=lowLevel, highLevel=highLevel)
+		self._max_energy_stored = capacity.getValue()
+		self._energy_stored = self._max_energy_stored * 0.50
+
+
+	def getLevel(self):
+		"""
+		Get battery level.
+		"""
+		return self._energy_stored/self._max_energy_stored*100
+
+	def updateEnergy(self, energy:float, duration:float, now=None):
+		"""
+		At each cycle, we will set how mutch power we want to store/give back.
+		energy : energy we want to store (positive) or give back (negative)
+		"""
+		del now
+		in_power = energy/duration
+		overdemand = 0
+		if in_power>self.getMaxPower():
+			e = self.getMaxPower()*duration
+			overdemand = energy - e
+			energy = e
+		elif in_power<self.getMinPower():
+			e = self.getMinPower()*duration
+			overdemand = energy - e
+			energy = e
+		if energy>0:
+			# We store energy, we have to take care of efficiency
+			loss_coef = self.efficiencyIn
+		else:
+			# We give back energy, we have to take care of efficiency
+			loss_coef = self.efficiencyOut
+		self._energy_stored += energy * loss_coef
+		if self._energy_stored>self._max_energy_stored:
+			overdemand += self._energy_stored - self._max_energy_stored
+			self._energy_stored = self._max_energy_stored
+		elif self._energy_stored<0:
+			overdemand += self._energy_stored
+			self._energy_stored = 0
+		return overdemand
+
+
+
 # class CarCharger(Switch):
 # class WaterHeater(InOutNode):

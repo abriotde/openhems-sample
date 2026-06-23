@@ -78,7 +78,7 @@ class OpenhemsHTTPServer():
             configurator = ConfigurationManager(self.logger)
             configurator.addYamlConfig(Path(self.yaml_config_file_path))
         else:
-            self.yaml_config_file_path = configurator.getLastYamlConfFilepath()
+            self.yaml_config_file_path = configurator.getMainYamlConfFilepath()
         self.configurator = configurator
         lang = configurator.get("localization.language")
         self.lang = lang
@@ -136,11 +136,13 @@ class OpenhemsHTTPServer():
             log_path = self.configurator.get("server.logfile")
             if log_path=="":
                 log_path = get_log_file_path(self.logger)
+            # convert PosixPath to str.
+            paths = [str(p) for p in self.configurator.get_paths_list()]
             datas = {
                 "socket_path": self.configurator.get("server.socketpath"),
                 "lang": self.lang,
                 "log_path": log_path,
-                "conf_path": str(self.configurator.getLastYamlConfFilepath()),
+                "paths": paths
             }
             yaml.dump(datas, session_file)
             self.logger.info(
@@ -161,7 +163,10 @@ class OpenhemsHTTPServer():
         #  (avoid to reload it at each session initialization)
         #  but no matter as we should have only one user (or very few)
         st.session_state.lang = session_data.get("lang")
-        st.session_state.configurator_path = session_data.get("conf_path")
+        configurator = ConfigurationManager(pathlist=session_data.get("paths"))
+        st.session_state.configurator = configurator
+        st.session_state.configurator_path = configurator.getMainYamlConfFilepath()
+        st.session_state.conf_has_updated_running = False # Will be true when it will be updated
 
     @staticmethod
     def get_socket_client():
