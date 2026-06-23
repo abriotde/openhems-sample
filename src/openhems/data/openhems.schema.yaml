@@ -54,23 +54,28 @@
     "server": {
       "type": "object",
       "properties": {
+        "logfile": {
+          "type": "string",
+          "default": "",
+          "description": "Path for log file"
+        },
         "loglevel": {
           "type": "string",
           "enum": ["debug", "info", "warning", "error", "critical"],
           "default": "info",
-          "description": "Niveau de journalisation"
+          "description": "log level : each level include log from lower level : exp: 'warning' will display 'error' and 'critical' logs but not 'info' and 'debug'"
         },
         "loopDelay": {
           "type": "integer",
           "minimum": 1,
           "default": 30,
-          "description": "Délai entre les cycles d'optimisation (secondes)"
+          "description": "delay between server loops. More will decrease overload risk (and power consumption) but with lower reaction time."
         },
         "network": {
           "type": "string",
-          "enum": ["homeassistant", "local", "mqtt"],
+          "enum": ["homeassistant", "fake"],
           "default": "homeassistant",
-          "description": "Type d'API réseau utilisée"
+          "description": "API used to get/set netwrk datas. Domoticz and Jeedom are not implemented yet."
         },
         "strategies": {
           "type": "array",
@@ -80,11 +85,12 @@
             "properties": {
               "class": {
                 "type": "string",
-                "description": "Nom de la classe de stratégie (ex: offpeak, self_consumption)"
+                "enum": ["offpeak", "emhass", "annealing", "switchoff"],
+                "description": "Strategy class name (ex: offpeak, self_consumption)"
               },
               "id": {
                 "type": "string",
-                "description": "Identifiant unique de la stratégie"
+                "description": "Uniq Id of the strategy"
               }
             },
             "required": ["class", "id"],
@@ -123,11 +129,11 @@
               },
               "maxPower": {
                 "type": "number",
-                "description": "Puissance maximale (W)"
+                "description": " Maximal power in Watt"
               },
               "minPower": {
                 "type": "number",
-                "description": "Puissance minimale (W)"
+                "description": "Minimal power in Watt"
               },
               "powerMargin": {
                 "type": "number",
@@ -135,47 +141,47 @@
               },
               "isOn": {
                 "type": "string",
-                "description": "Entité Home Assistant pour l'état marche/arrêt (pour les commutateurs)"
+                "description": "Home-Assistant id for on/off (for switch)"
               },
               "constraints": {
                 "type": "object",
                 "properties": {
                   "minPower": {
                     "type": "number",
-                    "description": "Puissance minimale admissible (W)"
+                    "description": "Minimal power OpenHEMS should avoid to be under."
                   },
                   "minPowerDelay": {
                     "type": "integer",
-                    "description": "Durée minimale de maintien de minPower (secondes)"
+                    "description": "minPower delay above witch OpenHEMS should react (seconds). "
                   }
                 },
                 "additionalProperties": false
               },
               "contract": {
                 "type": "object",
-                "description": "Contrat d'électricité (pour PublicPowerGrid)",
+                "description": "Electricity contract (for PublicPowerGrid)",
                 "properties": {
                   "class": {
                     "type": "string",
                     "enum": ["RTETempo", "Base", "HeuresCreuses"],
-                    "description": "Type de contrat"
+                    "description": "contract type"
                   },
                   "color": {
                     "type": "string",
-                    "description": "Entité HA pour la couleur Tempo (bleu/blanc/rouge)"
+                    "description": "HA id for Tempo color (bleu/blanc/rouge)"
                   },
                   "nextcolor": {
                     "type": "string",
-                    "description": "Entité HA pour la couleur du lendemain"
+                    "description": "HA id for Tempo color for tomorow (bleu/blanc/rouge)"
                   },
                   "offpeakhoursranges": {
                     "type": "array",
                     "items": {
                       "type": "string",
                       "pattern": "^\\d{1,2}:|h(\\d{1,2})?\\s*-\\s*\\d{1,2}(:|h)(\\d{1,2})?$",
-                      "description": "Plage horaire ex: '22h05 - 6h'"
+                      "description": "Hour range of offpeaks ex: '22h05 - 6h'"
                     },
-                    "description": "Plages heures creuses"
+                    "description": "Hour range of offpeaks"
                   }
                 },
                 "required": ["class"],
