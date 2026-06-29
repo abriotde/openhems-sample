@@ -53,7 +53,10 @@ dependencies = [
 	"streamlit-monaco-yaml>=0.2.0",
 	"pytest>=9.0.3",
 	"pytest-cov>=7.1.0",
-	'typing-extensions>=4.15.0'
+	'typing-extensions>=4.15.0',
+	"matplotlib>=3.11.0",
+	"tk>=0.1.0",
+	"streamlit-timeline>=0.0.2",
 ]
 license = { file = "LICENSE", "expression" = "GPL-3.0-or-later" }
 # license = "GPL-3.0-or-later"

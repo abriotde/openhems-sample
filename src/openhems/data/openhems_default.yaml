@@ -19,6 +19,10 @@ server:
   network: homeassistant # Define the type of network API used to control the home energy.
   strategies: []
   socketpath: /tmp/openhems.sock
+  db:
+    type: "sqlite"
+    path: ""
+    loopDelay: 120
 network:
   nodes: [] # List the source of electric power / stockage
 # - class=publicpowergrid: currentPower, maxPower, minPower, powerMargin

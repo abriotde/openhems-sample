@@ -8,7 +8,9 @@ import numpy as np
 from openhems.modules.network.feeder import Feeder
 from openhems.modules.util import (
 	HoursRanges,
-	ConfigurationException,
+	ConfigurationException
+)
+from openhems.modules.persistence import (
 	Recorder
 )
 from .outnode import Node, Switch
@@ -161,7 +163,9 @@ class TimeModelization:
 
 class FeedbackModelizer:
 	"""
-	The goal is to be able to predict futur value of the sensor in function the device is on/off.
+	The goal is to be able to keep a indicator between to values
+	  (Like temperature) and maybe not the same range depending of energy availability.
+	We need to predict futur value of the sensor in function the device is on/off.
 	"""
 	EVAL_NUM_CYCLES = 4
 	class Mode(Enum):

@@ -1,0 +1,23 @@
+{
+    "title": {
+        "text": {
+            "headline": "Project Milestones",
+            "text": "Key events in our journey"
+        }
+    },
+    "events": [
+        {
+            "start_date": { "year": "2026", "month": "06", "day": "24", "hour": 22, "min": 52},
+            "end_date": { "year": "2026", "month": "06", "day": "25", "hour": 2, "min": 22},
+            "text": 
+            {
+                "headline": "Charge de la voiture",
+                "text": "Switch ON 'Voiture'."
+            }
+        },
+        {
+            "start_date": { "year": "2026", "month": "6", "day": "25", "hour":"14" },
+            "text": { "headline": "Now", "text": "<a href='https://google.com'>Current status</a><br>.<br> -toto <br> -titi" }
+        }
+    ]
+}

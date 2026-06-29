@@ -54,6 +54,28 @@
     "server": {
       "type": "object",
       "properties": {
+        "db": {
+          "type": "object",
+          "description": "Information about OpenHEMS storage",
+          "properties": {
+            "type": {
+              "type": "string",
+              "default": "sqlite",
+              "enum": ["sqlite"],
+              "description": "Database engine (could add postgresql or other but not implemented)"
+            },
+            "path": {
+              "type": "string",
+              "default": "",
+              "description": "Path of database data file"
+            },
+            "loopDelay": {
+              "type": "integer",
+              "default": 120,
+              "description": "Delay to snapshot."
+            }
+          },
+        },
         "logfile": {
           "type": "string",
           "default": "",

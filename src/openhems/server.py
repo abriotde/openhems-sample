@@ -10,10 +10,14 @@ from openhems.modules.energy_strategy import (
 )
 from openhems.modules.network import HomeStateUpdaterException
 from openhems.modules.util import (
-	CastUtililty, ConfigurationManager, ConfigurationException, CastException
+	CastUtililty, ConfigurationManager, ConfigurationException,
+	CastException
 )
 from openhems.modules.network import (
 	FeedbackSwitch, ConstraintsException
+)
+from openhems.modules.persistence import (
+	OpenHEMSDBServer
 )
 
 class OpenHEMSServer:
@@ -35,8 +39,18 @@ class OpenHEMSServer:
 		# "Nodes" to call decrementTime() to manage their time/constraints
 		self.warningMessages = []
 		self._decrementTimeCallbacks = {}
+		# pylint: disable=invalid-name
+		self._db_server = OpenHEMSDBServer(network, mylogger, serverConf)
 		self._initDecrementTimeCallbacks()
 		self._initStrategies(mylogger, serverConf)
+
+	def getBDServer(self):
+		"""
+		Get DB server to get/update DB on precise cases.
+		"""
+		return self._db_server
+
+
 
 	def _initStrategies(self, mylogger, serverConf):
 		"""
@@ -241,6 +255,7 @@ class OpenHEMSServer:
 		for strategy in self.strategies:
 			t = strategy.updateNetwork(loopDelay, now)
 			time2wait = min(t, time2wait)
+		self._db_server.loop(now)
 		if self._allowSleep and time2wait > 0:
 			self.logger.info("Loop sleep(%d min)", round(time2wait/60))
 			time.sleep(time2wait)
