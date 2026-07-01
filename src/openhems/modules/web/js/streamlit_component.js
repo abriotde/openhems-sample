@@ -4,16 +4,18 @@ export default function({ parentElement, setStateValue, setTriggerValue, data}) 
     const translate = data.translate;
     const img = data.img;
     const id = data.id;
-    const isChecked = (node.duration > 0 || node.duration=="0");
+    // console.log("Render node:", node);
+    const isChecked = (node.duration > 0);
     const display = (isChecked) ? "inline" : "none";
     const checked = (isChecked) ? "checked='checked'" : "";
     var duration = Math.floor(node.duration/60); // Keep only minutes, forget seconds.
     var duration_value;
+    // console.log("isChecked:", isChecked);
     if (isChecked) {
         let min = duration%60;
-        let hour = (duration-min)/60;
+        let hour = parseInt((duration-min)/60);
         duration_value=(""+hour).padStart(2,'0')+":"+(""+min).padStart(2,'0');
-        // console.log("Duration:", duration)
+        // console.log("Duration:", duration, hour, min, duration_value);
     } else {
         duration_value="00:00";
     }
@@ -24,8 +26,8 @@ export default function({ parentElement, setStateValue, setTriggerValue, data}) 
             <span class="col-50">${img.hourglass}
                 ${translate.for} <input type="time" title="${translate.tooltip_duration}" id="duration" name="duration" value="${duration_value}"">
             </span><span class="col-50">${img.alarm}
-                ${translate.before} <span id="beforeDate">${node.date}</span>
-                <input type="time" title="${translate.tooltip_timeout}" id="timeout" value="${node.timeout}" onchange="updateBeforeDate('${id}')">
+                ${translate.before} <span id="beforeDate">${node.timeout_dt}</span>
+                <input type="time" title="${translate.tooltip_timeout}" id="timeout" value="${node.timeout}">
             </span>
         </span></div></div>`;
     parentElement.querySelector("input[type=checkbox]").onclick = (event) => {
@@ -37,7 +39,7 @@ export default function({ parentElement, setStateValue, setTriggerValue, data}) 
         node.display = box.checked;
         setStateValue("node", node);
     };
-    parentElement.querySelector("input#duration").onchange = (event) => {
+    parentElement.querySelector("input#duration").onblur = (event) => {
         const durationVal = event.originalTarget.value;
         // console.log("changeDuration() ", input);
         var duration;
@@ -45,12 +47,12 @@ export default function({ parentElement, setStateValue, setTriggerValue, data}) 
             duration = 0;
         } else {
             const vals = durationVal.split(":");
-            duration = parseInt(vals[0])*60 + parseInt(vals[1]);
+            duration = (parseInt(vals[0])*60 + parseInt(vals[1]))*60; // Convert to seconds
         }
         node.duration = duration;
         setStateValue("node", node);
     }
-    parentElement.querySelector("input#timeout").onchange = (event) => {
+    parentElement.querySelector("input#timeout").onblur = (event) => {
         const input = event.originalTarget;
         console.log("changeTimeout() ", input);
         node.timeout = input.value;

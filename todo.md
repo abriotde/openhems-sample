@@ -2,22 +2,16 @@
 - Contact installer
 - Open Home Fundation https://www.openhomefoundation.org/ ?
 - funding/crowd : kickstarter
-- promote : LinuxFR
 
 # Integration
-- A 
-- A guided configuration, question/response ().
 - IA to formulate predictions.
 - IA to command OpenHEMS devices ("Start the washing machine") & as "Personnal Assistant"
-- A dashboard to see the house state. (https://community.home-assistant.io/t/power-flow-card-plus/552326)
-
-
-- A dashboard to see the house state.
+- A dashboard to see the house state. (https://github.com/flixlix/flixlix-cards)
 
 
 # Development
+- dev/db : A dashboard to see history/previsions : IHM + DB + integrations.
 - dev/node : When get curentPower, check maxPower and update it if needed.
-- dev/debug : check why sometime OpenHEMS restart.
 - dev/publicpowergrid : Add variable maximum power consumption for time-slots.
 - dev/updater : Add HomeStateUpdater from OpenHAB, Jeedom, Domoticz.
 - dev/strategy : Add solar panel without internet, use Python skyfield module or pvlib module
