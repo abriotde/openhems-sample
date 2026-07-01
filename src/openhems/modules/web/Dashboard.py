@@ -168,6 +168,32 @@ def manage_schedules_page(mode=0):
 
 # Configuration de la page
 
+def manage_schedules_page2(mode=0):
+    if mode==0:
+        st.title("Gestion des programmations")
+    # Get schedules from the UnixSocketServer (core server)
+    schedules = OpenhemsHTTPServer.get_socket_client().get_schedule()
+    # print("DEBUG schedule:", schedules, file=sys.stderr)
+    if schedules is None:
+        st.warning("Erreur lors de la récupération des appareils programmables.")
+        return
+    from components.streamlit_component import (
+        get_device_programm_component
+    )
+
+    def on_node_change():
+        print("on_node_change(",")")
+
+    for node_id, node in schedules.items():
+        timeout = node.get("timeout_dt", None)
+        if timeout is not None:
+            timeout = datetime.strptime(timeout, "%Y-%m-%d %H:%M")
+        duration = seconds2time(int(node.get("duration", 0)))
+        node["id"] = node_id
+        result = get_device_programm_component(node, on_node_change=on_node_change)
+        if result.node:
+            print("Node: ", result.node)
+
 def main():
     """
     Entry point of the web application:
@@ -205,7 +231,8 @@ def main():
         st.sidebar.title("OpenHEMS")
         st.set_page_config(page_title="OpenHEMS", layout="wide")
         # st.sidebar.page_link("pages/01_Dashboard.py", label="Dashboard")
-    manage_schedules_page(mode)
+    # manage_schedules_page(mode)
+    manage_schedules_page2()
 
 if __name__ == "__main__":
     main()
