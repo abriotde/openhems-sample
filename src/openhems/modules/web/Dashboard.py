@@ -11,6 +11,8 @@ from datetime import datetime, time
 import streamlit as st # pylint: disable=E0401
 import pandas as pd
 
+from openhems.modules.util.cast_utility import CastUtililty
+
 # pylint: disable=wrong-import-position
 ROOT_PATH = Path(__file__).parents[3]
 sys.path.append(str(ROOT_PATH))
@@ -22,6 +24,9 @@ from openhems.modules.util import (
 )
 from openhems.modules.web.driver_vpn import (
 	VpnDriver
+)
+from openhems.modules.web.components.streamlit_component import (
+    get_device_programm_component
 )
 
 @dataclasses.dataclass
@@ -177,9 +182,6 @@ def manage_schedules_page2(mode=0):
     if schedules is None:
         st.warning("Erreur lors de la récupération des appareils programmables.")
         return
-    from components.streamlit_component import (
-        get_device_programm_component
-    )
 
     def on_node_change():
         print("on_node_change(",")")
@@ -188,11 +190,19 @@ def manage_schedules_page2(mode=0):
         timeout = node.get("timeout_dt", None)
         if timeout is not None:
             timeout = datetime.strptime(timeout, "%Y-%m-%d %H:%M")
-        duration = seconds2time(int(node.get("duration", 0)))
         node["id"] = node_id
         result = get_device_programm_component(node, on_node_change=on_node_change)
         if result.node:
             print("Node: ", result.node)
+            duration = result.node.get("duration")
+            timeout = result.node.get("timeout")
+            if timeout=="0":
+                timeout = None
+            else:
+                timeout = CastUtililty.toTypeDatetime(timeout).strftime("%Y-%m-%d %H:%M")
+            print(" = ", duration, timeout)
+            OpenhemsHTTPServer.get_socket_client()\
+                .update_schedule(node_id, duration, timeout)
 
 def main():
     """
@@ -232,7 +242,7 @@ def main():
         st.set_page_config(page_title="OpenHEMS", layout="wide")
         # st.sidebar.page_link("pages/01_Dashboard.py", label="Dashboard")
     # manage_schedules_page(mode)
-    manage_schedules_page2()
+    manage_schedules_page2(mode)
 
 if __name__ == "__main__":
     main()
