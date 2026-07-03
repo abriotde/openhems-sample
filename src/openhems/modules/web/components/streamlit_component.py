@@ -4,13 +4,8 @@ import pandas as pd
 import streamlit as st
 import base64
 
-hello_component = st.components.v2.component(
-    name="hello_world",
-    html="<h2>Hello, World!</h2>",
-    css="h2 { color: var(--st-primary-color); }",
-)
-
 PATH = pathlib.Path(__file__).parent.parent.resolve()
+
 
 @st.cache_data
 def load_file(path):
@@ -27,7 +22,7 @@ def load_image(image_path):
     Load an image file and return its content as HTML code.
     """
     p = pathlib.Path(image_path)
-    print("load_image(", p.absolute(),")")
+    # print("load_image(", p.absolute(),")")
     if p.suffix.lower() in [".svg"]:
         with p.open("r", encoding='utf-8') as img_file:
             return img_file.read()
