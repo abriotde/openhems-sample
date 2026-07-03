@@ -3,19 +3,17 @@
 Test streamlit Dashboard integrity
 """
 from pathlib import Path
-import sys
-from typing_extensions import runtime
 import unittest
+# from streamlit import runtime
 from unittest.mock import MagicMock, patch
 from datetime import datetime
-import pandas as pd
 from streamlit.testing.v1 import AppTest # pylint: disable=import-error
-from openhems.modules.web.components.streamlit_component import (
-    get_device_programm_component
-)
-from streamlit import runtime
+# from openhems.modules.web.components.streamlit_component import ( # pylint: disable=import-error
+#     get_device_programm_component
+# )
 
 ROOT_PATH = Path(__file__).parents[1]
+
 class TestDashboard(unittest.TestCase):
     """Test the Dashboard streamlit page with AppTest"""
 

@@ -1,8 +1,10 @@
-import pathlib
+"""
+OpenHEMS specific Streamlit component for device programming.
+"""
 
-import pandas as pd
-import streamlit as st
+import pathlib
 import base64
+import streamlit as st # pylint: disable=E0401
 
 PATH = pathlib.Path(__file__).parent.parent.resolve()
 
@@ -46,7 +48,8 @@ def get_device_programm_component(node, on_node_change=None):
     Get the device programm component data.
     """
     if on_node_change is None:
-        on_node_change = lambda: None
+        def on_node_change():
+            pass
     component = device_programm_component(
         on_node_change=on_node_change,
         data={

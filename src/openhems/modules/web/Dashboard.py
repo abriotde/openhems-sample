@@ -174,6 +174,10 @@ def manage_schedules_page(mode=0):
 # Configuration de la page
 
 def manage_schedules_page2(mode=0):
+    """
+    New version of the manage_schedules_page function
+    using custom Streamlit components for device programming.
+    """
     if mode==0:
         st.title("Gestion des programmations")
     # Get schedules from the UnixSocketServer (core server)
