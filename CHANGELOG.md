@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.5 - 2026-07-01
+### Improvement
+- IHM/Dashbord : Get back from table to old programmable device component
+    Better UI + Esier to add different device type (i.e. power command instead of duration).
+
 ## 0.3.4 - 2026-06-23
 ### FIX
 - core FIX
